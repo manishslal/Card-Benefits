@@ -72,6 +72,7 @@ model User {
 
   // Relationships
   players           Player[]
+  sessions          Session[]
 
   // Metadata
   emailVerified     Boolean @default(false)
@@ -80,6 +81,29 @@ model User {
 
   // Indexes
   @@index([email])
+}
+
+model Session {
+  id                String   @id @default(cuid())
+  userId            String   // FK to User
+  user              User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Session metadata
+  sessionToken      String   @unique  // Signed JWT payload
+  expiresAt         DateTime  // Expiration timestamp
+  isValid           Boolean @default(true)  // For soft revocation
+
+  // Device tracking
+  userAgent         String?  // For device identification
+  ipAddress         String?  // For suspicious login detection
+
+  // Metadata
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Indexes
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Player {

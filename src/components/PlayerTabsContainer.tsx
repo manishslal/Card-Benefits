@@ -75,11 +75,6 @@ export default function PlayerTabsContainer({ players }: PlayerTabsContainerProp
       {/* Tab Navigation - Responsive: scroll on mobile, grid on desktop */}
       <TabsList 
         className="w-full h-auto p-1 overflow-x-auto md:overflow-visible flex md:grid md:gap-2"
-        style={{
-          display: 'flex',
-          minWidth: 'min-content',
-          gridTemplateColumns: `repeat(auto-fit, minmax(120px, 1fr))`
-        }}
       >
         {/* "All Wallet" Tab */}
         <TabsTrigger value="all-wallet" className="flex-shrink-0 md:flex-1 gap-2 px-4 py-2 text-sm font-medium whitespace-nowrap">

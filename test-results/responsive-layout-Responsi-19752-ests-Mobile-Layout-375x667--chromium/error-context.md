@@ -6,7 +6,7 @@
 
 # Test info
 
-- Name: responsive-layout.spec.ts >> Responsive Layout Tests >> Tablet Layout (768x1024)
+- Name: responsive-layout.spec.ts >> Responsive Layout Tests >> Mobile Layout (375x667)
 - Location: tests/responsive-layout.spec.ts:119:9
 
 # Error details
@@ -14,8 +14,8 @@
 ```
 Error: expect(received).toBe(expected) // Object.is equality
 
-Expected: 3
-Received: 1
+Expected: "scroll"
+Received: "grid"
 ```
 
 # Page snapshot
@@ -170,9 +170,6 @@ Received: 1
 # Test source
 
 ```ts
-  55  | }
-  56  | 
-  57  | async function getVisibleCardCount(page: Page): Promise<number> {
   58  |   // Count the summary stat cards specifically
   59  |   await page.waitForSelector('section div.grid > div', { timeout: 5000 });
   60  |   const statCards = await page.locator('section div.grid > div').all();
@@ -270,11 +267,11 @@ Received: 1
   152 |       console.log(`📑 Tab behavior: ${tabBehavior}`);
   153 |       
   154 |       // Verify grid columns match expected
-> 155 |       expect(actualColumns).toBe(breakpoint.expectedColumns);
-      |                             ^ Error: expect(received).toBe(expected) // Object.is equality
+  155 |       expect(actualColumns).toBe(breakpoint.expectedColumns);
   156 |       
   157 |       // Verify tab behavior matches expected
-  158 |       expect(tabBehavior).toBe(breakpoint.expectedTabBehavior);
+> 158 |       expect(tabBehavior).toBe(breakpoint.expectedTabBehavior);
+      |                           ^ Error: expect(received).toBe(expected) // Object.is equality
   159 |       
   160 |       // For desktop, we expect exactly 3 summary cards (not 9+ credit cards)
   161 |       if (breakpoint.name === 'Desktop') {
@@ -372,4 +369,7 @@ Received: 1
   253 |     const allTabsPassed = results.every(r => r.tabStatus === 'PASS');
   254 |     const overallStatus = allLayoutsPassed && allTabsPassed ? 'PASS' : 'FAIL';
   255 |     
+  256 |     console.log(`\n🎯 Overall Status: ${overallStatus}`);
+  257 |     console.log(`📐 Layout Tests: ${allLayoutsPassed ? 'PASS' : 'FAIL'}`);
+  258 |     console.log(`📑 Tab Tests: ${allTabsPassed ? 'PASS' : 'FAIL'}`);
 ```

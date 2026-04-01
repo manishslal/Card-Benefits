@@ -41,13 +41,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={cn("font-sans", geist.variable)}>
+    <html lang="en" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
       <head>
         {/* 
           Theme Initialization Script
           Runs BEFORE React hydration to prevent flash of wrong theme.
           Checks localStorage for user preference, falls back to system preference,
           then applies .dark class synchronously to <html> element.
+          
+          suppressHydrationWarning on <html> prevents hydration mismatch warnings
+          because the .dark class may be added by this script after server rendering.
         */}
         <script
           dangerouslySetInnerHTML={{

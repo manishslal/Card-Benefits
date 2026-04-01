@@ -1,0 +1,70 @@
+=== DASHBOARD LAYOUT DIAGNOSTIC REPORT ===
+
+SECTION 1: DESKTOP LAYOUT (1440px)
+=====================================
+✓ Page loaded
+
+✓ Desktop full-page screenshot saved to layout-desktop-full.png
+
+DESKTOP MEASUREMENTS:
+  Body scroll height: 1225px
+  Body client height: 1225px
+  HTML scroll height: 1225px
+  Viewport: 1440x900px
+  Main element height: 1059 / 1059px
+  HTML overflow-y: visible
+
+DESKTOP DOM STRUCTURE:
+  Main element: ✓
+  Nav element: ✗
+  Sidebar: ✗
+  Tabs: ✓
+  Cards found: 4
+  PlayerTabsContainer: ✗
+  TabsContent: ✓
+
+SECTIONS FOUND:
+  Section 0: height=147px, display=block, top=120px [VISIBLE]
+  Section 1: height=86px, display=block, top=299px [VISIBLE]
+
+SCROLLING TEST:
+  Page scrolled to: 325px
+  Total scrollable height: 325px
+  Content exists below fold: ✓ YES
+
+✓ Desktop scrolled screenshot saved
+
+SECTION 2: MOBILE LAYOUT (375x667 - iPhone SE)
+==============================================
+✓ Mobile page loaded
+
+✓ Mobile full-page screenshot saved to layout-mobile-full.png
+
+MOBILE MEASUREMENTS:
+  Viewport: 375x667px
+  Total page height: 2982px
+  Is responsive width: ✓
+
+MOBILE RESPONSIVE CHECK:
+  Main container width: 375px
+  Main fills viewport: ✓
+  Max element width: 399px
+  Has oversized elements: ✗ YES (PROBLEM!)
+
+SECTION 3: CSS COMPUTED STYLES
+=============================
+COMPUTED STYLES:
+  main:
+    width: 1440px
+    height: 1059.19px
+    display: block
+    overflow: visible
+  tabPanel:
+    display: block
+    width: 32px
+    height: 697px
+  grid:
+    display: grid
+    gridTemplateColumns: 357.328px 357.328px 357.344px
+    gap: 24px
+

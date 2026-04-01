@@ -2,29 +2,18 @@
 
 import { useState } from 'react';
 import BenefitTable from './BenefitTable';
+import { CreditCard, Calendar, TrendingUp, TrendingDown, ChevronDown } from 'lucide-react';
 
 /**
- * Card Component - Redesigned Card Tracker
+ * Card Component - Redesigned Card Tracker (Enhanced with Lucide Icons)
  * 
  * Displays single credit card with:
- * - Card header (name, issuer, ROI badge)
- * - Renewal date and annual fee
- * - ROI value prominently displayed
+ * - Card header with CreditCard icon (name, issuer, ROI badge)
+ * - Renewal date with Calendar icon and annual fee
+ * - Premium ROI display with TrendingUp/TrendingDown indicators
  * - Benefit count
  * - Expandable benefits table (click to toggle)
- * 
- * Design:
- * - Background: var(--color-bg-primary)
- * - Border: 1px var(--color-border)
- * - Border-radius: 12px
- * - Shadow: var(--shadow-md)
- * - Hover: shadow-lg, translateY(-2px), cursor pointer
- * - Transitions: all 200ms ease-in-out
- * 
- * Interactions:
- * - Click card or "Expand" button to show/hide benefits table
- * - Benefits table is collapsible (toggle state)
- * - Smooth expand/collapse animation
+ * - Lucide icons for consistent visual language
  */
 
 interface UserBenefit {
@@ -34,7 +23,7 @@ interface UserBenefit {
   userDeclaredValue: number | null;
   isUsed: boolean;
   expirationDate: Date | null;
-  type: string; // Can be 'StatementCredit' | 'UsagePerk'
+  type: string;
   resetCadence: string;
   timesUsed: number;
 }
@@ -59,19 +48,13 @@ interface UserCard {
 
 interface CardProps {
   card: UserCard;
+  playerName?: string;
 }
 
-/**
- * Get resolved benefit value
- */
 function getResolvedValue(benefit: UserBenefit): number {
   return benefit.userDeclaredValue ?? benefit.stickerValue;
 }
 
-/**
- * Calculate effective ROI for card
- * ROI = Sum of extracted benefits - Net annual fee
- */
 function getEffectiveROI(card: UserCard): number {
   let extracted = 0;
   for (const benefit of card.userBenefits) {
@@ -79,18 +62,13 @@ function getEffectiveROI(card: UserCard): number {
       extracted += getResolvedValue(benefit);
     }
   }
-
   const annualFee = card.actualAnnualFee ?? card.masterCard.defaultAnnualFee;
   return extracted - annualFee;
 }
 
-/**
- * Calculate total uncaptured value
- */
 function getUncapturedValue(card: UserCard): number {
   const now = new Date();
   let total = 0;
-
   for (const benefit of card.userBenefits) {
     if (
       !benefit.isUsed &&
@@ -100,22 +78,15 @@ function getUncapturedValue(card: UserCard): number {
       total += getResolvedValue(benefit);
     }
   }
-
   return total;
 }
 
-/**
- * Format currency
- */
 function formatCurrency(cents: number): string {
   const dollars = (cents / 100).toFixed(2);
   const isNegative = cents < 0;
   return isNegative ? `-$${Math.abs(Number(dollars))}` : `$${dollars}`;
 }
 
-/**
- * Format date as "Jan 15, 2024"
- */
 function formatDate(date: Date): string {
   return new Date(date).toLocaleDateString('en-US', {
     month: 'short',
@@ -124,13 +95,12 @@ function formatDate(date: Date): string {
   });
 }
 
-export default function Card({ card }: CardProps) {
+export default function Card({ card, playerName }: CardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const roi = getEffectiveROI(card);
   const isPositiveROI = roi >= 0;
   const annualFee = card.actualAnnualFee ?? card.masterCard.defaultAnnualFee;
   const usedBenefitsCount = card.userBenefits.filter((b) => b.isUsed).length;
-
   const cardName = card.customName || card.masterCard.cardName;
 
   return (
@@ -154,37 +124,57 @@ export default function Card({ card }: CardProps) {
     >
       {/* Card Header */}
       <div className="p-lg border-b" style={{ borderColor: 'var(--color-border)' }}>
-        {/* Card Name + ROI Badge */}
+        {/* Card Name + Issuer + ROI Badge */}
         <div className="flex items-start justify-between mb-md gap-md">
-          <div>
-            <h3
-              className="font-semibold text-text-primary"
-              style={{ fontSize: 'var(--font-h3)' }}
-            >
-              {cardName}
-            </h3>
-            <p
-              className="text-text-secondary mt-xs"
-              style={{ fontSize: 'var(--font-body-sm)' }}
-            >
-              {card.masterCard.issuer}
-            </p>
+          <div className="flex items-start gap-md flex-1">
+            {/* Card Icon */}
+            <div className="flex-shrink-0 mt-1" style={{ color: 'var(--color-primary-500)' }}>
+              <CreditCard className="w-5 h-5" />
+            </div>
+            
+            <div className="flex-1">
+              <h3
+                className="font-semibold text-text-primary"
+                style={{ fontSize: 'var(--font-h3)' }}
+              >
+                {cardName}
+              </h3>
+              <p
+                className="text-text-secondary mt-xs"
+                style={{ fontSize: 'var(--font-body-sm)' }}
+              >
+                {card.masterCard.issuer}
+              </p>
+              {playerName && (
+                <p
+                  className="text-text-tertiary mt-xs"
+                  style={{ fontSize: 'var(--font-body-xs)' }}
+                >
+                  {playerName}
+                </p>
+              )}
+            </div>
           </div>
 
-          {/* ROI Badge - Right aligned */}
+          {/* ROI Badge - Right aligned with Icon */}
           <div
-            className="px-md py-sm rounded-full text-white font-semibold text-xs whitespace-nowrap flex-shrink-0"
+            className="px-md py-sm rounded-full text-white font-semibold text-xs whitespace-nowrap flex-shrink-0 flex items-center gap-xs"
             style={{
               backgroundColor: isPositiveROI
                 ? 'var(--color-success-500)'
                 : 'var(--color-danger-500)',
             }}
           >
+            {isPositiveROI ? (
+              <TrendingUp className="w-3 h-3" />
+            ) : (
+              <TrendingDown className="w-3 h-3" />
+            )}
             {formatCurrency(roi)}
           </div>
         </div>
 
-        {/* Card metadata row */}
+        {/* Card metadata row - Renewal Date + Annual Fee */}
         <div
           className="flex items-center justify-between gap-md"
           style={{
@@ -192,21 +182,22 @@ export default function Card({ card }: CardProps) {
             color: 'var(--color-text-secondary)',
           }}
         >
-          <div>
+          <div className="flex items-center gap-sm">
+            <Calendar className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-text-secondary)' }} />
             <span>Renews {formatDate(card.renewalDate)}</span>
           </div>
           <div className="text-right">
-            <span>Annual Fee: {formatCurrency(annualFee)}</span>
+            <span>Fee: {formatCurrency(annualFee)}</span>
           </div>
         </div>
       </div>
 
       {/* Card Body - Main metrics */}
       <div className="p-lg">
-        {/* Large ROI Value */}
-        <div className="mb-lg">
+        {/* Large ROI Value - Net Benefit Section (PROMINENT) */}
+        <div className="mb-lg p-md rounded-lg" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
           <p
-            className="text-text-secondary mb-xs"
+            className="text-text-secondary mb-sm"
             style={{
               fontSize: 'var(--font-body-sm)',
               fontWeight: '600',
@@ -214,17 +205,24 @@ export default function Card({ card }: CardProps) {
           >
             Net Benefit
           </p>
-          <p
-            className="font-bold"
-            style={{
-              fontSize: 'var(--font-h2)',
-              color: isPositiveROI
-                ? 'var(--color-success-500)'
-                : 'var(--color-danger-500)',
-            }}
-          >
-            {formatCurrency(roi)}
-          </p>
+          <div className="flex items-baseline gap-md">
+            <p
+              className="font-bold"
+              style={{
+                fontSize: 'var(--font-h1)',
+                color: isPositiveROI
+                  ? 'var(--color-success-500)'
+                  : 'var(--color-danger-500)',
+              }}
+            >
+              {formatCurrency(roi)}
+            </p>
+            {isPositiveROI ? (
+              <TrendingUp className="w-6 h-6" style={{ color: 'var(--color-success-500)' }} />
+            ) : (
+              <TrendingDown className="w-6 h-6" style={{ color: 'var(--color-danger-500)' }} />
+            )}
+          </div>
         </div>
 
         {/* Benefit Summary */}
@@ -289,14 +287,19 @@ export default function Card({ card }: CardProps) {
       >
         <button
           onClick={(e) => {
-            e.stopPropagation(); // Prevent card click from propagating
+            e.stopPropagation();
             setIsExpanded(!isExpanded);
           }}
           className="flex items-center gap-sm font-medium text-primary-500 transition-colors hover:text-primary-600"
           style={{ fontSize: 'var(--font-body-sm)' }}
           aria-label={isExpanded ? 'Collapse benefits' : 'Expand benefits'}
         >
-          {isExpanded ? '▼' : '▶'} {isExpanded ? 'Hide' : 'View'} Benefits
+          <ChevronDown
+            className={`w-4 h-4 transition-transform duration-200 ${
+              isExpanded ? 'rotate-180' : ''
+            }`}
+          />
+          {isExpanded ? 'Hide' : 'View'} Benefits
         </button>
         <p
           className="text-text-secondary"

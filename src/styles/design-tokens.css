@@ -128,7 +128,7 @@
 
 /* ========================================
    DARK MODE - CSS Variables Override
-   Activated when data-theme="dark" or @media (prefers-color-scheme: dark)
+   Activated when .dark class is applied to <html> (Tailwind dark mode)
    ======================================== */
 @media (prefers-color-scheme: dark) {
   :root {
@@ -170,8 +170,8 @@
   }
 }
 
-/* Override dark mode with explicit data-theme="dark" attribute on <html> */
-html[data-theme="dark"] {
+/* Explicit dark mode override with Tailwind .dark class on <html> */
+html.dark {
   --color-primary-50: #082F49;
   --color-primary-100: #0C3B5C;
   --color-primary-500: #60A5FA;

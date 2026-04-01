@@ -1,18 +1,22 @@
 'use client';
 
-import { useState } from 'react';
-import PlayerTabs from './PlayerTabs';
-import CardGridWithPlayer from './CardGrid';
+import { useMemo } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import CardTrackerPanel from './Card';
+import { Users } from 'lucide-react';
 
 /**
- * PlayerTabsContainer Component
- * 
- * Container component that manages the state for:
- * 1. PlayerTabs - Tab navigation for filtering
- * 2. CardGridWithPlayer - Responsive card grid filtered by selected player
- * 
- * This component handles the coordinated state between tab selection
- * and card grid filtering.
+ * PlayerTabsContainer Component (Refactored with shadcn Tabs)
+ *
+ * Premium tab-based navigation using shadcn/ui Tabs component.
+ *
+ * Features:
+ * 1. shadcn/ui Tabs for premium tab navigation
+ * 2. Player names as tab triggers
+ * 3. "All Wallet" tab to view all cards across players
+ * 4. Card count badges in tab triggers
+ * 5. Responsive CSS Grid layout for cards
+ * 6. Lucide icons for visual consistency
  */
 
 interface UserBenefit {
@@ -22,7 +26,7 @@ interface UserBenefit {
   userDeclaredValue: number | null;
   isUsed: boolean;
   expirationDate: Date | null;
-  type: string; // Can be 'StatementCredit' | 'UsagePerk'
+  type: string;
   resetCadence: string;
   timesUsed: number;
 }
@@ -57,30 +61,89 @@ interface PlayerTabsContainerProps {
 }
 
 export default function PlayerTabsContainer({ players }: PlayerTabsContainerProps) {
-  // Track which player is selected (null = "View All")
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  // Calculate total cards across all players
+  const totalCards = useMemo(
+    () => players.reduce((sum, player) => sum + player.userCards.filter(c => c.isOpen).length, 0),
+    [players]
+  );
 
-  // Convert players to tab format with card counts
-  const playerTabs = players.map((player) => ({
-    id: player.id,
-    playerName: player.playerName,
-    cardCount: player.userCards.filter((c) => c.isOpen).length,
-  }));
+  // Default to "all" tab
+  const defaultTabValue = 'all-wallet';
 
   return (
-    <>
-      {/* Player Tabs */}
-      <PlayerTabs
-        players={playerTabs}
-        selectedPlayerId={selectedPlayerId}
-        onSelectPlayer={setSelectedPlayerId}
-      />
+    <Tabs defaultValue={defaultTabValue} className="w-full mt-lg">
+      {/* Tab Navigation */}
+      <TabsList className="w-full grid gap-2 h-auto p-1" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(120px, 1fr))` }}>
+        {/* "All Wallet" Tab */}
+        <TabsTrigger value="all-wallet" className="gap-2">
+          <Users className="w-4 h-4" />
+          <span>All Wallet</span>
+          <span className="ml-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-primary/10 text-primary">
+            {totalCards}
+          </span>
+        </TabsTrigger>
 
-      {/* Card Grid (filtered by selected player) */}
-      <CardGridWithPlayer
-        players={players}
-        selectedPlayerId={selectedPlayerId}
-      />
-    </>
+        {/* Player Tabs */}
+        {players.map((player) => {
+          const openCards = player.userCards.filter(c => c.isOpen).length;
+          return (
+            <TabsTrigger key={player.id} value={player.id} className="gap-2">
+              <span>{player.playerName}</span>
+              <span className="ml-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-primary/10 text-primary">
+                {openCards}
+              </span>
+            </TabsTrigger>
+          );
+        })}
+      </TabsList>
+
+      {/* "All Wallet" Content - All cards from all players */}
+      <TabsContent value="all-wallet" className="mt-md">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
+          {players.length === 0 ? (
+            <div className="col-span-full text-center py-xl">
+              <p style={{ color: 'var(--color-text-secondary)' }}>No cards found</p>
+            </div>
+          ) : (
+            players.map((player) =>
+              player.userCards
+                .filter(card => card.isOpen)
+                .map((card) => (
+                  <CardTrackerPanel
+                    key={card.id}
+                    card={card}
+                    playerName={player.playerName}
+                  />
+                ))
+            )
+          )}
+        </div>
+      </TabsContent>
+
+      {/* Individual Player Tabs */}
+      {players.map((player) => (
+        <TabsContent key={player.id} value={player.id} className="mt-md">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
+            {player.userCards.filter(c => c.isOpen).length === 0 ? (
+              <div className="col-span-full text-center py-xl">
+                <p style={{ color: 'var(--color-text-secondary)' }}>
+                  {player.playerName} has no active cards
+                </p>
+              </div>
+            ) : (
+              player.userCards
+                .filter(card => card.isOpen)
+                .map((card) => (
+                  <CardTrackerPanel
+                    key={card.id}
+                    card={card}
+                    playerName={player.playerName}
+                  />
+                ))
+            )}
+          </div>
+        </TabsContent>
+      ))}
+    </Tabs>
   );
 }

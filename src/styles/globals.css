@@ -1,97 +1,276 @@
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
-
 /**
  * src/styles/globals.css
  *
- * Global styles and Tailwind CSS imports.
- * Provides baseline styling and utility classes for the entire application.
+ * Global styles with:
+ * 1. Tailwind CSS directives
+ * 2. Design token CSS variables (light and dark modes)
+ * 3. Custom styling for dashboard UI
  */
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-/*---break---
+
+/**
+ * Design Tokens - CSS Variables for Theming
+ * Light mode (default)
  */
-@layer base {
-  .theme {
-    --font-heading: var(--font-sans);
-    --font-sans: var(--font-sans)
-  }
+:root {
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f8f9fa;
+  --color-bg-tertiary: #f0f1f3;
+  
+  --color-text-primary: #1a202c;
+  --color-text-secondary: #4a5568;
+  --color-text-tertiary: #718096;
+  
+  --color-border: #e2e8f0;
+  --color-primary-500: #0066ff;
+  --color-primary-600: #0052cc;
+  --color-success-500: #10b981;
+  --color-danger-500: #ef4444;
+  --color-alert-500: #f59e0b;
+  --color-alert-600: #d97706;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  
+  --font-h1: 32px;
+  --font-h2: 24px;
+  --font-h3: 20px;
+  --font-body-base: 16px;
+  --font-body-sm: 14px;
+  --font-body-xs: 12px;
+  
+  --padding-mobile: 16px;
+  --padding-tablet: 20px;
+  --padding-desktop: 40px;
+}
+
+/**
+ * Dark mode - Activated when data-theme="dark" is set on html element
+ */
+@media (prefers-color-scheme: dark) {
   :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0)
+    --color-bg-primary: #1a1a1a;
+    --color-bg-secondary: #2d2d2d;
+    --color-bg-tertiary: #3a3a3a;
+    
+    --color-text-primary: #f5f5f5;
+    --color-text-secondary: #b0b0b0;
+    --color-text-tertiary: #808080;
+    
+    --color-border: #404040;
+    --color-primary-500: #3b82f6;
+    --color-primary-600: #2563eb;
+    --color-success-500: #10b981;
+    --color-danger-500: #f87171;
+    --color-alert-500: #fbbf24;
+    --color-alert-600: #f59e0b;
   }
-  .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0)
+}
+
+html[data-theme="dark"] {
+  --color-bg-primary: #1a1a1a;
+  --color-bg-secondary: #2d2d2d;
+  --color-bg-tertiary: #3a3a3a;
+  
+  --color-text-primary: #f5f5f5;
+  --color-text-secondary: #b0b0b0;
+  --color-text-tertiary: #808080;
+  
+  --color-border: #404040;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-success-500: #10b981;
+  --color-danger-500: #f87171;
+  --color-alert-500: #fbbf24;
+  --color-alert-600: #f59e0b;
+}
+
+/**
+ * Base Styles
+ */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  transition: background-color 200ms ease-in-out, color 200ms ease-in-out;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/**
+ * Utility Classes for Component Props
+ */
+.text-text-primary {
+  color: var(--color-text-primary);
+}
+
+.text-text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.text-text-tertiary {
+  color: var(--color-text-tertiary);
+}
+
+.text-primary-500 {
+  color: var(--color-primary-500);
+}
+
+.text-primary-600 {
+  color: var(--color-primary-600);
+}
+
+/**
+ * Responsive Utility Classes
+ */
+.max-w-container {
+  max-width: 1200px;
+}
+
+/**
+ * Tailwind Responsive Spacing (Mobile-first)
+ * Default (mobile): var(--padding-mobile)
+ * md: var(--padding-tablet)
+ * lg: var(--padding-desktop)
+ */
+@layer components {
+  .px-md {
+    @apply px-[var(--padding-mobile)];
   }
-  * {
-    @apply border-border outline-ring/50;
+  
+  .py-md {
+    @apply py-[var(--padding-mobile)];
   }
-  body {
-    @apply bg-background text-foreground;
+
+  .px-tablet {
+    @apply md:px-[var(--padding-tablet)];
   }
-  html {
-    @apply font-sans;
+
+  .px-desktop {
+    @apply lg:px-[var(--padding-desktop)];
+  }
+
+  .py-lg {
+    @apply py-[var(--space-lg)];
+  }
+
+  .px-lg {
+    @apply px-[var(--space-lg)];
+  }
+
+  .mb-md {
+    @apply mb-[var(--space-md)];
+  }
+
+  .mb-lg {
+    @apply mb-[var(--space-lg)];
+  }
+
+  .mt-lg {
+    @apply mt-[var(--space-lg)];
+  }
+
+  .mt-md {
+    @apply mt-[var(--space-md)];
+  }
+
+  .mt-2xl {
+    @apply mt-[var(--space-2xl)];
+  }
+
+  .pt-lg {
+    @apply pt-[var(--space-lg)];
+  }
+
+  .gap-md {
+    @apply gap-[var(--space-md)];
+  }
+
+  .gap-lg {
+    @apply gap-[var(--space-lg)];
+  }
+
+  .gap-sm {
+    @apply gap-[var(--space-sm)];
+  }
+
+  .gap-xs {
+    @apply gap-[var(--space-xs)];
+  }
+
+  .pb-lg {
+    @apply pb-[var(--space-lg)];
+  }
+
+  .py-2xl {
+    @apply py-[var(--space-2xl)];
+  }
+
+  .mb-xs {
+    @apply mb-[var(--space-xs)];
+  }
+
+  .mb-sm {
+    @apply mb-[var(--space-sm)];
+  }
+
+  .mt-xs {
+    @apply mt-[var(--space-xs)];
+  }
+
+  .py-sm {
+    @apply py-[var(--space-sm)];
+  }
+
+  .py-md {
+    @apply py-[var(--space-md)];
+  }
+
+  .py-xl {
+    @apply py-[var(--space-xl)];
+  }
+
+  .px-sm {
+    @apply px-[var(--space-sm)];
+  }
+
+  .py-xs {
+    @apply py-[var(--space-xs)];
+  }
+
+  .px-xs {
+    @apply px-[var(--space-xs)];
+  }
+
+  .text-body-md {
+    @apply text-[var(--font-body-base)];
+  }
+
+  .text-body-sm {
+    @apply text-[var(--font-body-sm)];
+  }
+
+  .text-body-xs {
+    @apply text-[var(--font-body-xs)];
   }
 }

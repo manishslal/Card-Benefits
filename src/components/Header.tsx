@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Sun, Moon, CreditCard } from 'lucide-react';
 
 /**
  * Header Component - Card Benefits Dashboard
@@ -40,19 +41,21 @@ export default function Header() {
   }, []);
 
   /**
-   * Apply theme to document and save preference
+   * Apply theme to document and save preference.
+   * Consolidates on Tailwind .dark class (removes data-theme attribute system).
    */
   const applyTheme = (dark: boolean) => {
     const htmlElement = document.documentElement;
     
     if (dark) {
-      htmlElement.setAttribute('data-theme', 'dark');
+      // Only use Tailwind .dark class system
       htmlElement.classList.add('dark');
     } else {
-      htmlElement.removeAttribute('data-theme');
+      // Remove Tailwind .dark class
       htmlElement.classList.remove('dark');
     }
     
+    // Persist user preference to localStorage for next session
     if (typeof window !== 'undefined') {
       localStorage.setItem('theme', dark ? 'dark' : 'light');
     }
@@ -84,17 +87,16 @@ export default function Header() {
       <div className="flex items-center justify-between h-full px-md md:px-tablet lg:px-desktop max-w-container mx-auto">
         {/* Logo & Title */}
         <div className="flex items-center gap-sm">
-          {/* Logo placeholder - 32×32px */}
+          {/* Logo - CreditCard icon from Lucide React (32×32px) */}
           <div
             className="rounded-md flex items-center justify-center flex-shrink-0 font-bold text-white"
             style={{
               backgroundColor: 'var(--color-primary-500)',
               width: '32px',
               height: '32px',
-              fontSize: '18px',
             }}
           >
-            💳
+            <CreditCard className="w-6 h-6 text-white" />
           </div>
 
           {/* Title */}
@@ -133,41 +135,11 @@ export default function Header() {
           }}
         >
           {isDark ? (
-            // Sun icon for light mode toggle
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="5"></circle>
-              <line x1="12" y1="1" x2="12" y2="3"></line>
-              <line x1="12" y1="21" x2="12" y2="23"></line>
-              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-              <line x1="1" y1="12" x2="3" y2="12"></line>
-              <line x1="21" y1="12" x2="23" y2="12"></line>
-              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-            </svg>
+            // Sun icon for light mode toggle (when in dark mode)
+            <Sun className="w-6 h-6" />
           ) : (
-            // Moon icon for dark mode toggle
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-            </svg>
+            // Moon icon for dark mode toggle (when in light mode)
+            <Moon className="w-6 h-6" />
           )}
         </button>
       </div>

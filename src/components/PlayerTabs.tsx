@@ -81,7 +81,7 @@ export default function PlayerTabs({
       }}
     >
       <div
-        className="flex gap-lg px-md md:px-tablet lg:px-desktop min-w-full"
+        className="flex gap-md md:gap-lg px-md md:px-tablet lg:px-desktop min-w-full"
         role="tablist"
       >
         {/* Individual player tabs */}

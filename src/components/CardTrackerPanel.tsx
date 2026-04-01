@@ -196,8 +196,8 @@ export default function CardTrackerPanel({
       <div className="px-5 py-4 border-b border-gray-100">
         <div className="flex items-start justify-between gap-4">
           {/* Left: card identity */}
-          <div className="min-w-0">
-            <h2 className="text-xl font-bold text-gray-900 truncate">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-xl font-bold text-gray-900">
               {userCard.customName ?? userCard.masterCard.cardName}
             </h2>
             <p className="text-sm text-gray-500 mt-0.5">
@@ -221,14 +221,19 @@ export default function CardTrackerPanel({
 
       {/* ── Benefits Table ───────────────────────────────────────────────── */}
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
           <thead>
             <tr className="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide">
-              <th className="px-4 py-3 text-left font-medium w-full">Benefit Name</th>
-              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">Cadence</th>
-              <th className="px-4 py-3 text-right font-medium whitespace-nowrap">Value</th>
-              <th className="px-4 py-3 text-center font-medium whitespace-nowrap">Expires</th>
-              <th className="px-4 py-3 text-center font-medium whitespace-nowrap">Used?</th>
+              {/* Column 1: Benefit Name - flexible with min-width */}
+              <th className="px-4 py-3 text-left font-medium min-w-[150px] flex-1">Benefit Name</th>
+              {/* Column 2: Cadence - fixed minimum width */}
+              <th className="px-4 py-3 text-left font-medium whitespace-nowrap min-w-[100px]">Cadence</th>
+              {/* Column 3: Value - fixed minimum width, right-aligned */}
+              <th className="px-4 py-3 text-right font-medium whitespace-nowrap min-w-[80px]">Value</th>
+              {/* Column 4: Expires - fixed minimum width, center-aligned */}
+              <th className="px-4 py-3 text-center font-medium whitespace-nowrap min-w-[70px]">Expires</th>
+              {/* Column 5: Used? - fixed minimum width, center-aligned */}
+              <th className="px-4 py-3 text-center font-medium whitespace-nowrap min-w-[60px]">Used?</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -330,9 +335,16 @@ export default function CardTrackerPanel({
         </table>
       </div>
 
-      {/* ── Below-table error message ────────────────────────────────────── */}
+      {/* ── Below-table error message with accessibility attributes ──────────────────────────────────────── */}
       {error && (
-        <p className="mt-2 px-4 text-sm text-red-600">{error}</p>
+        <div
+          className="mt-4 p-4 rounded-lg bg-red-50 border border-red-200 text-sm text-red-600"
+          aria-live="polite"
+          role="status"
+          aria-label="Error notification"
+        >
+          {error}
+        </div>
       )}
 
       {/* ── Summary footer ───────────────────────────────────────────────── */}

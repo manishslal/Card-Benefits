@@ -72,10 +72,17 @@ export default function PlayerTabsContainer({ players }: PlayerTabsContainerProp
 
   return (
     <Tabs defaultValue={defaultTabValue} className="w-full mt-lg">
-      {/* Tab Navigation */}
-      <TabsList className="w-full grid gap-2 h-auto p-1" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(120px, 1fr))` }}>
+      {/* Tab Navigation - Responsive: scroll on mobile, grid on desktop */}
+      <TabsList 
+        className="w-full h-auto p-1 overflow-x-auto md:overflow-visible flex md:grid md:gap-2"
+        style={{
+          display: 'flex',
+          minWidth: 'min-content',
+          gridTemplateColumns: `repeat(auto-fit, minmax(120px, 1fr))`
+        }}
+      >
         {/* "All Wallet" Tab */}
-        <TabsTrigger value="all-wallet" className="gap-2">
+        <TabsTrigger value="all-wallet" className="flex-shrink-0 md:flex-1 gap-2 px-4 py-2 text-sm font-medium whitespace-nowrap">
           <Users className="w-4 h-4" />
           <span>All Wallet</span>
           <span className="ml-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-primary/10 text-primary">
@@ -87,7 +94,11 @@ export default function PlayerTabsContainer({ players }: PlayerTabsContainerProp
         {players.map((player) => {
           const openCards = player.userCards.filter(c => c.isOpen).length;
           return (
-            <TabsTrigger key={player.id} value={player.id} className="gap-2">
+            <TabsTrigger 
+              key={player.id} 
+              value={player.id} 
+              className="flex-shrink-0 md:flex-1 gap-2 px-4 py-2 text-sm font-medium whitespace-nowrap"
+            >
               <span>{player.playerName}</span>
               <span className="ml-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-primary/10 text-primary">
                 {openCards}

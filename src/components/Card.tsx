@@ -156,13 +156,16 @@ export default function Card({ card, playerName }: CardProps) {
             </div>
           </div>
 
-          {/* ROI Badge - Right aligned with Icon */}
+          {/* ROI Badge - Right aligned with Icon, max-width constraint */}
           <div
-            className="px-md py-sm rounded-full text-white font-semibold text-xs whitespace-nowrap flex-shrink-0 flex items-center gap-xs"
+            className="px-md py-sm rounded-full text-white font-semibold text-xs whitespace-nowrap flex items-center gap-xs"
             style={{
               backgroundColor: isPositiveROI
                 ? 'var(--color-success-500)'
                 : 'var(--color-danger-500)',
+              maxWidth: '180px',
+              flexShrink: 0,
+              minWidth: 'auto',
             }}
           >
             {isPositiveROI ? (

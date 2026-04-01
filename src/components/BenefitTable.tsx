@@ -195,6 +195,7 @@ export default function BenefitTable({ benefits }: BenefitTableProps) {
         className="w-full border-collapse"
         style={{
           fontSize: 'var(--font-body-sm)',
+          tableLayout: 'fixed',
         }}
       >
         {/* Table Header */}
@@ -205,11 +206,12 @@ export default function BenefitTable({ benefits }: BenefitTableProps) {
               borderBottom: '1px solid var(--color-border)',
             }}
           >
-            {/* Checkbox column header */}
+            {/* Checkbox column header - Fixed 44px */}
             <th
-              className="p-md text-left font-semibold"
+              className="p-md text-center font-semibold"
               style={{
                 width: '44px',
+                minWidth: '44px',
                 color: 'var(--color-text-secondary)',
                 fontSize: 'var(--font-label)',
                 textTransform: 'uppercase',
@@ -229,10 +231,12 @@ export default function BenefitTable({ benefits }: BenefitTableProps) {
               />
             </th>
 
-            {/* Name column */}
+            {/* Name column - Flexible with minimum 100px, 40% width */}
             <th
               className="p-md text-left font-semibold"
               style={{
+                minWidth: '100px',
+                width: '40%',
                 color: 'var(--color-text-secondary)',
                 fontSize: 'var(--font-label)',
                 textTransform: 'uppercase',
@@ -242,10 +246,12 @@ export default function BenefitTable({ benefits }: BenefitTableProps) {
               Benefit
             </th>
 
-            {/* Value column */}
+            {/* Value column - Fixed minimum 80px, 15% width, right-aligned */}
             <th
-              className="p-md text-right font-semibold"
+              className="p-md text-right font-semibold whitespace-nowrap"
               style={{
+                minWidth: '80px',
+                width: '15%',
                 color: 'var(--color-text-secondary)',
                 fontSize: 'var(--font-label)',
                 textTransform: 'uppercase',
@@ -255,10 +261,12 @@ export default function BenefitTable({ benefits }: BenefitTableProps) {
               Value
             </th>
 
-            {/* Expiration column */}
+            {/* Expiration column - Fixed minimum 70px, 15% width, center-aligned */}
             <th
-              className="p-md text-center font-semibold"
+              className="p-md text-center font-semibold whitespace-nowrap"
               style={{
+                minWidth: '70px',
+                width: '15%',
                 color: 'var(--color-text-secondary)',
                 fontSize: 'var(--font-label)',
                 textTransform: 'uppercase',
@@ -268,10 +276,12 @@ export default function BenefitTable({ benefits }: BenefitTableProps) {
               Expires
             </th>
 
-            {/* Status column */}
+            {/* Status column - Fixed minimum 90px, 15% width, center-aligned */}
             <th
-              className="p-md text-center font-semibold"
+              className="p-md text-center font-semibold whitespace-nowrap"
               style={{
+                minWidth: '90px',
+                width: '15%',
                 color: 'var(--color-text-secondary)',
                 fontSize: 'var(--font-label)',
                 textTransform: 'uppercase',
@@ -305,7 +315,7 @@ export default function BenefitTable({ benefits }: BenefitTableProps) {
                 className="hover:bg-opacity-50"
               >
                 {/* Checkbox */}
-                <td className="p-md text-center">
+                <td className="p-md text-center" style={{ width: '44px', minWidth: '44px' }}>
                   <input
                     type="checkbox"
                     checked={benefit.isUsed}
@@ -328,6 +338,7 @@ export default function BenefitTable({ benefits }: BenefitTableProps) {
                 <td
                   className="p-md text-left"
                   style={{
+                    minWidth: '100px',
                     color: 'var(--color-text-primary)',
                     textDecoration: benefit.isUsed ? 'line-through' : 'none',
                   }}
@@ -337,8 +348,9 @@ export default function BenefitTable({ benefits }: BenefitTableProps) {
 
                 {/* Value */}
                 <td
-                  className="p-md text-right font-medium"
+                  className="p-md text-right font-medium whitespace-nowrap"
                   style={{
+                    minWidth: '80px',
                     color: 'var(--color-text-primary)',
                     textDecoration: benefit.isUsed ? 'line-through' : 'none',
                   }}
@@ -348,8 +360,9 @@ export default function BenefitTable({ benefits }: BenefitTableProps) {
 
                 {/* Expiration Date */}
                 <td
-                  className="p-md text-center"
+                  className="p-md text-center whitespace-nowrap"
                   style={{
+                    minWidth: '70px',
                     color:
                       daysUntilExpiration < 3
                         ? 'var(--color-danger-600)'
@@ -365,7 +378,7 @@ export default function BenefitTable({ benefits }: BenefitTableProps) {
                 </td>
 
                 {/* Status Badge */}
-                <td className="p-md text-center">
+                <td className="p-md text-center" style={{ minWidth: '90px' }}>
                   <span
                     className="inline-block px-sm py-xs rounded-full text-xs font-medium"
                     style={{

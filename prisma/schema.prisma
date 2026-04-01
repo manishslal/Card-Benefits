@@ -1,0 +1,164 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ============================================================
+// Layer 1: Master Catalog (Read-Only Templates)
+// Represents canonical definitions of credit cards and benefits
+// ============================================================
+
+model MasterCard {
+  id                String   @id @default(cuid())
+  issuer            String   // e.g., "Chase", "American Express", "Discover"
+  cardName          String   // e.g., "Chase Sapphire Reserve"
+  defaultAnnualFee  Int      // In cents (e.g., 55000 = $550)
+  cardImageUrl      String   // CDN URL to card image
+
+  // Relationships
+  masterBenefits    MasterBenefit[]
+  userCards         UserCard[]
+
+  // Metadata
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Indexes & Constraints
+  @@index([issuer])
+  @@index([cardName])
+  @@unique([issuer, cardName])
+}
+
+model MasterBenefit {
+  id                String   @id @default(cuid())
+  masterCardId      String   // FK to MasterCard
+  name              String   // e.g., "Travel Credit", "Dining Rebate"
+  type              String   // Enum: 'StatementCredit' | 'UsagePerk'
+  stickerValue      Int      // In cents (e.g., 30000 = $300)
+  resetCadence      String   // Enum: 'Monthly' | 'CalendarYear' | 'CardmemberYear' | 'OneTime'
+
+  // Relationships
+  masterCard        MasterCard @relation(fields: [masterCardId], references: [id], onDelete: Cascade)
+
+  // Metadata
+  isActive          Boolean @default(true) // Soft-delete for deprecated benefits
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Indexes
+  @@index([masterCardId])
+  @@index([type])
+  @@index([resetCadence])
+}
+
+// ============================================================
+// Layer 2: User Wallet (Editable Clones & Tracking)
+// Represents user-owned cards and claimed benefits
+// ============================================================
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  passwordHash      String
+  firstName         String?
+  lastName          String?
+
+  // Relationships
+  players           Player[]
+
+  // Metadata
+  emailVerified     Boolean @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Indexes
+  @@index([email])
+}
+
+model Player {
+  id                String   @id @default(cuid())
+  userId            String   // FK to User
+  playerName        String   // e.g., "Primary", "Spouse"
+  isActive          Boolean @default(true)
+
+  // Relationships
+  user              User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userCards         UserCard[]
+  userBenefits      UserBenefit[]
+
+  // Metadata
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Indexes & Constraints
+  @@index([userId])
+  @@unique([userId, playerName])
+}
+
+model UserCard {
+  id                String   @id @default(cuid())
+  playerId          String   // FK to Player
+  masterCardId      String   // FK to MasterCard (template reference)
+
+  // Cloned/Customizable Fields
+  customName        String?  // User rename (e.g., "Amex Gold - Jon")
+  actualAnnualFee   Int?     // Override fee (in cents; null = use default)
+  renewalDate       DateTime // Card anniversary for benefit resets
+  isOpen            Boolean @default(true) // Card is active in wallet
+
+  // Relationships
+  player            Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  masterCard        MasterCard @relation(fields: [masterCardId], references: [id], onDelete: Restrict)
+  userBenefits      UserBenefit[]
+
+  // Metadata
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Indexes & Constraints
+  @@index([playerId])
+  @@index([masterCardId])
+  @@unique([playerId, masterCardId])
+}
+
+model UserBenefit {
+  id                String   @id @default(cuid())
+  userCardId        String   // FK to UserCard
+  playerId          String   // FK to Player (denormalized for query optimization)
+
+  // Cloned Fields from MasterBenefit
+  name              String   // Benefit name (e.g., "Uber Cash")
+  type              String   // Enum: 'StatementCredit' | 'UsagePerk'
+  stickerValue      Int      // Original benefit value (in cents)
+  resetCadence      String   // Enum: 'Monthly' | 'CalendarYear' | 'CardmemberYear' | 'OneTime'
+
+  // User Customization & Tracking
+  userDeclaredValue Int?     // User's estimated actual value (e.g., "$10 Uber worth $8 to me")
+  isUsed            Boolean @default(false) // User has claimed/utilized this benefit
+  timesUsed         Int @default(0) // Count of times benefit was used/reset
+  expirationDate    DateTime? // When benefit expires
+
+  // Relationships
+  userCard          UserCard @relation(fields: [userCardId], references: [id], onDelete: Cascade)
+  player            Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  // Metadata
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  claimedAt         DateTime? // When user marked benefit as used
+
+  // Indexes & Constraints
+  @@index([userCardId])
+  @@index([playerId])
+  @@index([type])
+  @@index([isUsed])
+  @@index([expirationDate])
+  @@unique([userCardId, name])
+}

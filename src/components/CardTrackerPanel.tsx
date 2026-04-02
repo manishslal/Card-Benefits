@@ -3,20 +3,23 @@
 /**
  * CardTrackerPanel.tsx
  *
- * Displays a single user card's benefits in a table with optimistic checkbox
- * toggling, expiration colour-coding, and live ROI/summary metrics.
+ * Displays a single user card's benefits in an interactive table with:
+ * - Optimistic checkbox toggling for benefit claim tracking
+ * - Expiration colour-coding (critical red, warning orange, normal gray)
+ * - Live ROI/summary metrics that update instantly on toggle
+ * - Benefit value overrides with visual indicators
  *
- * Design notes:
- * - All monetary calculations are derived from live `benefits` state so the
- *   header ROI badge and footer stats update instantly on toggle without a
- *   server round-trip.
- * - `useTransition` wraps the server action to keep it non-blocking; React
- *   can interrupt it for higher-priority updates (e.g. hover states).
- * - A separate `isPending` string tracks *which* benefit is in-flight so each
- *   checkbox can independently show a loading state, unlike the boolean
- *   `isPending` that `useTransition` returns.
- * - `getRowClass` and `formatCents` live outside the component to avoid
- *   re-creation on every render and to keep JSX readable.
+ * Architecture:
+ * - Local `benefits` state for optimistic updates (instant UI feedback)
+ * - `useTransition` for non-blocking async server actions
+ * - Benefit-specific `isPending` state for per-checkbox loading indicators
+ * - Module-level utilities (formatCents, getRowClass) for stable references
+ * - All calculations derived from live state, no stale values
+ *
+ * Performance:
+ * - useCallback memoization for stable event handlers
+ * - Snapshot of `now` per render for consistent expiration logic
+ * - Module functions prevent unnecessary re-creation
  */
 
 import { useState, useTransition } from 'react';
@@ -34,9 +37,25 @@ import { toggleBenefit } from '@/actions/benefits';
 // Props
 // ---------------------------------------------------------------------------
 
+/**
+ * CardTrackerPanelProps - Props for the CardTrackerPanel component.
+ *
+ * Type-safe props using Prisma types. Expects UserCard with relationships:
+ * - masterCard: Must be included (with issuer, cardName, defaultAnnualFee)
+ * - userBenefits: Must be eagerly loaded for benefits table
+ *
+ * All other UserCard fields (playerId, masterCardId, createdAt, updatedAt)
+ * are required but not used by this component.
+ */
 export interface CardTrackerPanelProps {
   userCard: UserCard & {
-    masterCard: { issuer: string; cardName: string; defaultAnnualFee: number };
+    masterCard: {
+      id: string;
+      issuer: string;
+      cardName: string;
+      defaultAnnualFee: number;
+      cardImageUrl: string;
+    };
     userBenefits: UserBenefit[];
   };
   playerName: string;

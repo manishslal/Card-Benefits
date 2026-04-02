@@ -1,63 +1,45 @@
 'use client';
 
 import { useMemo } from 'react';
+import type { Player, UserCard, UserBenefit } from '@prisma/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import CardTrackerPanel from './Card';
+import CardTrackerPanel from './CardTrackerPanel';
 import { Users } from 'lucide-react';
 
 /**
  * PlayerTabsContainer Component (Refactored with shadcn Tabs)
  *
  * Premium tab-based navigation using shadcn/ui Tabs component.
+ * Displays credit cards grouped by player with an "All Wallet" summary view.
  *
  * Features:
  * 1. shadcn/ui Tabs for premium tab navigation
- * 2. Player names as tab triggers
+ * 2. Player names as tab triggers with card count badges
  * 3. "All Wallet" tab to view all cards across players
- * 4. Card count badges in tab triggers
- * 5. Responsive CSS Grid layout for cards
- * 6. Lucide icons for visual consistency
+ * 4. Responsive CSS Grid layout for cards
+ * 5. Lucide icons for visual consistency
+ *
+ * Type Safety:
+ * - Uses exact Prisma types imported from @prisma/client
+ * - Expects UserCard with masterCard and userBenefits already loaded
+ * - No custom type definitions to avoid mismatches
  */
 
-interface UserBenefit {
-  id: string;
-  name: string;
-  stickerValue: number;
-  userDeclaredValue: number | null;
-  isUsed: boolean;
-  expirationDate: Date | null;
-  type: string;
-  resetCadence: string;
-  timesUsed: number;
-}
-
-interface MasterCard {
-  id: string;
-  issuer: string;
-  cardName: string;
-  defaultAnnualFee: number;
-  cardImageUrl: string;
-}
-
-interface UserCard {
-  id: string;
-  customName: string | null;
-  actualAnnualFee: number | null;
-  renewalDate: Date;
-  isOpen: boolean;
-  masterCard: MasterCard;
-  userBenefits: UserBenefit[];
-}
-
-interface Player {
-  id: string;
-  playerName: string;
-  isActive: boolean;
-  userCards: UserCard[];
-}
+type PlayerWithCards = Player & {
+  userCards: (UserCard & {
+    masterCard: {
+      id: string;
+      issuer: string;
+      cardName: string;
+      defaultAnnualFee: number;
+      cardImageUrl: string;
+    };
+    userBenefits: UserBenefit[];
+  })[];
+};
 
 interface PlayerTabsContainerProps {
-  players: Player[];
+  players: PlayerWithCards[];
 }
 
 export default function PlayerTabsContainer({ players }: PlayerTabsContainerProps) {
@@ -117,7 +99,7 @@ export default function PlayerTabsContainer({ players }: PlayerTabsContainerProp
                 .map((card) => (
                   <CardTrackerPanel
                     key={card.id}
-                    card={card}
+                    userCard={card}
                     playerName={player.playerName}
                   />
                 ))
@@ -142,7 +124,7 @@ export default function PlayerTabsContainer({ players }: PlayerTabsContainerProp
                 .map((card) => (
                   <CardTrackerPanel
                     key={card.id}
-                    card={card}
+                    userCard={card}
                     playerName={player.playerName}
                   />
                 ))

@@ -2,22 +2,28 @@
 
 import { prisma } from '@/lib/prisma';
 import { calcExpirationDate } from '@/lib/benefitDates';
+import { getAuthUserIdOrThrow, verifyPlayerOwnership, AUTH_ERROR_CODES } from '@/lib/auth-server';
 import { Prisma } from '@prisma/client';
 
 // Full return type: the new UserCard with all cloned UserBenefits
 type AddCardResult =
   | { success: true; userCard: Awaited<ReturnType<typeof createUserCardWithBenefits>> }
-  | { success: false; error: string };
+  | { success: false; error: string; code: string };
 
 /**
  * Clones a MasterCard template into a player's wallet.
  *
- * Steps:
- *  1. Fetch MasterCard + all active MasterBenefit records.
- *  2. Create a UserCard linked to the player, inheriting defaultAnnualFee.
- *  3. Clone each MasterBenefit into a UserBenefit with computed expirationDate.
+ * AUTHORIZATION: Verifies the authenticated user owns the player before allowing
+ * the card to be added. Returns a 403-equivalent error if ownership check fails.
  *
- * All three writes are wrapped in a single Prisma transaction so the wallet
+ * Steps:
+ *  1. Get authenticated user ID from context.
+ *  2. Verify user owns the player (ownership boundary check).
+ *  3. Fetch MasterCard + all active MasterBenefit records.
+ *  4. Create a UserCard linked to the player, inheriting defaultAnnualFee.
+ *  5. Clone each MasterBenefit into a UserBenefit with computed expirationDate.
+ *
+ * All writes are wrapped in a single Prisma transaction so the wallet
  * is never left in a partial state.
  */
 export async function addCardToWallet(
@@ -25,15 +31,33 @@ export async function addCardToWallet(
   masterCardId: string,
   renewalDate: Date
 ): Promise<AddCardResult> {
+  // ── Authentication check ────────────────────────────────────────────────────
+  let userId: string;
+  try {
+    userId = getAuthUserIdOrThrow();
+  } catch (err) {
+    return { success: false, error: 'Unauthorized', code: AUTH_ERROR_CODES.UNAUTHORIZED };
+  }
+
   // ── Input validation ────────────────────────────────────────────────────────
   if (!playerId || !masterCardId) {
-    return { success: false, error: 'playerId and masterCardId are required.' };
+    return { success: false, error: 'Unauthorized', code: AUTH_ERROR_CODES.INVALID_INPUT };
   }
   if (!(renewalDate instanceof Date) || isNaN(renewalDate.getTime())) {
-    return { success: false, error: 'renewalDate must be a valid Date.' };
+    return { success: false, error: 'Unauthorized', code: AUTH_ERROR_CODES.INVALID_INPUT };
   }
 
   try {
+    // ── Authorization: Verify user owns the player ───────────────────────────
+    const ownership = await verifyPlayerOwnership(playerId, userId);
+    if (!ownership.isOwner) {
+      return {
+        success: false,
+        error: 'Unauthorized',
+        code: AUTH_ERROR_CODES.UNAUTHORIZED,
+      };
+    }
+
     const userCard = await createUserCardWithBenefits(playerId, masterCardId, renewalDate);
     return { success: true, userCard };
   } catch (err) {
@@ -42,17 +66,29 @@ export async function addCardToWallet(
       err instanceof Prisma.PrismaClientKnownRequestError &&
       err.code === 'P2002'
     ) {
-      return { success: false, error: 'This card is already in the player\'s wallet.' };
+      return {
+        success: false,
+        error: 'Unauthorized',
+        code: AUTH_ERROR_CODES.UNAUTHORIZED
+      };
     }
     // MasterCard not found
     if (
       err instanceof Prisma.PrismaClientKnownRequestError &&
       err.code === 'P2025'
     ) {
-      return { success: false, error: 'MasterCard not found.' };
+      return {
+        success: false,
+        error: 'Unauthorized',
+        code: AUTH_ERROR_CODES.UNAUTHORIZED
+      };
     }
     console.error('[addCardToWallet]', err);
-    return { success: false, error: 'An unexpected error occurred.' };
+    return {
+      success: false,
+      error: 'Unauthorized',
+      code: AUTH_ERROR_CODES.UNAUTHORIZED
+    };
   }
 }
 

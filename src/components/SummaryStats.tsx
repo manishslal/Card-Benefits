@@ -1,61 +1,32 @@
 'use client';
 
 import { useMemo } from 'react';
+import type { Player } from '@/lib/calculations';
+import {
+  getHouseholdROI,
+  getHouseholdTotalCaptured,
+  getHouseholdActiveCount,
+} from '@/lib/calculations';
 
 /**
  * SummaryStats Component
- * 
+ *
  * Displays three key metrics in a responsive grid:
  * 1. Total Household ROI - Net value gained/lost across all cards
  * 2. Total Benefits Captured - Value of benefits marked as used
  * 3. All-Time Insights - Count of active benefits
- * 
+ *
  * Design:
  * - 1 column (mobile), 3 columns (tablet & desktop)
  * - Each card: 200px+ width, 140px height
  * - Responsive grid gap (16px mobile, 24px desktop)
  * - Hover effect: Lift (translateY -2px), shadow increase
- * 
+ *
  * Data:
  * - Accepts array of players with their cards and benefits
  * - Aggregates household-level metrics
  * - Color-codes ROI based on positive/negative value
  */
-
-interface UserBenefit {
-  id: string;
-  name: string;
-  stickerValue: number;
-  userDeclaredValue: number | null;
-  isUsed: boolean;
-  expirationDate: Date | null;
-  type: string; // Can be 'StatementCredit' | 'UsagePerk'
-  timesUsed: number;
-  resetCadence: string;
-}
-
-interface UserCard {
-  id: string;
-  customName: string | null;
-  actualAnnualFee: number | null;
-  renewalDate: Date;
-  isOpen: boolean;
-  masterCard: {
-    id: string;
-    issuer: string;
-    cardName: string;
-    defaultAnnualFee: number;
-    cardImageUrl: string;
-  };
-  userBenefits: UserBenefit[];
-}
-
-interface Player {
-  id: string;
-  playerName: string;
-  isActive: boolean;
-  userCards: UserCard[];
-}
 
 interface SummaryStatsProps {
   players: Player[];
@@ -70,78 +41,12 @@ function formatCurrency(cents: number): string {
   return isNegative ? `-$${Math.abs(Number(dollars))}` : `$${dollars}`;
 }
 
-/**
- * Get resolved benefit value (prefer user-declared over sticker value)
- */
-function getResolvedValue(benefit: UserBenefit): number {
-  return benefit.userDeclaredValue ?? benefit.stickerValue;
-}
-
-/**
- * Calculate total benefits captured (used benefits value)
- */
-function getTotalCaptured(players: Player[]): number {
-  let total = 0;
-  for (const player of players) {
-    for (const card of player.userCards) {
-      for (const benefit of card.userBenefits) {
-        if (benefit.isUsed) {
-          total += getResolvedValue(benefit);
-        }
-      }
-    }
-  }
-  return total;
-}
-
-/**
- * Count total active benefits
- */
-function getActiveCount(players: Player[]): number {
-  let count = 0;
-  const now = new Date();
-  for (const player of players) {
-    for (const card of player.userCards) {
-      count += card.userBenefits.filter(
-        (b) => !b.isUsed && b.expirationDate && b.expirationDate > now
-      ).length;
-    }
-  }
-  return count;
-}
-
-/**
- * Calculate household-level effective ROI
- * ROI = Total benefits captured - Total net annual fees
- */
-function calculateHouseholdROI(players: Player[]): number {
-  let totalCaptured = 0;
-  let totalFees = 0;
-
-  for (const player of players) {
-    for (const card of player.userCards) {
-      // Add captured benefit value
-      for (const benefit of card.userBenefits) {
-        if (benefit.isUsed) {
-          totalCaptured += getResolvedValue(benefit);
-        }
-      }
-
-      // Subtract net annual fee
-      const annualFee = card.actualAnnualFee ?? card.masterCard.defaultAnnualFee;
-      totalFees += annualFee;
-    }
-  }
-
-  return totalCaptured - totalFees;
-}
-
 export default function SummaryStats({ players }: SummaryStatsProps) {
   // Memoize calculations to avoid recalculating on every render
   const metrics = useMemo(() => {
-    const householdROI = calculateHouseholdROI(players);
-    const totalCaptured = getTotalCaptured(players);
-    const activeCount = getActiveCount(players);
+    const householdROI = getHouseholdROI(players);
+    const totalCaptured = getHouseholdTotalCaptured(players);
+    const activeCount = getHouseholdActiveCount(players);
 
     return {
       householdROI,

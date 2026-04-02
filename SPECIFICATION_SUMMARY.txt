@@ -1,0 +1,209 @@
+================================================================================
+TASK #6 COMPLETION: ROI Calculation Logic Centralization - Specification
+================================================================================
+
+DELIVERABLE:
+File: SPECIFICATION_ROI_CENTRALIZATION.md
+Location: /Users/manishslal/Desktop/Coding-Projects/Card-Benefits/
+Size: 1,635 lines (comprehensive technical specification)
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+
+The Card-Benefits app has ROI calculation logic in 3 places with 2 bugs:
+
+1. Card.tsx (lines 58-67) - BROKEN
+   - Missing fee-offset logic
+   - Missing UsagePerk timesUsed multiplication
+   - Example: $300 credit card shows $95 fee instead of $0 net fee
+
+2. calculations.ts (lines 146-154) - CORRECT
+   - Proper fee-offset handling (CardmemberYear credits)
+   - Correct UsagePerk multiplication (timesUsed * value)
+   - Best implementation
+
+3. SummaryStats.tsx (lines 117-137) - BROKEN
+   - Same issues as Card.tsx
+   - Missing benefit type awareness
+   - Missing timesUsed handling
+
+================================================================================
+KEY FINDINGS
+================================================================================
+
+BUG #1: Fee-Offsetting Credits Not Subtracted
+  Issue: Cards with $300 credits (Chase Reserve) show $95 fee, not $0
+  Root: Card.tsx & SummaryStats.tsx don't account for CardmemberYear credits
+  Fix: Use getNetAnnualFee() logic from calculations.ts
+
+BUG #2: UsagePerk Multiplier Ignored
+  Issue: Lounge access used 3 times counted as 1x value, not 3x
+  Root: Both components count isUsed=true as flat value
+  Fix: Use getTotalValueExtracted() which multiplies by timesUsed
+
+CANONICAL IMPLEMENTATION: calculations.ts
+  Reason: Handles both issues correctly + better architecture
+
+================================================================================
+SOLUTION ARCHITECTURE
+================================================================================
+
+Single Source of Truth: /src/lib/calculations.ts
+
+Core Functions (Existing - Keep):
+  - resolveUnitValue(benefit) [private]
+  - getTotalValueExtracted(benefits)
+  - getUncapturedValue(benefits)
+  - getNetAnnualFee(card, benefits)
+  - getEffectiveROI(card, benefits)
+
+Household Functions (New - Add):
+  + getHouseholdROI(players)
+  + getHouseholdTotalCaptured(players)
+  + getHouseholdActiveCount(players)
+
+Components to Refactor:
+  1. Card.tsx - Remove local getEffectiveROI() and getUncapturedValue()
+  2. SummaryStats.tsx - Remove calculateHouseholdROI(), getTotalCaptured(), getActiveCount()
+
+================================================================================
+EDGE CASES DOCUMENTED (12 Total)
+================================================================================
+
+1.  Zero sticker value + user-declared value
+2.  Null user-declared value (fallback to sticker)
+3.  Missing annual fee (treat as 0)
+4.  Negative ROI (-$70 scenario)
+5.  Division by zero (NOT APPLICABLE - no division in code)
+6.  Overflow/large numbers (safe within JavaScript bounds)
+7.  TimesUsed = 0 for marked-used benefit (data inconsistency flag)
+8.  Negative sticker value (allowed but suspicious)
+9.  Multiple CardmemberYear credits (sums correctly)
+10. Benefit expiration exactly now (still valid)
+11. Null expiration date (never expires)
+12. Fee offset exceeding annual fee (negative fee allowed)
+
+All edge cases have defined handling and test cases.
+
+================================================================================
+TESTING STRATEGY
+================================================================================
+
+Unit Tests (calculations.test.ts):
+  - 6 test suites
+  - 50+ individual test cases
+  - 95%+ code coverage target
+  - All edge cases covered
+
+Integration Tests:
+  - Card component ROI consistency
+  - SummaryStats household ROI consistency
+  - Before/after data validation
+
+Acceptance Criteria:
+  [ ] All ROI calls use centralized functions
+  [ ] Results identical across all components
+  [ ] Unit tests pass with 95%+ coverage
+  [ ] Edge cases validated
+  [ ] No behavior changes for normal cases
+  [ ] Type-safe with no compilation errors
+
+================================================================================
+IMPLEMENTATION ROADMAP
+================================================================================
+
+Phase 1: Library Enhancement (3-4 hours)
+  - Add household functions to calculations.ts
+  - Add JSDoc and examples
+  - Create unit test suite
+  - Validate 95%+ coverage
+
+Phase 2: Card.tsx Refactoring (1-2 hours)
+  - Import functions from calculations
+  - Remove local implementations
+  - Update function calls
+  - Verify rendering
+
+Phase 3: SummaryStats.tsx Refactoring (1-2 hours)
+  - Import functions from calculations
+  - Remove local implementations
+  - Update useMemo hooks
+  - Verify rendering
+
+Phase 4: End-to-End Testing (2-3 hours)
+  - Visual regression testing
+  - Data consistency audit
+  - Edge case validation
+  - Performance profiling
+
+Phase 5: Documentation (1 hour)
+  - Update code comments
+  - Migration notes
+  - Cleanup
+
+Total Estimated Effort: 8-12 hours
+
+================================================================================
+CONSISTENCY EXAMPLE
+================================================================================
+
+BEFORE (BROKEN):
+  Card A: $200 extracted, $95 fee, $300 credit
+  Card.tsx result:      $200 - $95 = $105 ❌
+  calculations.ts:      $200 - (-$205) = $405 ✓
+  SummaryStats.tsx:     $200 - $95 = $105 ❌
+
+AFTER (FIXED):
+  Card A: $200 extracted, $95 fee, $300 credit
+  Card.tsx:             getEffectiveROI() = $405 ✓
+  calculations.ts:      getEffectiveROI() = $405 ✓
+  SummaryStats.tsx:     getHouseholdROI() = $405 ✓
+
+================================================================================
+FILES AFFECTED
+================================================================================
+
+Create:
+  1. SPECIFICATION_ROI_CENTRALIZATION.md (this is the main deliverable)
+  2. /src/lib/calculations.test.ts (new test suite)
+
+Modify:
+  1. /src/lib/calculations.ts (add household functions)
+  2. /src/components/Card.tsx (remove local logic)
+  3. /src/components/SummaryStats.tsx (remove local logic)
+
+Backward Compatibility: 100% (all changes additive or fixing bugs)
+
+================================================================================
+QUALITY ASSURANCE
+================================================================================
+
+Specification Review Checklist:
+  [✓] All requirements addressed
+  [✓] Current implementations analyzed
+  [✓] Bugs identified and classified
+  [✓] Canonical version selected
+  [✓] Solution architecture clear
+  [✓] Data schema/types defined
+  [✓] All APIs specified with types
+  [✓] Edge cases documented (12 total)
+  [✓] Testing strategy provided (50+ tests)
+  [✓] Implementation roadmap defined
+  [✓] Acceptance criteria clear
+  [✓] Files to modify identified
+  [✓] Risk mitigation included
+
+Ready for Engineering Review: YES
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. QA Review: Review SPECIFICATION_ROI_CENTRALIZATION.md
+2. Team Approval: Confirm centralization approach
+3. Phase 2 Start: Begin library enhancement (calculate.ts)
+4. Phase 3 Start: Refactor components (Card.tsx, SummaryStats.tsx)
+5. Phase 4 Start: Comprehensive testing and validation
+
+================================================================================

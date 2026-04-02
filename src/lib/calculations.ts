@@ -5,7 +5,52 @@
  * All monetary values are in cents (integers). No Prisma calls or side effects.
  */
 
-import type { UserCard, UserBenefit } from '@prisma/client';
+import type { UserBenefit as PrismaUserBenefit, Player as PrismaPlayer } from '@prisma/client';
+
+// Re-export Prisma types for use throughout the application
+export type { PrismaUserBenefit as UserBenefit };
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+/**
+ * MasterCard represents the card product definition (e.g., Chase Sapphire Reserve).
+ */
+export type MasterCard = {
+  id: string;
+  issuer: string;
+  cardName: string;
+  defaultAnnualFee: number;
+  cardImageUrl: string;
+};
+
+/**
+ * UserCard represents a card instance owned by a user.
+ * Includes both Prisma base fields and necessary relations (masterCard, userBenefits).
+ */
+export type UserCard = {
+  id: string;
+  playerId: string;
+  masterCardId: string;
+  customName: string | null;
+  actualAnnualFee: number | null;
+  renewalDate: Date;
+  isOpen: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  masterCard: MasterCard;
+  userBenefits: PrismaUserBenefit[];
+};
+
+/**
+ * Extended Player type that includes the userCards relation.
+ * This is the type that should be used for functions accepting players,
+ * ensuring all userCards data (including masterCard and userBenefits) is available.
+ */
+export type Player = PrismaPlayer & {
+  userCards: UserCard[];
+};
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -14,16 +59,12 @@ import type { UserCard, UserBenefit } from '@prisma/client';
 /** Milliseconds in a single calendar day. Exported for use in tests. */
 export const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 /**
  * Describes an unused benefit that is expiring within 30 days.
  * Used to surface actionable alerts to the user.
  */
 export type ExpirationWarning = {
-  benefit: UserBenefit;
+  benefit: PrismaUserBenefit;
   /** Number of full days remaining until expiration (Math.floor). */
   daysUntilExpiration: number;
   /** 'critical' if < 14 days remain; 'warning' if 14–29 days remain. */
@@ -39,7 +80,7 @@ export type ExpirationWarning = {
  * Prefers the user's declared override over the sticker value.
  * Returns 0 when neither is set (covers UsagePerk with no declared value).
  */
-function resolveUnitValue(benefit: UserBenefit): number {
+export function resolveUnitValue(benefit: UserBenefit): number {
   return benefit.userDeclaredValue ?? benefit.stickerValue;
 }
 
@@ -54,7 +95,7 @@ function resolveUnitValue(benefit: UserBenefit): number {
  * @param userBenefits - All benefits associated with the user's card.
  * @returns Total extracted value in cents.
  */
-export function getTotalValueExtracted(userBenefits: UserBenefit[]): number {
+export function getTotalValueExtracted(userBenefits: PrismaUserBenefit[]): number {
   return userBenefits.reduce((total, benefit) => {
     // Only count benefits the user has actually used.
     if (!benefit.isUsed) return total;
@@ -81,7 +122,7 @@ export function getTotalValueExtracted(userBenefits: UserBenefit[]): number {
  * @param userBenefits - All benefits associated with the user's card.
  * @returns Total uncaptured value in cents.
  */
-export function getUncapturedValue(userBenefits: UserBenefit[]): number {
+export function getUncapturedValue(userBenefits: PrismaUserBenefit[]): number {
   const now = new Date();
 
   return userBenefits.reduce((total, benefit) => {
@@ -110,7 +151,7 @@ export function getUncapturedValue(userBenefits: UserBenefit[]): number {
  */
 export function getNetAnnualFee(
   userCard: UserCard,
-  userBenefits: UserBenefit[],
+  userBenefits: PrismaUserBenefit[],
 ): number {
   // Treat a null actualAnnualFee as $0 (e.g. no-fee cards).
   const baseFee = userCard.actualAnnualFee ?? 0;
@@ -145,7 +186,7 @@ export function getNetAnnualFee(
  */
 export function getEffectiveROI(
   userCard: UserCard,
-  userBenefits: UserBenefit[],
+  userBenefits: PrismaUserBenefit[],
 ): number {
   return (
     getTotalValueExtracted(userBenefits) -
@@ -164,7 +205,7 @@ export function getEffectiveROI(
  * @returns Array of ExpirationWarning objects; empty if none are expiring soon.
  */
 export function getExpirationWarnings(
-  userBenefits: UserBenefit[],
+  userBenefits: PrismaUserBenefit[],
   now: Date = new Date(),
 ): ExpirationWarning[] {
   const WARN_THRESHOLD_DAYS = 30;
@@ -204,4 +245,159 @@ export function getExpirationWarnings(
   });
 
   return warnings;
+}
+
+// ---------------------------------------------------------------------------
+// Household-level aggregation functions
+// ---------------------------------------------------------------------------
+
+/**
+ * Calculates the total household ROI by summing effective ROI across all players.
+ * ROI for each player = (total value extracted from their cards) - (total net annual fees)
+ *
+ * @param players - Array of all players in the household.
+ * @returns Total household ROI in cents.
+ *
+ * @example
+ * getHouseholdROI([
+ *   { userCards: [{ actualAnnualFee: 50000, userBenefits: [...] }], ...},
+ *   { userCards: [{ actualAnnualFee: 0, userBenefits: [...] }], ...}
+ * ]) => total ROI across both players
+ */
+export function getHouseholdROI(players: Player[]): number {
+  // Handle edge case: empty or null player array
+  if (!players || players.length === 0) {
+    return 0;
+  }
+
+  return players.reduce((total, player) => {
+    // Handle null player references safely
+    if (!player || !player.userCards) {
+      return total;
+    }
+
+    // Sum ROI across all cards for this player
+    const playerROI = player.userCards.reduce((playerTotal, card) => {
+      if (!card || !card.userBenefits) {
+        return playerTotal;
+      }
+
+      // Calculate ROI for this card: extracted value - net annual fee
+      const extractedValue = getTotalValueExtracted(card.userBenefits);
+      const netFee = getNetAnnualFee(card, card.userBenefits);
+      const cardROI = extractedValue - netFee;
+
+      return playerTotal + cardROI;
+    }, 0);
+
+    return total + playerROI;
+  }, 0);
+}
+
+/**
+ * Calculates total value captured (used benefits) across all players' cards.
+ * Sums the resolved value of all benefits marked as isUsed.
+ *
+ * Uses the centralized getTotalValueExtracted function to ensure consistent logic
+ * across all benefit value calculations.
+ *
+ * @param players - Array of all players in the household.
+ * @returns Total captured value in cents (only benefits marked as used).
+ *
+ * @example
+ * getHouseholdTotalCaptured([
+ *   { userCards: [{ userBenefits: [{ isUsed: true, stickerValue: 5000 }] }] }
+ * ]) => 5000 (in cents)
+ */
+export function getHouseholdTotalCaptured(players: Player[]): number {
+  // Handle edge case: empty or null player array
+  if (!players || players.length === 0) {
+    return 0;
+  }
+
+  return players.reduce((total, player) => {
+    // Handle null player references safely
+    if (!player || !player.userCards) {
+      return total;
+    }
+
+    // Sum captured value across all cards for this player
+    const playerCaptured = player.userCards.reduce((playerTotal, card) => {
+      if (!card || !card.userBenefits) {
+        return playerTotal;
+      }
+
+      // Use the centralized function for consistent benefit value extraction
+      return playerTotal + getTotalValueExtracted(card.userBenefits);
+    }, 0);
+
+    return total + playerCaptured;
+  }, 0);
+}
+
+/**
+ * Counts unique active benefits across all players' cards.
+ * A benefit is considered "active" if:
+ * - It has NOT been used (isUsed === false), AND
+ * - It is either perpetual (expirationDate === null) OR not yet expired
+ *
+ * Returns a count of unique benefit IDs to avoid double-counting if multiple
+ * players hold the same benefit definition.
+ *
+ * @param players - Array of all players in the household.
+ * @returns Count of unique active (unclaimed) benefits across all players.
+ *
+ * @example
+ * getHouseholdActiveCount([
+ *   { userCards: [{ userBenefits: [{ id: 'b1', isUsed: false, expirationDate: null }] }] },
+ *   { userCards: [{ userBenefits: [{ id: 'b2', isUsed: false, expirationDate: tomorrow }] }] }
+ * ]) => 2 unique active benefits
+ */
+export function getHouseholdActiveCount(players: Player[]): number {
+  // Use a Set to track unique benefit IDs (in case multiple players have same benefits)
+  const activeBenefits = new Set<string>();
+  const now = new Date();
+
+  // Handle edge case: empty or null player array
+  if (!players || players.length === 0) {
+    return 0;
+  }
+
+  players.forEach((player) => {
+    // Handle null player references safely
+    if (!player || !player.userCards) {
+      return;
+    }
+
+    player.userCards.forEach((card) => {
+      // Handle null card references safely
+      if (!card || !card.userBenefits) {
+        return;
+      }
+
+      card.userBenefits.forEach((benefit) => {
+        // Handle null benefit references safely
+        if (!benefit) {
+          return;
+        }
+
+        // Skip already-used benefits; we only count unclaimed benefits
+        if (benefit.isUsed) {
+          return;
+        }
+
+        // Include benefit if perpetual (null expirationDate) OR not yet expired
+        const isPerpetual = benefit.expirationDate === null;
+        const isNotExpired =
+          benefit.expirationDate !== null &&
+          benefit.expirationDate > now;
+
+        if (isPerpetual || isNotExpired) {
+          activeBenefits.add(benefit.id);
+        }
+      });
+    });
+  });
+
+  return activeBenefits.size;
 }

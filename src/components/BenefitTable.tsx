@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { toggleBenefit } from '@/actions/benefits';
+import { isExpired, getDaysUntilExpiration, formatDateForUser } from '@/lib/benefitDates';
 
 /**
  * BenefitTable Component
@@ -62,28 +63,28 @@ function formatCurrency(cents: number): string {
 }
 
 /**
- * Format date as "Jan 15, 2024"
+ * Format date as "Jan 15, 2024" in the user's local timezone.
+ * Uses the UTC-aware utility from benefitDates.ts which correctly handles DST transitions.
  */
 function formatDate(date: Date | null): string {
-  if (!date) return 'N/A';
-  return new Date(date).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  return formatDateForUser(date);
 }
 
 /**
- * Get days until expiration
+ * Get days until expiration using UTC-aware calculation.
+ * Uses the utility from benefitDates.ts which correctly handles DST transitions.
+ * Returns a large number (999) for perpetual benefits to avoid special casing.
  */
-function getDaysUntilExpiration(date: Date | null): number {
-  if (!date) return 999; // No expiration date = far in future
-  const now = new Date();
-  return Math.floor((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+function getLocalDaysUntilExpiration(date: Date | null): number {
+  if (!date) return 999; // No expiration date = perpetual benefit
+  const daysRemaining = getDaysUntilExpiration(date);
+  // Return 999 if infinite (perpetual), otherwise return the number of days
+  return daysRemaining === Infinity ? 999 : daysRemaining;
 }
 
 /**
  * Get status badge color and text
+ * Uses UTC-aware expiration checking to ensure DST transitions don't affect status
  */
 function getStatusBadge(benefit: UserBenefit): {
   text: string;
@@ -106,8 +107,8 @@ function getStatusBadge(benefit: UserBenefit): {
     };
   }
 
-  const daysUntilExpiration = getDaysUntilExpiration(benefit.expirationDate);
-  if (daysUntilExpiration < 0) {
+  // Use UTC-aware expiration check
+  if (isExpired(benefit.expirationDate)) {
     return {
       text: 'Expired',
       color: 'var(--color-danger-600)',
@@ -124,6 +125,7 @@ function getStatusBadge(benefit: UserBenefit): {
 
 /**
  * Get row background color based on expiration + usage
+ * Uses UTC-aware day counting to ensure DST transitions don't affect color coding
  */
 function getRowBackgroundColor(benefit: UserBenefit): string {
   if (benefit.isUsed) {
@@ -134,15 +136,16 @@ function getRowBackgroundColor(benefit: UserBenefit): string {
     return 'var(--color-bg-primary)';
   }
 
-  const daysUntilExpiration = getDaysUntilExpiration(benefit.expirationDate);
+  // Use UTC-aware days remaining calculation
+  const daysUntilExpiration = getLocalDaysUntilExpiration(benefit.expirationDate);
 
-  // Critical expiration (< 3 days)
-  if (daysUntilExpiration < 3 && daysUntilExpiration >= 0) {
+  // Critical expiration (< 3 days remaining, and not expired yet)
+  if (daysUntilExpiration < 3 && !isExpired(benefit.expirationDate)) {
     return 'var(--color-danger-50)';
   }
 
-  // Warning expiration (3-14 days)
-  if (daysUntilExpiration < 14) {
+  // Warning expiration (3-14 days remaining)
+  if (daysUntilExpiration < 14 && !isExpired(benefit.expirationDate)) {
     return 'var(--color-alert-50)';
   }
 
@@ -296,7 +299,7 @@ export default function BenefitTable({ benefits }: BenefitTableProps) {
         {/* Table Body */}
         <tbody>
           {localBenefits.map((benefit) => {
-            const daysUntilExpiration = getDaysUntilExpiration(
+            const daysUntilExpiration = getLocalDaysUntilExpiration(
               benefit.expirationDate
             );
             const statusBadge = getStatusBadge(benefit);

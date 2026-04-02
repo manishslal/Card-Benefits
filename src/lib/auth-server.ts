@@ -14,6 +14,25 @@ import { getAuthUserId } from './auth-context';
 import { prisma } from './prisma';
 
 // ============================================================
+// Error Code Constants
+// ============================================================
+
+/**
+ * Standardized error codes for server actions.
+ * These codes are returned alongside error messages to allow clients
+ * to handle specific error cases programmatically without relying
+ * on error message text (which may vary by language/locale).
+ */
+export const AUTH_ERROR_CODES = {
+  UNAUTHORIZED: 'UNAUTHORIZED',           // Auth or authz failure
+  NOT_FOUND: 'NOT_FOUND',                 // Resource not found
+  ALREADY_CLAIMED: 'ALREADY_CLAIMED',     // Benefit already claimed (race condition)
+  ADD_CARD_FAILED: 'ADD_CARD_FAILED',     // Failed to add card to wallet
+  UPDATE_FAILED: 'UPDATE_FAILED',         // Generic update failure
+  INVALID_INPUT: 'INVALID_INPUT',         // Input validation failure
+} as const;
+
+// ============================================================
 // Type Definitions
 // ============================================================
 

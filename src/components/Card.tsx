@@ -3,10 +3,13 @@
 import { useState } from 'react';
 import BenefitTable from './BenefitTable';
 import { CreditCard, Calendar, TrendingUp, TrendingDown, ChevronDown } from 'lucide-react';
+import { getEffectiveROI, getUncapturedValue } from '@/lib/calculations';
+import { formatDateForUser } from '@/lib/benefitDates';
+import type { UserCard } from '@/lib/calculations';
 
 /**
  * Card Component - Redesigned Card Tracker (Enhanced with Lucide Icons)
- * 
+ *
  * Displays single credit card with:
  * - Card header with CreditCard icon (name, issuer, ROI badge)
  * - Renewal date with Calendar icon and annual fee
@@ -16,70 +19,11 @@ import { CreditCard, Calendar, TrendingUp, TrendingDown, ChevronDown } from 'luc
  * - Lucide icons for consistent visual language
  */
 
-interface UserBenefit {
-  id: string;
-  name: string;
-  stickerValue: number;
-  userDeclaredValue: number | null;
-  isUsed: boolean;
-  expirationDate: Date | null;
-  type: string;
-  resetCadence: string;
-  timesUsed: number;
-}
-
-interface MasterCard {
-  id: string;
-  issuer: string;
-  cardName: string;
-  defaultAnnualFee: number;
-  cardImageUrl: string;
-}
-
-interface UserCard {
-  id: string;
-  customName: string | null;
-  actualAnnualFee: number | null;
-  renewalDate: Date;
-  isOpen: boolean;
-  masterCard: MasterCard;
-  userBenefits: UserBenefit[];
-}
-
 interface CardProps {
   card: UserCard;
   playerName?: string;
 }
 
-function getResolvedValue(benefit: UserBenefit): number {
-  return benefit.userDeclaredValue ?? benefit.stickerValue;
-}
-
-function getEffectiveROI(card: UserCard): number {
-  let extracted = 0;
-  for (const benefit of card.userBenefits) {
-    if (benefit.isUsed) {
-      extracted += getResolvedValue(benefit);
-    }
-  }
-  const annualFee = card.actualAnnualFee ?? card.masterCard.defaultAnnualFee;
-  return extracted - annualFee;
-}
-
-function getUncapturedValue(card: UserCard): number {
-  const now = new Date();
-  let total = 0;
-  for (const benefit of card.userBenefits) {
-    if (
-      !benefit.isUsed &&
-      benefit.expirationDate &&
-      benefit.expirationDate > now
-    ) {
-      total += getResolvedValue(benefit);
-    }
-  }
-  return total;
-}
 
 function formatCurrency(cents: number): string {
   const dollars = (cents / 100).toFixed(2);
@@ -87,17 +31,17 @@ function formatCurrency(cents: number): string {
   return isNegative ? `-$${Math.abs(Number(dollars))}` : `$${dollars}`;
 }
 
+/**
+ * Format date for display in the user's local timezone
+ * Uses UTC-aware formatting from benefitDates.ts for consistency
+ */
 function formatDate(date: Date): string {
-  return new Date(date).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  return formatDateForUser(date);
 }
 
 export default function Card({ card, playerName }: CardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const roi = getEffectiveROI(card);
+  const roi = getEffectiveROI(card, card.userBenefits);
   const isPositiveROI = roi >= 0;
   const annualFee = card.actualAnnualFee ?? card.masterCard.defaultAnnualFee;
   const usedBenefitsCount = card.userBenefits.filter((b) => b.isUsed).length;
@@ -278,7 +222,7 @@ export default function Card({ card, playerName }: CardProps) {
               color: 'var(--color-alert-600)',
             }}
           >
-            {formatCurrency(getUncapturedValue(card))}
+            {formatCurrency(getUncapturedValue(card.userBenefits))}
           </p>
         </div>
       </div>

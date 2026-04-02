@@ -1,52 +1,7 @@
 'use client';
 
 import Card from './Card';
-
-/**
- * CardGrid Component
- * 
- * Responsive grid layout for displaying cards
- * 
- * Responsive Layout:
- * - Mobile (<640px): 1 column
- * - Tablet (640-1024px): 2 columns
- * - Desktop (>1024px): 2-3 columns
- * 
- * Design:
- * - Grid gap: 16px (mobile), 24px (desktop)
- * - Container max-width: 1200px
- * - Centered on page with responsive padding
- */
-
-interface UserBenefit {
-  id: string;
-  name: string;
-  stickerValue: number;
-  userDeclaredValue: number | null;
-  isUsed: boolean;
-  expirationDate: Date | null;
-  type: string; // Can be 'StatementCredit' | 'UsagePerk'
-  resetCadence: string;
-  timesUsed: number;
-}
-
-interface MasterCard {
-  id: string;
-  issuer: string;
-  cardName: string;
-  defaultAnnualFee: number;
-  cardImageUrl: string;
-}
-
-interface UserCard {
-  id: string;
-  customName: string | null;
-  actualAnnualFee: number | null;
-  renewalDate: Date;
-  isOpen: boolean;
-  masterCard: MasterCard;
-  userBenefits: UserBenefit[];
-}
+import type { UserCard } from '@/lib/calculations';
 
 interface Player {
   id: string;

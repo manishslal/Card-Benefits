@@ -36,10 +36,13 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    /* Vitest types */
+    "types": ["vitest/globals"]
   },
   "include": [
     "src",
+    "tests",
     ".next/types/**/*.ts"
   ],
   "references": [

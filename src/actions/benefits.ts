@@ -9,9 +9,12 @@
  * - `toggleBenefit` intentionally does NOT decrement `timesUsed` when
  *   unclaiming — that field is a historical counter, not a live toggle.
  * - Validation lives here (not in the client) so it can't be bypassed.
+ * - AUTHORIZATION: Both actions verify user ownership before mutations.
  */
 
 import { prisma } from '@/lib/prisma';
+import { getAuthUserIdOrThrow, verifyBenefitOwnership, AUTH_ERROR_CODES } from '@/lib/auth-server';
+import { Prisma } from '@prisma/client';
 import type { UserBenefit } from '@prisma/client';
 
 // ---------------------------------------------------------------------------
@@ -20,7 +23,7 @@ import type { UserBenefit } from '@prisma/client';
 
 type BenefitActionResult =
   | { success: true; benefit: UserBenefit }
-  | { success: false; error: string };
+  | { success: false; error: string; code?: string };
 
 // ---------------------------------------------------------------------------
 // toggleBenefit
@@ -29,25 +32,57 @@ type BenefitActionResult =
 /**
  * Marks a benefit as used (claimed) or reverts it to unclaimed.
  *
+ * AUTHORIZATION: Verifies the authenticated user owns the benefit (via player ownership)
+ * before allowing the toggle. Returns a 403-equivalent error if ownership check fails.
+ *
+ * RACE CONDITION HANDLING: Uses conditional update (isUsed must match currentIsUsed)
+ * to prevent issues when multiple clients attempt to toggle simultaneously. If the
+ * benefit state changes between client load and submit, returns ALREADY_CLAIMED error.
+ *
  * Claiming:  sets isUsed=true, stamps claimedAt, increments timesUsed.
  * Unclaiming: sets isUsed=false, clears claimedAt. timesUsed is left intact
  *             because it records historical usage across reset cycles.
  *
  * @param benefitId    - The `UserBenefit.id` to update.
- * @param currentIsUsed - The current `isUsed` value on the client; used to
- *                        determine which branch of the update to apply.
+ * @param currentIsUsed - The current `isUsed` value on the client; used for
+ *                        conditional update (race condition detection) and
+ *                        to determine which branch of the update to apply.
  */
 export async function toggleBenefit(
   benefitId: string,
   currentIsUsed: boolean,
 ): Promise<BenefitActionResult> {
+  // ── Authentication check ────────────────────────────────────────────────────
+  let userId: string;
+  try {
+    userId = getAuthUserIdOrThrow();
+  } catch (err) {
+    return { success: false, error: 'Unauthorized', code: AUTH_ERROR_CODES.UNAUTHORIZED };
+  }
+
+  // ── Input validation ────────────────────────────────────────────────────────
   if (!benefitId) {
-    return { success: false, error: 'benefitId is required.' };
+    return { success: false, error: 'Unauthorized', code: AUTH_ERROR_CODES.INVALID_INPUT };
   }
 
   try {
+    // ── Authorization: Verify user owns the benefit ──────────────────────────
+    const ownership = await verifyBenefitOwnership(benefitId, userId);
+    if (!ownership.isOwner) {
+      return {
+        success: false,
+        error: 'Unauthorized',
+        code: AUTH_ERROR_CODES.UNAUTHORIZED,
+      };
+    }
+
+    // ── Mutation with race condition prevention ──────────────────────────────
+    // Use conditional update: only update if current state matches client's expectation
     const benefit = await prisma.userBenefit.update({
-      where: { id: benefitId },
+      where: {
+        id: benefitId,
+        isUsed: currentIsUsed,  // Race condition guard: only update if state matches
+      },
       data: currentIsUsed === false
         // Marking as used: record the claim timestamp and bump the counter.
         ? { isUsed: true, claimedAt: new Date(), timesUsed: { increment: 1 } }
@@ -58,8 +93,25 @@ export async function toggleBenefit(
 
     return { success: true, benefit };
   } catch (err) {
+    // Prisma P2025 indicates conditional update failed (state mismatch)
+    // This means another client toggled the benefit concurrently
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === 'P2025'
+    ) {
+      return {
+        success: false,
+        error: 'Unauthorized',
+        code: AUTH_ERROR_CODES.ALREADY_CLAIMED,
+      };
+    }
+
     console.error('[toggleBenefit] Prisma error:', err);
-    return { success: false, error: 'Failed to update benefit status. Please try again.' };
+    return {
+      success: false,
+      error: 'Unauthorized',
+      code: AUTH_ERROR_CODES.UNAUTHORIZED
+    };
   }
 }
 
@@ -69,6 +121,9 @@ export async function toggleBenefit(
 
 /**
  * Persists the user's personal valuation override for a benefit.
+ *
+ * AUTHORIZATION: Verifies the authenticated user owns the benefit (via player ownership)
+ * before allowing the update. Returns a 403-equivalent error if ownership check fails.
  *
  * Allows users to express that a benefit is worth more or less than its
  * advertised sticker value (e.g. "$10 Uber Cash is only worth $8 to me").
@@ -82,8 +137,17 @@ export async function updateUserDeclaredValue(
   benefitId: string,
   valueInCents: number,
 ): Promise<BenefitActionResult> {
+  // ── Authentication check ────────────────────────────────────────────────────
+  let userId: string;
+  try {
+    userId = getAuthUserIdOrThrow();
+  } catch (err) {
+    return { success: false, error: 'Unauthorized', code: AUTH_ERROR_CODES.UNAUTHORIZED };
+  }
+
+  // ── Input validation ────────────────────────────────────────────────────────
   if (!benefitId) {
-    return { success: false, error: 'benefitId is required.' };
+    return { success: false, error: 'Unauthorized', code: AUTH_ERROR_CODES.INVALID_INPUT };
   }
 
   // Guard against floating-point or out-of-range values. All monetary values
@@ -91,11 +155,22 @@ export async function updateUserDeclaredValue(
   if (!Number.isSafeInteger(valueInCents) || valueInCents < 0) {
     return {
       success: false,
-      error: 'valueInCents must be a non-negative integer (e.g. 800 for $8.00).',
+      error: 'Unauthorized',
+      code: AUTH_ERROR_CODES.INVALID_INPUT
     };
   }
 
   try {
+    // ── Authorization: Verify user owns the benefit ──────────────────────────
+    const ownership = await verifyBenefitOwnership(benefitId, userId);
+    if (!ownership.isOwner) {
+      return {
+        success: false,
+        error: 'Unauthorized',
+        code: AUTH_ERROR_CODES.UNAUTHORIZED,
+      };
+    }
+
     const benefit = await prisma.userBenefit.update({
       where: { id: benefitId },
       data: { userDeclaredValue: valueInCents },
@@ -104,6 +179,10 @@ export async function updateUserDeclaredValue(
     return { success: true, benefit };
   } catch (err) {
     console.error('[updateUserDeclaredValue] Prisma error:', err);
-    return { success: false, error: 'Failed to update benefit value. Please try again.' };
+    return {
+      success: false,
+      error: 'Unauthorized',
+      code: AUTH_ERROR_CODES.UNAUTHORIZED
+    };
   }
 }

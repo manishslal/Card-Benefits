@@ -73,6 +73,8 @@ model User {
   // Relationships
   players           Player[]
   sessions          Session[]
+  importJobs        ImportJob[]
+  importProfiles    UserImportProfile[]
 
   // Metadata
   emailVerified     Boolean @default(false)
@@ -116,6 +118,7 @@ model Player {
   user              User @relation(fields: [userId], references: [id], onDelete: Cascade)
   userCards         UserCard[]
   userBenefits      UserBenefit[]
+  importJobs        ImportJob[]
 
   // Metadata
   createdAt         DateTime @default(now())
@@ -137,6 +140,11 @@ model UserCard {
   renewalDate       DateTime // Card anniversary for benefit resets
   isOpen            Boolean @default(true) // Card is active in wallet
 
+  // Import Audit Fields
+  importedFrom      String?   // ImportJob ID for audit trail
+  importedAt        DateTime? // When bulk imported (vs manual creation)
+  version           Int       @default(1) // For optimistic locking (conflict detection)
+
   // Relationships
   player            Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
   masterCard        MasterCard @relation(fields: [masterCardId], references: [id], onDelete: Restrict)
@@ -149,6 +157,7 @@ model UserCard {
   // Indexes & Constraints
   @@index([playerId])
   @@index([masterCardId])
+  @@index([playerId, masterCardId])
   @@unique([playerId, masterCardId])
 }
 
@@ -169,6 +178,11 @@ model UserBenefit {
   timesUsed         Int @default(0) // Count of times benefit was used/reset
   expirationDate    DateTime? // When benefit expires
 
+  // Import Audit Fields
+  importedFrom      String?   // ImportJob ID for audit trail
+  importedAt        DateTime? // When bulk imported (vs manual creation)
+  version           Int       @default(1) // For optimistic locking
+
   // Relationships
   userCard          UserCard @relation(fields: [userCardId], references: [id], onDelete: Cascade)
   player            Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
@@ -181,8 +195,137 @@ model UserBenefit {
   // Indexes & Constraints
   @@index([userCardId])
   @@index([playerId])
+  @@index([userCardId, name])
   @@index([type])
   @@index([isUsed])
   @@index([expirationDate])
   @@unique([userCardId, name])
+}
+
+// ============================================================
+// Layer 3: Import/Export Audit Trail
+// Tracks bulk import/export operations with full history
+// ============================================================
+
+model ImportJob {
+  id                String    @id @default(cuid())
+  
+  // Relationships & Context
+  playerId          String
+  userId            String
+  player            Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // File Metadata
+  fileName          String                              // Original uploaded filename
+  fileFormat        String                              // 'CSV' | 'XLSX'
+  fileSize          Int                                 // Bytes uploaded
+  fileHash          String?                             // SHA-256 for integrity checking (optional)
+  
+  // Import Status & Counts
+  status            String    @default("Uploaded")      // 'Uploaded'|'Parsing'|'Validating'|'PreviewReady'|'Processing'|'Committed'|'Failed'|'FAILED_ROLLBACK_REQUIRED'|'Cancelled'
+  totalRecords      Int                                 // Total rows in file
+  processedRecords  Int       @default(0)              // Successfully created/updated
+  skippedRecords    Int       @default(0)              // User chose to skip
+  failedRecords     Int       @default(0)              // Validation failures (blocking)
+  warningRecords    Int       @default(0)              // Validation warnings (non-blocking)
+  
+  // Import Type Breakdown
+  importType        String                              // 'Cards'|'Benefits'|'Mixed'
+  cardsCreated      Int       @default(0)
+  cardsUpdated      Int       @default(0)
+  benefitsCreated   Int       @default(0)
+  benefitsUpdated   Int       @default(0)
+  
+  // Data Storage
+  errorLog          String?                             // JSON array of error objects
+  previewData       String?                             // JSON preview before commit (can be large)
+  conflictLog       String?                             // JSON log of duplicate resolution decisions
+  
+  // Column Mapping
+  columnMappings    String?                             // JSON map of file columns to system fields
+  detectionConfidence Float? @default(1.0)            // Avg confidence of auto-mapped columns
+  
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  uploadedAt        DateTime?                           // When file fully uploaded
+  parsedAt          DateTime?                           // When parsing completed
+  validatedAt       DateTime?                           // When validation completed
+  committedAt       DateTime?                           // When transaction committed
+  completedAt       DateTime?                           // Final completion timestamp
+  
+  // Relationships
+  records           ImportRecord[]
+  
+  // Indexes for common queries
+  @@index([playerId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([playerId, createdAt])
+}
+
+model ImportRecord {
+  id                String    @id @default(cuid())
+  
+  // Relationships
+  importJobId       String
+  importJob         ImportJob @relation(fields: [importJobId], references: [id], onDelete: Cascade)
+  
+  // Record Context
+  recordType        String                              // 'Card' | 'Benefit'
+  rowNumber         Int                                 // Line in original file (1-indexed)
+  sequenceIndex     Int                                 // Order in final batch (for deduplication within batch)
+  
+  // Original Data
+  data              String                              // JSON: original row as parsed
+  normalizedData    String?                             // JSON: after parsing & type conversion
+  
+  // Validation Status
+  status            String    @default("Valid")        // 'Valid'|'Duplicate'|'Conflict'|'Warning'|'Error'|'Skipped'|'Applied'
+  validationErrors  String?                             // JSON array of error messages
+  validationWarnings String?                            // JSON array of warnings
+  
+  // Duplicate Detection
+  isDuplicate       Boolean   @default(false)
+  duplicateOf       String?                             // ID of existing record this duplicates
+  userResolution    String?                             // 'Skip'|'Update'|'Merge' (how user resolved it)
+  
+  // Applied Results
+  createdCardId     String?                             // If card was created
+  createdBenefitId  String?                             // If benefit was created
+  updatedCardId     String?                             // If card was updated
+  updatedBenefitId  String?                             // If benefit was updated
+  appliedData       String?                             // JSON: what was actually stored
+  
+  // Metadata
+  processedAt       DateTime?
+  appliedAt         DateTime?
+  
+  // Indexes
+  @@index([importJobId])
+  @@index([status])
+  @@index([rowNumber])
+  @@index([isDuplicate])
+}
+
+model UserImportProfile {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name              String                              // User-friendly name (e.g., "My standard export format")
+  description       String?
+  fileFormat        String                              // 'CSV' | 'XLSX'
+  
+  columnMappings    String                              // JSON: {"FileColumn": "SystemField"}
+  mappingConfidence Float    @default(1.0)
+  
+  usageCount        Int      @default(0)               // How many times used
+  lastUsedAt        DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([lastUsedAt])
 }

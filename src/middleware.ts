@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   verifySessionToken,
+  type SessionPayload,
+} from '@/lib/auth-utils';
+import {
   getSessionByToken,
   userExists,
 } from '@/lib/auth-server';
@@ -117,7 +120,7 @@ function extractSessionToken(request: NextRequest): string | null {
  *
  * @throws Error if token is invalid, expired, or malformed
  */
-function verifyToken(token: string) {
+function verifyToken(token: string): SessionPayload | null {
   try {
     return verifySessionToken(token);
   } catch (error) {

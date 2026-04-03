@@ -139,7 +139,7 @@ export async function uploadImportFile(
     const uint8Array = new Uint8Array(buffer);
 
     // Parse file
-    const parseResult = parseFile(file.name, uint8Array);
+    const parseResult = await parseFile(file.name, uint8Array);
     if (!parseResult.success) {
       return createErrorResponse('VALIDATION_FIELD', {
         field: 'file_format',

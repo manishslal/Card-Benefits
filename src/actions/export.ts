@@ -12,7 +12,7 @@
 import { generateExport, getExportHistory } from '@/lib/export/exporter';
 import { CARD_EXPORT_FIELDS, BENEFIT_EXPORT_FIELDS, ExportRequest } from '@/lib/export/schema';
 import { createErrorResponse, createSuccessResponse, AppError, ActionResponse } from '@/lib/errors';
-import { getSession } from '@/lib/auth-server';
+import { getAuthUserIdOrThrow, verifyPlayerOwnership } from '@/lib/auth-server';
 
 // ============================================================================
 // Type Definitions
@@ -51,11 +51,8 @@ export interface ExportGenerateResponse {
  */
 export async function getExportOptions(): Promise<ActionResponse<ExportOptionsResponse>> {
   try {
-    // Verify authentication
-    const session = await getSession();
-    if (!session?.user?.id) {
-      return createErrorResponse('AUTH_MISSING');
-    }
+    // Verify authentication (will throw if not authenticated)
+    getAuthUserIdOrThrow();
 
     return createSuccessResponse({
       cardFields: CARD_EXPORT_FIELDS,
@@ -100,16 +97,21 @@ export async function getExportOptions(): Promise<ActionResponse<ExportOptionsRe
 export async function generateExportFile(request: ExportRequest): Promise<ActionResponse<ExportGenerateResponse>> {
   try {
     // Verify authentication
-    const session = await getSession();
-    if (!session?.user?.id) {
-      return createErrorResponse('AUTH_MISSING');
-    }
+    const userId = getAuthUserIdOrThrow();
 
     // Validate request
     if (!request.playerId) {
       return createErrorResponse('VALIDATION_FIELD', {
         field: 'playerId',
         reason: 'Player ID is required',
+      });
+    }
+
+    // Verify player ownership
+    const ownership = await verifyPlayerOwnership(request.playerId, userId);
+    if (!ownership.isOwner) {
+      return createErrorResponse('AUTHZ_DENIED', {
+        reason: 'You do not have permission to export this player\'s data',
       });
     }
 
@@ -144,11 +146,6 @@ export async function generateExportFile(request: ExportRequest): Promise<Action
     } else {
       base64Content = Buffer.from(exportData.content).toString('base64');
     }
-
-    // Determine file extension
-    const ext = request.format === 'CSV' ? 'csv' : 'xlsx';
-    const timestamp = new Date().toISOString().split('T')[0];
-    const filename = `export-${request.recordType.toLowerCase()}-${timestamp}.${ext}`;
 
     // Return response with download data
     return createSuccessResponse({
@@ -187,16 +184,10 @@ export async function generateExportFile(request: ExportRequest): Promise<Action
 export async function getExportHistoryAction(): Promise<ActionResponse<any[]>> {
   try {
     // Verify authentication
-    const session = await getSession();
-    if (!session?.user?.id) {
-      return createErrorResponse('AUTH_MISSING');
-    }
-
-    // Get player ID from session
-    const playerId = session.user.id;
+    const userId = getAuthUserIdOrThrow();
 
     // Fetch export history
-    const history = await getExportHistory(playerId);
+    const history = await getExportHistory(userId);
 
     return createSuccessResponse(history);
   } catch (error) {

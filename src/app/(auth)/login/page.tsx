@@ -4,7 +4,7 @@ import Link from 'next/link';
 import React, { useState } from 'react';
 import Button from '@/components/ui/button';
 import Input from '@/components/ui/Input';
-import { DarkModeToggle } from '@/components/ui/DarkModeToggle';
+import { SafeDarkModeToggle } from '@/components/SafeDarkModeToggle';
 
 /**
  * Login Page - Redesigned
@@ -112,7 +112,7 @@ export default function LoginPage() {
               CardTrack
             </h1>
           </Link>
-          <DarkModeToggle />
+          <SafeDarkModeToggle />
         </div>
       </header>
 

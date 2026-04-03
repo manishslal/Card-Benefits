@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { DarkModeToggle } from '@/components/ui/DarkModeToggle';
+import { SafeDarkModeToggle } from '@/components/SafeDarkModeToggle';
 import Button from '@/components/ui/button';
 import Link from 'next/link';
 import CardSwitcher from '@/components/features/CardSwitcher';
@@ -19,6 +19,10 @@ import BenefitsGrid from '@/components/features/BenefitsGrid';
  * - Responsive layout
  * - Dark mode support
  */
+
+// Mark as dynamic page to avoid SSG issues with ThemeProvider
+export const dynamic = 'force-dynamic';
+
 export default function DashboardPage() {
   // Mock data for demo
   const mockCards = [
@@ -156,7 +160,7 @@ export default function DashboardPage() {
 
             {/* Right actions */}
             <div className="flex items-center gap-3">
-              <DarkModeToggle />
+              <SafeDarkModeToggle />
               <Link href="/settings">
                 <Button variant="outline" size="sm">
                   Settings

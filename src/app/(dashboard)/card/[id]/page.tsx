@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { DarkModeToggle } from '@/components/ui/DarkModeToggle';
+import { SafeDarkModeToggle } from '@/components/SafeDarkModeToggle';
 import Button from '@/components/ui/button';
 import Link from 'next/link';
 import BenefitsList from '@/components/features/BenefitsList';
@@ -18,6 +18,10 @@ import BenefitsGrid from '@/components/features/BenefitsGrid';
  * - Benefits tracking with filters
  * - Edit and delete actions
  */
+
+// Mark as dynamic page to avoid SSG issues with ThemeProvider
+export const dynamic = 'force-dynamic';
+
 export default function CardDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -141,7 +145,7 @@ export default function CardDetailPage() {
 
             {/* Right actions */}
             <div className="flex items-center gap-3">
-              <DarkModeToggle />
+              <SafeDarkModeToggle />
               <Button variant="outline" size="sm">
                 Edit Card
               </Button>

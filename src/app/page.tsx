@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Button from '@/components/ui/button';
-import { DarkModeToggle } from '@/components/ui/DarkModeToggle';
+import { SafeDarkModeToggle } from '@/components/SafeDarkModeToggle';
 import React from 'react';
 
 /**
@@ -16,6 +16,10 @@ import React from 'react';
  * - Dark mode support
  * - Professional fintech aesthetic
  */
+
+// Mark as dynamic page to avoid SSG issues with ThemeProvider
+export const dynamic = 'force-dynamic';
+
 export default function Homepage() {
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg)' }}>
@@ -59,7 +63,7 @@ export default function Homepage() {
 
           {/* Actions */}
           <div className="flex items-center gap-3">
-            <DarkModeToggle />
+            <SafeDarkModeToggle />
             <Link href="/login">
               <Button variant="outline" size="sm">
                 Sign In

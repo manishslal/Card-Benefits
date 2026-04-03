@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { DarkModeToggle } from '@/components/ui/DarkModeToggle';
+import { SafeDarkModeToggle } from '@/components/SafeDarkModeToggle';
 import Button from '@/components/ui/button';
 import Input from '@/components/ui/Input';
 import Link from 'next/link';
@@ -17,6 +17,10 @@ import Link from 'next/link';
  * - Data export/import
  * - Account deletion
  */
+
+// Mark as dynamic page to avoid SSG issues with ThemeProvider
+export const dynamic = 'force-dynamic';
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'account'>('profile');
   const [formData, setFormData] = useState({
@@ -124,7 +128,7 @@ export default function SettingsPage() {
 
           {/* Right actions */}
           <div className="flex items-center gap-3">
-            <DarkModeToggle />
+            <SafeDarkModeToggle />
             <Link href="/">
               <Button variant="outline" size="sm">
                 ← Back to Dashboard
@@ -299,7 +303,7 @@ export default function SettingsPage() {
                         Toggle dark mode theme
                       </p>
                     </div>
-                    <DarkModeToggle />
+                    <SafeDarkModeToggle />
                   </div>
                 </div>
               </section>

@@ -54,9 +54,9 @@ When you receive a prompt to build a new feature or fix a complex bug:
 
 ---
 
-## Example Output Format
+## Example Output Format (Standard Features)
 
-When asked to build a feature, respond exactly like this:
+When asked to build a standard feature, respond exactly like this:
 
 > "Here is the plan to build **[Feature]**. Run these commands sequentially:
 >
@@ -71,6 +71,53 @@ When asked to build a feature, respond exactly like this:
 >
 > **Phase 4 — Deployment**
 > `copilot --agent=devops-engineer --prompt="Read .github/specs/[feature-name]-qa-report.md and update any Dockerfiles, CI workflows, or deployment configs needed to ship [Feature]."`
+
+---
+
+## UI/UX Enhancement Pipeline (SPECIALIZED)
+
+**When the user requests UI/UX improvements, design refinements, accessibility fixes, or visual polish:**
+
+Use this specialized 4-stage pipeline optimized for frontend excellence instead of the standard feature pipeline:
+
+1. **SE: UX Designer** — Creates comprehensive enhancement specifications from review findings
+2. **Expert React Frontend Engineer** — Implements all UI/UX improvements and accessibility fixes
+3. **Accessibility Expert** — Validates WCAG 2.1/2.2 compliance and inclusive design
+4. **QA Code Reviewer** — Tests UI functionality, visual regressions, and spec alignment
+
+### Example UI/UX Enhancement Pipeline
+
+> "Here is the plan to execute **[Enhancement]**. Run these commands sequentially:
+>
+> **Phase 1 — UX Specification**
+> `copilot --agent=se-ux-ui-designer --prompt="Read docs/COMPREHENSIVE_ENHANCEMENT_REPORT.md. Create detailed UX/UI implementation specifications for all UI enhancements. Document component changes, CSS modifications, responsive behavior, and design tokens. Save to .github/specs/[enhancement-name]-ux-spec.md"`
+>
+> **Phase 2 — Frontend Implementation**
+> `copilot --agent=expert-react-frontend-engineer --prompt="Read .github/specs/[enhancement-name]-ux-spec.md. Implement all UI/UX improvements in React components. Ensure TypeScript strict mode, Tailwind CSS integration, responsive design, and design system consistency. Test locally with npm run dev."`
+>
+> **Phase 3 — Accessibility Validation**
+> `copilot --agent=accessibility-expert --prompt="Review all code changes for [Enhancement]. Validate WCAG 2.1/2.2 AA compliance. Test focus indicators, color contrast, keyboard navigation, screen reader compatibility, and touch targets. Save findings to .github/specs/[enhancement-name]-a11y-validation.md"`
+>
+> **Phase 4 — QA & Regression Testing**
+> `copilot --agent=qa-code-reviewer --prompt="Test all UI/UX changes from [Enhancement]. Verify no visual regressions, test responsive design at all breakpoints, validate dark/light mode parity, and ensure all interactions work as specified. Create test suite and save to .github/specs/[enhancement-name]-qa-tests.md"`
+
+### When to Use UI/UX Pipeline
+
+- ✅ **Visual redesigns or refactoring**
+- ✅ **Accessibility compliance fixes**
+- ✅ **Design system updates**
+- ✅ **Component library improvements**
+- ✅ **Responsive design fixes**
+- ✅ **Dark/light mode enhancements**
+- ✅ **Icon, typography, or color updates**
+- ✅ **Performance optimization for frontend**
+
+### When to Use Standard Feature Pipeline
+
+- ✅ **Backend features (API routes, databases)**
+- ✅ **Full-stack features with complex logic**
+- ✅ **Infrastructure or deployment changes**
+- ✅ **Business logic features**
 
 ---
 

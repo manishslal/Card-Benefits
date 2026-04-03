@@ -130,9 +130,7 @@ const BenefitsList = React.forwardRef<HTMLDivElement, BenefitsListProps>(
           return (
             <div
               key={benefit.id}
-              className="p-4 rounded-lg border transition-all duration-200
-                bg-[var(--color-bg)] border-[var(--color-border)]
-                hover:border-[var(--color-primary)] hover:shadow-md"
+              className="p-4 rounded-lg border transition-all duration-200 bg-[var(--color-bg)] border-[var(--color-border)] hover:border-[var(--color-primary)] hover:shadow-md"
               style={{
                 animation: `slideIn 0.3s ease-out forwards`,
                 animationDelay: `${index * 50}ms`,

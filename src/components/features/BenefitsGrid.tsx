@@ -127,9 +127,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
         {benefits.map((benefit, index) => (
           <div
             key={benefit.id}
-            className="p-4 rounded-lg border transition-all duration-200
-              bg-[var(--color-bg)] border-[var(--color-border)]
-              hover:border-[var(--color-primary)] hover:shadow-lg hover:-translate-y-1"
+            className="p-4 rounded-lg border transition-all duration-200 bg-[var(--color-bg)] border-[var(--color-border)] hover:border-[var(--color-primary)] hover:shadow-lg hover:-translate-y-1"
             style={{
               animation: `scaleIn 0.3s ease-out forwards`,
               animationDelay: `${index * 50}ms`,

@@ -18,6 +18,10 @@ import { DarkModeToggle } from '@/components/ui/DarkModeToggle';
  * - Dark mode support
  * - Responsive design
  */
+
+// Mark as dynamic page to avoid SSG issues
+export const dynamic = 'force-dynamic';
+
 export default function LoginPage() {
   const [formData, setFormData] = useState({
     email: '',

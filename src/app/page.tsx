@@ -1,216 +1,292 @@
-/**
- * src/app/page.tsx
- *
- * Card Benefits Dashboard - Redesigned Version
- *
- * Displays all credit cards in the user's wallet with redesigned UI featuring:
- * 1. Header with dark mode toggle
- * 2. Summary stats (Total ROI, Benefits Captured, Active Benefits)
- * 3. Expiration alerts section (sticky)
- * 4. Player tabs for filtering
- * 5. Responsive card grid with expandable benefits tables
- * 6. Mobile-first responsive design
- *
- * Architecture:
- * - Server Component for data fetching
- * - Client Components for interactivity (Header, Tabs, Card expand/collapse)
- * - CSS variables for theming (light/dark mode)
- * - Tailwind CSS for styling with mobile-first approach
- *
- * Future: Will filter by authenticated userId from session when auth is implemented.
- */
+'use client';
 
-import { prisma } from '@/lib/prisma';
-import Header from '@/components/Header';
-import SummaryStats from '@/components/SummaryStats';
-import AlertSection from '@/components/AlertSection';
-import PlayerTabsContainer from '@/components/PlayerTabsContainer';
-import type { UserCard, UserBenefit, Player } from '@prisma/client';
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+import Link from 'next/link';
+import Button from '@/components/ui/button';
+import { DarkModeToggle } from '@/components/ui/DarkModeToggle';
+import React from 'react';
 
 /**
- * Type-safe structure for a player with their cards and benefits.
- * Mirrors the Prisma query return type.
+ * Homepage / Landing Page - Redesigned
+ * 
+ * Features:
+ * - Hero section with compelling headline and CTAs
+ * - Feature highlights with icons
+ * - Call-to-action sections
+ * - Responsive design (mobile, tablet, desktop)
+ * - Dark mode support
+ * - Professional fintech aesthetic
  */
-type PlayerWithCards = Player & {
-  userCards: (UserCard & {
-    masterCard: {
-      id: string;
-      issuer: string;
-      cardName: string;
-      defaultAnnualFee: number;
-      cardImageUrl: string;
-    };
-    userBenefits: UserBenefit[];
-  })[];
-};
-
-// ---------------------------------------------------------------------------
-// Utilities
-// ---------------------------------------------------------------------------
-
-/**
- * Fetches all players with their cards and benefits from Prisma.
- *
- * Query strategy:
- * - Includes all active players (isActive = true) for the user
- * - Includes only open cards (isOpen = true) for each player
- * - Includes all benefits (active and inactive) for each card
- * - Orders consistently for reproducible output
- *
- * TODO: When auth is implemented, add userId filter:
- *   where: { userId: session.user.id, isActive: true }
- *
- * @returns Array of players with nested cards and benefits
- * @throws Prisma query errors (caught and displayed by error boundary)
- */
-async function fetchPlayersWithCards(): Promise<PlayerWithCards[]> {
-  return prisma.player.findMany({
-    where: {
-      isActive: true,
-      // TODO: Filter by userId from authenticated session:
-      // userId: session.user.id,
-    },
-    include: {
-      userCards: {
-        where: {
-          isOpen: true, // Only show active cards
-        },
-        include: {
-          masterCard: {
-            select: {
-              id: true,
-              issuer: true,
-              cardName: true,
-              defaultAnnualFee: true,
-              cardImageUrl: true,
-            },
-          },
-          userBenefits: {
-            orderBy: { createdAt: 'asc' }, // Consistent ordering
-          },
-        },
-      },
-    },
-    orderBy: { createdAt: 'asc' }, // Consistent player ordering
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Main Page Component
-// ---------------------------------------------------------------------------
-
-/**
- * Dashboard Page Server Component (Redesigned)
- *
- * Renders the redesigned dashboard with:
- * 1. Header with dark mode toggle (client component)
- * 2. Summary stats cards (client component)
- * 3. Sticky alerts section (client component)
- * 4. Player tabs for filtering (client component)
- * 5. Responsive card grid with expandable tables (client component)
- *
- * Data fetching happens here (server), rendering happens in client components.
- * This separation allows efficient caching and optimal performance.
- */
-export default async function DashboardPage() {
-  try {
-    // Fetch all players with their cards and benefits
-    const players = await fetchPlayersWithCards();
-
-    // Empty state
-    if (players.length === 0) {
-      return (
-        <>
-          <Header />
-          <main
-            className="min-h-screen"
-            style={{ backgroundColor: 'var(--color-bg-secondary)' }}
-          >
+export default function Homepage() {
+  return (
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg)' }}>
+      {/* Header / Navigation */}
+      <header
+        className="sticky top-0 z-50 border-b py-4"
+        style={{
+          backgroundColor: 'var(--color-bg)',
+          borderColor: 'var(--color-border)',
+        }}
+      >
+        <div className="max-w-5xl mx-auto px-4 md:px-8 flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center gap-2">
             <div
-              className="max-w-container mx-auto px-md md:px-tablet lg:px-desktop py-2xl text-center"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold"
+              style={{ backgroundColor: 'var(--color-primary)' }}
             >
+              💳
+            </div>
+            <h1 className="text-lg font-bold text-[var(--color-text)]">
+              CardTrack
+            </h1>
+          </div>
+
+          {/* Navigation */}
+          <nav className="hidden md:flex items-center gap-8">
+            <a
+              href="#features"
+              className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors"
+            >
+              Features
+            </a>
+            <a
+              href="#benefits"
+              className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors"
+            >
+              Why Us
+            </a>
+          </nav>
+
+          {/* Actions */}
+          <div className="flex items-center gap-3">
+            <DarkModeToggle />
+            <Link href="/login">
+              <Button variant="outline" size="sm">
+                Sign In
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section
+        className="flex-1 flex items-center justify-center px-4 py-20 md:py-32"
+        style={{ backgroundColor: 'var(--color-bg-secondary)' }}
+      >
+        <div className="max-w-2xl text-center">
+          {/* Main Headline */}
+          <h2
+            className="font-bold text-3xl md:text-5xl mb-6 text-[var(--color-text)]"
+            style={{ fontFamily: 'var(--font-heading)' }}
+          >
+            Track Credit Card Benefits
+            <br />
+            <span style={{ color: 'var(--color-primary)' }}>
+              Across Multiple Cards
+            </span>
+          </h2>
+
+          {/* Subheading */}
+          <p
+            className="text-base md:text-lg mb-8 text-[var(--color-text-secondary)] leading-relaxed"
+          >
+            Never miss a benefit again. Organize your cards, track expiring perks, and maximize your spending value with our intuitive benefits tracker.
+          </p>
+
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+            <Link href="/signup">
+              <Button
+                size="lg"
+                variant="primary"
+                className="w-full sm:w-auto"
+              >
+                Get Started Free
+              </Button>
+            </Link>
+            <a href="#features" className="w-full sm:w-auto">
+              <Button
+                size="lg"
+                variant="secondary"
+                className="w-full"
+              >
+                Learn More
+              </Button>
+            </a>
+          </div>
+
+          {/* Trust badge */}
+          <p
+            className="text-xs text-[var(--color-text-secondary)]"
+          >
+            ✓ Free • No credit card required • Takes 2 minutes
+          </p>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="px-4 py-20 md:py-32">
+        <div className="max-w-5xl mx-auto">
+          {/* Section title */}
+          <h3
+            className="text-2xl md:text-3xl font-bold text-center mb-12 text-[var(--color-text)]"
+            style={{ fontFamily: 'var(--font-heading)' }}
+          >
+            Powerful Features for Benefit Tracking
+          </h3>
+
+          {/* Feature grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {[
+              {
+                icon: '📋',
+                title: 'Organize Your Cards',
+                description: 'Keep all your credit cards in one place with custom names and details.',
+              },
+              {
+                icon: '⏰',
+                title: 'Track Benefits & Expiration',
+                description: 'Never miss a benefit. Get alerts before perks expire.',
+              },
+              {
+                icon: '💡',
+                title: 'Smart Recommendations',
+                description: 'Discover which cards offer the best value for your spending.',
+              },
+              {
+                icon: '📈',
+                title: 'Maximize Your Value',
+                description: 'Identify underutilized benefits and unlock more value from your cards.',
+              },
+            ].map((feature, idx) => (
               <div
-                className="p-lg rounded-lg border"
+                key={idx}
+                className="p-6 rounded-lg border transition-all duration-200 hover:border-[var(--color-primary)] hover:shadow-md"
                 style={{
-                  backgroundColor: 'var(--color-bg-secondary)',
+                  backgroundColor: 'var(--color-bg)',
                   borderColor: 'var(--color-border)',
-                  color: 'var(--color-text-secondary)',
                 }}
               >
-                <h2
-                  className="font-semibold mb-md"
-                  style={{ fontSize: 'var(--font-h2)' }}
+                <div className="text-3xl mb-3">{feature.icon}</div>
+                <h4
+                  className="font-semibold text-[var(--color-text)] mb-2"
+                  style={{ fontSize: 'var(--text-body-lg)' }}
                 >
-                  No players in your wallet yet
-                </h2>
-                <p className="text-body-md">
-                  Create a new player and add cards to get started tracking
-                  benefits
+                  {feature.title}
+                </h4>
+                <p
+                  className="text-sm text-[var(--color-text-secondary)]"
+                >
+                  {feature.description}
                 </p>
               </div>
-            </div>
-          </main>
-        </>
-      );
-    }
+            ))}
+          </div>
+        </div>
+      </section>
 
-    return (
-      <>
-        {/* Fixed header */}
-        <Header />
-
-        {/* Main content */}
-        <main
-          id="main-content"
-          className="min-h-screen"
-          style={{ backgroundColor: 'var(--color-bg-secondary)' }}
-        >
-          <div
-            className="max-w-container mx-auto px-md md:px-tablet lg:px-desktop pt-lg"
-            style={{ paddingTop: 'var(--space-lg)' }}
+      {/* Benefits Section */}
+      <section
+        id="benefits"
+        className="px-4 py-20 md:py-32"
+        style={{ backgroundColor: 'var(--color-bg-secondary)' }}
+      >
+        <div className="max-w-5xl mx-auto">
+          {/* Section title */}
+          <h3
+            className="text-2xl md:text-3xl font-bold text-center mb-12 text-[var(--color-text)]"
+            style={{ fontFamily: 'var(--font-heading)' }}
           >
-            {/* Summary Stats Section */}
-            <SummaryStats players={players} />
+            Why Choose CardTrack?
+          </h3>
 
-            {/* Alerts Section (Sticky) */}
-            <AlertSection players={players} />
-
-            {/* Player Tabs & Card Grid */}
-            <PlayerTabsContainer players={players} />
+          {/* Benefits list */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              { number: '1M+', label: 'Benefits Tracked' },
+              { number: '100K+', label: 'Active Users' },
+              { number: '4.8/5', label: 'User Rating' },
+            ].map((stat, idx) => (
+              <div key={idx} className="text-center">
+                <div
+                  className="text-3xl md:text-4xl font-bold mb-2 text-[var(--color-primary)]"
+                  style={{ fontFamily: 'var(--font-mono)' }}
+                >
+                  {stat.number}
+                </div>
+                <p className="text-sm text-[var(--color-text-secondary)]">
+                  {stat.label}
+                </p>
+              </div>
+            ))}
           </div>
-        </main>
+        </div>
+      </section>
 
-        {/* Footer */}
-        <footer
-          className="border-t py-md mt-2xl"
-          style={{
-            backgroundColor: 'var(--color-bg-primary)',
-            borderColor: 'var(--color-border)',
-          }}
-        >
-          <div className="max-w-container mx-auto px-md md:px-tablet lg:px-desktop text-center">
-            <p
-              className="text-body-sm"
-              style={{ color: 'var(--color-text-tertiary)' }}
-            >
-              Last updated at {new Date().toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-              })}
-            </p>
+      {/* Final CTA Section */}
+      <section className="px-4 py-20 md:py-32">
+        <div className="max-w-2xl mx-auto text-center">
+          <h3
+            className="text-2xl md:text-3xl font-bold mb-6 text-[var(--color-text)]"
+            style={{ fontFamily: 'var(--font-heading)' }}
+          >
+            Ready to Take Control?
+          </h3>
+          <p
+            className="text-base mb-8 text-[var(--color-text-secondary)]"
+          >
+            Start tracking your credit card benefits today. It's free and takes less than 2 minutes to set up.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/signup">
+              <Button
+                size="lg"
+                variant="primary"
+                className="w-full sm:w-auto"
+              >
+                Create Your Free Account
+              </Button>
+            </Link>
+            <Link href="/login">
+              <Button
+                size="lg"
+                variant="outline"
+                className="w-full sm:w-auto"
+              >
+                Sign In to Existing Account
+              </Button>
+            </Link>
           </div>
-        </footer>
-      </>
-    );
-  } catch (error) {
-    // Log error for debugging
-    console.error('Dashboard page error:', error);
+        </div>
+      </section>
 
-    // Re-throw so Next.js error boundary catches it
-    throw error;
-  }
+      {/* Footer */}
+      <footer
+        className="border-t py-8 mt-auto"
+        style={{
+          backgroundColor: 'var(--color-bg-secondary)',
+          borderColor: 'var(--color-border)',
+        }}
+      >
+        <div className="max-w-5xl mx-auto px-4 md:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-[var(--color-text-secondary)]">
+            <p>&copy; 2024 CardTrack. All rights reserved.</p>
+            <div className="flex gap-6">
+              <a href="#" className="hover:text-[var(--color-text)] transition-colors">
+                Privacy
+              </a>
+              <a href="#" className="hover:text-[var(--color-text)] transition-colors">
+                Terms
+              </a>
+              <a href="#" className="hover:text-[var(--color-text)] transition-colors">
+                Contact
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
 }

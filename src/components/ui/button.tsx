@@ -3,12 +3,13 @@
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'tertiary' | 'accent' | 'danger' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: 'primary' | 'secondary' | 'tertiary' | 'accent' | 'danger' | 'ghost' | 'outline';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'icon-xs' | 'icon-sm' | 'icon' | 'icon-lg';
   isLoading?: boolean;
   fullWidth?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  asChild?: boolean;
 }
 
 /**
@@ -26,6 +27,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       leftIcon,
       rightIcon,
       disabled,
+      asChild = false,
       children,
       style,
       ...props
@@ -37,7 +39,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       'font-semibold transition-all duration-200 rounded-md border-none',
       'focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]',
       disabled || isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
-      fullWidth ? 'w-full' : '',
+      fullWidth && !size.startsWith('icon') ? 'w-full' : '',
       className,
     ].join(' ');
 
@@ -48,6 +50,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ${!disabled && !isLoading ? 'hover:bg-[rgba(64,128,255,0.08)]' : ''}`,
       tertiary: `text-[var(--color-primary)] bg-transparent
         ${!disabled && !isLoading ? 'hover:bg-[rgba(64,128,255,0.08)]' : ''}`,
+      outline: `border border-[var(--color-border)] text-[var(--color-text)] bg-transparent
+        ${!disabled && !isLoading ? 'hover:bg-[var(--color-bg-secondary)]' : ''}`,
       accent: `bg-[var(--color-secondary)] text-white shadow-md
         ${!disabled && !isLoading ? 'hover:-translate-y-0.5 hover:shadow-lg' : ''}`,
       danger: `bg-[var(--color-error)] text-white shadow-md
@@ -57,10 +61,26 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const sizeClasses = {
-      sm: 'px-3 py-1 text-xs',
+      xs: 'px-2 py-1 text-xs',
+      sm: 'px-3 py-1.5 text-xs',
       md: 'px-4 py-2 text-sm',
-      lg: 'px-6 py-4 text-base',
+      lg: 'px-6 py-3 text-base',
+      'icon-xs': 'w-6 h-6 p-1',
+      'icon-sm': 'w-8 h-8 p-1.5',
+      'icon': 'w-10 h-10 p-2',
+      'icon-lg': 'w-12 h-12 p-2.5',
     };
+
+    // If asChild, render as a passthrough wrapper
+    if (asChild && React.isValidElement(children)) {
+      const childElement = children as React.ReactElement<any>;
+      const childClassName = childElement.props?.className || '';
+      return React.cloneElement(childElement, {
+        ref,
+        className: `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${childClassName}`,
+        ...props,
+      });
+    }
 
     return (
       <button
@@ -86,4 +106,5 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
 Button.displayName = 'Button';
 
+export { Button };
 export default Button;

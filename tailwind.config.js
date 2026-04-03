@@ -5,50 +5,56 @@ module.exports = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
-  darkMode: 'class', // Enable dark mode via class toggle
+  darkMode: ['class', 'media'], // Support both class and system preference
   theme: {
     extend: {
       // Custom colors using CSS variables from design-tokens.css
       colors: {
         primary: {
-          50: 'var(--color-primary-50)',
-          500: 'var(--color-primary-500)',
-          600: 'var(--color-primary-600)',
-          700: 'var(--color-primary-700)',
-          900: 'var(--color-primary-900)',
+          DEFAULT: 'var(--color-primary)',
+          light: 'var(--color-primary-light)',
+        },
+        secondary: {
+          DEFAULT: 'var(--color-secondary)',
+          light: 'var(--color-secondary-light)',
         },
         success: {
-          50: 'var(--color-success-50)',
-          500: 'var(--color-success-500)',
-          600: 'var(--color-success-600)',
+          DEFAULT: 'var(--color-success)',
+          light: 'var(--color-success-light)',
         },
-        alert: {
-          50: 'var(--color-alert-50)',
-          500: 'var(--color-alert-500)',
-          600: 'var(--color-alert-600)',
+        error: {
+          DEFAULT: 'var(--color-error)',
+          light: 'var(--color-error-light)',
         },
-        danger: {
-          50: 'var(--color-danger-50)',
-          500: 'var(--color-danger-500)',
-          600: 'var(--color-danger-600)',
+        warning: {
+          DEFAULT: 'var(--color-warning)',
+          light: 'var(--color-warning-light)',
         },
-        accent: {
-          500: 'var(--color-accent-500)',
+        info: {
+          DEFAULT: 'var(--color-info)',
+          light: 'var(--color-info-light)',
+        },
+        gray: {
+          50: 'var(--color-gray-50)',
+          100: 'var(--color-gray-100)',
+          200: 'var(--color-gray-200)',
+          300: 'var(--color-gray-300)',
+          400: 'var(--color-gray-400)',
+          500: 'var(--color-gray-500)',
+          600: 'var(--color-gray-600)',
+          700: 'var(--color-gray-700)',
+          900: 'var(--color-gray-900)',
         },
         bg: {
-          primary: 'var(--color-bg-primary)',
+          DEFAULT: 'var(--color-bg)',
           secondary: 'var(--color-bg-secondary)',
-          tertiary: 'var(--color-bg-tertiary)',
-        },
-        border: {
-          DEFAULT: 'var(--color-border)',
         },
         text: {
-          primary: 'var(--color-text-primary)',
+          DEFAULT: 'var(--color-text)',
           secondary: 'var(--color-text-secondary)',
-          tertiary: 'var(--color-text-tertiary)',
         },
       },
+
       // Custom spacing using CSS variables
       spacing: {
         xs: 'var(--space-xs)',
@@ -60,13 +66,16 @@ module.exports = {
         '3xl': 'var(--space-3xl)',
         '4xl': 'var(--space-4xl)',
       },
+
       // Custom shadows using CSS variables
       boxShadow: {
+        xs: 'var(--shadow-xs)',
         sm: 'var(--shadow-sm)',
         md: 'var(--shadow-md)',
         lg: 'var(--shadow-lg)',
         xl: 'var(--shadow-xl)',
       },
+
       // Custom border radius using CSS variables
       borderRadius: {
         sm: 'var(--radius-sm)',
@@ -75,26 +84,84 @@ module.exports = {
         xl: 'var(--radius-xl)',
         full: 'var(--radius-full)',
       },
+
       // Custom transition durations
       transitionDuration: {
-        base: 'var(--transition-base)',
-        slow: 'var(--transition-slow)',
+        fast: 'var(--duration-fast)',
+        base: 'var(--duration-base)',
+        slow: 'var(--duration-slow)',
       },
+
+      // Custom easing functions
+      transitionTimingFunction: {
+        'ease-bounce': 'var(--ease-bounce)',
+      },
+
       // Custom max-widths
       maxWidth: {
-        container: 'var(--max-width-container)',
-        tablet: 'var(--max-width-tablet)',
-        mobile: 'var(--max-width-mobile)',
+        'container-md': 'var(--max-width-md)',
+        'container-lg': 'var(--max-width-lg)',
+        container: 'var(--max-width)',
       },
+
       // Typography sizes as utility classes
       fontSize: {
-        h1: ['var(--font-h1)', { lineHeight: '1.2', fontWeight: 'var(--font-weight-bold)' }],
-        h2: ['var(--font-h2)', { lineHeight: '1.3', fontWeight: 'var(--font-weight-bold)' }],
-        h3: ['var(--font-h3)', { lineHeight: '1.4', fontWeight: 'var(--font-weight-semibold)' }],
-        'body-lg': ['var(--font-body-lg)', { lineHeight: '1.5', fontWeight: 'var(--font-weight-normal)' }],
-        'body-md': ['var(--font-body-md)', { lineHeight: '1.5', fontWeight: 'var(--font-weight-normal)' }],
-        'body-sm': ['var(--font-body-sm)', { lineHeight: '1.5', fontWeight: 'var(--font-weight-normal)' }],
-        label: ['var(--font-label)', { lineHeight: '1.5', fontWeight: 'var(--font-weight-semibold)' }],
+        h1: ['var(--text-h1)', { lineHeight: '1.2', fontWeight: 'var(--font-weight-700)' }],
+        h2: ['var(--text-h2)', { lineHeight: '1.2', fontWeight: 'var(--font-weight-700)' }],
+        h3: ['var(--text-h3)', { lineHeight: '1.25', fontWeight: 'var(--font-weight-600)' }],
+        h4: ['var(--text-h4)', { lineHeight: '1.3', fontWeight: 'var(--font-weight-600)' }],
+        h5: ['var(--text-h5)', { lineHeight: '1.35', fontWeight: 'var(--font-weight-600)' }],
+        h6: ['var(--text-h6)', { lineHeight: '1.4', fontWeight: 'var(--font-weight-500)' }],
+        'body-lg': ['var(--text-body-lg)', { lineHeight: '1.6' }],
+        'body-md': ['var(--text-body-md)', { lineHeight: '1.6' }],
+        'body-sm': ['var(--text-body-sm)', { lineHeight: '1.5' }],
+        caption: ['var(--text-caption)', { lineHeight: '1.4', letterSpacing: '0.005em' }],
+        label: ['var(--text-label)', { lineHeight: '1.4', fontWeight: 'var(--font-weight-600)', letterSpacing: '0.01em' }],
+        'mono-md': ['var(--text-mono-md)', { lineHeight: '1.6' }],
+        'mono-sm': ['var(--text-mono-sm)', { lineHeight: '1.5', letterSpacing: '0.01em' }],
+      },
+
+      // Font families
+      fontFamily: {
+        primary: 'var(--font-primary)',
+        heading: 'var(--font-heading)',
+        mono: 'var(--font-mono)',
+      },
+
+      // Custom animations
+      animation: {
+        'fade-in': 'fadeIn var(--duration-base) var(--ease-out)',
+        'slide-up': 'slideUp var(--duration-base) var(--ease-bounce)',
+        'slide-down': 'slideDown var(--duration-base) var(--ease-bounce)',
+        'scale-in': 'scaleIn var(--duration-base) var(--ease-out)',
+      },
+
+      // Keyframes
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        slideUp: {
+          '0%': { opacity: '0', transform: 'translateY(16px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        slideDown: {
+          '0%': { opacity: '0', transform: 'translateY(-16px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        scaleIn: {
+          '0%': { opacity: '0', transform: 'scale(0.95)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+      },
+
+      // Custom touch target sizes for accessibility
+      minHeight: {
+        touch: 'var(--touch-target-min)',
+      },
+      minWidth: {
+        touch: 'var(--touch-target-min)',
       },
     },
   },

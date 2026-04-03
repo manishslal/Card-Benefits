@@ -138,7 +138,7 @@ export async function validateCardName(
 
   const masterCard = await prisma.masterCard.findFirst({
     where: {
-      name: trimmed,
+      cardName: trimmed,
       issuer: issuerTrimmed,
     },
   });

@@ -98,11 +98,9 @@ export function findWithinBatchDuplicates(
     recordType: 'Card' | 'Benefit';
     rowNumber: number;
     data: Record<string, any>;
-  }>,
-  playerId: string
+  }>
 ): DuplicateMatch[] {
   const duplicates: DuplicateMatch[] = [];
-  const seen = new Map<string, typeof records[0]>();
 
   // Card deduplication keys
   const cardKeys = new Map<string, typeof records[0]>();
@@ -181,8 +179,8 @@ async function findExistingCard(
   // First find the MasterCard
   const masterCard = await prisma.masterCard.findFirst({
     where: {
-      name: cardName,
-      issuer: issuer,
+      cardName,
+      issuer,
     },
   });
 
@@ -212,7 +210,7 @@ async function findExistingBenefit(
 ): Promise<any | null> {
   // First find the card
   const masterCard = await prisma.masterCard.findFirst({
-    where: { name: cardName, issuer },
+    where: { cardName, issuer },
   });
 
   if (!masterCard) return null;
@@ -349,7 +347,7 @@ export async function detectDuplicates(
   playerId: string
 ): Promise<DuplicateCheckResult> {
   // Find both types of duplicates
-  const withinBatchDups = findWithinBatchDuplicates(records, playerId);
+  const withinBatchDups = findWithinBatchDuplicates(records);
   const databaseDups = await findDatabaseDuplicates(records, playerId);
 
   // Combine and deduplicate (prefer database duplicates over batch duplicates)
@@ -371,5 +369,3 @@ export async function detectDuplicates(
     duplicates: allDuplicates,
   };
 }
-
-export type { DuplicateMatch, DuplicateCheckResult };

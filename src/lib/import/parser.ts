@@ -10,9 +10,9 @@
  * - Provide detailed error reporting with line numbers
  */
 
-import Papa from 'papaparse';
+import * as Papa from 'papaparse';
 import XLSX from 'xlsx';
-import { AppError, ERROR_CODES } from '@/lib/errors';
+import { AppError } from '@/lib/errors';
 
 // ============================================================================
 // Type Definitions

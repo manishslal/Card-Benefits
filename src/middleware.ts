@@ -95,8 +95,13 @@ function isProtectedRoute(pathname: string): boolean {
  */
 function extractSessionToken(request: NextRequest): string | null {
   try {
-    const token = request.cookies.get('session')?.value;
-    return token || null;
+    const cookieValue = request.cookies.get('session')?.value;
+    console.log('[Auth Middleware] Extracting session cookie:', {
+      found: !!cookieValue,
+      length: cookieValue?.length || 0,
+      preview: cookieValue ? cookieValue.substring(0, 30) : 'none',
+    });
+    return cookieValue || null;
   } catch (error) {
     // Malformed cookies should not crash middleware
     console.error('[Auth Middleware] Error parsing cookies:', {

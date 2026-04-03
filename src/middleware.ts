@@ -1,12 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  verifySessionToken,
-  type SessionPayload,
-} from '@/lib/auth-utils';
-import {
-  getSessionByToken,
-  userExists,
-} from '@/lib/auth-server';
 import { runWithAuthContext } from '@/lib/auth-context';
 
 /**
@@ -106,82 +98,62 @@ function extractSessionToken(request: NextRequest): string | null {
 }
 
 // ============================================================================
-// JWT VERIFICATION
+// JWT VERIFICATION (Via API)
 // ============================================================================
 
 /**
- * Verify JWT token structure and signature
+ * Verify JWT token by calling /api/auth/verify endpoint
  *
- * SECURITY CHECKS:
+ * CRITICAL DESIGN: Token verification happens in Node.js runtime,
+ * not in Edge runtime. This is required because:
+ * - JWT verification uses crypto module (unavailable in Edge runtime)
+ * - /api/auth/verify runs in Node.js and handles all crypto operations
+ * - Middleware remains Edge Runtime safe
+ *
+ * SECURITY CHECKS (handled by API endpoint):
  * - Validates HMAC-SHA256 signature (prevents tampering)
  * - Checks expiration timestamp
+ * - Validates session exists in database (enables revocation)
  * - Uses timing-safe comparison internally
- * - No sensitive data in error messages
  *
- * @throws Error if token is invalid, expired, or malformed
+ * @param token - Session JWT token from secure cookie
+ * @returns Object with valid flag and userId, or invalid=false on failure
  */
-function verifyToken(token: string): SessionPayload | null {
+async function verifyTokenViaApi(
+  token: string
+): Promise<{ valid: boolean; userId?: string }> {
   try {
-    return verifySessionToken(token);
-  } catch (error) {
-    // Don't log token details (it's sensitive)
-    console.error('[Auth Middleware] Token verification failed:', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-    return null;
-  }
-}
+    // Determine API base URL (works in both dev and production)
+    const apiUrl =
+      process.env.NEXTAUTH_URL ||
+      process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : 'http://localhost:3000';
 
-// ============================================================================
-// DATABASE SESSION VALIDATION
-// ============================================================================
+    const verifyEndpoint = `${apiUrl}/api/auth/verify`;
 
-/**
- * Validate session exists and is not revoked
- *
- * CRITICAL: This check enables logout/revocation to work immediately
- * - If user logs out, the Session.isValid flag is set to false
- * - Next request will fail this check
- * - Token remains cryptographically valid but is rejected
- *
- * ALSO CHECKS:
- * - Session not expired (expiresAt > now)
- * - User account still exists
- */
-async function validateSessionInDatabase(token: string, userId: string) {
-  try {
-    // Retrieve session from database
-    const session = await getSessionByToken(token);
-
-    if (!session) {
-      // Session not found or revoked
-      // This handles: logout, explicit revocation, or database cleanup
-      return { valid: false, userId: undefined };
-    }
-
-    if (session.userId !== userId) {
-      // Token/session userId mismatch (shouldn't happen, but check anyway)
-      console.error('[Auth Middleware] Session/token userId mismatch');
-      return { valid: false, userId: undefined };
-    }
-
-    // Verify user account still exists
-    const userValid = await userExists(userId);
-    if (!userValid) {
-      // User deleted account
-      return { valid: false, userId: undefined };
-    }
-
-    return { valid: true, userId: session.userId };
-  } catch (error) {
-    // Database errors should not deny access (fail open, not closed)
-    // But log the error for debugging
-    console.error('[Auth Middleware] Database validation error:', {
-      error: error instanceof Error ? error.message : 'Unknown error',
+    const response = await fetch(verifyEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
     });
 
-    // On database error, we cannot verify session, so deny access
-    return { valid: false, userId: undefined };
+    if (response.ok) {
+      const data = await response.json();
+      return {
+        valid: data.valid === true,
+        userId: data.userId,
+      };
+    }
+
+    // Non-200 response means token is invalid
+    return { valid: false };
+  } catch (error) {
+    // Network failures, JSON parse errors, etc. should be treated as auth failure
+    console.error('[Auth Middleware] API verification failed:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    return { valid: false };
   }
 }
 
@@ -263,22 +235,16 @@ export async function middleware(request: NextRequest) {
       return createUnauthorizedResponse('Authentication required');
     }
 
-    // Verify JWT signature and extract payload
-    const payload = verifyToken(sessionToken);
-
-    if (!payload) {
-      // JWT is invalid, expired, or malformed
-      return createUnauthorizedResponse('Invalid or expired session');
-    }
-
-    // Validate session exists in database and is not revoked
-    const { valid, userId } = await validateSessionInDatabase(
-      sessionToken,
-      payload.userId
-    );
+    // Verify JWT signature and session validity via API endpoint
+    // The API endpoint handles:
+    // - JWT signature verification (crypto-heavy, runs in Node.js)
+    // - Session database validation
+    // - User existence check
+    // - Expiration validation
+    const { valid, userId } = await verifyTokenViaApi(sessionToken);
 
     if (!valid || !userId) {
-      // Session revoked, expired, or user deleted
+      // Session invalid, revoked, expired, or user deleted
       return createUnauthorizedResponse('Session invalid or revoked');
     }
 

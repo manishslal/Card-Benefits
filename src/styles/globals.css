@@ -382,3 +382,95 @@ label {
 .space-y-lg > * + * {
   margin-top: var(--space-lg);
 }
+
+/* Shimmer Loading Animation for Skeletons */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 20%,
+    rgba(255, 255, 255, 0.5) 60%,
+    transparent 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+}
+
+.dark .shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 20%,
+    rgba(255, 255, 255, 0.3) 60%,
+    transparent 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Focus Ring Utilities */
+.focus-ring {
+  outline: 3px solid;
+  outline-color: var(--color-primary);
+  outline-offset: 2px;
+}
+
+.focus-ring-error {
+  outline: 3px solid;
+  outline-color: var(--color-error);
+  outline-offset: 2px;
+}
+
+.focus-ring-success {
+  outline: 3px solid;
+  outline-color: var(--color-success);
+  outline-offset: 2px;
+}
+
+/* Accessible Focus States */
+*:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Touch-friendly minimum sizing */
+@media (max-width: 768px) {
+  button,
+  a,
+  input[type="checkbox"],
+  input[type="radio"],
+  select {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Responsive text sizing for better mobile readability */
+@media (max-width: 640px) {
+  body {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  h1 {
+    font-size: var(--text-h2);
+  }
+  
+  h2 {
+    font-size: var(--text-h3);
+  }
+  
+  h3 {
+    font-size: var(--text-h4);
+  }
+}

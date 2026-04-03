@@ -12,20 +12,25 @@ interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
 /**
  * Skeleton Component - Loading Placeholder
  * 
- * Accessibility Features:
+ * WCAG 2.1 Accessibility Features:
  * - role="status" + aria-busy="true" for assistive tech
  * - Distinct visual appearance to indicate loading state
+ * - Proper contrast in dark mode
  * 
  * Variants:
- * - text: Single line text skeleton
+ * - text: Single line text skeleton (default height: 20px)
  * - circular: Circle skeleton (avatars, icons)
  * - rectangular: Rectangle skeleton (images, cards)
  * - card: Full card skeleton (complex components)
  * 
  * Animations:
- * - pulse: Fading in/out effect
+ * - pulse: Fading in/out effect (Tailwind animate-pulse)
  * - shimmer: Gradient sweep effect (premium feel)
- * - none: Static skeleton
+ * - none: Static skeleton (useful for testing)
+ * 
+ * Mobile Responsiveness:
+ * - Works seamlessly on all screen sizes
+ * - Maintains aspect ratios across devices
  */
 const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(
   (
@@ -41,7 +46,7 @@ const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(
   ) => {
     const baseClasses = [
       'bg-[var(--color-border)]',
-      'dark:bg-[var(--color-border)]',
+      'dark:bg-[var(--color-bg-secondary)]',
       className,
     ].join(' ');
 
@@ -70,7 +75,7 @@ const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(
         style={styles}
         role="status"
         aria-busy="true"
-        aria-label="Loading"
+        aria-label="Loading content"
         {...props}
       />
     );
@@ -80,41 +85,3 @@ const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(
 Skeleton.displayName = 'Skeleton';
 
 export default Skeleton;
-
-/**
- * Shimmer animation keyframes
- * Add this to your globals.css or animations.css:
- * 
- * @keyframes shimmer {
- *   0% {
- *     background-position: -1000px 0;
- *   }
- *   100% {
- *     background-position: 1000px 0;
- *   }
- * }
- * 
- * .shimmer {
- *   background: linear-gradient(
- *     90deg,
- *     transparent 0%,
- *     rgba(255, 255, 255, 0.2) 20%,
- *     rgba(255, 255, 255, 0.5) 60%,
- *     transparent 100%
- *   );
- *   background-size: 1000px 100%;
- *   animation: shimmer 2s infinite;
- * }
- * 
- * .dark .shimmer {
- *   background: linear-gradient(
- *     90deg,
- *     transparent 0%,
- *     rgba(255, 255, 255, 0.1) 20%,
- *     rgba(255, 255, 255, 0.3) 60%,
- *     transparent 100%
- *   );
- *   background-size: 1000px 100%;
- *   animation: shimmer 2s infinite;
- * }
- */

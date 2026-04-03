@@ -230,29 +230,31 @@ async function updateSessionToken(sessionId: string, token: string): Promise<voi
 }
 
 /**
- * Sets the session cookie on the response
+ * Sets the session cookie on the response using Next.js cookies API
+ *
+ * Uses response.cookies.set() instead of response.headers.set() to ensure
+ * proper cookie handling by Next.js middleware and reliable transmission to browser.
+ *
+ * Security features:
+ * - httpOnly: true prevents XSS attacks (JavaScript cannot access)
+ * - secure: true in production (HTTPS only)
+ * - sameSite: 'strict' prevents CSRF attacks
  */
 function setSessionCookie(
   response: NextResponse,
   token: string,
   maxAgeSeconds: number
 ): void {
-  const cookieName = 'session';
   const isProduction = process.env.NODE_ENV === 'production';
 
-  // Cookie options
-  const cookieOptions = [
-    `${cookieName}=${token}`,
-    `Max-Age=${maxAgeSeconds}`,
-    'Path=/',
-    'HttpOnly',
-    'SameSite=Strict',
-  ];
-
-  // Add Secure flag in production
-  if (isProduction) {
-    cookieOptions.push('Secure');
-  }
-
-  response.headers.set('Set-Cookie', cookieOptions.join('; '));
+  // Set session cookie using Next.js cookies API
+  response.cookies.set({
+    name: 'session',
+    value: token,
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'strict',
+    maxAge: maxAgeSeconds,
+    path: '/',
+  });
 }

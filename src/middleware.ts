@@ -202,7 +202,7 @@ function createUnauthorizedResponse(
   );
 
   // Clear session token cookie on auth failure
-  response.cookies.delete('sessionToken');
+  response.cookies.delete('session');
   return response;
 }
 

@@ -94,7 +94,7 @@ function isProtectedRoute(pathname: string): boolean {
  */
 function extractSessionToken(request: NextRequest): string | null {
   try {
-    const token = request.cookies.get('sessionToken')?.value;
+    const token = request.cookies.get('session')?.value;
     return token || null;
   } catch (error) {
     // Malformed cookies should not crash middleware

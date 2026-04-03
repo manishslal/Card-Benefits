@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { SafeDarkModeToggle } from '@/components/SafeDarkModeToggle';
 import Button from '@/components/ui/button';
+import EmptyState from '@/components/ui/EmptyState';
 import Link from 'next/link';
 import CardSwitcher from '@/components/features/CardSwitcher';
 import DashboardSummary from '@/components/features/DashboardSummary';
@@ -446,25 +447,13 @@ export default function DashboardPage() {
         <div className="max-w-6xl mx-auto">
           {/* Empty State: No Cards */}
           {cards.length === 0 ? (
-            <div className="text-center py-12">
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-                style={{ backgroundColor: 'var(--color-border)' }}
-              >
-                <CreditCard size={32} className="text-[var(--color-text-secondary)]" />
-              </div>
-              <h3 className="text-lg font-semibold text-[var(--color-text)] mb-2">No Cards Added Yet</h3>
-              <p className="text-[var(--color-text-secondary)] mb-6 max-w-sm mx-auto">
-                Start tracking your credit card benefits by adding your first card to the wallet.
-              </p>
-              <Button
-                variant="primary"
-                onClick={() => setIsAddCardModalOpen(true)}
-              >
-                <Plus size={16} className="mr-2" />
-                Add Your First Card
-              </Button>
-            </div>
+            <EmptyState
+              icon={<CreditCard size={32} />}
+              title="No Cards Added Yet"
+              description="Start tracking your credit card benefits by adding your first card to the wallet."
+              actionLabel="Add Your First Card"
+              onAction={() => setIsAddCardModalOpen(true)}
+            />
           ) : (
             <>
               {/* Card Switcher */}

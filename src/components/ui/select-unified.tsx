@@ -2,7 +2,7 @@
 
 import React from 'react';
 import * as SelectPrimitive from '@radix-ui/react-select';
-import { ChevronDown, AlertCircle, CheckCircle } from 'lucide-react';
+import { ChevronDown, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -40,8 +40,8 @@ interface UnifiedSelectProps {
   error?: string;
   required?: boolean;
   disabled?: boolean;
-  aria-label?: string;
-  aria-labelledby?: string;
+  'aria-label'?: string;
+  'aria-labelledby'?: string;
   id?: string;
   name?: string;
 }

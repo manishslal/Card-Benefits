@@ -207,126 +207,151 @@ export function AddCardModal({ isOpen, onClose, onCardAdded }: AddCardModalProps
 
   if (!isOpen) return null;
 
+  // Prepare select options for card selection
+  const cardOptions = availableCards.map((card) => ({
+    value: card.id,
+    label: `${card.issuer} - ${card.cardName} ($${(card.defaultAnnualFee / 100).toFixed(2)}/yr)`,
+  }));
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div
-        className="w-full max-w-2xl rounded-lg p-6 max-h-[90vh] overflow-y-auto"
-        style={{ backgroundColor: 'var(--color-bg)' }}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-[var(--color-text)]">
-            Add Credit Card
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)]"
-            aria-label="Close modal"
-          >
-            <X size={24} />
-          </button>
-        </div>
-
-        {/* Message */}
-        {message && (
-          <div
-            className={`p-4 rounded-lg mb-6 text-sm ${
-              message.startsWith('✓')
-                ? 'bg-[var(--color-success)] bg-opacity-10 text-[var(--color-success)]'
-                : 'bg-[var(--color-error)] bg-opacity-10 text-[var(--color-error)]'
-            }`}
-          >
-            {message}
+    <DialogPrimitive.Root open={isOpen} onOpenChange={(open) => {
+      if (!open) onClose();
+    }}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        
+        <DialogPrimitive.Content
+          className="fixed left-[50%] top-[50%] z-50 w-full max-w-2xl translate-x-[-50%] translate-y-[-50%] rounded-lg shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] duration-200 p-6 mx-4 max-h-[90vh] overflow-y-auto"
+          style={{ backgroundColor: 'var(--color-bg)' }}
+          onOpenAutoFocus={(e) => {
+            // Focus on the card select when modal opens
+            e.preventDefault();
+            cardSelectRef.current?.focus();
+          }}
+          onCloseAutoFocus={(e) => {
+            // Return focus to trigger button (handled by Radix)
+            e.preventDefault();
+          }}
+        >
+          {/* Header with title and close button */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <DialogPrimitive.Title
+                id="add-card-modal-title"
+                className="text-2xl font-bold text-[var(--color-text)]"
+              >
+                Add Credit Card
+              </DialogPrimitive.Title>
+              <DialogPrimitive.Description
+                id="add-card-modal-description"
+                className="text-sm text-[var(--color-text-secondary)] mt-1"
+              >
+                Add a new credit card to track its benefits
+              </DialogPrimitive.Description>
+            </div>
+            <DialogPrimitive.Close asChild>
+              <button
+                aria-label="Close dialog"
+                className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors p-2 rounded-md hover:bg-[var(--color-bg-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+              >
+                <X size={24} />
+              </button>
+            </DialogPrimitive.Close>
           </div>
-        )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Card Selection */}
-          <div>
-            <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
-              Select Card
-            </label>
-            <select
-              name="masterCardId"
+          {/* Message */}
+          {message && (
+            <div
+              className={`p-4 rounded-lg mb-6 text-sm ${
+                message.startsWith('✓')
+                  ? 'bg-[var(--color-success)] bg-opacity-10 text-[var(--color-success)]'
+                  : 'bg-[var(--color-error)] bg-opacity-10 text-[var(--color-error)]'
+              }`}
+              role="status"
+              aria-live="polite"
+            >
+              {message}
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Card Selection using Unified Select */}
+            <UnifiedSelect
+              ref={cardSelectRef}
+              options={cardOptions}
               value={formData.masterCardId}
+              onChange={handleSelectChange}
+              placeholder={isLoadingCards ? 'Loading cards...' : 'Choose a card...'}
+              label="Select Card"
+              error={errors.masterCardId}
+              required
+              disabled={isLoading || isLoadingCards}
+              aria-labelledby="add-card-modal-title"
+            />
+
+            {/* Renewal Date */}
+            <Input
+              label="Renewal Date"
+              type="date"
+              name="renewalDate"
+              value={formData.renewalDate}
               onChange={handleChange}
-              disabled={isLoading || isLoadingCards}
-              className="w-full px-3 py-2 border rounded-lg bg-[var(--color-bg-secondary)] text-[var(--color-text)] border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-            >
-              <option value="">
-                {isLoadingCards ? 'Loading cards...' : 'Choose a card...'}
-              </option>
-              {availableCards.map((card) => (
-                <option key={card.id} value={card.id}>
-                  {card.issuer} - {card.cardName} (${(card.defaultAnnualFee / 100).toFixed(2)}/yr)
-                </option>
-              ))}
-            </select>
-            {errors.masterCardId && (
-              <p className="mt-1 text-xs text-[var(--color-error)]">{errors.masterCardId}</p>
-            )}
-          </div>
-
-          {/* Renewal Date */}
-          <Input
-            label="Renewal Date"
-            type="date"
-            name="renewalDate"
-            value={formData.renewalDate}
-            onChange={handleChange}
-            error={errors.renewalDate}
-            disabled={isLoading}
-          />
-
-          {/* Custom Name (Optional) */}
-          <Input
-            label="Card Nickname (Optional)"
-            type="text"
-            name="customName"
-            placeholder="e.g., 'My Travel Card'"
-            value={formData.customName}
-            onChange={handleChange}
-            error={errors.customName}
-            disabled={isLoading}
-          />
-
-          {/* Custom Annual Fee (Optional) */}
-          <Input
-            label="Annual Fee Override (Optional, in dollars)"
-            type="number"
-            name="customAnnualFee"
-            placeholder="0.00"
-            step="0.01"
-            value={formData.customAnnualFee}
-            onChange={handleChange}
-            error={errors.customAnnualFee}
-            disabled={isLoading}
-          />
-
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-4">
-            <Button
-              type="submit"
-              variant="primary"
-              fullWidth
-              isLoading={isLoading}
-              disabled={isLoading || isLoadingCards}
-            >
-              {isLoading ? 'Adding Card...' : 'Add Card'}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              fullWidth
-              onClick={onClose}
+              error={errors.renewalDate}
               disabled={isLoading}
-            >
-              Cancel
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+              required
+            />
+
+            {/* Custom Name (Optional) */}
+            <Input
+              label="Card Nickname (Optional)"
+              type="text"
+              name="customName"
+              placeholder="e.g., 'My Travel Card'"
+              value={formData.customName}
+              onChange={handleChange}
+              error={errors.customName}
+              disabled={isLoading}
+            />
+
+            {/* Custom Annual Fee (Optional) */}
+            <Input
+              label="Annual Fee Override (Optional, in dollars)"
+              type="number"
+              name="customAnnualFee"
+              placeholder="0.00"
+              step="0.01"
+              value={formData.customAnnualFee}
+              onChange={handleChange}
+              error={errors.customAnnualFee}
+              disabled={isLoading}
+            />
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="submit"
+                variant="primary"
+                fullWidth
+                isLoading={isLoading}
+                disabled={isLoading || isLoadingCards}
+              >
+                {isLoading ? 'Adding Card...' : 'Add Card'}
+              </Button>
+              <DialogPrimitive.Close asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  fullWidth
+                  disabled={isLoading}
+                >
+                  Cancel
+                </Button>
+              </DialogPrimitive.Close>
+            </div>
+          </form>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }

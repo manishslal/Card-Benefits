@@ -400,7 +400,8 @@ export async function commitImport(
   const { importJobId, playerId, records } = options;
 
   try {
-    // Execute all operations in a single transaction
+    // Execute all operations in a single atomic transaction
+    // This ensures data and status updates both succeed or both fail together
     const result = await prisma.$transaction(
       async (tx) => {
         let cardsCreated = 0;
@@ -445,6 +446,24 @@ export async function commitImport(
           }
         }
 
+        // UPDATE IMPORT JOB STATUS INSIDE TRANSACTION
+        // This ensures status update happens atomically with data commit
+        await tx.importJob.update({
+          where: { id: importJobId },
+          data: {
+            status: 'Committed',
+            processedRecords:
+              cardsCreated + cardsUpdated + benefitsCreated + benefitsUpdated,
+            cardsCreated,
+            cardsUpdated,
+            benefitsCreated,
+            benefitsUpdated,
+            skippedRecords: recordsSkipped,
+            committedAt: new Date(),
+            completedAt: new Date(),
+          },
+        });
+
         return {
           cardsCreated,
           cardsUpdated,
@@ -460,26 +479,6 @@ export async function commitImport(
         timeout: 120000, // 120 seconds
       }
     );
-
-    // Update ImportJob status to Committed
-    await prisma.importJob.update({
-      where: { id: importJobId },
-      data: {
-        status: 'Committed',
-        processedRecords:
-          result.cardsCreated +
-          result.cardsUpdated +
-          result.benefitsCreated +
-          result.benefitsUpdated,
-        cardsCreated: result.cardsCreated,
-        cardsUpdated: result.cardsUpdated,
-        benefitsCreated: result.benefitsCreated,
-        benefitsUpdated: result.benefitsUpdated,
-        skippedRecords: result.recordsSkipped,
-        committedAt: new Date(),
-        completedAt: new Date(),
-      },
-    });
 
     return {
       success: true,

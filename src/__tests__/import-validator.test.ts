@@ -609,7 +609,7 @@ describe('Field-Level Validators', () => {
         result
       );
 
-      expect(isValid).toBe(true);
+      expect(isValid.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
@@ -622,7 +622,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = await validateCardName('', 'Chase', 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
     });
 
@@ -635,7 +635,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = await validateCardName('   ', 'Chase', 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
     });
 
     it('rejects card name exceeding max length (100 chars)', async () => {
@@ -648,7 +648,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = await validateCardName(longName, 'Chase', 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
     });
 
@@ -666,7 +666,7 @@ describe('Field-Level Validators', () => {
         result
       );
 
-      expect(isValid).toBe(true);
+      expect(isValid.valid).toBe(true);
     });
 
     it('rejects card not found in MasterCard catalog', async () => {
@@ -685,7 +685,7 @@ describe('Field-Level Validators', () => {
         result
       );
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
     });
 
@@ -698,7 +698,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = await validateCardName('Chase Sapphire', '', 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
       expect(result.errors.some((e) => e.field === 'Issuer')).toBe(true);
     });
   });
@@ -713,7 +713,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateAnnualFee('0', 1, result);
 
-      expect(isValid).toBe(true);
+      expect(isValid.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
@@ -726,7 +726,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateAnnualFee('55000', 1, result);
 
-      expect(isValid).toBe(true);
+      expect(isValid.valid).toBe(true);
     });
 
     it('rejects negative annual fee', () => {
@@ -738,7 +738,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateAnnualFee('-55000', 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
     });
 
@@ -751,7 +751,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateAnnualFee('1000000', 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
     });
 
     it('rejects non-numeric annual fee', () => {
@@ -763,7 +763,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateAnnualFee('abc', 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
     });
 
     it('rejects empty annual fee', () => {
@@ -775,7 +775,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateAnnualFee('', 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
     });
 
     it('handles decimal annual fee (converted to cents)', () => {
@@ -788,7 +788,7 @@ describe('Field-Level Validators', () => {
       const isValid = validateAnnualFee('550.00', 1, result);
 
       // Should accept and convert to cents
-      expect(isValid).toBe(true);
+      expect(isValid.valid).toBe(true);
     });
 
     it('rejects fee with invalid decimal places', () => {
@@ -801,7 +801,7 @@ describe('Field-Level Validators', () => {
       const isValid = validateAnnualFee('550.999', 1, result);
 
       // More than 2 decimal places should be rejected
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
     });
   });
 
@@ -819,7 +819,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateRenewalDate(isoDate, 1, result);
 
-      expect(isValid).toBe(true);
+      expect(isValid.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
@@ -832,7 +832,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateRenewalDate('2020-12-31', 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
     });
 
@@ -845,7 +845,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateRenewalDate('12/31/2025', 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
     });
 
     it('rejects non-existent date like 2025-02-30', () => {
@@ -857,7 +857,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateRenewalDate('2025-02-30', 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
     });
 
     it('warns on date far in future (>10 years)', () => {
@@ -905,7 +905,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateBenefitType('StatementCredit', 1, result);
 
-      expect(isValid).toBe(true);
+      expect(isValid.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
@@ -918,7 +918,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateBenefitType('UsagePerk', 1, result);
 
-      expect(isValid).toBe(true);
+      expect(isValid.valid).toBe(true);
     });
 
     it('rejects invalid benefit type', () => {
@@ -930,7 +930,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateBenefitType('Cashback', 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
     });
 
@@ -943,7 +943,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateBenefitType('', 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
     });
 
     it('is case-sensitive', () => {
@@ -955,7 +955,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateBenefitType('statementcredit', 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
     });
   });
 
@@ -969,7 +969,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateStickerValue('100000', 1, result); // $1000
 
-      expect(isValid).toBe(true);
+      expect(isValid.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
@@ -982,7 +982,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateStickerValue('0', 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
     });
 
@@ -995,7 +995,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateStickerValue('-100000', 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
     });
 
     it('rejects non-integer values', () => {
@@ -1007,7 +1007,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateStickerValue('1000.50', 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
     });
 
     it('rejects non-numeric values', () => {
@@ -1019,7 +1019,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateStickerValue('abc', 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
     });
   });
 
@@ -1033,7 +1033,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateDeclaredValue('100000', 1, result);
 
-      expect(isValid).toBe(true);
+      expect(isValid.valid).toBe(true);
     });
 
     it('accepts null/undefined declared value', () => {
@@ -1045,7 +1045,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateDeclaredValue(null, 1, result);
 
-      expect(isValid).toBe(true);
+      expect(isValid.valid).toBe(true);
     });
 
     it('rejects negative declared value', () => {
@@ -1057,7 +1057,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateDeclaredValue('-100000', 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
     });
 
     it('rejects non-numeric declared value', () => {
@@ -1069,7 +1069,7 @@ describe('Field-Level Validators', () => {
 
       const isValid = validateDeclaredValue('abc', 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
     });
   });
 });
@@ -1177,7 +1177,7 @@ describe('Edge Cases & Boundary Conditions', () => {
 
       const isValid = validateAnnualFee('999999', 1, result); // 9999.99 in cents
 
-      expect(isValid).toBe(true);
+      expect(isValid.valid).toBe(true);
     });
 
     it('rejects annual fee of $10000.00', () => {
@@ -1189,7 +1189,7 @@ describe('Edge Cases & Boundary Conditions', () => {
 
       const isValid = validateAnnualFee('1000000', 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
     });
 
     it('handles sticker value of exactly 1 cent', () => {
@@ -1201,7 +1201,7 @@ describe('Edge Cases & Boundary Conditions', () => {
 
       const isValid = validateStickerValue('1', 1, result);
 
-      expect(isValid).toBe(true);
+      expect(isValid.valid).toBe(true);
     });
 
     it('handles card name of exactly 100 characters', async () => {
@@ -1274,7 +1274,7 @@ describe('Edge Cases & Boundary Conditions', () => {
 
       const isValid = validateAnnualFee(null as any, 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
     });
 
     it('handles undefined annual fee', () => {
@@ -1286,7 +1286,7 @@ describe('Edge Cases & Boundary Conditions', () => {
 
       const isValid = validateAnnualFee(undefined as any, 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
     });
 
     it('handles null card name', async () => {
@@ -1298,7 +1298,7 @@ describe('Edge Cases & Boundary Conditions', () => {
 
       const isValid = await validateCardName(null as any, 'Chase', 1, result);
 
-      expect(isValid).toBe(false);
+      expect(isValid.valid).toBe(false);
     });
   });
 
@@ -1312,7 +1312,7 @@ describe('Edge Cases & Boundary Conditions', () => {
 
       const isValid = validateAnnualFee('550', 1, result);
 
-      expect(isValid).toBe(true);
+      expect(isValid.valid).toBe(true);
     });
 
     it('handles numeric type for annual fee', () => {

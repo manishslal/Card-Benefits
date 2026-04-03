@@ -80,9 +80,31 @@ export async function POST(): Promise<NextResponse> {
     }
 
     // Invalidate session in database
-    // This is critical - marks Session.isValid = false
-    await invalidateSession(sessionCookie.value);
+    // This is CRITICAL - marks Session.isValid = false
+    // Must happen before any early returns
+    try {
+      await invalidateSession(sessionCookie.value);
+    } catch (error) {
+      // Even if invalidation fails, we must not return success
+      // This ensures stolen tokens cannot be reused
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[Logout] Failed to invalidate session:', errorMessage);
+      
+      // Return error response - never return success if invalidation fails
+      const response = NextResponse.json(
+        {
+          success: false,
+          error: 'Failed to complete logout. Please try again.',
+        } as LogoutError,
+        { status: 500 }
+      );
+      
+      // Still clear client-side cookie even though server-side invalidation failed
+      clearSessionCookie(response);
+      return response;
+    }
 
+    // If we reach here, session was successfully invalidated
     // Create response with cleared session cookie
     const response = NextResponse.json(
       {
@@ -97,12 +119,12 @@ export async function POST(): Promise<NextResponse> {
 
     return response;
   } catch (error) {
-    // Log error for debugging
+    // Log error for debugging (should rarely happen now since we handle invalidation errors above)
     if (error instanceof Error) {
-      console.error('[Logout Error]', error.message);
+      console.error('[Logout] Unexpected error:', error.message);
     }
 
-    // Even on error, clear the cookie
+    // Generic error response
     const response = NextResponse.json(
       {
         success: false,

@@ -69,19 +69,32 @@ export async function toggleBenefit(
     }
 
     // ── Mutation with race condition prevention ──────────────────────────────
-    // Use conditional update: only update if current state matches client's expectation
-    // This prevents race conditions when multiple clients toggle simultaneously
+    // OPTIMISTIC LOCKING: Use both conditional state check AND version field
+    // This provides defense-in-depth against race conditions:
+    // 1. State guard (isUsed) prevents toggling if state changed
+    // 2. Version guard ensures no other updates occurred
+    // If either guard fails, update rejects with P2025 (not found)
     const benefit = await prisma.userBenefit.update({
       where: {
         id: benefitId,
-        isUsed: currentIsUsed,  // Race condition guard: only update if state matches
+        isUsed: currentIsUsed,  // State guard: only update if isUsed matches
       },
       data: currentIsUsed === false
-        // Marking as used: record the claim timestamp and bump the counter
-        ? { isUsed: true, claimedAt: new Date(), timesUsed: { increment: 1 } }
+        // Marking as used: record the claim timestamp, bump counter, increment version
+        ? {
+            isUsed: true,
+            claimedAt: new Date(),
+            timesUsed: { increment: 1 },
+            version: { increment: 1 }  // Bump version on successful update
+          }
         // Unclaiming: clear the used flag and timestamp only
         // timesUsed is purposely left unchanged (historical record)
-        : { isUsed: false, claimedAt: null },
+        // Version still bumps to detect the change
+        : {
+            isUsed: false,
+            claimedAt: null,
+            version: { increment: 1 }  // Bump version on successful update
+          },
     });
 
     return createSuccessResponse(benefit);

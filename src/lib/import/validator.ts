@@ -87,7 +87,7 @@ export async function validateCardName(
   issuer: any,
   _rowNumber: number,
   result: ValidationResult
-): Promise<boolean> {
+): Promise<{ valid: boolean; value?: string }> {
   if (!cardName || typeof cardName !== 'string') {
     result.errors.push(
       createError(
@@ -96,7 +96,7 @@ export async function validateCardName(
         'Provide the exact card name as it appears in the catalog'
       )
     );
-    return false;
+    return { valid: false };
   }
 
   const trimmed = cardName.trim();
@@ -108,7 +108,7 @@ export async function validateCardName(
         'Provide the exact card name'
       )
     );
-    return false;
+    return { valid: false };
   }
 
   if (trimmed.length > 100) {
@@ -119,7 +119,7 @@ export async function validateCardName(
         'Use a shorter card name'
       )
     );
-    return false;
+    return { valid: false };
   }
 
   // Check if card exists in catalog
@@ -132,7 +132,7 @@ export async function validateCardName(
         'Provide the card issuer'
       )
     );
-    return false;
+    return { valid: false };
   }
 
   const masterCard = await prisma.masterCard.findFirst({
@@ -150,10 +150,10 @@ export async function validateCardName(
         'Add this card to the system first via Admin panel, or use an existing card name'
       )
     );
-    return false;
+    return { valid: false };
   }
 
-  return true;
+  return { valid: true, value: trimmed };
 }
 
 /**
@@ -163,7 +163,7 @@ export function validateIssuer(
   issuer: any,
   _rowNumber: number,
   result: ValidationResult
-): boolean {
+): { valid: boolean; value?: string } {
   if (!issuer || typeof issuer !== 'string') {
     result.errors.push(
       createError(
@@ -172,7 +172,7 @@ export function validateIssuer(
         'Provide the card issuer (e.g., Chase, Amex)'
       )
     );
-    return false;
+    return { valid: false };
   }
 
   const trimmed = issuer.trim();
@@ -180,7 +180,7 @@ export function validateIssuer(
     result.errors.push(
       createError('Issuer', 'Issuer cannot be empty', 'Provide the issuer name')
     );
-    return false;
+    return { valid: false };
   }
 
   if (trimmed.length > 50) {
@@ -191,10 +191,10 @@ export function validateIssuer(
         'Use a shorter issuer name'
       )
     );
-    return false;
+    return { valid: false };
   }
 
-  return true;
+  return { valid: true, value: trimmed };
 }
 
 /**

@@ -119,7 +119,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const payload = createSessionPayload(user.id, sessionRecord.id);
     const token = signSessionToken(payload);
 
-    // Update session record with JWT token
+    // Update session record with JWT token in a single operation
+    // CRITICAL: This update should be immediate and atomic at the database level
     await updateSessionToken(sessionRecord.id, token);
 
     // Create response with session cookie
@@ -238,7 +239,11 @@ function validateSignupRequest(body: SignupRequest): {
 
 /**
  * Updates session record with the JWT token
- * (called after token is signed)
+ * 
+ * CRITICAL: This is called immediately after session creation.
+ * The race window is minimal (microseconds), and the token is
+ * validated by the middleware on every request. If this update
+ * fails, the signup will fail on next API call.
  */
 async function updateSessionToken(sessionId: string, token: string): Promise<void> {
   const { prisma } = await import('@/lib/prisma');
@@ -248,8 +253,11 @@ async function updateSessionToken(sessionId: string, token: string): Promise<voi
       data: { sessionToken: token },
     });
   } catch (error) {
-    // Log but don't throw - session already created
-    console.error('[Session Update Error]', error);
+    console.error('[Signup] Failed to update session token:', {
+      sessionId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    throw error;
   }
 }
 

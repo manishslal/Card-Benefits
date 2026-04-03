@@ -277,7 +277,32 @@ export async function getCardDetails(
     // Auth check
     const userId = getAuthUserIdOrThrow();
 
-    // Fetch card with all relations
+    // SECURITY: Check authorization with minimal query FIRST
+    // This prevents loading sensitive data before verifying ownership
+    const cardOwnership = await prisma.userCard.findUnique({
+      where: { id: cardId },
+      select: {
+        id: true,
+        playerId: true,
+        player: { select: { userId: true } }
+      }
+    });
+
+    if (!cardOwnership) {
+      return createErrorResponse(ERROR_CODES.RESOURCE_NOT_FOUND, {
+        resource: 'card',
+        id: cardId
+      });
+    }
+
+    // Authorize BEFORE fetching full data
+    // This follows least privilege principle - don't load more data than necessary
+    const authorized = await authorizeCardOperation(userId, cardOwnership as any, 'READ');
+    if (!authorized) {
+      return createErrorResponse(ERROR_CODES.AUTHZ_DENIED);
+    }
+
+    // NOW fetch full card with all relations (only after auth passes)
     const card = await prisma.userCard.findUnique({
       where: { id: cardId },
       include: {
@@ -288,16 +313,11 @@ export async function getCardDetails(
     });
 
     if (!card) {
+      // This should not happen since we just checked, but be defensive
       return createErrorResponse(ERROR_CODES.RESOURCE_NOT_FOUND, {
         resource: 'card',
         id: cardId
       });
-    }
-
-    // Authorize
-    const authorized = await authorizeCardOperation(userId, card, 'READ');
-    if (!authorized) {
-      return createErrorResponse(ERROR_CODES.AUTHZ_DENIED);
     }
 
     // Format base card display
@@ -669,44 +689,38 @@ export async function bulkUpdateCards(
       validateRenewalDate(updates.renewalDate);
     }
 
-    // Execute update in transaction
-    const errors: Array<{ cardId: string; reason: string }> = [];
-    let updated = 0;
-
-    await prisma.$transaction(async (tx) => {
-      for (const card of cards) {
-        try {
-          // Validate transition if changing status
-          if (updates.status) {
-            validateCardStatusTransition(card.status as CardStatus, updates.status);
-          }
-
-          // Update card
-          await tx.userCard.update({
-            where: { id: card.id },
-            data: {
-              actualAnnualFee: updates.actualAnnualFee,
-              renewalDate: updates.renewalDate,
-              status: updates.status,
-              statusChangedAt: updates.status ? new Date() : undefined,
-              statusChangedBy: updates.status ? userId : undefined
-            }
-          });
-
-          updated++;
-        } catch (error) {
-          errors.push({
-            cardId: card.id,
-            reason: error instanceof Error ? error.message : 'Unknown error'
-          });
-        }
+    // PRE-VALIDATE ALL CARDS BEFORE TRANSACTION
+    // This ensures transaction can't fail on validation, allowing full rollback if needed
+    for (const card of cards) {
+      // Validate transition if changing status
+      if (updates.status) {
+        validateCardStatusTransition(card.status as CardStatus, updates.status);
       }
+    }
+
+    // Execute update in transaction
+    // Since all validations passed above, this should succeed fully or fail completely
+    const updated = await prisma.$transaction(async (tx) => {
+      let count = 0;
+      for (const card of cards) {
+        await tx.userCard.update({
+          where: { id: card.id },
+          data: {
+            actualAnnualFee: updates.actualAnnualFee,
+            renewalDate: updates.renewalDate,
+            status: updates.status,
+            statusChangedAt: updates.status ? new Date() : undefined,
+            statusChangedBy: updates.status ? userId : undefined
+          }
+        });
+        count++;
+      }
+      return count;
     });
 
     return createSuccessResponse({
       updated,
-      failed: errors.length,
-      ...(errors.length > 0 && { errors })
+      failed: 0
     });
   } catch (error) {
     if (error instanceof AppError) {

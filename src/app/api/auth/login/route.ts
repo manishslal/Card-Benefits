@@ -170,13 +170,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     loginRateLimiter.recordSuccess(email);
 
     const expiresAt = new Date(Date.now() + getSessionExpirationSeconds() * 1000);
+    
+    // Create session first (to get sessionId for payload)
+    // NOTE: Session is created with empty token temporarily
     const sessionRecord = await createSession(user.id, '', expiresAt);
 
     // Create session payload and sign JWT
+    // Now we have sessionId, so payload can include it
     const payload = createSessionPayload(user.id, sessionRecord.id);
     const token = signSessionToken(payload);
 
-    // Update session record with JWT token
+    // Update session record with JWT token in a single operation
+    // CRITICAL: This update should be immediate and atomic at the database level
     await updateSessionToken(sessionRecord.id, token);
 
     // Create response with session cookie
@@ -216,21 +221,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
 /**
  * Updates session record with the JWT token
+ * 
+ * CRITICAL: This is called immediately after session creation.
+ * The race window is minimal (microseconds), and the token is
+ * validated by the middleware on every request. If this update
+ * fails, the login will fail on next API call.
  */
 async function updateSessionToken(sessionId: string, token: string): Promise<void> {
   const { prisma } = await import('@/lib/prisma');
   try {
-    console.log('[Login] Updating session token in database...');
     await prisma.session.update({
       where: { id: sessionId },
       data: { sessionToken: token },
     });
-    console.log('[Login] ✓ Session token updated successfully');
   } catch (error) {
-    console.error('[Login] ✗ CRITICAL ERROR updating session token:', {
+    console.error('[Login] Failed to update session token:', {
       sessionId,
       error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
     });
     throw error;
   }

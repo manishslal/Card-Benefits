@@ -339,3 +339,18 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|public).*)',
   ],
 };
+
+/**
+ * RUNTIME CONFIGURATION
+ * 
+ * Set middleware to run in Node.js runtime instead of Edge Runtime.
+ * This is CRITICAL because:
+ * - Edge Runtime doesn't support Node.js crypto module
+ * - Edge Runtime doesn't support Prisma database queries
+ * - Our authentication requires both crypto (JWT verification) and Prisma (session lookup)
+ * 
+ * With this configuration, middleware can:
+ * - Verify JWT signatures directly (using Node.js crypto)
+ * - Query the database for session validation (using Prisma)
+ */
+export const runtime = 'nodejs';

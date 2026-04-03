@@ -269,6 +269,25 @@ export async function middleware(request: NextRequest) {
   console.log(`[Middleware] Route classification: public=${isPublic}, protected=${isProtected}`);
 
   // =========================================================================
+  // STEP 1.5: Handle Authenticated User on Root Path
+  // =========================================================================
+  // If user is authenticated and accessing "/", redirect to "/dashboard"
+
+  if (pathname === '/') {
+    const sessionToken = extractSessionToken(request);
+    
+    if (sessionToken) {
+      console.log('[Middleware] Authenticated user accessing root, verifying session...');
+      const { valid, userId } = await verifySessionTokenDirect(sessionToken);
+      
+      if (valid && userId) {
+        console.log(`[Middleware] ✓ Authenticated user redirecting to /dashboard`);
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+    }
+  }
+
+  // =========================================================================
   // STEP 2: Public Routes - No Auth Required
   // =========================================================================
 

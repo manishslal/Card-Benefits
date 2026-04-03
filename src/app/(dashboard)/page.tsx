@@ -7,6 +7,7 @@ import Link from 'next/link';
 import CardSwitcher from '@/components/features/CardSwitcher';
 import DashboardSummary from '@/components/features/DashboardSummary';
 import BenefitsGrid from '@/components/features/BenefitsGrid';
+import { AddCardModal } from '@/components/AddCardModal';
 import { CreditCard, Settings, Plus } from 'lucide-react';
 
 /**
@@ -51,6 +52,7 @@ export default function DashboardPage() {
   ];
 
   const [selectedCardId, setSelectedCardId] = useState('1');
+  const [isAddCardModalOpen, setIsAddCardModalOpen] = useState(false);
 
   const mockBenefits = [
     {
@@ -147,7 +149,7 @@ export default function DashboardPage() {
         <div className="max-w-6xl mx-auto px-4 md:px-8">
           <div className="flex items-center justify-between mb-4">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <div
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold"
                 style={{ backgroundColor: 'var(--color-primary)' }}
@@ -190,6 +192,7 @@ export default function DashboardPage() {
             <Button
               variant="primary"
               size="md"
+              onClick={() => setIsAddCardModalOpen(true)}
             >
               <Plus size={16} className="mr-2" />
               Add Card

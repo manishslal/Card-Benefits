@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SafeDarkModeToggle } from '@/components/SafeDarkModeToggle';
 import Button from '@/components/ui/button';
 import Input from '@/components/ui/Input';
@@ -12,7 +12,7 @@ import { CreditCard, ArrowLeft } from 'lucide-react';
  * Settings Page - User Preferences and Account Management
  * 
  * Features:
- * - User profile settings
+ * - User profile settings with real data from API
  * - Email and password management
  * - Theme preferences (dark mode toggle)
  * - Notification preferences
@@ -26,8 +26,9 @@ export const dynamic = 'force-dynamic';
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'account'>('profile');
   const [formData, setFormData] = useState({
-    name: 'John Doe',
-    email: 'john@example.com',
+    firstName: '',
+    lastName: '',
+    email: '',
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
@@ -35,11 +36,46 @@ export default function SettingsPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [notifications, setNotifications] = useState({
     expiringBenefits: true,
     newFeatures: false,
     weeklyDigest: true,
   });
+
+  // Fetch current user profile on component mount
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const response = await fetch('/api/auth/user', {
+          method: 'GET',
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          console.error('Failed to fetch user profile');
+          setIsLoadingProfile(false);
+          return;
+        }
+
+        const data = await response.json();
+        if (data.success && data.user) {
+          setFormData((prev) => ({
+            ...prev,
+            firstName: data.user.firstName || '',
+            lastName: data.user.lastName || '',
+            email: data.user.email || '',
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -54,7 +90,9 @@ export default function SettingsPage() {
     setMessage('');
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // TODO: Implement actual profile update API endpoint
+      // For now, just show success message as a placeholder
+      await new Promise((resolve) => setTimeout(resolve, 500));
       setMessage('✓ Profile updated successfully');
     } catch (error) {
       setMessage('Error updating profile');
@@ -116,7 +154,7 @@ export default function SettingsPage() {
       >
         <div className="max-w-6xl mx-auto px-4 md:px-8 flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold"
               style={{ backgroundColor: 'var(--color-primary)' }}
@@ -131,7 +169,7 @@ export default function SettingsPage() {
           {/* Right actions */}
           <div className="flex items-center gap-3">
             <SafeDarkModeToggle />
-            <Link href="/">
+            <Link href="/dashboard">
               <Button variant="outline" size="sm">
                 <ArrowLeft size={16} className="mr-1" />
                 Back to Dashboard
@@ -199,11 +237,19 @@ export default function SettingsPage() {
 
                 <div className="space-y-4">
                   <Input
-                    label="Full Name"
-                    name="name"
-                    value={formData.name}
+                    label="First Name"
+                    name="firstName"
+                    value={formData.firstName}
                     onChange={handleChange}
-                    disabled={isLoading}
+                    disabled={isLoading || isLoadingProfile}
+                  />
+
+                  <Input
+                    label="Last Name"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    disabled={isLoading || isLoadingProfile}
                   />
 
                   <Input
@@ -212,14 +258,14 @@ export default function SettingsPage() {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    disabled={isLoading}
+                    disabled={true}
                   />
 
                   <Button
                     variant="primary"
                     onClick={handleSaveProfile}
                     isLoading={isLoading}
-                    disabled={isLoading}
+                    disabled={isLoading || isLoadingProfile}
                   >
                     Save Changes
                   </Button>

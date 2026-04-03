@@ -24,7 +24,8 @@ export const dynamic = 'force-dynamic';
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -36,8 +37,12 @@ export default function SignupPage() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
     }
 
     if (!formData.email) {
@@ -48,8 +53,16 @@ export default function SignupPage() {
 
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    } else if (formData.password.length < 12) {
+      newErrors.password = 'Password must be at least 12 characters';
+    } else if (!/[A-Z]/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one uppercase letter';
+    } else if (!/[a-z]/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one lowercase letter';
+    } else if (!/\d/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one number';
+    } else if (!/[!@#$%^&*\-_]/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one special character (!@#$%^&*-_)';
     }
 
     if (!formData.confirmPassword) {
@@ -75,7 +88,8 @@ export default function SignupPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: formData.name,
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
           email: formData.email,
           password: formData.password,
         }),
@@ -84,11 +98,21 @@ export default function SignupPage() {
       const data = await response.json();
 
       if (!response.ok) {
+        if (data.fieldErrors) {
+          // Set field-level errors from API
+          const fieldErrors: Record<string, string> = {};
+          Object.entries(data.fieldErrors).forEach(([field, messages]) => {
+            if (Array.isArray(messages) && messages.length > 0) {
+              fieldErrors[field] = messages[0];
+            }
+          });
+          setErrors(fieldErrors);
+        }
         setMessage(data.error || 'Signup failed');
         return;
       }
 
-      // Success - redirect to login or dashboard
+      // Success - redirect to dashboard
       window.location.href = '/dashboard';
     } catch (error) {
       setMessage('An error occurred. Please try again.');
@@ -168,15 +192,27 @@ export default function SignupPage() {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Name Field */}
+            {/* First Name Field */}
               <Input
-                label="Full Name"
+                label="First Name"
                 type="text"
-                name="name"
-                placeholder="John Doe"
-                value={formData.name}
+                name="firstName"
+                placeholder="John"
+                value={formData.firstName}
                 onChange={handleChange}
-                error={errors.name}
+                error={errors.firstName}
+                disabled={isLoading}
+              />
+
+              {/* Last Name Field */}
+              <Input
+                label="Last Name"
+                type="text"
+                name="lastName"
+                placeholder="Doe"
+                value={formData.lastName}
+                onChange={handleChange}
+                error={errors.lastName}
                 disabled={isLoading}
               />
 
@@ -202,7 +238,7 @@ export default function SignupPage() {
                 onChange={handleChange}
                 error={errors.password}
                 disabled={isLoading}
-                hint="At least 6 characters"
+                hint="At least 12 characters with uppercase, lowercase, number, and special character"
               />
 
               {/* Confirm Password Field */}

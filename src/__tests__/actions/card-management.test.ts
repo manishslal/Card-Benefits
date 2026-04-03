@@ -5,9 +5,10 @@
  * Covers: CRUD operations, authorization, validation, error handling
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as cardActions from '@/actions/card-management';
 import { AppError, ERROR_CODES } from '@/lib/errors';
+import { assertSuccess, assertError } from '@/__tests__/setup';
 
 // Mock dependencies
 vi.mock('@/lib/prisma', () => ({

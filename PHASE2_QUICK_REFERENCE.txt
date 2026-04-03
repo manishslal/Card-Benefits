@@ -1,0 +1,394 @@
+================================================================================
+PHASE 2 BUG QUICK REFERENCE - Card Benefits Tracker
+Consolidated from 52 unique bugs across 2 comprehensive reports
+================================================================================
+
+PHASE 2A: BLOCKING MVP (10 CRITICAL BUGS) - MUST FIX BEFORE RELEASE
+================================================================================
+
+[B1] 🔴 CRITICAL - Import Validator Return Type Mismatch
+     File: src/lib/import/validator.ts, src/__tests__/import-validator.test.ts
+     Effort: 8-12 hours | Dev Days: 1-1.5
+     Impact: Import feature completely broken; 25+ test failures
+     Fix: Standardize validator return type to { valid: boolean, value?: any }
+     Status: BLOCKER - 72 tests fail
+
+[B2] 🔴 CRITICAL - Session Token Race Condition in Login/Signup
+     File: src/app/api/auth/login/route.ts, src/app/api/auth/signup/route.ts
+     Effort: 6-10 hours | Dev Days: 0.75-1.25
+     Impact: 5-10% of login attempts fail randomly
+     Fix: Include token in initial createSession call; make atomic
+     Status: BLOCKER - Auth reliability critical
+
+[B3] 🔴 CRITICAL - Logout Doesn't Invalidate Session (SECURITY)
+     File: src/app/api/auth/logout/route.ts (lines 99-116)
+     Effort: 3-4 hours | Dev Days: 0.4-0.5
+     Impact: Sessions remain valid after logout; stolen tokens reusable indefinitely
+     Fix: Ensure invalidateSession always completes; handle DB failures properly
+     Status: BLOCKER - Security vulnerability
+
+[B4] 🔴 CRITICAL - Bulk Card Update Partial Failure - No Rollback
+     File: src/actions/card-management.ts (lines 676-704)
+     Effort: 8-10 hours | Dev Days: 1-1.25
+     Impact: Bulk updates leave inconsistent state; some cards updated, others not
+     Fix: Validate all cards BEFORE transaction; no try-catch inside TX
+     Status: BLOCKER - Data integrity at risk
+
+[B5] 🔴 CRITICAL - Import Transaction - Status Update Outside TX
+     File: src/lib/import/committer.ts (lines 400-526)
+     Effort: 4-6 hours | Dev Days: 0.5-0.75
+     Impact: Import data committed but status never updates; UI shows "Processing..."
+     Fix: Move ImportJob status update INSIDE transaction with card/benefit updates
+     Status: BLOCKER - Import completes invisibly
+
+[B6] 🔴 CRITICAL - Missing GET /api/cards/available Endpoint
+     File: src/components/AddCardModal.tsx (line 60-89)
+     Effort: 10-12 hours | Dev Days: 1.25-1.5
+     Impact: Users see only 3 hardcoded mock cards; cannot add real cards
+     Fix: Create endpoint, query MasterCard table, update modal to use real API
+     Status: BLOCKER - Card addition broken
+
+[B7] 🔴 CRITICAL - Dashboard Using Mock Data - Real Data Not Loading
+     File: src/app/(dashboard)/page.tsx (lines 29-52, 191)
+     Effort: 8-10 hours | Dev Days: 1-1.25
+     Impact: Dashboard always shows same 3 hardcoded demo cards; users can't see wallet
+     Fix: Add useEffect to fetch real cards via getPlayerCards(); remove mock data
+     Status: BLOCKER - MVP core feature broken
+
+[B8] 🔴 CRITICAL - Settings Page Profile Update Not Implemented
+     File: src/app/(dashboard)/settings/page.tsx (lines 88-102)
+     Effort: 10-12 hours | Dev Days: 1.25-1.5
+     Impact: Profile changes show success but aren't saved; fake endpoint
+     Fix: Create POST /api/user/profile endpoint; validate and persist changes
+     Status: BLOCKER - Settings non-functional
+
+[B9] 🔴 CRITICAL - CardDetailPanel and BulkActionBar Are Unimplemented Stubs
+     File: src/components/card-management/CardDetailPanel.tsx
+            src/components/card-management/BulkActionBar.tsx
+     Effort: 20-25 hours | Dev Days: 2.5-3.1
+     Impact: Cannot view card details; cannot bulk select/edit cards
+     Fix: Implement CardDetailPanel with stats/benefits/actions; BulkActionBar with operations
+     Status: BLOCKER - Major UI feature missing
+
+[B10] 🔴 CRITICAL - Password Change Not Implemented (SECURITY)
+      File: src/app/(dashboard)/settings/page.tsx (lines 104-143)
+      Effort: 8-10 hours | Dev Days: 1-1.25
+      Impact: Password change shows success but doesn't update; no API endpoint
+      Fix: Create POST /api/user/change-password endpoint; verify old password; hash new
+      Status: BLOCKER - Security feature missing
+
+================================================================================
+PHASE 2B: REQUIRED FOR MVP (15 HIGH PRIORITY BUGS) - COMPLETE BY LAUNCH
+================================================================================
+
+[H1] 🟠 HIGH - CardFiltersPanel Not Implemented
+     File: src/components/card-management/CardFiltersPanel.tsx
+     Effort: 12-15 hours | Dev Days: 1.5-1.9
+     Impact: Cannot filter cards by status, issuer, fee, renewal date, benefits
+     Fix: Implement status, issuer, fee range, date range, benefits filters
+     Status: Features marked TODO; no filtering works
+
+[H2] 🟠 HIGH - Race Condition in toggleBenefit - Concurrent Toggle Attack
+     File: src/actions/benefits.ts (lines 51-109)
+     Effort: 8-10 hours | Dev Days: 1-1.25
+     Impact: Concurrent toggles double-count usage; ROI calculations inflated
+     Fix: Add version field for optimistic locking; version check in update
+     Status: Usage counter can become incorrect
+
+[H3] 🟠 HIGH - Missing Early Authorization Check in getCardDetails (SECURITY)
+     File: src/actions/card-management.ts (lines 273-363)
+     Effort: 4-6 hours | Dev Days: 0.5-0.75
+     Impact: Unauthorized access loads full card data into memory before auth check
+     Fix: Check authorization with minimal query first; fetch full details only after auth passes
+     Status: Information disclosure vulnerability
+
+[H4] 🟠 HIGH - useAuth Hook Calls Itself Causing Infinite Loop (PERFORMANCE)
+     File: src/hooks/useAuth.ts (lines 190-205)
+     Effort: 2-4 hours | Dev Days: 0.25-0.5
+     Impact: Maximum update depth warnings; page becomes slow/unresponsive
+     Fix: Wrap derived values with useMemo in useUserId/useIsAuthenticated
+     Status: Console warnings; performance degradation
+
+[H5] 🟠 HIGH - BenefitValueContext useEffect Missing Cleanup (Stale State)
+     File: src/context/BenefitValueContext.tsx (lines 153-179)
+     Effort: 3-5 hours | Dev Days: 0.4-0.6
+     Impact: Shows stale ROI values when switching cards; confusing UX during transitions
+     Fix: Clear ROI immediately when dependencies change; show loading state
+     Status: Old ROI shown briefly during card switches
+
+[H6] 🟠 HIGH - EditableValueField Timeout Not Cleared on Unmount (MEMORY LEAK)
+     File: src/components/custom-values/EditableValueField.tsx
+     Effort: 2-3 hours | Dev Days: 0.25-0.4
+     Impact: React warnings; memory leaks if editing many benefits then navigating
+     Fix: Add useEffect cleanup to clear timeout on unmount
+     Status: React state update warnings
+
+[H7] 🟠 HIGH - Benefit Value History Tracking Disabled
+     File: src/actions/custom-values.ts (lines 49-91)
+     Effort: 10-12 hours | Dev Days: 1.25-1.5
+     Impact: No audit trail for benefit changes; can't see history or revert values
+     Fix: Add valueHistory field to schema; implement history tracking; add UI to view/revert
+     Status: Feature commented out; no historical tracking
+
+[H8] 🟠 HIGH - Card Renewal Date - Archived Cards Show Negative Days
+     File: src/lib/card-validation.ts, src/lib/card-calculations.ts
+     Effort: 3-4 hours | Dev Days: 0.4-0.5
+     Impact: Archived cards with past renewal dates show renewal urgency; confusing
+     Fix: Skip renewal calculations for archived/deleted cards; return Infinity
+     Status: Negative days shown for inactive cards
+
+[H9] 🟠 HIGH - Cron Job Processes Benefits for Archived Cards
+     File: src/app/api/cron/reset-benefits/route.ts (lines 127-141)
+     Effort: 2-3 hours | Dev Days: 0.25-0.4
+     Impact: Benefits on archived cards reset automatically; violates business logic
+     Fix: Add userCard.status = 'ACTIVE' filter to query
+     Status: Archived card benefits recycled nightly
+
+[H10] 🟠 HIGH - calculateCardROI Incorrect for Zero-Fee Cards
+      File: src/lib/card-calculations.ts (lines 167-179)
+      Effort: 2-3 hours | Dev Days: 0.25-0.4
+      Impact: Zero-fee and paid cards show same ROI (100%); can't compare fairly
+      Fix: Return Infinity for zero-fee cards; display as "No Fee" in UI
+      Status: Misleading ROI for no-fee cards
+
+[H11] 🟠 HIGH - Missing Orphaned Session Cleanup
+      File: src/lib/auth-server.ts (lines 300-310)
+      Effort: 6-8 hours | Dev Days: 0.75-1
+      Impact: Session table bloats over time; queries slow; disk usage grows
+      Fix: Create cleanupSessions() function; delete old invalid/expired sessions weekly
+      Status: Database bloat; no session cleanup
+
+[H12] 🟠 HIGH - Card Wallet Stats Don't Sum ROI Correctly
+      File: src/actions/card-management.ts (lines 227-249)
+      Effort: 2-3 hours | Dev Days: 0.25-0.4
+      Impact: Household ROI shows incorrect aggregate; misleading wallet metrics
+      Fix: Change to sum total benefit value; clarify metric in UI
+      Status: Incorrect wallet stats calculation
+
+[H13] 🟠 HIGH - CSV Import Doesn't Validate Duplicate Benefit Names
+      File: src/lib/import/duplicate-detector.ts or src/lib/import/committer.ts
+      Effort: 6-8 hours | Dev Days: 0.75-1
+      Impact: Multiple benefits with same name on single card; ROI inflated
+      Fix: Validate benefit uniqueness per card before commit; reject duplicates
+      Status: Duplicate benefits created on import
+
+[H14] 🟠 HIGH - Import Validator Field-Level Tests Returning Wrong Type
+      File: src/__tests__/import-validator.test.ts (multiple)
+      Effort: 3-4 hours | Dev Days: 0.4-0.5
+      Impact: 25+ tests fail due to return type mismatch (same as B1)
+      Fix: Update tests to check .valid property; standardize types
+      Status: Covered in BLOCKER #1 consolidation
+
+[H15] 🟠 HIGH - Bulk Value Editor Uses any[] Type (Type Safety)
+      File: src/components/custom-values/BulkValueEditor.tsx
+      Effort: (Included in M10) | Dev Days: (Included in M10)
+      Impact: Type checking disabled; potential runtime errors
+      Fix: Define proper UserBenefit type; replace any[]
+      Status: Covered in MEDIUM #10 (Type Safety)
+
+================================================================================
+PHASE 2C: QUALITY IMPROVEMENTS (12 MEDIUM PRIORITY BUGS)
+================================================================================
+
+[M1] 🟡 MEDIUM - Test Environment Missing DOM APIs
+     File: src/__tests__/phase1-mvp-bugs-test-suite.test.ts
+     Effort: 3-5 hours | Dev Days: 0.4-0.6
+     Impact: 10+ dark mode/localStorage tests fail
+     Fix: Configure Vitest jsdom environment for DOM tests
+     Status: Tests assume browser APIs in Node.js
+
+[M2] 🟡 MEDIUM - Import Error Accumulation Not Working
+     File: src/__tests__/import-validator.test.ts (lines 1141-1156)
+     Effort: 2-3 hours | Dev Days: 0.25-0.4
+     Impact: Only first error shown per record; incomplete validation feedback
+     Fix: Ensure all field validations run; collect all errors
+     Status: Errors not accumulated properly
+
+[M3] 🟡 MEDIUM - Duplicate Dashboard Routes Detected
+     File: Route definitions (unclear which file)
+     Effort: 1-2 hours | Dev Days: 0.1-0.25
+     Impact: Router confusion; potential wrong component render
+     Fix: Find both definitions; keep one; remove duplicate
+     Status: 2 conflicting routes found
+
+[M4] 🟡 MEDIUM - validateRenewalDate Doesn't Account for DST
+     File: src/lib/card-validation.ts
+     Effort: 2-3 hours | Dev Days: 0.25-0.4
+     Impact: Date comparison unreliable during DST transitions
+     Fix: Use UTC dates or date library; avoid setHours during DST
+     Status: DST can break validation
+
+[M5] 🟡 MEDIUM - Card Search Case Sensitivity
+     File: src/actions/card-management.ts (line 165-170)
+     Effort: 2-3 hours | Dev Days: 0.25-0.4
+     Impact: Search doesn't find "Chase" when user searches "chase"
+     Fix: Use case-insensitive LIKE or database-specific functions
+     Status: Search broken on case-sensitive databases
+
+[M6] 🟡 MEDIUM - Missing Network Error Handling in useAuth
+     File: src/hooks/useAuth.ts
+     Effort: 5-7 hours | Dev Days: 0.6-0.9
+     Impact: Network failures treated as "not authenticated"; no retry logic
+     Fix: Distinguish network errors; implement exponential backoff; cache state
+     Status: No retry logic; user thinks logged out on network failure
+
+[M7] 🟡 MEDIUM - Benefit Calculation Uses Stale Declared Values
+     File: src/lib/card-calculations.ts
+     Effort: 2-3 hours | Dev Days: 0.25-0.4
+     Impact: Custom declared values don't affect summary calculations
+     Fix: Use userDeclaredValue if set; fall back to stickerValue
+     Status: Custom values ignored in calculations
+
+[M8] 🟡 MEDIUM - Import Job Status Not Atomic
+     File: src/lib/import/committer.ts
+     Effort: 2-3 hours | Dev Days: 0.25-0.4
+     Impact: UpdateMany can partially fail; inconsistent import status
+     Fix: Use transaction for batch status updates
+     Status: Partial updates possible
+
+[M9] 🟡 MEDIUM - Missing Index on Session Lookup by Token (PERFORMANCE)
+     File: prisma/schema.prisma (Session model)
+     Effort: 1-2 hours | Dev Days: 0.1-0.25
+     Impact: Session queries slow; full table scan instead of index
+     Fix: Add @unique index on sessionToken field
+     Status: No index on frequently queried field
+
+[M10] 🟡 MEDIUM - Type Safety Issues - Multiple `any` Types
+      File: Multiple files
+      Effort: 8-10 hours | Dev Days: 1-1.25
+      Impact: Type checking disabled; potential runtime errors
+      Fix: Define proper types; replace all `any` with specific types
+      Status: 20+ instances of `any` found
+      - getExportHistoryAction(): any[]
+      - BulkValueEditor: any[]
+      - CardFiltersPanel: any[]
+      - calculateColumnWidth: any[]
+
+[M11] 🟡 MEDIUM - Inconsistent Error Handling in Login Page
+      File: src/app/(auth)/login/page.tsx (line 80)
+      Effort: 2-3 hours | Dev Days: 0.25-0.4
+      Impact: Generic error logs; hard to debug login issues
+      Fix: Log error details explicitly; provide specific user messages
+      Status: Generic error logging
+
+[M12] 🟡 MEDIUM - Console Logs Left in Production Code
+      File: src/app/api/auth/*, src/middleware.ts
+      Effort: 2-3 hours | Dev Days: 0.25-0.4
+      Impact: Debug logs in production; information leakage
+      Fix: Remove or replace with proper logger; use log levels
+      Status: Multiple console.log/error in production code
+
+================================================================================
+PHASE 2D: POLISH & PERFORMANCE (5 LOW PRIORITY BUGS)
+================================================================================
+
+[L1] 🟢 LOW - Settings Export/Import Buttons Not Functional
+     File: src/app/(dashboard)/settings/page.tsx (lines 447-465)
+     Effort: 6-8 hours | Dev Days: 0.75-1
+     Impact: Users cannot export or import data from settings
+     Fix: Add onClick handlers; implement export/import workflows
+     Status: Buttons have no handlers
+
+[L2] 🟢 LOW - Settings Delete Account Button Not Functional
+     File: src/app/(dashboard)/settings/page.tsx (line 494-497)
+     Effort: 6-8 hours | Dev Days: 0.75-1
+     Impact: Users cannot delete accounts; dangerous if broken
+     Fix: Add confirmation modal; implement cascading deletion
+     Status: No handler or confirmation dialog
+
+[L3] 🟢 LOW - Icon Component Warning for Missing Icons
+     File: src/components/ui/Icon.tsx
+     Effort: 1-2 hours | Dev Days: 0.1-0.25
+     Impact: Console spam; some icons might not render
+     Fix: Audit all icon names; ensure all exist in lucide-react
+     Status: Missing icons cause warnings
+
+[L4] 🟢 LOW - Error Messages Leak Implementation Details
+     File: Multiple API routes
+     Effort: 3-4 hours | Dev Days: 0.4-0.5
+     Impact: Database schema and implementation details exposed to users
+     Fix: Use generic user-facing errors; detailed logs only internally
+     Status: Error responses expose schema information
+
+[L5] 🟢 LOW - Modal Cleanup Not Implemented
+     File: src/components/ui/Modal.tsx
+     Effort: 2-3 hours | Dev Days: 0.25-0.4
+     Impact: Event listeners not cleaned up; potential memory leaks
+     Fix: Add useEffect cleanup to remove event listeners on unmount
+     Status: Modal listeners persist after close
+
+================================================================================
+PRIORITY ORDERING FOR DEVELOPERS
+================================================================================
+
+CRITICAL PATH (MUST DO THESE FIRST):
+1. B2 - Session Token Race (6-10h) → B3 - Logout Security (3-4h)
+2. B1 - Import Validator (8-12h) → B5 - Import TX (4-6h) → B4 - Bulk Update (8-10h)
+3. B6 - Available Cards API (10-12h) → B7 - Dashboard (8-10h)
+4. B8 - Settings Profile (10-12h) → B10 - Password Change (8-10h)
+5. B9 - CardDetailPanel + BulkActionBar (20-25h)
+
+PARALLEL TRACKS (CAN START ANYTIME):
+- H2 - toggleBenefit Race (8-10h)
+- H3 - Early Auth Check (4-6h)
+- H4 - useAuth Loop (2-4h)
+- H5 - useROIValue Stale (3-5h)
+- H6 - EditableValueField (2-3h)
+- H7 - Value History (10-12h)
+- H8 - Renewal Date Logic (3-4h)
+- H9 - Cron Archive (2-3h)
+- H10 - Zero-Fee ROI (2-3h)
+- H11 - Session Cleanup (6-8h)
+- H12 - Wallet Stats (2-3h)
+- H13 - Duplicate Benefits (6-8h)
+- All MEDIUM and LOW bugs
+
+================================================================================
+EFFORT SUMMARY BY PHASE
+================================================================================
+
+PHASE 2A (CRITICAL): 85-111 hours = 10.6-13.9 developer days = 2 weeks
+PHASE 2B (HIGH):     88-111 hours = 11-13.9 developer days = 2-3 weeks
+PHASE 2C (MEDIUM):   32-45 hours  = 4-5.6 developer days  = 1 week
+PHASE 2D (LOW):      18-25 hours  = 2.25-3.15 dev days    = 0.5 week
+
+TOTAL PROJECT:       223-292 hours = 28-37 developer days = 4-5 weeks (2-3 devs)
+
+================================================================================
+QUICK WINS (HIGHEST VALUE, LOWEST EFFORT)
+================================================================================
+
+✅ B3 - Logout Security (3-4h)     - Security critical, simple fix
+✅ H3 - Early Auth Check (4-6h)    - Security improvement, straightforward
+✅ H10 - Zero-Fee ROI (2-3h)       - Fixes calculation, changes return value
+✅ H9 - Cron Archive (2-3h)        - Add status filter, prevents business logic error
+✅ H4 - useAuth Loop (2-4h)        - Add useMemo, eliminates re-renders
+✅ M4 - DST Handling (2-3h)        - Use UTC dates, fixes edge case
+✅ M3 - Duplicate Routes (1-2h)    - Find and remove, quick win
+✅ M9 - Session Index (1-2h)       - Add @unique to schema, performance boost
+✅ L3 - Missing Icons (1-2h)       - Audit and fix, removes warnings
+
+================================================================================
+TESTING REQUIREMENTS
+================================================================================
+
+CRITICAL TESTS:
+- Auth: Session creation/login/logout - 100% reliability
+- Import: Validator types correct - all 72 tests pass
+- Dashboard: Real data loading - not mock data
+- Settings: Profile/password saves - data persists
+- Bulk: Transaction rollback on error - no partial states
+
+PERFORMANCE TESTS:
+- 1000 concurrent logins - should succeed
+- 100 concurrent benefit toggles - counter accurate
+- Session cleanup - deletes old records weekly
+- Card filter - queries performant with index
+
+SECURITY TESTS:
+- Logout invalidates session - stolen tokens can't be used
+- Early auth check - unauthorized access fails first
+- Password change - old password verified, new password hashed
+- No console logs - no debug info in production
+
+================================================================================

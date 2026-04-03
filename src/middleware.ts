@@ -129,44 +129,62 @@ function extractSessionToken(request: NextRequest): string | null {
 async function verifySessionTokenDirect(
   token: string
 ): Promise<{ valid: boolean; userId?: string }> {
+  console.log('[Auth] Starting session token verification');
   try {
     // Step 1: Verify JWT signature
+    console.log('[Auth] Step 1: Verifying JWT signature...');
     let payload;
     try {
       payload = verifySessionToken(token);
+      console.log('[Auth] ✓ Step 1 passed: JWT signature valid');
     } catch (error) {
       // Token is invalid, expired, or tampered
+      console.error('[Auth] ✗ Step 1 failed: JWT signature invalid', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
       return { valid: false };
     }
 
     // Step 2: Check if token is expired
+    console.log('[Auth] Step 2: Checking token expiration...');
     if (isSessionExpired(payload)) {
+      console.error('[Auth] ✗ Step 2 failed: Token is expired');
       return { valid: false };
     }
+    console.log('[Auth] ✓ Step 2 passed: Token not expired');
 
     // Step 3: Check if session is valid in database
+    console.log('[Auth] Step 3: Looking up session in database...');
     const dbSession = await getSessionByToken(token);
     if (!dbSession) {
       // Session was revoked or doesn't exist
+      console.error('[Auth] ✗ Step 3 failed: Session not found in database');
+      console.log('[Auth] Token preview:', token.substring(0, 50) + '...');
       return { valid: false };
     }
+    console.log('[Auth] ✓ Step 3 passed: Session found in database');
 
     // Step 4: Verify user still exists
+    console.log('[Auth] Step 4: Checking user existence...');
     const userValid = await userExists(payload.userId);
     if (!userValid) {
       // User was deleted after session creation
+      console.error('[Auth] ✗ Step 4 failed: User not found');
       return { valid: false };
     }
+    console.log('[Auth] ✓ Step 4 passed: User exists');
 
     // All checks passed - return success with userId
+    console.log('[Auth] ✓ All verification steps passed, authentication successful');
     return {
       valid: true,
       userId: payload.userId,
     };
   } catch (error) {
     // Any other errors (database, etc.) should be treated as auth failure
-    console.error('[Auth Middleware] Session verification failed:', {
+    console.error('[Auth Middleware] CRITICAL ERROR during session verification:', {
       error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
     });
     return { valid: false };
   }
@@ -221,6 +239,7 @@ function createUnauthorizedResponse(
  */
 export async function middleware(request: NextRequest) {
   const pathname = new URL(request.url).pathname;
+  console.log(`[Middleware] Processing route: ${pathname}`);
 
   // =========================================================================
   // STEP 1: Route Classification
@@ -228,6 +247,8 @@ export async function middleware(request: NextRequest) {
 
   const isPublic = PUBLIC_ROUTES.has(pathname) || isPublicApiRoute(pathname);
   const isProtected = isProtectedRoute(pathname);
+
+  console.log(`[Middleware] Route classification: public=${isPublic}, protected=${isProtected}`);
 
   // =========================================================================
   // STEP 2: Public Routes - No Auth Required
@@ -246,13 +267,18 @@ export async function middleware(request: NextRequest) {
   // =========================================================================
 
   if (isProtected) {
+    console.log('[Middleware] Protected route detected, checking authentication...');
+    
     // Extract JWT from secure cookie
     const sessionToken = extractSessionToken(request);
 
     if (!sessionToken) {
       // No token = no authentication
+      console.error('[Middleware] No session token found in cookies');
       return createUnauthorizedResponse('Authentication required');
     }
+
+    console.log('[Middleware] Session token found, verifying...');
 
     // Verify JWT signature and session validity directly
     // The middleware can perform JWT verification directly since it runs in
@@ -265,8 +291,11 @@ export async function middleware(request: NextRequest) {
 
     if (!valid || !userId) {
       // Session invalid, revoked, expired, or user deleted
+      console.error('[Middleware] Token verification failed');
       return createUnauthorizedResponse('Session invalid or revoked');
     }
+
+    console.log(`[Middleware] ✓ Authentication successful for user ${userId}`);
 
     // =====================================================================
     // Auth successful! Set context and proceed

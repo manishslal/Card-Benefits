@@ -220,12 +220,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 async function updateSessionToken(sessionId: string, token: string): Promise<void> {
   const { prisma } = await import('@/lib/prisma');
   try {
+    console.log('[Login] Updating session token in database...');
     await prisma.session.update({
       where: { id: sessionId },
       data: { sessionToken: token },
     });
+    console.log('[Login] ✓ Session token updated successfully');
   } catch (error) {
-    console.error('[Session Update Error]', error);
+    console.error('[Login] ✗ CRITICAL ERROR updating session token:', {
+      sessionId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    throw error;
   }
 }
 

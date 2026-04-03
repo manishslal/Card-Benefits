@@ -1,0 +1,26 @@
+{
+  "$schema": "https://railway.app/schema.json",
+  "build": {
+    "builder": "nixpacks",
+    "buildCommand": "npm ci && npm run build"
+  },
+  "deploy": {
+    "startCommand": "npm start",
+    "numReplicas": 2,
+    "restartPolicyMaxRetries": 3,
+    "restartPolicyType": "unless-stopped",
+    "healthCheck": {
+      "enabled": true,
+      "endpoint": "/api/health",
+      "initialDelaySeconds": 10,
+      "periodSeconds": 30,
+      "timeoutSeconds": 5,
+      "failureThreshold": 3
+    }
+  },
+  "plugins": {
+    "postgres": {
+      "version": "15"
+    }
+  }
+}

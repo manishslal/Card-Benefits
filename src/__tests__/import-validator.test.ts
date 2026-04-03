@@ -1204,7 +1204,7 @@ describe('Edge Cases & Boundary Conditions', () => {
       expect(isValid).toBe(true);
     });
 
-    it('handles card name of exactly 100 characters', () => {
+    it('handles card name of exactly 100 characters', async () => {
       const result: ValidationResult = {
         valid: true,
         errors: [],

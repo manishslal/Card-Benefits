@@ -63,6 +63,92 @@ vi.mock('@/lib/auth', () => ({
   verifySessionToken: vi.fn(),
 }));
 
+// Mock auth-server (used by server actions)
+vi.mock('@/lib/auth-server', () => ({
+  getAuthUserIdOrThrow: vi.fn(() => 'user-1'),
+  verifyPlayerOwnership: vi.fn(async (playerId: string, userId: string) => {
+    // Use the mocked prisma to check ownership (simulating real behavior)
+    const prismaModule = await import('@/lib/prisma');
+    const player = await (prismaModule.prisma as any).player.findUnique({
+      where: { id: playerId },
+      select: { userId: true },
+    });
+
+    if (!player) {
+      return { isOwner: false, error: 'Player not found' };
+    }
+
+    if (player.userId !== userId) {
+      return { isOwner: false, error: 'You do not have permission to modify this player' };
+    }
+
+    return { isOwner: true };
+  }),
+}));
+
+// Mock import library functions
+vi.mock('@/lib/import/parser', () => ({
+  parseFile: vi.fn(async (file: File) => {
+    // Simulate parsing CSV
+    if (file.size === 0) {
+      return { success: false, error: 'Empty file' };
+    }
+    return {
+      success: true,
+      totalRows: 2,
+      rows: [
+        { CardName: 'Chase Sapphire Reserve', Issuer: 'Chase', AnnualFee: '550' },
+        { CardName: 'Amex Platinum', Issuer: 'Amex', AnnualFee: '695' },
+      ],
+      headers: ['CardName', 'Issuer', 'AnnualFee'],
+    };
+  }),
+  detectColumnMapping: vi.fn((headers: string[]) => {
+    // Return standard mappings for test headers
+    const mapping: any = {};
+    headers.forEach((header, index) => {
+      mapping[header] = {
+        fileIndex: index,
+        systemField: header,
+        confidence: 1.0,
+        detectionType: 'exact' as const,
+      };
+    });
+    return mapping;
+  }),
+}));
+
+vi.mock('@/lib/import/validator', () => ({
+  validateCardRecord: vi.fn((record: any) => ({
+    isValid: true,
+    errors: [],
+    warnings: [],
+  })),
+  validateBenefitRecord: vi.fn((record: any) => ({
+    isValid: true,
+    errors: [],
+    warnings: [],
+  })),
+}));
+
+vi.mock('@/lib/import/duplicate-detector', () => ({
+  detectDuplicates: vi.fn(async (records: any[], mapping: any) => {
+    return { duplicates: [], warnings: [] };
+  }),
+}));
+
+vi.mock('@/lib/import/committer', () => ({
+  commitImport: vi.fn(async (jobId: string, records: any[]) => {
+    return {
+      success: true,
+      cardsCreated: 1,
+      benefitsCreated: 0,
+      cardsUpdated: 0,
+      benefitsUpdated: 0,
+    };
+  }),
+}));
+
 // ============================================================================
 // TEST FIXTURES
 // ============================================================================
@@ -133,7 +219,7 @@ describe('uploadImportFile Server Action', () => {
 
       expect(response.success).toBe(true);
       if (response.success) {
-        expect(response.data?.jobId).toBeDefined();
+        expect(response.data?.importJobId).toBeDefined();
         expect(response.data?.totalRecords).toBeGreaterThan(0);
         expect(response.data?.status).toBe('Uploaded');
       }
@@ -292,7 +378,7 @@ describe('validateImportFile Server Action', () => {
         status: 'ValidatingComplete',
       });
 
-      const response = await validateImportFile('player-1', 'job-1');
+      const response = await validateImportFile('job-1');
 
       expect(response.success).toBe(true);
       if (response.success) {
@@ -308,7 +394,7 @@ describe('validateImportFile Server Action', () => {
         status: 'ValidatingComplete',
       });
 
-      await validateImportFile('player-1', 'job-1');
+      await validateImportFile('job-1');
 
       expect(prisma.importJob.update).toHaveBeenCalled();
     });
@@ -340,7 +426,7 @@ describe('validateImportFile Server Action', () => {
         ],
       });
 
-      const response = await validateImportFile('player-1', 'job-1');
+      const response = await validateImportFile('job-1');
 
       if (response.success) {
         expect(response.data?.validationSummary).toBeDefined();
@@ -355,7 +441,7 @@ describe('validateImportFile Server Action', () => {
         userId: 'different-user',
       });
 
-      const response = await validateImportFile('player-1', 'job-1');
+      const response = await validateImportFile('job-1');
 
       expect(response.success).toBe(false);
       expect(response.code).toBe('AUTHZ_OWNERSHIP');
@@ -364,7 +450,7 @@ describe('validateImportFile Server Action', () => {
     it('rejects validation for non-existent job', async () => {
       (prisma.importJob.findUnique as any).mockResolvedValue(null);
 
-      const response = await validateImportFile('player-1', 'job-1');
+      const response = await validateImportFile('job-1');
 
       expect(response.success).toBe(false);
       expect(response.code).toBe('RESOURCE_NOT_FOUND');
@@ -376,7 +462,7 @@ describe('validateImportFile Server Action', () => {
         playerId: 'different-player',
       });
 
-      const response = await validateImportFile('player-1', 'job-1');
+      const response = await validateImportFile('job-1');
 
       expect(response.success).toBe(false);
     });
@@ -388,7 +474,7 @@ describe('validateImportFile Server Action', () => {
         new Error('Database error')
       );
 
-      const response = await validateImportFile('player-1', 'job-1');
+      const response = await validateImportFile('job-1');
 
       expect(response.success).toBe(false);
       expect(response.code).toBe('DATABASE_ERROR');
@@ -421,7 +507,7 @@ describe('validateImportFile Server Action', () => {
         ],
       });
 
-      const response = await validateImportFile('player-1', 'job-1');
+      const response = await validateImportFile('job-1');
 
       expect(response.success).toBe(true);
     });
@@ -464,7 +550,7 @@ describe('checkImportDuplicates Server Action', () => {
         status: 'DuplicateCheckComplete',
       });
 
-      const response = await checkImportDuplicates('player-1', 'job-1');
+      const response = await checkImportDuplicates('job-1');
 
       expect(response.success).toBe(true);
     });
@@ -494,7 +580,7 @@ describe('checkImportDuplicates Server Action', () => {
         status: 'DuplicateCheckComplete',
       });
 
-      const response = await checkImportDuplicates('player-1', 'job-1');
+      const response = await checkImportDuplicates('job-1');
 
       expect(response.success).toBe(true);
     });
@@ -522,7 +608,7 @@ describe('checkImportDuplicates Server Action', () => {
         status: 'DuplicateCheckComplete',
       });
 
-      const response = await checkImportDuplicates('player-1', 'job-1');
+      const response = await checkImportDuplicates('job-1');
 
       if (response.success) {
         expect(response.data?.duplicates).toBeDefined();
@@ -541,7 +627,7 @@ describe('checkImportDuplicates Server Action', () => {
         status: 'DuplicateCheckComplete',
       });
 
-      await checkImportDuplicates('player-1', 'job-1');
+      await checkImportDuplicates('job-1');
 
       expect(prisma.importJob.update).toHaveBeenCalled();
     });
@@ -554,7 +640,7 @@ describe('checkImportDuplicates Server Action', () => {
         userId: 'different-user',
       });
 
-      const response = await checkImportDuplicates('player-1', 'job-1');
+      const response = await checkImportDuplicates('job-1');
 
       expect(response.success).toBe(false);
       expect(response.code).toBe('AUTHZ_OWNERSHIP');
@@ -563,7 +649,7 @@ describe('checkImportDuplicates Server Action', () => {
     it('rejects check for non-existent job', async () => {
       (prisma.importJob.findUnique as any).mockResolvedValue(null);
 
-      const response = await checkImportDuplicates('player-1', 'job-1');
+      const response = await checkImportDuplicates('job-1');
 
       expect(response.success).toBe(false);
       expect(response.code).toBe('RESOURCE_NOT_FOUND');
@@ -576,7 +662,7 @@ describe('checkImportDuplicates Server Action', () => {
         new Error('Database error')
       );
 
-      const response = await checkImportDuplicates('player-1', 'job-1');
+      const response = await checkImportDuplicates('job-1');
 
       expect(response.success).toBe(false);
       expect(response.code).toBe('DATABASE_ERROR');
@@ -590,7 +676,7 @@ describe('checkImportDuplicates Server Action', () => {
         status: 'DuplicateCheckComplete',
       });
 
-      const response = await checkImportDuplicates('player-1', 'job-1');
+      const response = await checkImportDuplicates('job-1');
 
       expect(response.success).toBe(true);
       if (response.success) {
@@ -638,7 +724,7 @@ describe('performImportCommit Server Action', () => {
         cardsCreated: 1,
       });
 
-      const response = await performImportCommit('player-1', 'job-1', []);
+      const response = await performImportCommit('job-1');
 
       expect(response.success).toBe(true);
       if (response.success) {
@@ -673,7 +759,7 @@ describe('performImportCommit Server Action', () => {
         cardsCreated: 1,
       });
 
-      await performImportCommit('player-1', 'job-1', []);
+      await performImportCommit('job-1');
 
       expect(prisma.userCard.create).toHaveBeenCalled();
     });
@@ -707,7 +793,7 @@ describe('performImportCommit Server Action', () => {
         benefitsCreated: 1,
       });
 
-      await performImportCommit('player-1', 'job-1', []);
+      await performImportCommit('job-1');
 
       expect(prisma.userBenefit.create).toHaveBeenCalled();
     });
@@ -745,7 +831,7 @@ describe('performImportCommit Server Action', () => {
         },
       ];
 
-      await performImportCommit('player-1', 'job-1', userResolutions);
+      await performImportCommit('job-1');
 
       expect(prisma.userCard.update).toHaveBeenCalled();
     });
@@ -801,7 +887,7 @@ describe('performImportCommit Server Action', () => {
         status: 'Committed',
       });
 
-      await performImportCommit('player-1', 'job-1', []);
+      await performImportCommit('job-1');
 
       expect(prisma.importJob.update).toHaveBeenCalled();
     });
@@ -814,7 +900,7 @@ describe('performImportCommit Server Action', () => {
         userId: 'different-user',
       });
 
-      const response = await performImportCommit('player-1', 'job-1', []);
+      const response = await performImportCommit('job-1');
 
       expect(response.success).toBe(false);
       expect(response.code).toBe('AUTHZ_OWNERSHIP');
@@ -823,7 +909,7 @@ describe('performImportCommit Server Action', () => {
     it('rejects commit for non-existent job', async () => {
       (prisma.importJob.findUnique as any).mockResolvedValue(null);
 
-      const response = await performImportCommit('player-1', 'job-1', []);
+      const response = await performImportCommit('job-1');
 
       expect(response.success).toBe(false);
       expect(response.code).toBe('RESOURCE_NOT_FOUND');
@@ -835,7 +921,7 @@ describe('performImportCommit Server Action', () => {
         status: 'Uploaded', // Not yet validated
       });
 
-      const response = await performImportCommit('player-1', 'job-1', []);
+      const response = await performImportCommit('job-1');
 
       expect(response.success).toBe(false);
     });
@@ -846,7 +932,7 @@ describe('performImportCommit Server Action', () => {
         status: 'ValidatingComplete', // Validated but not duplicate checked
       });
 
-      const response = await performImportCommit('player-1', 'job-1', []);
+      const response = await performImportCommit('job-1');
 
       expect(response.success).toBe(false);
     });
@@ -873,7 +959,7 @@ describe('performImportCommit Server Action', () => {
         new Error('Database error')
       );
 
-      const response = await performImportCommit('player-1', 'job-1', []);
+      const response = await performImportCommit('job-1');
 
       expect(response.success).toBe(false);
       // Job should not be marked as Committed
@@ -891,7 +977,7 @@ describe('performImportCommit Server Action', () => {
         new Error('Database error')
       );
 
-      const response = await performImportCommit('player-1', 'job-1', []);
+      const response = await performImportCommit('job-1');
 
       expect(response.success).toBe(false);
       expect(response.code).toBe('DATABASE_ERROR');
@@ -927,7 +1013,7 @@ describe('performImportCommit Server Action', () => {
         benefitsCreated: 1,
       });
 
-      const response = await performImportCommit('player-1', 'job-1', []);
+      const response = await performImportCommit('job-1');
 
       expect(response.success).toBe(true);
       if (response.success) {
@@ -959,7 +1045,7 @@ describe('Full Import Workflow Integration', () => {
 
     const uploadResp = await uploadImportFile('player-1', mockCsvFile);
     expect(uploadResp.success).toBe(true);
-    const jobId = uploadResp.data?.jobId;
+    const jobId = uploadResp.data?.importJobId;
 
     // Step 2: Validate
     (prisma.importJob.findUnique as any).mockResolvedValue({
@@ -983,7 +1069,7 @@ describe('Full Import Workflow Integration', () => {
       status: 'ValidatingComplete',
     });
 
-    const validateResp = await validateImportFile('player-1', jobId!);
+    const validateResp = await validateImportFile(jobId!);
     expect(validateResp.success).toBe(true);
 
     // Step 3: Check Duplicates
@@ -999,7 +1085,7 @@ describe('Full Import Workflow Integration', () => {
       status: 'DuplicateCheckComplete',
     });
 
-    const duplicateResp = await checkImportDuplicates('player-1', jobId!);
+    const duplicateResp = await checkImportDuplicates(jobId!);
     expect(duplicateResp.success).toBe(true);
 
     // Step 4: Commit
@@ -1018,7 +1104,7 @@ describe('Full Import Workflow Integration', () => {
       cardsCreated: 1,
     });
 
-    const commitResp = await performImportCommit('player-1', jobId!, []);
+    const commitResp = await performImportCommit(jobId!);
     expect(commitResp.success).toBe(true);
   });
 
@@ -1049,7 +1135,7 @@ describe('Full Import Workflow Integration', () => {
     });
 
     // Should not allow direct commit
-    const response = await performImportCommit('player-1', 'job-1', []);
+    const response = await performImportCommit('job-1');
     expect(response.success).toBe(false);
   });
 });

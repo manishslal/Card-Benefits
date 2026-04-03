@@ -111,10 +111,11 @@ export async function uploadImportFile(
     const userId = getAuthUserIdOrThrow();
 
     // Authorization
-    const playerOwned = await verifyPlayerOwnership(userId, playerId);
-    if (!playerOwned) {
+    const ownershipResult = await verifyPlayerOwnership(playerId, userId);
+    if (!ownershipResult.isOwner) {
       return createErrorResponse('AUTHZ_OWNERSHIP', {
         playerId,
+        error: ownershipResult.error,
       });
     }
 

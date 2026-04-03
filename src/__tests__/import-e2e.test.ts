@@ -18,7 +18,7 @@ import {
   validateImportFile,
   checkImportDuplicates,
   performImportCommit,
-} from '@/app/actions/import';
+} from '@/actions/import';
 
 // Mock Prisma
 vi.mock('@/lib/prisma', () => ({
@@ -155,7 +155,7 @@ describe('Happy Path: Complete Import Workflow', () => {
     const validatedJob = { ...mockJob, status: 'ValidatingComplete' as const };
     (prisma.importJob.update as any).mockResolvedValue(validatedJob);
 
-    const validateResp = await validateImportFile('player-1', jobId!);
+    const validateResp = await validateImportFile(jobId!);
     expect(validateResp.success).toBe(true);
     expect(validateResp.data?.status).toBe('ValidatingComplete');
 
@@ -169,7 +169,7 @@ describe('Happy Path: Complete Import Workflow', () => {
     };
     (prisma.importJob.update as any).mockResolvedValue(dupCheckJob);
 
-    const dupResp = await checkImportDuplicates('player-1', jobId!);
+    const dupResp = await checkImportDuplicates(jobId!);
     expect(dupResp.success).toBe(true);
     expect(dupResp.data?.hasDuplicates).toBe(false);
 
@@ -187,7 +187,7 @@ describe('Happy Path: Complete Import Workflow', () => {
     };
     (prisma.importJob.update as any).mockResolvedValue(committedJob);
 
-    const commitResp = await performImportCommit('player-1', jobId!, []);
+    const commitResp = await performImportCommit(jobId!);
     expect(commitResp.success).toBe(true);
     expect(commitResp.data?.status).toBe('Committed');
     expect(commitResp.data?.cardsCreated).toBe(1);
@@ -309,7 +309,7 @@ Chase Sapphire Reserve,Chase,1% Travel Cash Back,StatementCredit,150000
     ]);
     (prisma.importJob.update as any).mockResolvedValue(validatedJob);
 
-    const validateResp = await validateImportFile('player-1', jobId!);
+    const validateResp = await validateImportFile(jobId!);
     expect(validateResp.success).toBe(true);
   });
 
@@ -356,7 +356,7 @@ Chase Sapphire Reserve,Chase,1% Travel Cash Back,StatementCredit,150000
     const validatedJob = { ...mockJob, status: 'ValidatingComplete' as const };
     (prisma.importJob.update as any).mockResolvedValue(validatedJob);
 
-    const validateResp = await validateImportFile('player-1', jobId!);
+    const validateResp = await validateImportFile(jobId!);
     expect(validateResp.success).toBe(true);
   });
 });
@@ -423,7 +423,7 @@ describe('Error Scenarios & Recovery', () => {
     };
     (prisma.importJob.update as any).mockResolvedValue(validationJob);
 
-    const validateResp = await validateImportFile('player-1', jobId!);
+    const validateResp = await validateImportFile(jobId!);
     expect(validateResp.success).toBe(true);
 
     // User can then upload corrected file
@@ -483,7 +483,7 @@ describe('Error Scenarios & Recovery', () => {
     ]);
     (prisma.importJob.update as any).mockResolvedValue(validatedJob);
 
-    await validateImportFile('player-1', jobId!);
+    await validateImportFile(jobId!);
 
     // Check duplicates - finds existing card
     const existingCard = {
@@ -514,7 +514,7 @@ describe('Error Scenarios & Recovery', () => {
     };
     (prisma.importJob.update as any).mockResolvedValue(dupJob);
 
-    const dupResp = await checkImportDuplicates('player-1', jobId!);
+    const dupResp = await checkImportDuplicates(jobId!);
     expect(dupResp.success).toBe(true);
     expect(dupResp.data?.hasDuplicates).toBe(true);
 
@@ -664,7 +664,7 @@ describe('Error Scenarios & Recovery', () => {
       new Error('Unique constraint violation')
     );
 
-    const commitResp = await performImportCommit('player-1', 'job-1', []);
+    const commitResp = await performImportCommit('job-1');
 
     expect(commitResp.success).toBe(false);
     // Job should not be marked committed
@@ -723,7 +723,7 @@ describe('Error Scenarios & Recovery', () => {
     };
     (prisma.importJob.update as any).mockResolvedValue(validationJob);
 
-    const validateResp = await validateImportFile('player-1', uploadResp.data?.jobId!);
+    const validateResp = await validateImportFile(uploadResp.data?.jobId!);
     expect(validateResp.success).toBe(true);
   });
 });
@@ -759,7 +759,7 @@ describe('Authorization & Security', () => {
       status: 'Uploaded',
     });
 
-    const validateResp = await validateImportFile('player-1', 'job-1');
+    const validateResp = await validateImportFile('job-1');
     expect(validateResp.success).toBe(false);
     expect(validateResp.code).toBe('AUTHZ_OWNERSHIP');
   });
@@ -772,7 +772,7 @@ describe('Authorization & Security', () => {
       status: 'ValidatingComplete',
     });
 
-    const dupResp = await checkImportDuplicates('player-1', 'job-1');
+    const dupResp = await checkImportDuplicates('job-1');
     expect(dupResp.success).toBe(false);
     expect(dupResp.code).toBe('AUTHZ_OWNERSHIP');
   });
@@ -785,7 +785,7 @@ describe('Authorization & Security', () => {
       status: 'DuplicateCheckComplete',
     });
 
-    const commitResp = await performImportCommit('player-1', 'job-1', []);
+    const commitResp = await performImportCommit('job-1');
     expect(commitResp.success).toBe(false);
     expect(commitResp.code).toBe('AUTHZ_OWNERSHIP');
   });
@@ -889,7 +889,7 @@ Chase Sapphire Reserve,Chase,55000,My Card,3% Dining,300000
     };
     (prisma.importJob.update as any).mockResolvedValue(validatedJob);
 
-    const validateResp = await validateImportFile('player-1', jobId);
+    const validateResp = await validateImportFile(jobId);
     expect(validateResp.success).toBe(true);
 
     // Data consistency through duplicate check
@@ -903,7 +903,7 @@ Chase Sapphire Reserve,Chase,55000,My Card,3% Dining,300000
     };
     (prisma.importJob.update as any).mockResolvedValue(dupCheckJob);
 
-    const dupResp = await checkImportDuplicates('player-1', jobId);
+    const dupResp = await checkImportDuplicates(jobId);
     expect(dupResp.success).toBe(true);
 
     // Commit with consistency
@@ -928,7 +928,7 @@ Chase Sapphire Reserve,Chase,55000,My Card,3% Dining,300000
     };
     (prisma.importJob.update as any).mockResolvedValue(committedJob);
 
-    const commitResp = await performImportCommit('player-1', jobId, []);
+    const commitResp = await performImportCommit(jobId);
     expect(commitResp.success).toBe(true);
     expect(commitResp.data?.cardsCreated).toBe(1);
     expect(commitResp.data?.benefitsCreated).toBe(1);

@@ -83,9 +83,10 @@ describe('Edge Runtime Crypto Fix - Middleware Architecture', () => {
       expect(content).not.toContain('verifyTokenViaApi');
       expect(content).not.toContain('fetch(');
       
-      // Should validate session in database
-      expect(content).toContain('validateSessionInDatabase');
+      // Should validate session in database using getSessionByToken
       expect(content).toContain('getSessionByToken');
+      expect(content).toContain('isSessionExpired');
+      expect(content).toContain('userExists');
     });
 
     it('/api/auth/verify endpoint exists and uses crypto safely', async () => {
@@ -632,7 +633,7 @@ describe('Edge Runtime Crypto Fix - Regression Prevention', () => {
       
       // Should use direct JWT verification
       expect(middlewareContent).toContain('verifySessionToken');
-      expect(middlewareContent).toContain('validateSessionInDatabase');
+      expect(middlewareContent).toContain('isSessionExpired');
       expect(middlewareContent).toContain('getSessionByToken');
       expect(middlewareContent).toContain('userExists');
     });

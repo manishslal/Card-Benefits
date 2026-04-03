@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runWithAuthContext } from '@/lib/auth-context';
+import {
+  verifySessionToken,
+  isSessionExpired,
+} from '@/lib/auth-utils';
+import {
+  getSessionByToken,
+  userExists,
+} from '@/lib/auth-server';
 
 /**
- * MIDDLEWARE ARCHITECTURE: Two-Layer Authentication
+ * MIDDLEWARE ARCHITECTURE: Direct JWT Verification in Node.js Runtime
  *
  * This middleware implements a two-layer authentication system:
  * 1. JWT signature verification (prevents tampering)
@@ -10,7 +18,7 @@ import { runWithAuthContext } from '@/lib/auth-context';
  *
  * REQUEST FLOW:
  * - Extract JWT from secure, HttpOnly cookie
- * - Verify JWT signature (HS256)
+ * - Verify JWT signature directly (HS256, using Node.js crypto)
  * - Check database for session validity (catches revoked tokens)
  * - Verify user still exists
  * - Set authentication context via AsyncLocalStorage
@@ -23,6 +31,7 @@ import { runWithAuthContext } from '@/lib/auth-context';
  * ✓ Timing-safe verification in verifySessionToken()
  * ✓ No sensitive data in error messages (prevents info leaks)
  * ✓ Session revocation takes effect immediately
+ * ✓ Direct verification (no network calls, no external fetch)
  */
 
 // ============================================================================
@@ -98,19 +107,17 @@ function extractSessionToken(request: NextRequest): string | null {
 }
 
 // ============================================================================
-// JWT VERIFICATION (Via API)
+// JWT VERIFICATION (Direct in Node.js)
 // ============================================================================
 
 /**
- * Verify JWT token by calling /api/auth/verify endpoint
+ * Verify JWT token by directly calling JWT verification functions
  *
- * CRITICAL DESIGN: Token verification happens in Node.js runtime,
- * not in Edge runtime. This is required because:
- * - JWT verification uses crypto module (unavailable in Edge runtime)
- * - /api/auth/verify runs in Node.js and handles all crypto operations
- * - Middleware remains Edge Runtime safe
+ * CRITICAL DESIGN: Token verification happens directly in middleware using
+ * Node.js crypto capabilities. This avoids the network fetch that was
+ * previously failing in Railway.
  *
- * SECURITY CHECKS (handled by API endpoint):
+ * SECURITY CHECKS PERFORMED:
  * - Validates HMAC-SHA256 signature (prevents tampering)
  * - Checks expiration timestamp
  * - Validates session exists in database (enables revocation)
@@ -119,38 +126,46 @@ function extractSessionToken(request: NextRequest): string | null {
  * @param token - Session JWT token from secure cookie
  * @returns Object with valid flag and userId, or invalid=false on failure
  */
-async function verifyTokenViaApi(
+async function verifySessionTokenDirect(
   token: string
 ): Promise<{ valid: boolean; userId?: string }> {
   try {
-    // Determine API base URL (works in both dev and production)
-    const apiUrl =
-      process.env.NEXTAUTH_URL ||
-      process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : 'http://localhost:3000';
-
-    const verifyEndpoint = `${apiUrl}/api/auth/verify`;
-
-    const response = await fetch(verifyEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token }),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return {
-        valid: data.valid === true,
-        userId: data.userId,
-      };
+    // Step 1: Verify JWT signature
+    let payload;
+    try {
+      payload = verifySessionToken(token);
+    } catch (error) {
+      // Token is invalid, expired, or tampered
+      return { valid: false };
     }
 
-    // Non-200 response means token is invalid
-    return { valid: false };
+    // Step 2: Check if token is expired
+    if (isSessionExpired(payload)) {
+      return { valid: false };
+    }
+
+    // Step 3: Check if session is valid in database
+    const dbSession = await getSessionByToken(token);
+    if (!dbSession) {
+      // Session was revoked or doesn't exist
+      return { valid: false };
+    }
+
+    // Step 4: Verify user still exists
+    const userValid = await userExists(payload.userId);
+    if (!userValid) {
+      // User was deleted after session creation
+      return { valid: false };
+    }
+
+    // All checks passed - return success with userId
+    return {
+      valid: true,
+      userId: payload.userId,
+    };
   } catch (error) {
-    // Network failures, JSON parse errors, etc. should be treated as auth failure
-    console.error('[Auth Middleware] API verification failed:', {
+    // Any other errors (database, etc.) should be treated as auth failure
+    console.error('[Auth Middleware] Session verification failed:', {
       error: error instanceof Error ? error.message : 'Unknown error',
     });
     return { valid: false };
@@ -187,8 +202,10 @@ function createUnauthorizedResponse(
  *
  * 1. Determine if route is public or protected
  * 2. If public: proceed with empty auth context
- * 3. If protected: extract JWT and verify via API
- *    - Call /api/auth/verify with token (runs in Node.js runtime)
+ * 3. If protected: extract JWT and verify directly
+ *    - Call verifySessionToken() to validate signature (Node.js runtime)
+ *    - Check database for session validity (enables revocation)
+ *    - Verify user still exists
  *    - If invalid/missing: return 401
  *    - If expired: return 401
  *    - If user deleted: return 401
@@ -196,9 +213,11 @@ function createUnauthorizedResponse(
  * 4. Set auth context for downstream code
  * 5. Allow request to proceed
  *
- * NOTE: JWT verification happens in /api/auth/verify (Node.js runtime),
- * not in middleware (Edge runtime). This avoids the "crypto module not
- * available in Edge runtime" error.
+ * NOTE: JWT verification happens directly in middleware (Node.js runtime),
+ * not via API endpoint. This is the correct approach because:
+ * - Middleware runs in Node.js, not Edge runtime
+ * - Direct verification avoids network overhead
+ * - Railway supports Node.js crypto in middleware
  */
 export async function middleware(request: NextRequest) {
   const pathname = new URL(request.url).pathname;
@@ -235,13 +254,14 @@ export async function middleware(request: NextRequest) {
       return createUnauthorizedResponse('Authentication required');
     }
 
-    // Verify JWT signature and session validity via API endpoint
-    // The API endpoint handles:
-    // - JWT signature verification (crypto-heavy, runs in Node.js)
+    // Verify JWT signature and session validity directly
+    // The middleware can perform JWT verification directly since it runs in
+    // Node.js runtime. We verify:
+    // - JWT signature (crypto-heavy, runs in Node.js)
     // - Session database validation
     // - User existence check
     // - Expiration validation
-    const { valid, userId } = await verifyTokenViaApi(sessionToken);
+    const { valid, userId } = await verifySessionTokenDirect(sessionToken);
 
     if (!valid || !userId) {
       // Session invalid, revoked, expired, or user deleted

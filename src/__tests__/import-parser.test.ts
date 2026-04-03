@@ -532,9 +532,9 @@ describe('Column Mapping & Detection', () => {
       const partialMapping = detectColumnMapping(partialHeaders);
       const completeMapping = detectColumnMapping(completeHeaders);
 
-      // Complete mapping should have more high-score matches
-      const completeHighScores = Object.values(completeMapping).filter((m) => m && m.score >= 0.6).length;
-      const partialHighScores = Object.values(partialMapping).filter((m) => m && m.score >= 0.6).length;
+      // Complete mapping should have more high-confidence matches
+      const completeHighScores = Object.values(completeMapping).filter((m) => m && m.confidence >= 0.6).length;
+      const partialHighScores = Object.values(partialMapping).filter((m) => m && m.confidence >= 0.6).length;
 
       expect(completeHighScores).toBeGreaterThanOrEqual(partialHighScores);
     });

@@ -18,19 +18,14 @@
  * - Claim User B's benefits
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   getAuthUserIdOrThrow,
   verifyPlayerOwnership,
   verifyCardOwnership,
   verifyBenefitOwnership,
-  userExists,
-  getUserByEmail,
-  getUserById,
   invalidateUserSessions,
   getUserSessions,
-  createUser,
-  createSession,
   getSessionByToken,
   invalidateSession,
 } from '@/lib/auth-server';
@@ -605,8 +600,6 @@ describe('Authorization Edge Cases & Race Conditions', () => {
   });
 
   it('handles race condition: concurrent access to same resource', async () => {
-    const results: any[] = [];
-
     vi.spyOn(prisma.player, 'findUnique')
       .mockResolvedValueOnce({ userId: 'user-a' } as any)
       .mockResolvedValueOnce({ userId: 'user-a' } as any)

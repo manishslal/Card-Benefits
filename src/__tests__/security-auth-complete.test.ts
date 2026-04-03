@@ -229,8 +229,6 @@ describe('Cron Endpoint Rate Limiting', () => {
   it('different paths are tracked separately', () => {
     // /api/cron/reset-benefits should have its own rate limit
     // /api/other should have different limit
-    const ip = '192.168.1.1';
-
     const endpoint1 = '/api/cron/reset-benefits';
     const endpoint2 = '/api/other';
 

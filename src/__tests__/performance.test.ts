@@ -11,7 +11,7 @@
  * Total: 16+ test cases ensuring production-ready performance
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 // ============================================================================
 // SECTION 1: Calculation Performance (4 tests)
@@ -183,12 +183,6 @@ describe('Calculation Performance', () => {
 // ============================================================================
 
 describe('Database Query Performance', () => {
-  interface QueryProfile {
-    query: string;
-    count: number;
-    duration: number;
-  }
-
   it('player queries use index (no full table scan)', () => {
     // Document expected query usage
     const expectedQuery = `

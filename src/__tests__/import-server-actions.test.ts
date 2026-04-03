@@ -20,8 +20,7 @@ import {
   validateImportFile,
   checkImportDuplicates,
   performImportCommit,
-} from '@/app/actions/import';
-import type { ActionResponse } from '@/lib/errors';
+} from '@/actions/import';
 
 // Mock Prisma
 vi.mock('@/lib/prisma', () => ({
@@ -88,9 +87,9 @@ const mockImportJob = {
   cardsCreated: 0,
   benefitsCreated: 0,
   columnMappings: {
-    CardName: { fieldName: 'CardName', score: 1.0 },
-    Issuer: { fieldName: 'Issuer', score: 1.0 },
-    AnnualFee: { fieldName: 'AnnualFee', score: 1.0 },
+    CardName: { fileIndex: 0, systemField: 'CardName', confidence: 1.0, detectionType: 'exact' as const },
+    Issuer: { fileIndex: 1, systemField: 'Issuer', confidence: 1.0, detectionType: 'exact' as const },
+    AnnualFee: { fileIndex: 2, systemField: 'AnnualFee', confidence: 1.0, detectionType: 'exact' as const },
   },
   normalizedHeaderNames: ['CardName', 'Issuer', 'AnnualFee'],
   errorLog: [],

@@ -102,13 +102,13 @@ describe('getPlayerCards', () => {
     vi.mocked(authServer.getAuthUserIdOrThrow).mockReturnValue(userId);
     vi.mocked(authServer.verifyPlayerOwnership).mockResolvedValue({
       isOwner: false,
-      accessLevel: 'NONE'
+      error: 'Not the owner'
     });
 
     const result = await cardActions.getPlayerCards(playerId);
 
-    expect(result.success).toBe(false);
-    expect(result.error?.code).toBe(ERROR_CODES.AUTHZ_OWNERSHIP);
+    assertError(result, ERROR_CODES.AUTHZ_OWNERSHIP);
+    expect(result.code).toBe(ERROR_CODES.AUTHZ_OWNERSHIP);
   });
 
   it('should apply search filter', async () => {
@@ -117,8 +117,7 @@ describe('getPlayerCards', () => {
 
     vi.mocked(authServer.getAuthUserIdOrThrow).mockReturnValue(userId);
     vi.mocked(authServer.verifyPlayerOwnership).mockResolvedValue({
-      isOwner: true,
-      accessLevel: 'OWNER'
+      isOwner: true
     });
     vi.mocked(prisma.userCard.findMany).mockResolvedValue([]);
     vi.mocked(prisma.userCard.count).mockResolvedValue(0);
@@ -127,8 +126,8 @@ describe('getPlayerCards', () => {
       search: 'Sapphire'
     });
 
-    const callArgs = vi.mocked(prisma.userCard.findMany).mock.calls[0][0];
-    expect(callArgs.where?.OR).toBeDefined();
+    const callArgs = vi.mocked(prisma.userCard.findMany).mock.calls[0]?.[0];
+    expect(callArgs?.where?.OR).toBeDefined();
   });
 
   it('should apply status filter', async () => {
@@ -137,8 +136,7 @@ describe('getPlayerCards', () => {
 
     vi.mocked(authServer.getAuthUserIdOrThrow).mockReturnValue(userId);
     vi.mocked(authServer.verifyPlayerOwnership).mockResolvedValue({
-      isOwner: true,
-      accessLevel: 'OWNER'
+      isOwner: true
     });
     vi.mocked(prisma.userCard.findMany).mockResolvedValue([]);
     vi.mocked(prisma.userCard.count).mockResolvedValue(0);
@@ -147,8 +145,8 @@ describe('getPlayerCards', () => {
       status: 'ARCHIVED'
     });
 
-    const callArgs = vi.mocked(prisma.userCard.findMany).mock.calls[0][0];
-    expect(callArgs.where?.status).toBe('ARCHIVED');
+    const callArgs = vi.mocked(prisma.userCard.findMany).mock.calls[0]?.[0];
+    expect(callArgs?.where?.status).toBe('ARCHIVED');
   });
 
   it('should handle pagination', async () => {
@@ -157,8 +155,7 @@ describe('getPlayerCards', () => {
 
     vi.mocked(authServer.getAuthUserIdOrThrow).mockReturnValue(userId);
     vi.mocked(authServer.verifyPlayerOwnership).mockResolvedValue({
-      isOwner: true,
-      accessLevel: 'OWNER'
+      isOwner: true
     });
     vi.mocked(prisma.userCard.findMany).mockResolvedValue([]);
     vi.mocked(prisma.userCard.count).mockResolvedValue(100);
@@ -168,11 +165,12 @@ describe('getPlayerCards', () => {
       offset: 50
     });
 
-    expect(result.data?.limit).toBe(25);
-    expect(result.data?.offset).toBe(50);
-    const callArgs = vi.mocked(prisma.userCard.findMany).mock.calls[0][0];
-    expect(callArgs.skip).toBe(50);
-    expect(callArgs.take).toBe(25);
+    assertSuccess(result);
+    expect(result.data.limit).toBe(25);
+    expect(result.data.offset).toBe(50);
+    const callArgs = vi.mocked(prisma.userCard.findMany).mock.calls[0]?.[0];
+    expect(callArgs?.skip).toBe(50);
+    expect(callArgs?.take).toBe(25);
   });
 
   it('should calculate wallet statistics', async () => {
@@ -181,8 +179,7 @@ describe('getPlayerCards', () => {
 
     vi.mocked(authServer.getAuthUserIdOrThrow).mockReturnValue(userId);
     vi.mocked(authServer.verifyPlayerOwnership).mockResolvedValue({
-      isOwner: true,
-      accessLevel: 'OWNER'
+      isOwner: true
     });
 
     const mockCard = {
@@ -212,9 +209,10 @@ describe('getPlayerCards', () => {
 
     const result = await cardActions.getPlayerCards(playerId);
 
-    expect(result.data?.stats).toBeDefined();
-    expect(result.data?.stats.totalCards).toBeGreaterThanOrEqual(0);
-    expect(result.data?.stats.activeCards).toBeGreaterThanOrEqual(0);
+    assertSuccess(result);
+    expect(result.data.stats).toBeDefined();
+    expect(result.data.stats.totalCards).toBeGreaterThanOrEqual(0);
+    expect(result.data.stats.activeCards).toBeGreaterThanOrEqual(0);
   });
 });
 
@@ -257,8 +255,8 @@ describe('getCardDetails', () => {
 
     const result = await cardActions.getCardDetails(cardId);
 
-    expect(result.success).toBe(true);
-    expect(result.data?.id).toBe(cardId);
+    assertSuccess(result);
+    expect(result.data.id).toBe(cardId);
     expect(authServer.authorizeCardOperation).toHaveBeenCalledWith(userId, mockCard, 'READ');
   });
 
@@ -271,8 +269,8 @@ describe('getCardDetails', () => {
 
     const result = await cardActions.getCardDetails(cardId);
 
-    expect(result.success).toBe(false);
-    expect(result.error?.code).toBe(ERROR_CODES.RESOURCE_NOT_FOUND);
+    assertError(result, ERROR_CODES.RESOURCE_NOT_FOUND);
+    expect(result.code).toBe(ERROR_CODES.RESOURCE_NOT_FOUND);
   });
 
   it('should reject unauthorized access', async () => {
@@ -293,8 +291,8 @@ describe('getCardDetails', () => {
 
     const result = await cardActions.getCardDetails(cardId);
 
-    expect(result.success).toBe(false);
-    expect(result.error?.code).toBe(ERROR_CODES.AUTHZ_DENIED);
+    assertError(result, ERROR_CODES.AUTHZ_DENIED);
+    expect(result.code).toBe(ERROR_CODES.AUTHZ_DENIED);
   });
 
   it('should generate diagnostics for overdue renewals', async () => {
@@ -330,9 +328,10 @@ describe('getCardDetails', () => {
 
     const result = await cardActions.getCardDetails(cardId);
 
-    expect(result.data?.diagnostics.warnings).toBeDefined();
+    assertSuccess(result);
+    expect(result.data.diagnostics.warnings).toBeDefined();
     // Should have warning for overdue renewal
-    expect(result.data?.diagnostics.warnings.some(w => w.type === 'RENEWAL_OVERDUE')).toBe(true);
+    expect(result.data.diagnostics.warnings.some((w: { type: string }) => w.type === 'RENEWAL_OVERDUE')).toBe(true);
   });
 });
 
@@ -381,7 +380,7 @@ describe('updateCard', () => {
       customName: 'New Name'
     });
 
-    expect(result.success).toBe(true);
+    assertSuccess(result);
     expect(cardValidation.validateCustomName).toHaveBeenCalledWith('New Name');
   });
 
@@ -406,8 +405,8 @@ describe('updateCard', () => {
       actualAnnualFee: -1
     });
 
-    expect(result.success).toBe(false);
-    expect(result.error?.code).toBe(ERROR_CODES.VALIDATION_FIELD);
+    assertError(result, ERROR_CODES.VALIDATION_FIELD);
+    expect(result.code).toBe(ERROR_CODES.VALIDATION_FIELD);
   });
 });
 
@@ -543,8 +542,8 @@ describe('deleteCard', () => {
 
     const result = await cardActions.deleteCard(cardId, cardName);
 
-    expect(result.success).toBe(true);
-    expect(result.data?.success).toBe(true);
+    assertSuccess(result);
+    expect(result.data.success).toBe(true);
   });
 });
 
@@ -588,7 +587,7 @@ describe('bulkUpdateCards', () => {
       status: 'ARCHIVED' as any
     });
 
-    expect(result.success).toBe(true);
-    expect(result.data?.updated).toBe(3);
+    assertSuccess(result);
+    expect(result.data.updated).toBe(3);
   });
 });

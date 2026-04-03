@@ -14,15 +14,12 @@
  * Total: 100+ test cases covering all parser functions
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   parseFile,
   validateFileFormat,
   detectColumnMapping,
   inferRecordType,
-  type ParsedRow,
-  type ParseResult,
-  type ParseError,
 } from '@/lib/import/parser';
 
 // ============================================================================
@@ -376,14 +373,14 @@ describe('Column Mapping & Detection', () => {
   ];
 
   describe('detectColumnMapping - Exact Matches', () => {
-    it('maps exact column names with score 1.0', () => {
+    it('maps exact column names with confidence 1.0', () => {
       const headers = ['CardName', 'Issuer', 'AnnualFee'];
       const mapping = detectColumnMapping(headers);
 
       expect(mapping).toBeDefined();
-      expect(mapping.CardName?.score).toBe(1.0);
-      expect(mapping.Issuer?.score).toBe(1.0);
-      expect(mapping.AnnualFee?.score).toBe(1.0);
+      expect(mapping.CardName?.confidence).toBe(1.0);
+      expect(mapping.Issuer?.confidence).toBe(1.0);
+      expect(mapping.AnnualFee?.confidence).toBe(1.0);
     });
 
     it('detects all card columns', () => {
@@ -391,7 +388,7 @@ describe('Column Mapping & Detection', () => {
 
       cardColumns.forEach((col) => {
         expect(mapping[col]).toBeDefined();
-        expect(mapping[col]?.score).toBe(1.0);
+        expect(mapping[col]?.confidence).toBe(1.0);
       });
     });
 
@@ -404,14 +401,14 @@ describe('Column Mapping & Detection', () => {
   });
 
   describe('detectColumnMapping - Fuzzy Matches (0.6+ threshold)', () => {
-    it('maps similar column names with score >= 0.6', () => {
+    it('maps similar column names with confidence >= 0.6', () => {
       // e.g., "Card Name" -> "CardName"
       const headers = ['Card Name', 'Annual Fee'];
       const mapping = detectColumnMapping(headers);
 
       // Fuzzy matching should find close matches
       const values = Object.values(mapping);
-      const fuzzyMatches = values.filter((m) => m && m.score >= 0.6 && m.score < 1.0);
+      const fuzzyMatches = values.filter((m) => m && m.confidence >= 0.6 && m.confidence < 1.0);
       expect(fuzzyMatches.length).toBeGreaterThan(0);
     });
 
@@ -441,13 +438,13 @@ describe('Column Mapping & Detection', () => {
   });
 
   describe('detectColumnMapping - Unknown Columns', () => {
-    it('marks unknown columns with score 0.0', () => {
+    it('marks unknown columns with confidence 0.0', () => {
       const headers = ['XYZ123', 'ABC456'];
       const mapping = detectColumnMapping(headers);
 
       Object.values(mapping).forEach((m) => {
-        if (m && m.fieldName.includes('XYZ') || m.fieldName.includes('ABC')) {
-          expect(m.score).toBe(0);
+        if (m && (m.systemField.includes('XYZ') || m.systemField.includes('ABC'))) {
+          expect(m.confidence).toBe(0);
         }
       });
     });
@@ -466,8 +463,8 @@ describe('Column Mapping & Detection', () => {
       const headers = ['CardName', 'Card Issuer', 'Annual Fee', 'CustomField'];
       const mapping = detectColumnMapping(headers);
 
-      expect(mapping.CardName?.score).toBe(1.0); // Exact
-      expect(mapping.Issuer?.score).toBeLessThan(1.0); // Fuzzy
+      expect(mapping.CardName?.confidence).toBe(1.0); // Exact
+      expect(mapping.Issuer?.confidence).toBeLessThan(1.0); // Fuzzy
       // CustomField should be marked unknown
     });
 
@@ -552,9 +549,9 @@ describe('Record Type Inference', () => {
   describe('inferRecordType - Card Records', () => {
     it('infers Card from required card columns', () => {
       const mapping = {
-        CardName: { fieldName: 'CardName', score: 1.0 },
-        Issuer: { fieldName: 'Issuer', score: 1.0 },
-        AnnualFee: { fieldName: 'AnnualFee', score: 1.0 },
+        CardName: { fileIndex: 0, systemField: 'CardName', confidence: 1.0, detectionType: 'exact' as const },
+        Issuer: { fileIndex: 1, systemField: 'Issuer', confidence: 1.0, detectionType: 'exact' as const },
+        AnnualFee: { fileIndex: 2, systemField: 'AnnualFee', confidence: 1.0, detectionType: 'exact' as const },
       };
 
       const recordType = inferRecordType(mapping);
@@ -563,9 +560,9 @@ describe('Record Type Inference', () => {
 
     it('infers Card with RenewalDate', () => {
       const mapping = {
-        CardName: { fieldName: 'CardName', score: 1.0 },
-        Issuer: { fieldName: 'Issuer', score: 1.0 },
-        RenewalDate: { fieldName: 'RenewalDate', score: 1.0 },
+        CardName: { fileIndex: 0, systemField: 'CardName', confidence: 1.0, detectionType: 'exact' as const },
+        Issuer: { fileIndex: 1, systemField: 'Issuer', confidence: 1.0, detectionType: 'exact' as const },
+        RenewalDate: { fileIndex: 2, systemField: 'RenewalDate', confidence: 1.0, detectionType: 'exact' as const },
       };
 
       const recordType = inferRecordType(mapping);
@@ -574,8 +571,8 @@ describe('Record Type Inference', () => {
 
     it('infers Card with Status field', () => {
       const mapping = {
-        CardName: { fieldName: 'CardName', score: 1.0 },
-        Status: { fieldName: 'Status', score: 1.0 },
+        CardName: { fileIndex: 0, systemField: 'CardName', confidence: 1.0, detectionType: 'exact' as const },
+        Status: { fileIndex: 1, systemField: 'Status', confidence: 1.0, detectionType: 'exact' as const },
       };
 
       const recordType = inferRecordType(mapping);
@@ -586,8 +583,8 @@ describe('Record Type Inference', () => {
   describe('inferRecordType - Benefit Records', () => {
     it('infers Benefit from BenefitType', () => {
       const mapping = {
-        CardName: { fieldName: 'CardName', score: 1.0 },
-        BenefitType: { fieldName: 'BenefitType', score: 1.0 },
+        CardName: { fileIndex: 0, systemField: 'CardName', confidence: 1.0, detectionType: 'exact' as const },
+        BenefitType: { fileIndex: 1, systemField: 'BenefitType', confidence: 1.0, detectionType: 'exact' as const },
       };
 
       const recordType = inferRecordType(mapping);
@@ -596,8 +593,8 @@ describe('Record Type Inference', () => {
 
     it('infers Benefit from BenefitName', () => {
       const mapping = {
-        CardName: { fieldName: 'CardName', score: 1.0 },
-        BenefitName: { fieldName: 'BenefitName', score: 1.0 },
+        CardName: { fileIndex: 0, systemField: 'CardName', confidence: 1.0, detectionType: 'exact' as const },
+        BenefitName: { fileIndex: 1, systemField: 'BenefitName', confidence: 1.0, detectionType: 'exact' as const },
       };
 
       const recordType = inferRecordType(mapping);
@@ -606,7 +603,7 @@ describe('Record Type Inference', () => {
 
     it('infers Benefit from StickerValue', () => {
       const mapping = {
-        StickerValue: { fieldName: 'StickerValue', score: 1.0 },
+        StickerValue: { fileIndex: 0, systemField: 'StickerValue', confidence: 1.0, detectionType: 'exact' as const },
       };
 
       const recordType = inferRecordType(mapping);
@@ -615,8 +612,8 @@ describe('Record Type Inference', () => {
 
     it('infers Benefit from usage-related fields', () => {
       const mapping = {
-        CardName: { fieldName: 'CardName', score: 1.0 },
-        DeclaredValue: { fieldName: 'DeclaredValue', score: 1.0 },
+        CardName: { fileIndex: 0, systemField: 'CardName', confidence: 1.0, detectionType: 'exact' as const },
+        DeclaredValue: { fileIndex: 1, systemField: 'DeclaredValue', confidence: 1.0, detectionType: 'exact' as const },
       };
 
       const recordType = inferRecordType(mapping);
@@ -627,7 +624,7 @@ describe('Record Type Inference', () => {
   describe('inferRecordType - Ambiguous Cases', () => {
     it('defaults to Card when ambiguous', () => {
       const mapping = {
-        CardName: { fieldName: 'CardName', score: 1.0 },
+        CardName: { fileIndex: 0, systemField: 'CardName', confidence: 1.0, detectionType: 'exact' as const },
       };
 
       const recordType = inferRecordType(mapping);
@@ -637,9 +634,9 @@ describe('Record Type Inference', () => {
 
     it('returns Benefit when benefit columns outnumber card columns', () => {
       const mapping = {
-        BenefitName: { fieldName: 'BenefitName', score: 1.0 },
-        BenefitType: { fieldName: 'BenefitType', score: 1.0 },
-        StickerValue: { fieldName: 'StickerValue', score: 1.0 },
+        BenefitName: { fileIndex: 0, systemField: 'BenefitName', confidence: 1.0, detectionType: 'exact' as const },
+        BenefitType: { fileIndex: 1, systemField: 'BenefitType', confidence: 1.0, detectionType: 'exact' as const },
+        StickerValue: { fileIndex: 2, systemField: 'StickerValue', confidence: 1.0, detectionType: 'exact' as const },
       };
 
       const recordType = inferRecordType(mapping);

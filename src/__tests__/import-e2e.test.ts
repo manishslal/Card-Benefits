@@ -631,7 +631,7 @@ describe('Error Scenarios & Recovery', () => {
   it('prevents partial commits on database constraint violations', async () => {
     const csvContent =
       'CardName,Issuer,AnnualFee\nChase Sapphire Reserve,Chase,55000\n';
-    const file = createMockCsvFile(csvContent);
+    createMockCsvFile(csvContent);
 
     const mockJob = {
       id: 'job-1',

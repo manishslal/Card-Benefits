@@ -12,7 +12,7 @@
  * Total: 28+ test cases testing realistic user journeys
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Mock implementations for integration tests
 interface TestUser {
@@ -268,29 +268,7 @@ describe('Card Management Workflow', () => {
   });
 
   it('user cannot see other user cards', async () => {
-    const otherUser: TestUser = {
-      id: 'user-456',
-      email: 'other@example.com',
-      firstName: 'Jane',
-      lastName: 'Smith',
-    };
-
-    const otherPlayer: TestPlayer = {
-      id: 'player-2',
-      userId: otherUser.id,
-      playerName: 'Primary',
-      isActive: true,
-    };
-
-    // Setup: Other user's card
-    const otherUserCard: TestCard = {
-      id: 'card-other',
-      playerId: otherPlayer.id,
-      cardName: 'Other User Card',
-      isActive: true,
-    };
-
-    // Our user tries to access other user's card
+    // Authorization check would prevent access to other user's cards
     const canAccess = false; // Authorization check would prevent this
 
     expect(canAccess).toBe(false);
@@ -617,13 +595,6 @@ describe('Multi-Player Household Workflow', () => {
 
     players.push(player1, player2);
 
-    const card1: TestCard = {
-      id: 'card-1',
-      playerId: player1.id,
-      cardName: 'Player 1 Card',
-      isActive: true,
-    };
-
     // Player 2 should not access Player 1's card
     const canAccessOtherCard = false; // Authorization prevents this
 
@@ -721,7 +692,7 @@ describe('Concurrent Operations & Race Conditions', () => {
       resolve(benefit);
     });
 
-    const [result1, result2] = await Promise.all([claim1, claim2]);
+    await Promise.all([claim1, claim2]);
 
     // Only one claim should succeed
     expect(benefit.isClaimed).toBe(true);
@@ -868,7 +839,6 @@ describe('Concurrent Operations & Race Conditions', () => {
 
 describe('Error Recovery & Resilience', () => {
   let testUser: TestUser;
-  let testPlayer: TestPlayer;
 
   beforeEach(() => {
     testUser = {
@@ -876,13 +846,6 @@ describe('Error Recovery & Resilience', () => {
       email: 'user@example.com',
       firstName: 'John',
       lastName: 'Doe',
-    };
-
-    testPlayer = {
-      id: 'player-1',
-      userId: testUser.id,
-      playerName: 'Primary',
-      isActive: true,
     };
 
     vi.clearAllMocks();
@@ -944,13 +907,6 @@ describe('Error Recovery & Resilience', () => {
   });
 
   it('cleans up partial state on error', async () => {
-    const card: TestCard = {
-      id: 'card-1',
-      playerId: testPlayer.id,
-      cardName: 'Test Card',
-      isActive: true,
-    };
-
     let isCreated = true;
 
     try {

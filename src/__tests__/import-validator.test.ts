@@ -26,7 +26,6 @@ import {
   validateStickerValue,
   validateDeclaredValue,
   type ValidationResult,
-  type ValidationError,
 } from '@/lib/import/validator';
 
 // Mock Prisma

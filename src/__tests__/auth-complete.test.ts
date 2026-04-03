@@ -12,7 +12,7 @@
  * Total: 58+ test cases covering all auth paths and security requirements
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   hashPassword,
   verifyPassword,

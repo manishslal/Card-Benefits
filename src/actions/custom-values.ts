@@ -22,6 +22,13 @@ import {
   validateChangeReason,
 } from '@/lib/custom-values/validation';
 import {
+  calculateBenefitROI,
+  calculateCardROI,
+  calculatePlayerROI,
+  calculateHouseholdROI,
+  invalidateROICache,
+} from '@/lib/custom-values/roi-calculator';
+import {
   createErrorResponse,
   createSuccessResponse,
   AppError,
@@ -110,11 +117,12 @@ import type { UserBenefit } from '@prisma/client';
  * For now, returns simplified calculations.
  */
 async function calculateROIValues(benefit: UserBenefit) {
-  // Fetch card and player for calculation context
+  // Fetch card with player association
   const card = await prisma.userCard.findUnique({
     where: { id: benefit.userCardId },
     include: {
       masterCard: true,
+      player: true,
       userBenefits: {
         where: { isUsed: true },
       },
@@ -131,21 +139,22 @@ async function calculateROIValues(benefit: UserBenefit) {
   // Calculate effective annual fee
   const annualFee = card.actualAnnualFee ?? card.masterCard.defaultAnnualFee;
 
-  // Calculate benefit ROI
+  // Level 1: Benefit ROI
+  // ROI = (benefit value / annual fee) * 100
   const effectiveValue = benefit.userDeclaredValue ?? benefit.stickerValue;
-  const benefitROI = annualFee === 0 ? 0 : (effectiveValue / annualFee) * 100;
+  const benefitROI = calculateBenefitROI(benefit.userDeclaredValue, benefit.stickerValue, annualFee);
 
-  // Calculate card ROI (sum of all claimed benefits)
-  let cardTotalValue = 0;
-  for (const b of card.userBenefits) {
-    const value = b.userDeclaredValue ?? b.stickerValue;
-    cardTotalValue += value;
-  }
-  const cardROI = annualFee === 0 ? 0 : (cardTotalValue / annualFee) * 100;
+  // Level 2: Card ROI
+  // ROI = (sum of all benefit values / annual fee) * 100
+  const cardROI = await calculateCardROI(card.id);
 
-  // Placeholder for player and household ROI (full implementation in Phase 2)
-  const playerROI = cardROI; // Simplified for Phase 1
-  const householdROI = cardROI; // Simplified for Phase 1
+  // Level 3: Player ROI
+  // ROI = (sum of all player's benefits / sum of all player's annual fees) * 100
+  const playerROI = await calculatePlayerROI(card.player.id);
+
+  // Level 4: Household ROI
+  // ROI = (sum of all household's benefits / sum of all household's annual fees) * 100
+  const householdROI = await calculateHouseholdROI(card.player.userId);
 
   return {
     benefit: parseFloat(benefitROI.toFixed(2)),
@@ -216,12 +225,36 @@ export async function updateUserDeclaredValue(
     const changePercent =
       valueBefore === 0 ? 0 : (changeAmount / valueBefore) * 100;
 
-    // ── Update benefit with new value ─────────────────────────────────────────
-    // Note: Value history tracking is disabled (valueHistory field not in schema)
+    // ── Build value history entry ──────────────────────────────────────────
+    // Create a new history entry for append-only audit trail
+    const newHistoryEntry = {
+      value: valueInCents,
+      changedAt: now.toISOString(),
+      changedBy: userId,
+      source: 'manual' as const,
+      reason: changeReason || '',
+    };
+
+    // Parse existing history or start fresh
+    let updatedHistory: any[] = [];
+    if (benefit.valueHistory) {
+      try {
+        updatedHistory = JSON.parse(benefit.valueHistory);
+      } catch (e) {
+        // If parsing fails, start with fresh history
+        console.error('[updateUserDeclaredValue] Failed to parse valueHistory:', e);
+        updatedHistory = [];
+      }
+    }
+    // Append new entry (immutable append-only pattern)
+    updatedHistory.push(newHistoryEntry);
+
+    // ── Update benefit with new value and history ──────────────────────────
     const updatedBenefit = await prisma.userBenefit.update({
       where: { id: benefitId },
       data: {
         userDeclaredValue: valueInCents,
+        valueHistory: JSON.stringify(updatedHistory), // Store as JSON string
         updatedAt: now,
       },
     });
@@ -238,6 +271,13 @@ export async function updateUserDeclaredValue(
 
     // ── Get affected cards for cache invalidation ───────────────────────────
     const affectedCards = [benefit.userCardId];
+
+    // ── Invalidate ROI cache ─────────────────────────────────────────────────
+    // When a benefit value changes, all levels of ROI must be recalculated on next access
+    invalidateROICache([
+      `CARD:${benefit.userCardId}`,
+      // Player and household keys would be invalidated on next access since we don't cache at those levels yet
+    ]);
 
     return createSuccessResponse({
       benefit: updatedBenefit,

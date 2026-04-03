@@ -202,7 +202,7 @@ describe('isSignificantlyDifferent', () => {
 
   it('should handle exactly 10% threshold', () => {
     expect(isSignificantlyDifferent(27000, 30000)).toBe(false); // Exactly -10%
-    expect(isSignificantlyDifferent(33000, 30000)).toBe(true); // Slightly > 10%
+    expect(isSignificantlyDifferent(33100, 30000)).toBe(true); // Slightly > 10%
   });
 
   it('should handle zero sticker value', () => {

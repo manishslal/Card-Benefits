@@ -203,6 +203,12 @@ model UserBenefit {
   importedAt        DateTime? // When bulk imported (vs manual creation)
   version           Int       @default(1) // For optimistic locking
 
+  // Value History Audit Trail (FR6 - Change Audit Trail)
+  // Stores immutable record of every value change for compliance and accountability
+  // Format: JSON array of { value, changedAt, changedBy, source, reason }
+  // Append-only: never delete or modify existing entries
+  valueHistory      String?   // JSON array of historical value changes (see types/custom-values.ts)
+
   // Relationships
   userCard          UserCard @relation(fields: [userCardId], references: [id], onDelete: Cascade)
   player            Player @relation(fields: [playerId], references: [id], onDelete: Cascade)

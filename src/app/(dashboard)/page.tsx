@@ -255,6 +255,17 @@ export default function DashboardPage() {
           <p>&copy; 2024 CardTrack. Track your benefits with confidence.</p>
         </div>
       </footer>
+
+      {/* Add Card Modal */}
+      <AddCardModal
+        isOpen={isAddCardModalOpen}
+        onClose={() => setIsAddCardModalOpen(false)}
+        onCardAdded={(card) => {
+          // Refresh cards list or add new card to UI
+          console.log('Card added:', card);
+          // TODO: Refresh dashboard data
+        }}
+      />
     </div>
   );
 }

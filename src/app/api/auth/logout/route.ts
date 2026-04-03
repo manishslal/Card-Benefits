@@ -22,6 +22,11 @@ import {
 import {
   invalidateSession,
 } from '@/lib/auth-server';
+import {
+  AppError,
+  ERROR_CODES,
+  ERROR_MESSAGES,
+} from '@/lib/errors';
 
 // ============================================================
 // Type Definitions
@@ -56,9 +61,9 @@ export async function POST(): Promise<NextResponse> {
       return NextResponse.json(
         {
           success: false,
-          error: 'Not authenticated',
+          error: ERROR_MESSAGES[ERROR_CODES.AUTH_MISSING].message,
         } as LogoutError,
-        { status: 401 }
+        { status: ERROR_MESSAGES[ERROR_CODES.AUTH_MISSING].statusCode }
       );
     }
 
@@ -66,9 +71,12 @@ export async function POST(): Promise<NextResponse> {
     // (If token is malformed, invalidating it is still safe)
     try {
       verifySessionToken(sessionCookie.value);
-    } catch {
+    } catch (err) {
       // Token is invalid/expired, but we'll still clear the cookie
       // This is normal for expired sessions trying to logout
+      if (err instanceof AppError) {
+        console.debug('[Logout] Token verification failed (expected for expired sessions):', err.code);
+      }
     }
 
     // Invalidate session in database
@@ -98,9 +106,9 @@ export async function POST(): Promise<NextResponse> {
     const response = NextResponse.json(
       {
         success: false,
-        error: 'Unable to log out. Please try again.',
+        error: ERROR_MESSAGES[ERROR_CODES.INTERNAL_ERROR].message,
       } as LogoutError,
-      { status: 500 }
+      { status: ERROR_MESSAGES[ERROR_CODES.INTERNAL_ERROR].statusCode }
     );
 
     clearSessionCookie(response);

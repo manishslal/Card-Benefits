@@ -29,6 +29,14 @@ import {
   createSession,
 } from '@/lib/auth-server';
 import { RateLimiter } from '@/lib/rate-limiter';
+import {
+  validateEmail,
+} from '@/lib/validation';
+import {
+  AppError,
+  ERROR_CODES,
+  ERROR_MESSAGES,
+} from '@/lib/errors';
 
 // ============================================================
 // Rate Limiting
@@ -91,12 +99,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           success: false,
           error: 'Email and password are required',
         } as LoginError,
-        { status: 400 }
+        { status: ERROR_MESSAGES[ERROR_CODES.VALIDATION_FIELD].statusCode }
       );
     }
 
     const email = body.email.toLowerCase().trim();
     const password = body.password;
+
+    // Validate email format using centralized validation
+    try {
+      validateEmail(email);
+    } catch (err) {
+      if (err instanceof AppError) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: ERROR_MESSAGES[err.code].message,
+          } as LoginError,
+          { status: ERROR_MESSAGES[err.code].statusCode }
+        );
+      }
+    }
 
     // Check rate limit and lockout status
     const rateLimitCheck = loginRateLimiter.check(email);
@@ -104,10 +127,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json(
         {
           success: false,
-          error: 'Too many login attempts. Please try again in 15 minutes.',
+          error: ERROR_MESSAGES[ERROR_CODES.RATE_LIMIT_EXCEEDED].message,
           lockedUntil: rateLimitCheck.lockedUntil?.toISOString(),
         } as LoginError,
-        { status: 423 }
+        { status: ERROR_MESSAGES[ERROR_CODES.RATE_LIMIT_EXCEEDED].statusCode }
       );
     }
 
@@ -115,7 +138,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const user = await getUserByEmail(email);
 
     // Generic error message (prevents user enumeration)
-    const invalidMessage = 'Invalid email or password';
+    const invalidMessage = ERROR_MESSAGES[ERROR_CODES.AUTH_INVALID].message;
 
     // User not found
     if (!user) {
@@ -125,7 +148,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           success: false,
           error: invalidMessage,
         } as LoginError,
-        { status: 401 }
+        { status: ERROR_MESSAGES[ERROR_CODES.AUTH_INVALID].statusCode }
       );
     }
 
@@ -139,7 +162,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           success: false,
           error: invalidMessage,
         } as LoginError,
-        { status: 401 }
+        { status: ERROR_MESSAGES[ERROR_CODES.AUTH_INVALID].statusCode }
       );
     }
 
@@ -180,9 +203,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json(
       {
         success: false,
-        error: 'Unable to log in. Please try again.',
+        error: ERROR_MESSAGES[ERROR_CODES.INTERNAL_ERROR].message,
       } as LoginError,
-      { status: 500 }
+      { status: ERROR_MESSAGES[ERROR_CODES.INTERNAL_ERROR].statusCode }
     );
   }
 }

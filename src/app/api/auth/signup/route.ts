@@ -17,7 +17,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   hashPassword,
-  validateEmail,
   validatePasswordStrength,
   createSessionPayload,
   signSessionToken,
@@ -27,6 +26,15 @@ import {
   createUser,
   createSession,
 } from '@/lib/auth-server';
+import {
+  validateEmail,
+  validateString,
+} from '@/lib/validation';
+import {
+  AppError,
+  ERROR_CODES,
+  ERROR_MESSAGES,
+} from '@/lib/errors';
 
 // ============================================================
 // Type Definitions
@@ -66,7 +74,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Parse request body
     const body = await request.json().catch(() => ({})) as SignupRequest;
 
-    // Validate request
+    // Validate request structure
     const validation = validateSignupRequest(body);
     if (!validation.valid) {
       return NextResponse.json(
@@ -75,7 +83,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           error: 'Validation failed',
           fieldErrors: validation.errors,
         } as SignupError,
-        { status: 400 }
+        { status: ERROR_MESSAGES[ERROR_CODES.VALIDATION_FIELD].statusCode }
       );
     }
 
@@ -84,28 +92,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const password = body.password as string;
     const { firstName, lastName } = body;
 
-    // Validate email format
-    if (!validateEmail(email)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Invalid email format',
-          fieldErrors: { email: ['Please enter a valid email address'] },
-        } as SignupError,
-        { status: 400 }
-      );
-    }
-
-    // Validate password strength
+    // Validate password strength using centralized validation
     const passwordValidation = validatePasswordStrength(password);
     if (!passwordValidation.isValid) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Password does not meet requirements',
+          error: ERROR_MESSAGES[ERROR_CODES.VALIDATION_PASSWORD].message,
           fieldErrors: { password: passwordValidation.errors },
         } as SignupError,
-        { status: 400 }
+        { status: ERROR_MESSAGES[ERROR_CODES.VALIDATION_PASSWORD].statusCode }
       );
     }
 
@@ -148,9 +144,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           {
             success: false,
             error: 'Email already registered',
+            code: ERROR_CODES.CONFLICT_DUPLICATE,
             fieldErrors: { email: ['An account with this email already exists'] },
-          } as SignupError,
-          { status: 409 }
+          } as SignupError & { code: string },
+          { status: ERROR_MESSAGES[ERROR_CODES.CONFLICT_DUPLICATE].statusCode }
         );
       }
 
@@ -162,9 +159,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json(
       {
         success: false,
-        error: 'Unable to create account. Please try again.',
-      } as SignupError,
-      { status: 500 }
+        error: ERROR_MESSAGES[ERROR_CODES.INTERNAL_ERROR].message,
+        code: ERROR_CODES.INTERNAL_ERROR,
+      } as SignupError & { code: string },
+      { status: ERROR_MESSAGES[ERROR_CODES.INTERNAL_ERROR].statusCode }
     );
   }
 }
@@ -174,7 +172,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 // ============================================================
 
 /**
- * Validates signup request structure
+ * Validates signup request structure using centralized validation
  */
 function validateSignupRequest(body: SignupRequest): {
   valid: boolean;
@@ -183,10 +181,19 @@ function validateSignupRequest(body: SignupRequest): {
   const errors: Record<string, string[]> = {};
 
   // Email validation
-  if (!body.email || typeof body.email !== 'string') {
-    errors.email = ['Email is required'];
-  } else if (body.email.length > 254) {
-    errors.email = ['Email is too long'];
+  try {
+    if (!body.email || typeof body.email !== 'string') {
+      throw new AppError(ERROR_CODES.VALIDATION_EMAIL, {
+        field: 'email',
+        reason: 'Email is required',
+      });
+    }
+    validateEmail(body.email);
+  } catch (err) {
+    if (err instanceof AppError) {
+      const msg = ERROR_MESSAGES[err.code].message;
+      errors.email = [msg];
+    }
   }
 
   // Password validation
@@ -195,16 +202,32 @@ function validateSignupRequest(body: SignupRequest): {
   }
 
   // Optional fields validation
-  if (body.firstName && typeof body.firstName !== 'string') {
-    errors.firstName = ['First name must be text'];
-  } else if (body.firstName && (body.firstName.length < 1 || body.firstName.length > 50)) {
-    errors.firstName = ['First name must be 1-50 characters'];
+  if (body.firstName) {
+    try {
+      validateString(body.firstName, 'firstName', {
+        minLength: 1,
+        maxLength: 50,
+      });
+    } catch (err) {
+      if (err instanceof AppError) {
+        const msg = ERROR_MESSAGES[err.code].message;
+        errors.firstName = [msg];
+      }
+    }
   }
 
-  if (body.lastName && typeof body.lastName !== 'string') {
-    errors.lastName = ['Last name must be text'];
-  } else if (body.lastName && (body.lastName.length < 1 || body.lastName.length > 50)) {
-    errors.lastName = ['Last name must be 1-50 characters'];
+  if (body.lastName) {
+    try {
+      validateString(body.lastName, 'lastName', {
+        minLength: 1,
+        maxLength: 50,
+      });
+    } catch (err) {
+      if (err instanceof AppError) {
+        const msg = ERROR_MESSAGES[err.code].message;
+        errors.lastName = [msg];
+      }
+    }
   }
 
   return {

@@ -7,7 +7,7 @@
  * This is a Server Component that wraps all routes in the app directory.
  */
 
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import '@/styles/design-tokens.css';
 import '@/styles/animations.css';
 import '@/styles/globals.css';
@@ -18,17 +18,22 @@ import { ThemeProvider } from '@/components/providers/ThemeProvider';
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 // ---------------------------------------------------------------------------
+// Viewport
+// ---------------------------------------------------------------------------
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+};
+
+// ---------------------------------------------------------------------------
 // Metadata
 // ---------------------------------------------------------------------------
 
 export const metadata: Metadata = {
   title: 'Card Benefits Tracker - Track & Maximize Your Credit Card Benefits',
   description: 'Track benefits across multiple cards, identify expiring benefits, and maximize your spending value with our premium card benefits tracker.',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-  },
 };
 
 // ---------------------------------------------------------------------------

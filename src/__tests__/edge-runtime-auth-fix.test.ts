@@ -36,7 +36,7 @@ const TEST_PASSWORD = 'SecurePass123!';
 // ============================================================================
 
 describe('Edge Runtime Crypto Fix - Middleware Architecture', () => {
-  describe('Middleware delegates to API endpoint', () => {
+  describe('Middleware uses direct JWT verification (Node.js runtime)', () => {
     it('does not import crypto or jsonwebtoken directly', async () => {
       // This test validates the fix at the code level
       // Middleware should not have direct crypto imports
@@ -69,24 +69,23 @@ describe('Edge Runtime Crypto Fix - Middleware Architecture', () => {
       await middlewareFileContains();
     });
 
-    it('calls /api/auth/verify endpoint for protected routes', async () => {
-      // VERIFICATION: Check that middleware calls the verify endpoint
+    it('uses direct JWT verification for protected routes', async () => {
+      // VERIFICATION: Check that middleware performs JWT verification directly
+      // Since Railway middleware runs in Node.js runtime, we can use crypto directly
       
-      const middlewareCallesVerifyEndpoint = async () => {
-        const fs = await import('fs/promises');
-        const content = await fs.readFile('src/middleware.ts', 'utf-8');
-        
-        // Should call verifyTokenViaApi function
-        expect(content).toContain('verifyTokenViaApi');
-        
-        // Should make HTTP call to /api/auth/verify
-        expect(content).toContain('/api/auth/verify');
-        
-        // Should use fetch() to call the endpoint
-        expect(content).toContain('fetch(');
-      };
+      const fs = await import('fs/promises');
+      const content = await fs.readFile('src/middleware.ts', 'utf-8');
       
-      await middlewareCallesVerifyEndpoint();
+      // Should use verifySessionToken directly (not via API call)
+      expect(content).toContain('verifySessionToken');
+      
+      // Should NOT use fetch or delegate to API
+      expect(content).not.toContain('verifyTokenViaApi');
+      expect(content).not.toContain('fetch(');
+      
+      // Should validate session in database
+      expect(content).toContain('validateSessionInDatabase');
+      expect(content).toContain('getSessionByToken');
     });
 
     it('/api/auth/verify endpoint exists and uses crypto safely', async () => {
@@ -619,16 +618,23 @@ describe('Edge Runtime Crypto Fix - Regression Prevention', () => {
       expect(verifyContent).toContain('export async function POST');
     });
 
-    it('confirms middleware delegates to verify endpoint', async () => {
-      // Verify middleware calls the API endpoint
+    it('confirms middleware uses direct JWT verification (no fetch)', async () => {
+      // Verify middleware performs JWT verification directly
+      // This is the optimal solution: use Node.js crypto directly in middleware
+      // (Railway middleware runs in Node.js runtime, not Edge Runtime)
       
       const fs = await import('fs/promises');
       const middlewareContent = await fs.readFile('src/middleware.ts', 'utf-8');
       
-      // Should call the verify endpoint
-      expect(middlewareContent).toContain('/api/auth/verify');
-      expect(middlewareContent).toContain('verifyTokenViaApi');
-      expect(middlewareContent).toContain('fetch(');
+      // Should NOT use fetch or API delegation
+      expect(middlewareContent).not.toContain('verifyTokenViaApi');
+      expect(middlewareContent).not.toContain('fetch(');
+      
+      // Should use direct JWT verification
+      expect(middlewareContent).toContain('verifySessionToken');
+      expect(middlewareContent).toContain('validateSessionInDatabase');
+      expect(middlewareContent).toContain('getSessionByToken');
+      expect(middlewareContent).toContain('userExists');
     });
   });
 

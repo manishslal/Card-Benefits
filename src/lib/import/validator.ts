@@ -648,9 +648,14 @@ export function validateUsage(
  *
  * Required fields: CardName, Issuer, RenewalDate
  * Optional fields: AnnualFee, CustomName, Status
+ *
+ * Null/undefined safety:
+ * - Checks that row object exists
+ * - Validates input is not null before field access
+ * - Returns error if required fields are missing
  */
 export async function validateCardRecord(
-  row: Record<string, any>,
+  row: Record<string, any> | null | undefined,
   rowNumber: number,
   _mapping?: Record<string, { systemField: string }>
 ): Promise<ValidationResult> {
@@ -660,6 +665,19 @@ export async function validateCardRecord(
     warnings: [],
     normalizedData: {},
   };
+
+  // Null safety: Check that row exists and is an object
+  if (!row || typeof row !== 'object') {
+    result.errors.push(
+      createError(
+        'record',
+        'Record data is missing or invalid',
+        'Ensure the import file contains valid row data'
+      )
+    );
+    result.valid = false;
+    return result;
+  }
 
   // Validate required fields
   const cardNameValid = await validateCardName(
@@ -686,11 +704,11 @@ export async function validateCardRecord(
   const customNameRes = validateCustomName(row.CustomName, rowNumber, result);
   const statusRes = validateStatus(row.Status, rowNumber, result);
 
-  // Build normalized data
+  // Build normalized data with safe field access
   result.normalizedData = {
     recordType: 'Card',
-    cardName: row.CardName?.trim(),
-    issuer: row.Issuer?.trim(),
+    cardName: typeof row.CardName === 'string' ? row.CardName.trim() : '',
+    issuer: typeof row.Issuer === 'string' ? row.Issuer.trim() : '',
     annualFee: annualFeeRes.value,
     renewalDate: renewalDateRes.value,
     customName: customNameRes.value,
@@ -706,9 +724,14 @@ export async function validateCardRecord(
  *
  * Required fields: CardName, Issuer, BenefitName, BenefitType, StickerValue
  * Optional fields: DeclaredValue, ExpirationDate, Usage
+ *
+ * Null/undefined safety:
+ * - Checks that row object exists
+ * - Validates input is not null before field access
+ * - Returns error if required fields are missing
  */
 export async function validateBenefitRecord(
-  row: Record<string, any>,
+  row: Record<string, any> | null | undefined,
   rowNumber: number,
   _mapping?: Record<string, { systemField: string }>
 ): Promise<ValidationResult> {
@@ -718,6 +741,19 @@ export async function validateBenefitRecord(
     warnings: [],
     normalizedData: {},
   };
+
+  // Null safety: Check that row exists and is an object
+  if (!row || typeof row !== 'object') {
+    result.errors.push(
+      createError(
+        'record',
+        'Record data is missing or invalid',
+        'Ensure the import file contains valid row data'
+      )
+    );
+    result.valid = false;
+    return result;
+  }
 
   // Validate card fields (to link benefit to card)
   const cardNameValid = await validateCardName(
@@ -762,11 +798,11 @@ export async function validateBenefitRecord(
   );
   const usageRes = validateUsage(row.Usage, rowNumber, result);
 
-  // Build normalized data
+  // Build normalized data with safe field access
   result.normalizedData = {
     recordType: 'Benefit',
-    cardName: row.CardName?.trim(),
-    issuer: row.Issuer?.trim(),
+    cardName: typeof row.CardName === 'string' ? row.CardName.trim() : '',
+    issuer: typeof row.Issuer === 'string' ? row.Issuer.trim() : '',
     benefitName: benefitNameRes.value,
     benefitType: benefitTypeRes.value,
     stickerValue: stickerValueRes.value,

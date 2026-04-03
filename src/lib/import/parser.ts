@@ -120,6 +120,7 @@ export function validateFileFormat(
  * - Different line endings (CRLF, LF)
  * - Empty lines
  * - Trimmed headers
+ * - Header-only files (no data rows) with success
  *
  * @throws AppError if CSV is malformed
  */
@@ -147,15 +148,21 @@ function parseCSV(csvContent: string): ParseResult {
   }
 
   const parseTimeMs = performance.now() - startTime;
+  const headers = results.meta.fields || [];
 
+  // Filter out empty rows (rows with no non-empty values)
+  const filteredRows = (results.data as ParsedRow[]).filter(
+    (row) => Object.values(row).some((v) => v !== null && v !== '')
+  );
+
+  // Return success even if no data rows (header-only CSV is valid)
+  // This supports use cases like template files with just headers
   return {
     success: true,
     format: 'CSV',
-    totalRows: results.data.length,
-    headers: results.meta.fields || [],
-    rows: (results.data as ParsedRow[]).filter(
-      (row) => Object.values(row).some((v) => v !== null && v !== '')
-    ),
+    totalRows: filteredRows.length,
+    headers,
+    rows: filteredRows,
     parseTimeMs,
   };
 }
@@ -257,15 +264,38 @@ function parseXLSX(
  * - Wrong format → IMPORT_FILE_INVALID
  * - Malformed content → IMPORT_PARSE_FAILED
  *
- * @param filename Original filename
- * @param buffer File bytes
+ * Supports both File objects and Uint8Array buffers
+ *
+ * @param fileOrBuffer File object or filename+buffer
+ * @param optionalBuffer Optional buffer if first param is filename (string)
  * @returns ParseResult with headers and rows, or ParseError
  */
-export function parseFile(
-  filename: string,
-  buffer: Uint8Array
-): ParserResult {
+export async function parseFile(
+  fileOrBuffer: File | string,
+  optionalBuffer?: Uint8Array
+): Promise<ParserResult> {
   try {
+    let filename: string;
+    let buffer: Uint8Array;
+
+    // Handle both File objects and (filename, buffer) signature
+    if (fileOrBuffer instanceof File) {
+      filename = fileOrBuffer.name;
+      const arrayBuffer = await fileOrBuffer.arrayBuffer();
+      buffer = new Uint8Array(arrayBuffer);
+    } else {
+      // String filename with optional buffer
+      filename = fileOrBuffer;
+      if (!optionalBuffer) {
+        return {
+          success: false,
+          error: 'Buffer is required when filename is provided',
+          code: 'IMPORT_FILE_EMPTY',
+        };
+      }
+      buffer = optionalBuffer;
+    }
+
     // Validate file is not empty
     if (buffer.byteLength === 0) {
       return {

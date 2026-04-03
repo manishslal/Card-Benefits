@@ -199,6 +199,11 @@ async function commitBenefit(
  * - Whether record is a duplicate
  * - User's resolution decision for the duplicate
  * - Record validation status
+ *
+ * Data validation:
+ * - Ensures normalizedData exists and is not null
+ * - Validates all required fields are present before database access
+ * - Returns error for missing or invalid data
  */
 async function processRecord(
   tx: Prisma.TransactionClient,
@@ -223,18 +228,49 @@ async function processRecord(
     return { action: 'Skipped' };
   }
 
+  // Validate that normalizedData exists and contains required fields
+  if (!record.normalizedData || typeof record.normalizedData !== 'object') {
+    throw new AppError('VALIDATION_FIELD', {
+      field: 'normalizedData',
+      rowNumber: record.rowNumber,
+      reason: 'Record normalized data is missing or invalid',
+      suggestion: 'Ensure the record was properly validated before commit',
+    });
+  }
+
   // Determine if this is a create or update
   const isUpdate = record.isDuplicate && record.userResolution === 'Update';
   const action = isUpdate ? 'Update' : 'Create';
 
   // Process based on record type
   if (record.recordType === 'Card') {
+    // Validate card-specific required fields exist in normalized data
+    const { cardName, issuer } = record.normalizedData;
+
+    if (!cardName || typeof cardName !== 'string' || !cardName.trim()) {
+      throw new AppError('VALIDATION_FIELD', {
+        field: 'cardName',
+        rowNumber: record.rowNumber,
+        reason: 'Card name is missing or invalid in normalized data',
+        suggestion: 'Ensure card name was properly validated',
+      });
+    }
+
+    if (!issuer || typeof issuer !== 'string' || !issuer.trim()) {
+      throw new AppError('VALIDATION_FIELD', {
+        field: 'issuer',
+        rowNumber: record.rowNumber,
+        reason: 'Issuer is missing or invalid in normalized data',
+        suggestion: 'Ensure issuer was properly validated',
+      });
+    }
+
     const { id, action: resultAction } = await commitCard(
       tx,
       playerId,
-      record.normalizedData!.cardName,
-      record.normalizedData!.issuer,
-      record.normalizedData!,
+      cardName,
+      issuer,
+      record.normalizedData,
       action as 'Create' | 'Update',
       importJobId
     );
@@ -253,19 +289,49 @@ async function processRecord(
       };
     }
   } else if (record.recordType === 'Benefit') {
+    // Validate benefit-specific required fields exist in normalized data
+    const { cardName, issuer, benefitName } = record.normalizedData;
+
+    if (!cardName || typeof cardName !== 'string' || !cardName.trim()) {
+      throw new AppError('VALIDATION_FIELD', {
+        field: 'cardName',
+        rowNumber: record.rowNumber,
+        reason: 'Card name is missing or invalid in normalized data',
+        suggestion: 'Ensure card name was properly validated',
+      });
+    }
+
+    if (!issuer || typeof issuer !== 'string' || !issuer.trim()) {
+      throw new AppError('VALIDATION_FIELD', {
+        field: 'issuer',
+        rowNumber: record.rowNumber,
+        reason: 'Issuer is missing or invalid in normalized data',
+        suggestion: 'Ensure issuer was properly validated',
+      });
+    }
+
+    if (!benefitName || typeof benefitName !== 'string' || !benefitName.trim()) {
+      throw new AppError('VALIDATION_FIELD', {
+        field: 'benefitName',
+        rowNumber: record.rowNumber,
+        reason: 'Benefit name is missing or invalid in normalized data',
+        suggestion: 'Ensure benefit name was properly validated',
+      });
+    }
+
     // First, find or create the card
     const masterCard = await tx.masterCard.findFirst({
       where: {
-        cardName: record.normalizedData!.cardName,
-        issuer: record.normalizedData!.issuer,
+        cardName,
+        issuer,
       },
     });
 
     if (!masterCard) {
       throw new AppError('RESOURCE_NOT_FOUND', {
         resource: 'MasterCard',
-        cardName: record.normalizedData!.cardName,
-        issuer: record.normalizedData!.issuer,
+        cardName,
+        issuer,
       });
     }
 
@@ -279,7 +345,7 @@ async function processRecord(
     if (!userCard) {
       throw new AppError('RESOURCE_NOT_FOUND', {
         resource: 'UserCard',
-        cardName: record.normalizedData!.cardName,
+        cardName,
       });
     }
 
@@ -287,8 +353,8 @@ async function processRecord(
       tx,
       playerId,
       userCard.id,
-      record.normalizedData!.benefitName,
-      record.normalizedData!,
+      benefitName,
+      record.normalizedData,
       action as 'Create' | 'Update',
       importJobId
     );

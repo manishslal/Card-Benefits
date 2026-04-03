@@ -4,13 +4,20 @@ import Link from 'next/link';
 import Button from '@/components/ui/button';
 import { SafeDarkModeToggle } from '@/components/SafeDarkModeToggle';
 import React from 'react';
+import {
+  CreditCard,
+  ListChecks,
+  Clock,
+  Lightbulb,
+  TrendingUp,
+} from 'lucide-react';
 
 /**
  * Homepage / Landing Page - Redesigned
  * 
  * Features:
  * - Hero section with compelling headline and CTAs
- * - Feature highlights with icons
+ * - Feature highlights with Lucide icons
  * - Call-to-action sections
  * - Responsive design (mobile, tablet, desktop)
  * - Dark mode support
@@ -38,7 +45,7 @@ export default function Homepage() {
               className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold"
               style={{ backgroundColor: 'var(--color-primary)' }}
             >
-              💳
+              <CreditCard size={20} />
             </div>
             <h1 className="text-lg font-bold text-[var(--color-text)]">
               CardTrack
@@ -144,22 +151,22 @@ export default function Homepage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {[
               {
-                icon: '📋',
+                icon: ListChecks,
                 title: 'Organize Your Cards',
                 description: 'Keep all your credit cards in one place with custom names and details.',
               },
               {
-                icon: '⏰',
+                icon: Clock,
                 title: 'Track Benefits & Expiration',
                 description: 'Never miss a benefit. Get alerts before perks expire.',
               },
               {
-                icon: '💡',
+                icon: Lightbulb,
                 title: 'Smart Recommendations',
                 description: 'Discover which cards offer the best value for your spending.',
               },
               {
-                icon: '📈',
+                icon: TrendingUp,
                 title: 'Maximize Your Value',
                 description: 'Identify underutilized benefits and unlock more value from your cards.',
               },
@@ -172,7 +179,9 @@ export default function Homepage() {
                   borderColor: 'var(--color-border)',
                 }}
               >
-                <div className="text-3xl mb-3">{feature.icon}</div>
+                <div className="mb-3 text-[var(--color-primary)]">
+                  <feature.icon size={32} strokeWidth={1.5} />
+                </div>
                 <h4
                   className="font-semibold text-[var(--color-text)] mb-2"
                   style={{ fontSize: 'var(--text-body-lg)' }}

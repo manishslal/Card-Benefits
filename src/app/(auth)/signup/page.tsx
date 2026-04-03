@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import Button from '@/components/ui/button';
 import Input from '@/components/ui/Input';
 import { SafeDarkModeToggle } from '@/components/SafeDarkModeToggle';
+import { CreditCard } from 'lucide-react';
 
 /**
  * Signup Page - Redesigned
@@ -121,7 +122,7 @@ export default function SignupPage() {
               className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold"
               style={{ backgroundColor: 'var(--color-primary)' }}
             >
-              💳
+              <CreditCard size={20} />
             </div>
             <h1 className="text-lg font-bold text-[var(--color-text)]">
               CardTrack

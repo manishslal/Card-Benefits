@@ -56,7 +56,7 @@
      ======================================== */
   --font-primary: 'Inter', system-ui, -apple-system, sans-serif;
   --font-heading: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  --font-mono: 'IBM Plex Mono', 'Monaco', 'Courier New', monospace;
+  --font-mono: 'JetBrains Mono', 'Monaco', 'Courier New', monospace;
 
   /* Font Sizes - Desktop (modular scale 1.125x) */
   --text-h1: 48px;

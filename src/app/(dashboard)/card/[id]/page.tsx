@@ -7,6 +7,7 @@ import Button from '@/components/ui/button';
 import Link from 'next/link';
 import BenefitsList from '@/components/features/BenefitsList';
 import BenefitsGrid from '@/components/features/BenefitsGrid';
+import { CreditCard, ArrowLeft, Plus } from 'lucide-react';
 
 /**
  * Card Detail Page - Individual Card View
@@ -38,7 +39,6 @@ export default function CardDetailPage() {
     rewardsRate: '3x on travel and dining',
     issuedDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
     renewalDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
-    image: '💳',
   };
 
   const mockBenefits = [
@@ -127,7 +127,7 @@ export default function CardDetailPage() {
                   className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold"
                   style={{ backgroundColor: 'var(--color-primary)' }}
                 >
-                  💳
+                  <CreditCard size={20} />
                 </div>
                 <h1 className="text-lg font-bold text-[var(--color-text)]">
                   CardTrack
@@ -136,10 +136,11 @@ export default function CardDetailPage() {
 
               <button
                 onClick={() => router.back()}
-                className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors"
+                className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors flex items-center gap-1"
                 aria-label="Go back"
               >
-                ← Back
+                <ArrowLeft size={18} />
+                Back
               </button>
             </div>
 
@@ -165,7 +166,9 @@ export default function CardDetailPage() {
             }}>
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                  <div className="text-4xl mb-3">{mockCard.image}</div>
+                  <div className="mb-3">
+                    <CreditCard size={48} className="text-[var(--color-primary)]" />
+                  </div>
                   <h2
                     className="font-bold text-[var(--color-text)] mb-2"
                     style={{ fontSize: 'var(--text-h3)' }}
@@ -306,8 +309,8 @@ export default function CardDetailPage() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  leftIcon="+"
                 >
+                  <Plus size={16} className="mr-1" />
                   Add Benefit
                 </Button>
               </div>

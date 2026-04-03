@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
+import { CreditCard, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Card {
   id: string;
@@ -20,7 +21,7 @@ interface CardSwitcherProps {
  * CardSwitcher Component - Premium Tab Interface
  * 
  * Displays credit cards as a beautiful tab interface with:
- * - Card type icons
+ * - Card type icons using Lucide React
  * - Last 4 digits
  * - Smooth transitions
  * - Mobile: horizontal scroll
@@ -67,21 +68,6 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
       });
     };
 
-    const getCardIcon = (type: Card['type']) => {
-      switch (type) {
-        case 'visa':
-          return '💳';
-        case 'mastercard':
-          return '💳';
-        case 'amex':
-          return '🟢';
-        case 'discover':
-          return '🔶';
-        default:
-          return '💳';
-      }
-    };
-
     const getCardLabel = (card: Card) => {
       return `${card.issuer} •••• ${card.lastFour}`;
     };
@@ -102,7 +88,7 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
               focus-visible:outline-offset-2"
             aria-label="Scroll cards left"
           >
-            ←
+            <ChevronLeft size={16} />
           </button>
         )}
 
@@ -133,9 +119,11 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
                 `}
               >
                 {/* Card type icon */}
-                <span className="text-lg" aria-hidden="true">
-                  {getCardIcon(card.type)}
-                </span>
+                <CreditCard
+                  size={20}
+                  className={isSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-secondary)]'}
+                  aria-hidden="true"
+                />
 
                 {/* Card label */}
                 <span
@@ -173,7 +161,7 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
               focus-visible:outline-offset-2"
             aria-label="Scroll cards right"
           >
-            →
+            <ChevronRight size={16} />
           </button>
         )}
 

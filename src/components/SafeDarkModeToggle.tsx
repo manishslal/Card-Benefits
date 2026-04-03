@@ -2,6 +2,7 @@
 
 import React, { Suspense } from 'react';
 import dynamic from 'next/dynamic';
+import { Moon } from 'lucide-react';
 
 // Dynamically import the real DarkModeToggle to avoid SSR issues
 const RealDarkModeToggle = dynamic(
@@ -13,7 +14,7 @@ const RealDarkModeToggle = dynamic(
         aria-label="Toggle dark mode"
         disabled
       >
-        🌙
+        <Moon size={20} className="text-slate-700" />
       </button>
     ),
     ssr: false, // Disable server-side rendering for this component
@@ -29,7 +30,7 @@ export function SafeDarkModeToggle() {
           aria-label="Toggle dark mode"
           disabled
         >
-          🌙
+          <Moon size={20} className="text-slate-700" />
         </button>
       }
     >

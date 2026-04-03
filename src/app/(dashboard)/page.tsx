@@ -7,6 +7,7 @@ import Link from 'next/link';
 import CardSwitcher from '@/components/features/CardSwitcher';
 import DashboardSummary from '@/components/features/DashboardSummary';
 import BenefitsGrid from '@/components/features/BenefitsGrid';
+import { CreditCard, Settings, Plus } from 'lucide-react';
 
 /**
  * Dashboard Page - Redesigned
@@ -110,25 +111,25 @@ export default function DashboardPage() {
     {
       label: 'Total Benefits',
       value: mockBenefits.length,
-      icon: '💳',
+      icon: 'CreditCard',
       variant: 'default' as const,
     },
     {
       label: 'Total Value',
       value: `$${mockBenefits.reduce((sum, b) => sum + (b.value || 0), 0)}`,
-      icon: '💰',
+      icon: 'DollarSign',
       variant: 'default' as const,
     },
     {
       label: 'Active Cards',
       value: mockCards.length,
-      icon: '🏦',
+      icon: 'Wallet',
       variant: 'default' as const,
     },
     {
       label: 'Expiring Soon',
       value: mockBenefits.filter((b) => b.status === 'expiring').length,
-      icon: '⏰',
+      icon: 'Clock',
       variant: 'default' as const,
     },
   ];
@@ -151,7 +152,7 @@ export default function DashboardPage() {
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold"
                 style={{ backgroundColor: 'var(--color-primary)' }}
               >
-                💳
+                <CreditCard size={20} />
               </div>
               <h1 className="text-lg font-bold text-[var(--color-text)]">
                 CardTrack
@@ -163,6 +164,7 @@ export default function DashboardPage() {
               <SafeDarkModeToggle />
               <Link href="/settings">
                 <Button variant="outline" size="sm">
+                  <Settings size={16} className="mr-2" />
                   Settings
                 </Button>
               </Link>
@@ -188,8 +190,8 @@ export default function DashboardPage() {
             <Button
               variant="primary"
               size="md"
-              leftIcon="+"
             >
+              <Plus size={16} className="mr-2" />
               Add Card
             </Button>
           </div>

@@ -44,8 +44,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const baseClasses = [
       'inline-flex items-center justify-center gap-2 whitespace-nowrap',
       'font-semibold transition-all duration-200 rounded-md border-none',
-      'focus:outline-3 focus:outline-offset-2 focus:outline-[var(--color-primary)]',
-      'focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]',
+      'focus:outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]',
       disabled || isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
       fullWidth && !size.startsWith('icon') ? 'w-full' : '',
       className,

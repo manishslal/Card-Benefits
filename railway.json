@@ -6,7 +6,8 @@
   },
   "deploy": {
     "startCommand": "npm start",
-    "numReplicas": 2,
+    "releaseCommand": "prisma db push --skip-generate",
+    "numReplicas": 1,
     "restartPolicyMaxRetries": 3,
     "restartPolicyType": "always",
     "healthCheck": {

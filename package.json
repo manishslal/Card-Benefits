@@ -4,9 +4,9 @@
   "description": "A comprehensive Credit Card Benefits Tracker built with Next.js, TypeScript, and Prisma",
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma db push --skip-generate && next build",
+    "build": "prisma generate && next build",
     "start": "next start",
-    "postinstall": "prisma generate && prisma db push --skip-generate || true",
+    "postinstall": "prisma generate",
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",

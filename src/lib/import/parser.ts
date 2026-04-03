@@ -126,21 +126,14 @@ export function validateFileFormat(
 function parseCSV(csvContent: string): ParseResult {
   const startTime = performance.now();
 
-  // PapaParse configuration for robust CSV parsing
-  const results = Papa.parse(csvContent, {
+  // PapaParse configuration for robust CSV parsing  
+  const results = (Papa.parse as any)(csvContent, {
     header: true,
     skipEmptyLines: true,
     dynamicTyping: false, // Keep as strings initially
     quoteChar: '"',
     escapeChar: '"',
-    transformHeader: (h) => h.trim(), // Trim header names
-    error: (error: any) => {
-      throw new AppError('VALIDATION_FIELD', {
-        field: 'csv_parse',
-        reason: `CSV parsing failed: ${error.message}`,
-        line: error.row,
-      });
-    },
+    transformHeader: (h: string) => h.trim(), // Trim header names
   });
 
   // Check for parse errors
@@ -192,7 +185,7 @@ function parseXLSX(
 
   try {
     // Load workbook
-    const workbook = XLSX.read(buffer, { type: 'array', cellFormulas: true });
+    const workbook = XLSX.read(buffer, { type: 'array' });
 
     // Get sheet to parse
     const sheet = sheetName
@@ -483,9 +476,4 @@ export function inferRecordType(
   return 'Unknown';
 }
 
-export type {
-  ParsedRow,
-  ParseResult,
-  ParseError,
-  ParserResult,
-};
+export type inferRecordType = typeof inferRecordType;

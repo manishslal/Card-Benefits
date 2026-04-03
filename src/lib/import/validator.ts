@@ -13,7 +13,6 @@
  */
 
 import { prisma } from '@/lib/prisma';
-import { AppError, ERROR_CODES } from '@/lib/errors';
 
 // ============================================================================
 // Type Definitions
@@ -779,5 +778,3 @@ export async function validateBenefitRecord(
   result.valid = result.errors.length === 0;
   return result;
 }
-
-export type { ValidationError, ValidationResult };

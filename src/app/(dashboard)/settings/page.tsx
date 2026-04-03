@@ -429,17 +429,20 @@ export default function SettingsPage() {
                           {pref.description}
                         </p>
                       </div>
-                      <input
-                        type="checkbox"
-                        checked={notifications[pref.key as keyof typeof notifications]}
-                        onChange={(e) =>
-                          setNotifications({
-                            ...notifications,
-                            [pref.key]: e.target.checked,
-                          })
-                        }
-                        className="w-5 h-5 rounded cursor-pointer"
-                      />
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={notifications[pref.key as keyof typeof notifications]}
+                          onChange={(e) =>
+                            setNotifications({
+                              ...notifications,
+                              [pref.key]: e.target.checked,
+                            })
+                          }
+                          className="w-5 h-5 rounded cursor-pointer focus:ring-2 focus:ring-[var(--color-primary)]"
+                          aria-label={pref.label}
+                        />
+                      </label>
                     </div>
                   ))}
                 </div>

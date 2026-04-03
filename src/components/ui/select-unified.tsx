@@ -67,7 +67,7 @@ const SelectContent = React.forwardRef<
 SelectContent.displayName = SelectPrimitive.Content.displayName;
 
 /**
- * SelectItem Component
+ * SelectItem Component - Individual Select Option
  */
 const SelectItem = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Item>,
@@ -76,7 +76,7 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      'relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-8 text-sm outline-none focus:bg-[var(--color-bg-secondary)] focus:text-[var(--color-text)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-8 text-sm outline-none focus:bg-[var(--color-bg-secondary)] focus:text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-0 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       className
     )}
     {...props}
@@ -92,6 +92,7 @@ const SelectItem = React.forwardRef<
           strokeWidth="3"
           strokeLinecap="round"
           strokeLinejoin="round"
+          aria-hidden="true"
         >
           <polyline points="20 6 9 17 4 12" />
         </svg>

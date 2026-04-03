@@ -297,9 +297,20 @@ export function AddCardModal({ isOpen, onClose, onCardAdded }: AddCardModalProps
               name="renewalDate"
               value={formData.renewalDate}
               onChange={handleChange}
+              onBlur={(e) => {
+                // Validate renewal date on blur
+                const date = new Date(e.currentTarget.value);
+                if (e.currentTarget.value && date < new Date()) {
+                  setErrors((prev) => ({
+                    ...prev,
+                    renewalDate: 'Renewal date must be in the future'
+                  }));
+                }
+              }}
               error={errors.renewalDate}
               disabled={isLoading}
               required
+              hint="When your card benefits reset"
             />
 
             {/* Custom Name (Optional) */}

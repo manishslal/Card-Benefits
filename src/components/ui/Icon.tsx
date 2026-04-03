@@ -10,7 +10,6 @@ interface IconProps extends React.SVGAttributes<SVGElement> {
   size?: number | string;
   strokeWidth?: number;
   className?: string;
-  aria-label?: string;
 }
 
 /**

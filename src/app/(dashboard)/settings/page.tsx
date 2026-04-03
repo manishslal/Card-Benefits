@@ -5,6 +5,8 @@ import { SafeDarkModeToggle } from '@/components/SafeDarkModeToggle';
 import Button from '@/components/ui/button';
 import Input from '@/components/ui/Input';
 import Link from 'next/link';
+import { CreditCard, ArrowLeft } from 'lucide-react';
+
 
 /**
  * Settings Page - User Preferences and Account Management
@@ -119,7 +121,7 @@ export default function SettingsPage() {
               className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold"
               style={{ backgroundColor: 'var(--color-primary)' }}
             >
-              💳
+              <CreditCard size={20} />
             </div>
             <h1 className="text-lg font-bold text-[var(--color-text)]">
               CardTrack
@@ -131,7 +133,8 @@ export default function SettingsPage() {
             <SafeDarkModeToggle />
             <Link href="/">
               <Button variant="outline" size="sm">
-                ← Back to Dashboard
+                <ArrowLeft size={16} className="mr-1" />
+                Back to Dashboard
               </Button>
             </Link>
           </div>

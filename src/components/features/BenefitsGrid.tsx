@@ -3,6 +3,7 @@
 import React from 'react';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/button';
+import { Plane, Tag, Utensils, DollarSign, Zap } from 'lucide-react';
 
 interface Benefit {
   id: string;
@@ -12,6 +13,7 @@ interface Benefit {
   expirationDate?: Date | string;
   value?: number;
   usage?: number; // 0-100 percentage
+  type?: string; // travel, shopping, dining, cashback, other
 }
 
 interface BenefitsGridProps {
@@ -32,6 +34,8 @@ interface BenefitsGridProps {
  * - Mobile (320px): 1 column
  * - Tablet (768px): 2 columns
  * - Desktop (1440px): 3 columns (default)
+ * - Benefit type icons (Plane, Tag, Utensils, DollarSign)
+ * - Status badges with icons
  * - Hover: lift effect, shadow elevation
  * - Compact card format
  * - Empty state handling
@@ -49,6 +53,23 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
     },
     ref
   ) => {
+    // Benefit type icons
+    const getBenefitTypeIcon = (type?: string) => {
+      const iconProps = { size: 20, className: 'flex-shrink-0' };
+      switch (type?.toLowerCase()) {
+        case 'travel':
+          return <Plane {...iconProps} aria-hidden="true" />;
+        case 'shopping':
+          return <Tag {...iconProps} aria-hidden="true" />;
+        case 'dining':
+          return <Utensils {...iconProps} aria-hidden="true" />;
+        case 'cashback':
+          return <DollarSign {...iconProps} aria-hidden="true" />;
+        default:
+          return <Zap {...iconProps} aria-hidden="true" />;
+      }
+    };
+
     const getStatusBadge = (status: Benefit['status']) => {
       const variants = {
         active: 'success',
@@ -65,7 +86,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
       };
 
       return (
-        <Badge variant={variants[status]} size="sm">
+        <Badge variant={variants[status]} size="sm" showStatusIcon>
           {labels[status]}
         </Badge>
       );
@@ -134,15 +155,20 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
             }}
           >
             <div className="flex flex-col h-full gap-3">
-              {/* Header: Status Badge */}
+              {/* Header: Icon + Name + Status Badge */}
               <div className="flex justify-between items-start gap-2">
-                <h3
-                  className="flex-1 font-semibold text-[var(--color-text)] line-clamp-2"
-                  style={{ fontSize: 'var(--text-body-sm)' }}
-                  title={benefit.name}
-                >
-                  {benefit.name}
-                </h3>
+                <div className="flex items-start gap-2 flex-1">
+                  <div className="mt-0.5 text-[var(--color-primary)] flex-shrink-0">
+                    {getBenefitTypeIcon(benefit.type)}
+                  </div>
+                  <h3
+                    className="flex-1 font-semibold text-[var(--color-text)] line-clamp-2"
+                    style={{ fontSize: 'var(--text-body-sm)' }}
+                    title={benefit.name}
+                  >
+                    {benefit.name}
+                  </h3>
+                </div>
                 {getStatusBadge(benefit.status)}
               </div>
 

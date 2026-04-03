@@ -15,11 +15,13 @@ import { Sun, Moon, CreditCard } from 'lucide-react';
  * - Height: 64px (mobile), 72px (desktop)
  * - Dark mode preference persists to localStorage
  * - Smooth color transitions
+ * - Full accessibility with aria-labels on icon-only buttons
  * 
  * Technical:
  * - Manages theme state via data-theme="dark" on <html> element
  * - Persists preference to localStorage("theme")
  * - Keyboard accessible (Tab navigation, Enter/Space to toggle)
+ * - Icon buttons have aria-labels for screen readers
  */
 export default function Header() {
   const [isDark, setIsDark] = useState(false);
@@ -95,6 +97,7 @@ export default function Header() {
               width: '32px',
               height: '32px',
             }}
+            aria-hidden="true"
           >
             <CreditCard className="w-6 h-6 text-white" />
           </div>
@@ -120,12 +123,14 @@ export default function Header() {
           aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           role="switch"
           aria-checked={isDark}
-          className="flex items-center justify-center rounded-md transition-all duration-200"
+          className="flex items-center justify-center rounded-md transition-all duration-200 focus:outline-3 focus:outline-offset-2 focus:outline-[var(--color-primary)]"
           style={{
             width: '44px',
             height: '44px',
             backgroundColor: 'transparent',
             color: 'var(--color-text-primary)',
+            minWidth: '44px',
+            minHeight: '44px',
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = 'var(--color-bg-tertiary)';
@@ -136,10 +141,10 @@ export default function Header() {
         >
           {isDark ? (
             // Sun icon for light mode toggle (when in dark mode)
-            <Sun className="w-6 h-6" />
+            <Sun className="w-6 h-6" aria-hidden="true" />
           ) : (
             // Moon icon for dark mode toggle (when in light mode)
-            <Moon className="w-6 h-6" />
+            <Moon className="w-6 h-6" aria-hidden="true" />
           )}
         </button>
       </div>

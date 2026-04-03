@@ -206,7 +206,8 @@ export default function BenefitTable({ benefits }: BenefitTableProps) {
           <tr
             style={{
               backgroundColor: 'var(--color-bg-tertiary)',
-              borderBottom: '1px solid var(--color-border)',
+              borderBottom: '2px solid var(--color-border)',
+              minHeight: '48px',
             }}
           >
             {/* Checkbox column header - Fixed 44px */}
@@ -264,9 +265,9 @@ export default function BenefitTable({ benefits }: BenefitTableProps) {
               Value
             </th>
 
-            {/* Expiration column - Fixed minimum 70px, 15% width, center-aligned */}
+            {/* Expiration column - Hide on mobile, show on tablet+ */}
             <th
-              className="p-md text-center font-semibold whitespace-nowrap"
+              className="p-md text-center font-semibold whitespace-nowrap hidden sm:table-cell"
               style={{
                 minWidth: '70px',
                 width: '15%',
@@ -314,6 +315,7 @@ export default function BenefitTable({ benefits }: BenefitTableProps) {
                   borderBottom: '1px solid var(--color-border)',
                   opacity: benefit.isUsed ? 0.6 : 1,
                   transition: 'all var(--transition-base)',
+                  minHeight: '48px',
                 }}
                 className="hover:bg-opacity-50"
               >
@@ -361,9 +363,9 @@ export default function BenefitTable({ benefits }: BenefitTableProps) {
                   {formatCurrency(getResolvedValue(benefit))}
                 </td>
 
-                {/* Expiration Date */}
+                {/* Expiration Date - Hide on mobile, show on tablet+ */}
                 <td
-                  className="p-md text-center whitespace-nowrap"
+                  className="p-md text-center whitespace-nowrap hidden sm:table-cell"
                   style={{
                     minWidth: '70px',
                     color:

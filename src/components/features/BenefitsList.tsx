@@ -3,6 +3,7 @@
 import React from 'react';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/button';
+import { Plane, Tag, Utensils, DollarSign, Zap } from 'lucide-react';
 
 interface Benefit {
   id: string;
@@ -12,6 +13,7 @@ interface Benefit {
   expirationDate?: Date | string;
   value?: number;
   usage?: number; // 0-100 percentage
+  type?: string; // travel, shopping, dining, cashback, other
 }
 
 interface BenefitsListProps {
@@ -28,7 +30,8 @@ interface BenefitsListProps {
  * 
  * Features:
  * - Vertical card list layout
- * - Status badges (color-coded)
+ * - Benefit type icons (Plane, Tag, Utensils, DollarSign)
+ * - Status badges (color-coded with icons)
  * - Expiration dates in human-readable format
  * - Action buttons (edit, delete, mark as used)
  * - Empty state handling
@@ -46,6 +49,23 @@ const BenefitsList = React.forwardRef<HTMLDivElement, BenefitsListProps>(
     },
     ref
   ) => {
+    // Benefit type icons
+    const getBenefitTypeIcon = (type?: string) => {
+      const iconProps = { size: 18, className: 'flex-shrink-0' };
+      switch (type?.toLowerCase()) {
+        case 'travel':
+          return <Plane {...iconProps} aria-hidden="true" />;
+        case 'shopping':
+          return <Tag {...iconProps} aria-hidden="true" />;
+        case 'dining':
+          return <Utensils {...iconProps} aria-hidden="true" />;
+        case 'cashback':
+          return <DollarSign {...iconProps} aria-hidden="true" />;
+        default:
+          return <Zap {...iconProps} aria-hidden="true" />;
+      }
+    };
+
     const getStatusBadge = (status: Benefit['status']) => {
       const variants = {
         active: 'success',
@@ -62,7 +82,7 @@ const BenefitsList = React.forwardRef<HTMLDivElement, BenefitsListProps>(
       };
 
       return (
-        <Badge variant={variants[status]} size="sm">
+        <Badge variant={variants[status]} size="sm" showStatusIcon>
           {labels[status]}
         </Badge>
       );
@@ -137,23 +157,28 @@ const BenefitsList = React.forwardRef<HTMLDivElement, BenefitsListProps>(
               }}
             >
               <div className="flex flex-col gap-3">
-                {/* Header: Name + Status Badge */}
+                {/* Header: Icon + Name + Status Badge */}
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1">
-                    <h3
-                      className="font-semibold text-[var(--color-text)]"
-                      style={{ fontSize: 'var(--text-body-md)' }}
-                    >
-                      {benefit.name}
-                    </h3>
-                    {benefit.description && (
-                      <p
-                        className="text-xs mt-1"
-                        style={{ color: 'var(--color-text-secondary)' }}
+                  <div className="flex items-start gap-2 flex-1">
+                    <div className="mt-1 text-[var(--color-primary)]">
+                      {getBenefitTypeIcon(benefit.type)}
+                    </div>
+                    <div className="flex-1">
+                      <h3
+                        className="font-semibold text-[var(--color-text)]"
+                        style={{ fontSize: 'var(--text-body-md)' }}
                       >
-                        {benefit.description}
-                      </p>
-                    )}
+                        {benefit.name}
+                      </h3>
+                      {benefit.description && (
+                        <p
+                          className="text-xs mt-1"
+                          style={{ color: 'var(--color-text-secondary)' }}
+                        >
+                          {benefit.description}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   {getStatusBadge(benefit.status)}
                 </div>

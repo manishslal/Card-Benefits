@@ -184,7 +184,7 @@
     --color-gray-200: #334155;
     --color-gray-300: #475569;
     --color-gray-400: #64748b;
-    --color-gray-500: #94a3b8;
+    --color-gray-500: #a8b5c8;
     --color-gray-600: #cbd5e1;
     --color-gray-900: #f1f5f9;
 
@@ -192,7 +192,7 @@
     --color-bg: #0f172a;
     --color-bg-secondary: #1e293b;
     --color-text: #f1f5f9;
-    --color-text-secondary: #94a3b8;
+    --color-text-secondary: #a8b5c8;
     --color-border: #334155;
 
     /* Shadows - Dark Mode (higher opacity) */
@@ -253,8 +253,8 @@ body {
     --text-h3: 29.6px;
     --text-h4: 26.4px;
     --text-body-lg: 14.4px;
-    --text-body-md: 12.8px;
-    --text-body-sm: 11.2px;
+    --text-body-md: 13px;
+    --text-body-sm: 11.5px;
   }
 }
 
@@ -272,6 +272,32 @@ button:focus-visible,
   outline-offset: -2px;
 }
 
+/* Enhanced focus ring for better visibility */
+.focus-ring:focus,
+button:focus,
+input:focus,
+a:focus,
+[role="button"]:focus,
+[role="link"]:focus,
+[role="menuitem"]:focus {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Dark mode - brighter focus outline */
+@media (prefers-color-scheme: dark) {
+  .focus-ring:focus,
+  button:focus,
+  input:focus,
+  a:focus,
+  [role="button"]:focus,
+  [role="link"]:focus,
+  [role="menuitem"]:focus {
+    outline: 3px solid #60a5fa;
+  }
+}
+
 /* ========================================
    ACCESSIBILITY - HIGH CONTRAST MODE
    ======================================== */
@@ -283,12 +309,22 @@ button:focus-visible,
 }
 
 /* ========================================
-   ACCESSIBILITY - REDUCED MOTION
+   SKIP LINK - Accessibility
    ======================================== */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+.skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--color-primary);
+  color: white;
+  padding: 8px 16px;
+  z-index: 100;
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-600);
+  transition: top var(--duration-base) var(--ease-in-out);
+}
+
+.skip-to-content:focus {
+  top: 0;
 }

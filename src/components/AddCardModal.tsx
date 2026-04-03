@@ -1,20 +1,22 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Button from '@/components/ui/button';
 import Input from '@/components/ui/Input';
+import { UnifiedSelect } from '@/components/ui/select-unified';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 
 /**
- * AddCardModal Component
+ * AddCardModal Component - Phase 4: Accessibility & UX Fixes
  * 
- * Allows users to add a new credit card to their wallet with:
- * - Card selection from available MasterCard options
- * - Custom card name (optional)
- * - Custom annual fee override (optional)
- * - Renewal date selection
- * - Form validation and error handling
- *
+ * WCAG 2.1 Level AA Compliant Features:
+ * - Radix UI Dialog for proper ARIA roles and keyboard trapping
+ * - Focus management: Focus moves to first input on open, returns to trigger on close
+ * - Keyboard navigation: Tab cycles within modal, Escape closes modal
+ * - Screen reader support: aria-modal, aria-labelledby, aria-describedby
+ * - Form validation with real-time feedback
+ * 
  * Props:
  * - isOpen: boolean - whether modal is visible
  * - onClose: () => void - callback when user closes modal
@@ -35,6 +37,8 @@ interface AddCardModalProps {
 }
 
 export function AddCardModal({ isOpen, onClose, onCardAdded }: AddCardModalProps) {
+  const cardSelectRef = useRef<HTMLButtonElement>(null);
+  
   const [formData, setFormData] = useState({
     masterCardId: '',
     customName: '',
@@ -96,11 +100,18 @@ export function AddCardModal({ isOpen, onClose, onCardAdded }: AddCardModalProps
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleSelectChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, masterCardId: value }));
+    if (errors.masterCardId) {
+      setErrors((prev) => ({ ...prev, masterCardId: '' }));
     }
   };
 

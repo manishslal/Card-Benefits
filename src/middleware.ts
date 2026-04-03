@@ -20,22 +20,24 @@ import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * Routes that require authentication
+ * NOTE: Middleware currently disabled - will be fully implemented in future phase
  */
-const PROTECTED_ROUTES = [
-  '/dashboard',
-  '/api/protected',
-  '/account',
-  '/settings',
-];
+// const PROTECTED_ROUTES = [
+//   '/dashboard',
+//   '/api/protected',
+//   '/account',
+//   '/settings',
+// ];
 
 /**
  * Routes that should redirect authenticated users away
+ * NOTE: Middleware currently disabled - will be fully implemented in future phase
  */
-const PUBLIC_AUTH_ROUTES = [
-  '/login',
-  '/signup',
-  '/forgot-password',
-];
+// const PUBLIC_AUTH_ROUTES = [
+//   '/login',
+//   '/signup',
+//   '/forgot-password',
+// ];
 
 // ============================================================
 // Middleware Function
@@ -47,7 +49,7 @@ const PUBLIC_AUTH_ROUTES = [
  * TODO: Implement full session validation
  * For now, just pass through requests to allow development
  */
-export async function middleware(request: NextRequest) {
+export async function middleware(_request: NextRequest) {
   // For now, allow all requests to pass through
   // This allows the Phase 4 pages to work during development
   // Full auth middleware will be implemented in Phase 5

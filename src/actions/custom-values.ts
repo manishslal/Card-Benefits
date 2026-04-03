@@ -34,13 +34,12 @@ import type {
   BulkUpdateUserDeclaredValuesResult,
   GetBenefitValueHistoryResult,
   RevertUserDeclaredValueResult,
-  BenefitValueChange,
 } from '@/lib/types/custom-values';
 import { Prisma } from '@prisma/client';
 import type { UserBenefit } from '@prisma/client';
 
 // ============================================================================
-// Helper: Add entry to value history
+// Helper: Add entry to value history [DISABLED - valueHistory field not in schema]
 // ============================================================================
 
 /**
@@ -50,53 +49,56 @@ import type { UserBenefit } from '@prisma/client';
  * @param currentHistory - Existing history JSON string (or null)
  * @param change - New change to append
  * @returns Updated history JSON string
+ *
+ * NOTE: This function is disabled because the valueHistory field doesn't exist
+ * in the UserBenefit model. Re-enable when the field is added to the schema.
  */
-function appendToValueHistory(
-  currentHistory: string | null,
-  change: BenefitValueChange
-): string {
-  let history: BenefitValueChange[] = [];
-
-  // Parse existing history if present
-  if (currentHistory) {
-    try {
-      history = JSON.parse(currentHistory);
-      if (!Array.isArray(history)) {
-        history = [];
-      }
-    } catch (e) {
-      // If JSON is malformed, start fresh
-      history = [];
-    }
-  }
-
-  // Append new entry
-  history.push({
-    ...change,
-    changedAt: change.changedAt instanceof Date 
-      ? change.changedAt.toISOString()
-      : change.changedAt,
-  });
-
-  return JSON.stringify(history);
-}
+// function appendToValueHistory(
+//   currentHistory: string | null,
+//   change: BenefitValueChange
+// ): string {
+//   let history: BenefitValueChange[] = [];
+//
+//   // Parse existing history if present
+//   if (currentHistory) {
+//     try {
+//       history = JSON.parse(currentHistory);
+//       if (!Array.isArray(history)) {
+//         history = [];
+//       }
+//     } catch (e) {
+//       // If JSON is malformed, start fresh
+//       history = [];
+//     }
+//   }
+//
+//   // Append new entry
+//   history.push({
+//     ...change,
+//     changedAt: change.changedAt instanceof Date 
+//       ? change.changedAt.toISOString()
+//       : change.changedAt,
+//   });
+//
+//   return JSON.stringify(history);
+// }
 
 /**
  * Parses value history from JSON string.
  * Returns empty array if history is null or malformed.
  */
-function parseValueHistory(historyJson: string | null): BenefitValueChange[] {
-  if (!historyJson) {
-    return [];
-  }
-
-  try {
-    const history = JSON.parse(historyJson);
-    return Array.isArray(history) ? history : [];
-  } catch (e) {
-    return [];
-  }
-}
+// function parseValueHistory(historyJson: string | null): BenefitValueChange[] {
+//   if (!historyJson) {
+//     return [];
+//   }
+//
+//   try {
+//     const history = JSON.parse(historyJson);
+//     return Array.isArray(history) ? history : [];
+//   } catch (e) {
+//     return [];
+//   }
+// }
 
 // ============================================================================
 // Helper: Calculate ROI values
@@ -214,25 +216,13 @@ export async function updateUserDeclaredValue(
     const changePercent =
       valueBefore === 0 ? 0 : (changeAmount / valueBefore) * 100;
 
-    // ── Create history entry ────────────────────────────────────────────────
-    const newHistoryEntry: BenefitValueChange = {
-      value: valueInCents,
-      changedAt: now.toISOString(),
-      changedBy: userId,
-      source: 'manual',
-      reason: changeReason || undefined,
-    };
-
-    const updatedHistory = appendToValueHistory(benefit.valueHistory, newHistoryEntry);
-
-    // ── Update benefit with new value and history ───────────────────────────
+    // ── Update benefit with new value ─────────────────────────────────────────
+    // Note: Value history tracking is disabled (valueHistory field not in schema)
     const updatedBenefit = await prisma.userBenefit.update({
       where: { id: benefitId },
       data: {
         userDeclaredValue: valueInCents,
-        valueHistory: updatedHistory,
-        valueUpdatedAt: now,
-        valueUpdatedBy: userId,
+        updatedAt: now,
       },
     });
 
@@ -338,25 +328,23 @@ export async function clearUserDeclaredValue(
     }
 
     // ── Record change in history ────────────────────────────────────────────
+    // Note: Value history tracking disabled (valueHistory field not in schema)
     const now = new Date();
-    const newHistoryEntry: BenefitValueChange = {
-      value: benefit.stickerValue,
-      changedAt: now.toISOString(),
-      changedBy: 'system',
-      source: 'system',
-      reason: 'Reset to master value',
-    };
-
-    const updatedHistory = appendToValueHistory(benefit.valueHistory, newHistoryEntry);
+    // const newHistoryEntry: BenefitValueChange = {
+    //   value: benefit.stickerValue,
+    //   changedAt: now.toISOString(),
+    //   changedBy: 'system',
+    //   source: 'system',
+    //   reason: 'Reset to master value',
+    // };
+    // const updatedHistory = appendToValueHistory(benefit.valueHistory, newHistoryEntry);
 
     // ── Clear the value ─────────────────────────────────────────────────────
     const updatedBenefit = await prisma.userBenefit.update({
       where: { id: benefitId },
       data: {
         userDeclaredValue: null,
-        valueHistory: updatedHistory,
-        valueUpdatedAt: now,
-        valueUpdatedBy: 'system',
+        updatedAt: now,
       },
     });
 
@@ -413,7 +401,7 @@ export async function clearUserDeclaredValue(
  */
 export async function bulkUpdateUserDeclaredValues(
   updates: Array<{ benefitId: string; valueInCents: number }>,
-  cardId?: string,
+  // cardId?: string, // Parameter not used - reserved for future filtering
 ): Promise<ActionResponse<BulkUpdateUserDeclaredValuesResult>> {
   try {
     // ── Input validation ────────────────────────────────────────────────────────
@@ -493,15 +481,15 @@ export async function bulkUpdateUserDeclaredValues(
 
         affectedCards.add(benefit.userCardId);
 
-        const newHistoryEntry: BenefitValueChange = {
-          value: update.valueInCents,
-          changedAt: now.toISOString(),
-          changedBy: userId,
-          source: 'manual',
-          reason: 'Bulk update',
-        };
-
-        const updatedHistory = appendToValueHistory(benefit.valueHistory, newHistoryEntry);
+        // Note: Value history tracking disabled (valueHistory field not in schema)
+        // const newHistoryEntry: BenefitValueChange = {
+        //   value: update.valueInCents,
+        //   changedAt: now.toISOString(),
+        //   changedBy: userId,
+        //   source: 'manual',
+        //   reason: 'Bulk update',
+        // };
+        // const updatedHistory = appendToValueHistory(benefit.valueHistory, newHistoryEntry);
 
         resultBenefits.push({
           id: benefit.id,
@@ -514,9 +502,7 @@ export async function bulkUpdateUserDeclaredValues(
           where: { id: update.benefitId },
           data: {
             userDeclaredValue: update.valueInCents,
-            valueHistory: updatedHistory,
-            valueUpdatedAt: now,
-            valueUpdatedBy: userId,
+            updatedAt: now,
           },
         });
       }),
@@ -618,20 +604,20 @@ export async function getBenefitValueHistory(
     }
 
     // ── Parse history ───────────────────────────────────────────────────────
-    const fullHistory = parseValueHistory(benefit.valueHistory);
-
+    // Note: Value history tracking disabled (valueHistory field not in schema)
+    // const fullHistory = parseValueHistory(benefit.valueHistory);
     // Return last N entries (newest first)
-    const history = fullHistory.slice(-limit).reverse();
+    // const history = fullHistory.slice(-limit).reverse();
 
     return createSuccessResponse({
       benefitId,
       current: {
         value: benefit.userDeclaredValue,
         type: benefit.userDeclaredValue ? 'custom' : 'sticker',
-        changedAt: benefit.valueUpdatedAt,
+        changedAt: benefit.updatedAt,
       },
-      history,
-      totalChanges: fullHistory.length,
+      history: [], // Empty history since feature is disabled
+      totalChanges: 0,
     });
   } catch (error) {
     if (error instanceof AppError) {
@@ -696,25 +682,12 @@ export async function revertUserDeclaredValue(
     }
 
     // ── Get history and find target entry ───────────────────────────────────
-    const history = parseValueHistory(benefit.valueHistory);
-
-    if (historyIndex >= history.length) {
-      return createErrorResponse(ERROR_CODES.VALIDATION_FIELD, {
-        field: 'historyIndex',
-        reason: 'History index out of bounds',
-        received: historyIndex,
-        max: history.length - 1,
-      });
-    }
-
-    const targetEntry = history[historyIndex];
-
-    // ── Use updateUserDeclaredValue to perform the revert ────────────────────
-    // This ensures all the same validation and history tracking happens
-    const result = await updateUserDeclaredValue(benefitId, targetEntry.value);
-
-    // The result is already in the correct format (UpdateBenefitValueResult)
-    return result;
+    // Note: Value history tracking disabled (valueHistory field not in schema)
+    // For now, revert feature is disabled
+    
+    return createErrorResponse(ERROR_CODES.INTERNAL_ERROR, {
+      reason: 'Revert feature is not yet available',
+    });
   } catch (error) {
     if (error instanceof AppError) {
       return createErrorResponse(error.code, error.details);

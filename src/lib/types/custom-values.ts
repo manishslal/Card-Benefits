@@ -297,3 +297,38 @@ export interface BenefitValueComparisonProps {
   showHistory?: boolean;
   onHistoryClick?: () => void;
 }
+
+/**
+ * Props for BenefitValuePresets component
+ */
+export interface BenefitValuePresetsProps {
+  stickerValue: number;
+  currentValue: number | null;
+  onSelect: (valueInCents: number) => Promise<void>;
+  benefitType?: 'StatementCredit' | 'UsagePerk';
+  isLoading?: boolean;
+}
+
+/**
+ * Props for ValueHistoryPopover component
+ */
+export interface ValueHistoryPopoverProps {
+  benefitId: string;
+  history: BenefitValueChange[];
+  currentValue: number | null;
+  onRevert: (historyIndex: number) => Promise<void>;
+}
+
+/**
+ * Props for BulkValueEditor component
+ */
+export interface BulkValueEditorProps {
+  selectedBenefits: Array<{
+    id: string;
+    name: string;
+    stickerValue: number;
+    currentValue: number | null;
+  }>;
+  onApply: (updates: Array<{ benefitId: string; valueInCents: number }>) => Promise<void>;
+  onCancel: () => void;
+}

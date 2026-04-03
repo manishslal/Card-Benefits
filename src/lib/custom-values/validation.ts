@@ -341,10 +341,10 @@ export function validateChangeReason(reason: any): void {
  * Gets a presnt configuration based on benefit type.
  * Used to populate preset buttons in the UI.
  *
- * @param benefitType - Type of benefit (e.g., 'StatementCredit', 'UsagePerk')
+ * @param _benefitType - Type of benefit (e.g., 'StatementCredit', 'UsagePerk') - reserved for future customization
  * @returns Array of preset percentages
  */
-export function getPresetsForBenefitType(benefitType: string): number[] {
+export function getPresetsForBenefitType(_benefitType: string): number[] {
   // All benefit types use the same percentage presets
   // In future, this could be customized per type
   return [0.50, 0.75, 0.90, 1.0]; // 50%, 75%, 90%, 100% (master)

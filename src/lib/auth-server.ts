@@ -487,3 +487,43 @@ export async function invalidateSession(sessionToken: string): Promise<boolean> 
     return false;
   }
 }
+
+// ============================================================
+// Card Operation Authorization
+// ============================================================
+
+/**
+ * Authorize a card operation for the current user
+ *
+ * Checks:
+ * 1. User is authenticated
+ * 2. User owns the player who owns the card
+ * 3. For EDIT/DELETE: User has appropriate role (OWNER or EDITOR if own card)
+ *
+ * @param userId - ID of the user performing the operation
+ * @param card - The card object (must include player relation)
+ * @param operation - Type of operation: READ, EDIT, DELETE, ARCHIVE
+ * @returns true if authorized, false otherwise
+ */
+export async function authorizeCardOperation(
+  userId: string,
+  card: any, // UserCard with player relation
+  operation: 'READ' | 'EDIT' | 'DELETE' | 'ARCHIVE' | 'BULK_EDIT'
+): Promise<boolean> {
+  try {
+    // Get user's player ownership
+    const playerOwnership = await verifyPlayerOwnership(card.playerId, userId);
+    
+    // All authenticated users can read cards they own
+    if (operation === 'READ') {
+      return playerOwnership.isOwner;
+    }
+
+    // For edit/delete operations, require ownership of the player
+    // (In a multi-user household, only the owner/admin can edit)
+    return playerOwnership.isOwner;
+  } catch (error) {
+    console.error('[authorizeCardOperation] Error:', error);
+    return false;
+  }
+}

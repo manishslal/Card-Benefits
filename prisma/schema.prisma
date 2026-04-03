@@ -129,6 +129,9 @@ model Player {
   @@unique([userId, playerName])
 }
 
+// CardStatus enum for card state management
+// Using string type since SQLite doesn't support native enums
+// Valid values: ACTIVE, PENDING, PAUSED, ARCHIVED, DELETED
 model UserCard {
   id                String   @id @default(cuid())
   playerId          String   // FK to Player
@@ -138,7 +141,18 @@ model UserCard {
   customName        String?  // User rename (e.g., "Amex Gold - Jon")
   actualAnnualFee   Int?     // Override fee (in cents; null = use default)
   renewalDate       DateTime // Card anniversary for benefit resets
-  isOpen            Boolean @default(true) // Card is active in wallet
+  isOpen            Boolean @default(true) // Card is active in wallet (DEPRECATED: use status instead)
+
+  // Card Status Management (NEW)
+  status            String @default("ACTIVE") // ACTIVE|PENDING|PAUSED|ARCHIVED|DELETED
+  statusChangedAt   DateTime?  // When status last changed
+  statusChangedReason String?  // Why status changed
+  statusChangedBy   String?    // Who changed it (userId)
+
+  // Archive Metadata (NEW)
+  archivedAt        DateTime?  // When archived
+  archivedBy        String?    // Who archived (userId)
+  archivedReason    String?    // Why archived
 
   // Import Audit Fields
   importedFrom      String?   // ImportJob ID for audit trail
@@ -158,6 +172,9 @@ model UserCard {
   @@index([playerId])
   @@index([masterCardId])
   @@index([playerId, masterCardId])
+  @@index([playerId, status])
+  @@index([renewalDate])
+  @@index([archivedAt])
   @@unique([playerId, masterCardId])
 }
 
@@ -177,6 +194,9 @@ model UserBenefit {
   isUsed            Boolean @default(false) // User has claimed/utilized this benefit
   timesUsed         Int @default(0) // Count of times benefit was used/reset
   expirationDate    DateTime? // When benefit expires
+  
+  // Benefit Status (NEW - for archive management)
+  status            String @default("ACTIVE") // ACTIVE | ARCHIVED (mirrors parent card status)
 
   // Import Audit Fields
   importedFrom      String?   // ImportJob ID for audit trail

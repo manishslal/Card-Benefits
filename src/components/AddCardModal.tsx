@@ -56,33 +56,41 @@ export function AddCardModal({ isOpen, onClose, onCardAdded }: AddCardModalProps
 
   const fetchAvailableCards = async () => {
     setIsLoadingCards(true);
+    setMessage('');
     try {
-      // TODO: Create GET /api/cards/available endpoint
-      // For now, using mock data - replace with actual API call
-      const mockCards: Card[] = [
-        {
-          id: 'card_1',
-          issuer: 'Chase',
-          cardName: 'Sapphire Reserve',
-          defaultAnnualFee: 55000,
-        },
-        {
-          id: 'card_2',
-          issuer: 'American Express',
-          cardName: 'Platinum Card',
-          defaultAnnualFee: 69500,
-        },
-        {
-          id: 'card_3',
-          issuer: 'Capital One',
-          cardName: 'Venture X',
-          defaultAnnualFee: 39500,
-        },
-      ];
-      setAvailableCards(mockCards);
+      // Fetch available cards from real API endpoint (BLOCKER #6 implementation)
+      const response = await fetch('/api/cards/available?limit=100', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch available cards');
+      }
+
+      const data = await response.json();
+
+      if (!data.success || !Array.isArray(data.cards)) {
+        throw new Error('Invalid response format');
+      }
+
+      // Map API response to Card interface
+      const cards: Card[] = data.cards.map((apiCard: any) => ({
+        id: apiCard.id,
+        issuer: apiCard.issuer,
+        cardName: apiCard.cardName,
+        defaultAnnualFee: apiCard.defaultAnnualFee,
+      }));
+
+      setAvailableCards(cards);
+
+      if (cards.length === 0) {
+        setMessage('No cards available in the catalog');
+      }
     } catch (error) {
       console.error('Failed to fetch cards:', error);
-      setMessage('Failed to load available cards');
+      setMessage('Failed to load available cards. Please try again.');
     } finally {
       setIsLoadingCards(false);
     }

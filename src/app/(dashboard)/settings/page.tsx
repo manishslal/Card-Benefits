@@ -88,14 +88,45 @@ export default function SettingsPage() {
   const handleSaveProfile = async () => {
     setIsLoading(true);
     setMessage('');
+    setErrors({});
 
     try {
-      // TODO: Implement actual profile update API endpoint
-      // For now, just show success message as a placeholder
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // BLOCKER #8 FIX: Call real profile update API endpoint
+      const response = await fetch('/api/user/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          firstName: formData.firstName || undefined,
+          lastName: formData.lastName || undefined,
+          email: formData.email || undefined,
+          notificationPreferences: notifications,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (data.fieldErrors) {
+          setErrors(data.fieldErrors);
+        }
+        setMessage(data.error || 'Failed to update profile');
+        return;
+      }
+
       setMessage('✓ Profile updated successfully');
+      // Update form data with response
+      if (data.user) {
+        setFormData((prev) => ({
+          ...prev,
+          firstName: data.user.firstName || '',
+          lastName: data.user.lastName || '',
+          email: data.user.email || '',
+        }));
+      }
     } catch (error) {
-      setMessage('Error updating profile');
+      console.error('Error updating profile:', error);
+      setMessage('An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }

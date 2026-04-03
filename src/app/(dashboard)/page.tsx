@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SafeDarkModeToggle } from '@/components/SafeDarkModeToggle';
 import Button from '@/components/ui/button';
 import Link from 'next/link';
@@ -12,47 +12,168 @@ import { CreditCard, Settings, Plus } from 'lucide-react';
 
 /**
  * Dashboard Page - Redesigned
- * 
+ *
  * Features:
  * - Welcome header with quick actions
+ * - Real user cards loaded from API (BLOCKER #7 FIX)
  * - Card switcher for navigating between cards
  * - Dashboard summary statistics
  * - Benefits grid view
  * - Responsive layout
  * - Dark mode support
+ * - Loading and error states
  */
 
 // Mark as dynamic page to avoid SSG issues with ThemeProvider
 export const dynamic = 'force-dynamic';
 
-export default function DashboardPage() {
-  // Mock data for demo
-  const mockCards = [
-    {
-      id: '1',
-      name: 'Chase Sapphire',
-      type: 'visa' as const,
-      lastFour: '4242',
-      issuer: 'Chase',
-    },
-    {
-      id: '2',
-      name: 'Amex Platinum',
-      type: 'amex' as const,
-      lastFour: '0005',
-      issuer: 'American Express',
-    },
-    {
-      id: '3',
-      name: 'Capital One',
-      type: 'mastercard' as const,
-      lastFour: '5555',
-      issuer: 'Capital One',
-    },
-  ];
+/**
+ * Type definitions for card and benefit display
+ */
+interface CardData {
+  id: string;
+  name: string;
+  type: 'visa' | 'amex' | 'mastercard' | 'discover' | 'other';
+  lastFour: string;
+  issuer: string;
+  customName?: string | null;
+}
 
-  const [selectedCardId, setSelectedCardId] = useState('1');
+export default function DashboardPage() {
+  // ============================================================
+  // State Management - Real Data Loading
+  // ============================================================
+
+  const [cards, setCards] = useState<CardData[]>([]);
+  const [isLoadingCards, setIsLoadingCards] = useState(true);
+  const [cardsError, setCardsError] = useState<string | null>(null);
+  const [selectedCardId, setSelectedCardId] = useState<string>('');
   const [isAddCardModalOpen, setIsAddCardModalOpen] = useState(false);
+  const [userName, setUserName] = useState('User');
+
+  // ============================================================
+  // Effect: Load user cards from API (BLOCKER #7 implementation)
+  // ============================================================
+
+  useEffect(() => {
+    const loadUserCards = async () => {
+      setIsLoadingCards(true);
+      setCardsError(null);
+      try {
+        const response = await fetch('/api/cards/my-cards', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to load user cards');
+        }
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to load cards');
+        }
+
+        // Transform API response to card display format
+        const transformedCards: CardData[] = (data.cards || []).map((apiCard: any) => ({
+          id: apiCard.id,
+          name: apiCard.customName || apiCard.cardName,
+          type: (apiCard.type || 'visa') as CardData['type'],
+          lastFour: apiCard.lastFour || '0000',
+          issuer: apiCard.issuer,
+          customName: apiCard.customName,
+        }));
+
+        setCards(transformedCards);
+
+        // Set first card as selected if available
+        if (transformedCards.length > 0) {
+          setSelectedCardId(transformedCards[0].id);
+        }
+      } catch (error) {
+        console.error('Error loading cards:', error);
+        setCardsError('Failed to load your cards. Please refresh the page.');
+        // Fallback to empty state
+        setCards([]);
+      } finally {
+        setIsLoadingCards(false);
+      }
+    };
+
+    loadUserCards();
+  }, []);
+
+  // ============================================================
+  // Effect: Load user profile for personalized greeting
+  // ============================================================
+
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      try {
+        const response = await fetch('/api/auth/user', {
+          method: 'GET',
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.user) {
+            const firstName = data.user.firstName || 'User';
+            setUserName(firstName);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user profile:', error);
+      }
+    };
+
+    loadUserProfile();
+  }, []);
+
+  // ============================================================
+  // Handler: Refresh cards after adding new card
+  // ============================================================
+
+  const handleCardAdded = async () => {
+    // Reload cards after successful add
+    try {
+      const response = await fetch('/api/cards/my-cards', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.cards) {
+          const transformedCards: CardData[] = (data.cards || []).map((apiCard: any) => ({
+            id: apiCard.id,
+            name: apiCard.customName || apiCard.cardName,
+            type: (apiCard.type || 'visa') as CardData['type'],
+            lastFour: apiCard.lastFour || '0000',
+            issuer: apiCard.issuer,
+            customName: apiCard.customName,
+          }));
+
+          setCards(transformedCards);
+
+          // Select the newly added card
+          if (transformedCards.length > 0) {
+            setSelectedCardId(transformedCards[transformedCards.length - 1].id);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing cards:', error);
+    }
+  };
+
+  // ============================================================
+  // Mock Benefits (to be replaced with real benefit data in future)
+  // In production, benefits would come from selected card's data
+  // ============================================================
 
   const mockBenefits = [
     {
@@ -124,7 +245,7 @@ export default function DashboardPage() {
     },
     {
       label: 'Active Cards',
-      value: mockCards.length,
+      value: cards.length,
       icon: 'Wallet',
       variant: 'default' as const,
     },
@@ -135,6 +256,129 @@ export default function DashboardPage() {
       variant: 'default' as const,
     },
   ];
+
+  // ============================================================
+  // Render: Loading State
+  // ============================================================
+
+  if (isLoadingCards) {
+    return (
+      <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg)' }}>
+        {/* Header */}
+        <header
+          className="sticky top-0 z-40 border-b py-4"
+          style={{
+            backgroundColor: 'var(--color-bg)',
+            borderColor: 'var(--color-border)',
+          }}
+        >
+          <div className="max-w-6xl mx-auto px-4 md:px-8">
+            <div className="flex items-center justify-between">
+              <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold"
+                  style={{ backgroundColor: 'var(--color-primary)' }}
+                >
+                  <CreditCard size={20} />
+                </div>
+                <h1 className="text-lg font-bold text-[var(--color-text)]">CardTrack</h1>
+              </Link>
+
+              <div className="flex items-center gap-3">
+                <SafeDarkModeToggle />
+                <Link href="/settings">
+                  <Button variant="outline" size="sm">
+                    <Settings size={16} className="mr-2" />
+                    Settings
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Loading Content */}
+        <main className="flex-1 px-4 md:px-8 py-8 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-pulse mb-4">
+              <div className="h-8 w-32 bg-[var(--color-border)] rounded mx-auto mb-4" />
+              <div className="h-4 w-48 bg-[var(--color-border)] rounded mx-auto" />
+            </div>
+            <p className="text-[var(--color-text-secondary)]">Loading your cards...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // Render: Error State
+  // ============================================================
+
+  if (cardsError && cards.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg)' }}>
+        {/* Header */}
+        <header
+          className="sticky top-0 z-40 border-b py-4"
+          style={{
+            backgroundColor: 'var(--color-bg)',
+            borderColor: 'var(--color-border)',
+          }}
+        >
+          <div className="max-w-6xl mx-auto px-4 md:px-8">
+            <div className="flex items-center justify-between">
+              <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold"
+                  style={{ backgroundColor: 'var(--color-primary)' }}
+                >
+                  <CreditCard size={20} />
+                </div>
+                <h1 className="text-lg font-bold text-[var(--color-text)]">CardTrack</h1>
+              </Link>
+
+              <div className="flex items-center gap-3">
+                <SafeDarkModeToggle />
+                <Link href="/settings">
+                  <Button variant="outline" size="sm">
+                    <Settings size={16} className="mr-2" />
+                    Settings
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Error Content */}
+        <main className="flex-1 px-4 md:px-8 py-8 flex items-center justify-center">
+          <div className="text-center max-w-md">
+            <div
+              className="p-4 rounded-lg mb-6"
+              style={{
+                backgroundColor: 'rgba(255, 59, 48, 0.1)',
+              }}
+            >
+              <p className="text-[var(--color-error)] font-medium">{cardsError}</p>
+            </div>
+
+            <Button
+              variant="primary"
+              onClick={() => window.location.reload()}
+              className="mx-auto"
+            >
+              Reload Dashboard
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // Render: Main Dashboard
+  // ============================================================
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg)' }}>
@@ -156,9 +400,7 @@ export default function DashboardPage() {
               >
                 <CreditCard size={20} />
               </div>
-              <h1 className="text-lg font-bold text-[var(--color-text)]">
-                CardTrack
-              </h1>
+              <h1 className="text-lg font-bold text-[var(--color-text)]">CardTrack</h1>
             </Link>
 
             {/* Right actions */}
@@ -180,12 +422,10 @@ export default function DashboardPage() {
                 className="font-semibold text-[var(--color-text)]"
                 style={{ fontSize: 'var(--text-h4)' }}
               >
-                Welcome, John! 👋
+                Welcome, {userName}! 👋
               </h2>
-              <p
-                className="text-sm mt-1 text-[var(--color-text-secondary)]"
-              >
-                You have {mockCards.length} cards and {mockBenefits.length} benefits tracked
+              <p className="text-sm mt-1 text-[var(--color-text-secondary)]">
+                You have {cards.length} card{cards.length !== 1 ? 's' : ''} and {mockBenefits.length} benefits tracked
               </p>
             </div>
 
@@ -204,42 +444,64 @@ export default function DashboardPage() {
       {/* Main Content */}
       <main className="flex-1 px-4 md:px-8 py-8">
         <div className="max-w-6xl mx-auto">
-          {/* Card Switcher */}
-          <CardSwitcher
-            cards={mockCards}
-            selectedCardId={selectedCardId}
-            onSelectCard={setSelectedCardId}
-          />
-
-          {/* Dashboard Summary */}
-          <DashboardSummary stats={summaryStats} />
-
-          {/* Benefits Section */}
-          <section>
-            <div className="flex items-center justify-between mb-6">
-              <h3
-                className="text-lg font-semibold text-[var(--color-text)]"
-                style={{ fontSize: 'var(--text-h4)' }}
+          {/* Empty State: No Cards */}
+          {cards.length === 0 ? (
+            <div className="text-center py-12">
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+                style={{ backgroundColor: 'var(--color-border)' }}
               >
-                Benefits on {mockCards.find((c) => c.id === selectedCardId)?.name}
-              </h3>
+                <CreditCard size={32} className="text-[var(--color-text-secondary)]" />
+              </div>
+              <h3 className="text-lg font-semibold text-[var(--color-text)] mb-2">No Cards Added Yet</h3>
+              <p className="text-[var(--color-text-secondary)] mb-6 max-w-sm mx-auto">
+                Start tracking your credit card benefits by adding your first card to the wallet.
+              </p>
               <Button
-                variant="secondary"
-                size="sm"
+                variant="primary"
+                onClick={() => setIsAddCardModalOpen(true)}
               >
-                + Add Benefit
+                <Plus size={16} className="mr-2" />
+                Add Your First Card
               </Button>
             </div>
+          ) : (
+            <>
+              {/* Card Switcher */}
+              <CardSwitcher
+                cards={cards}
+                selectedCardId={selectedCardId}
+                onSelectCard={setSelectedCardId}
+              />
 
-            {/* Benefits Grid */}
-            <BenefitsGrid
-              benefits={mockBenefits}
-              onEdit={(id) => console.log('Edit benefit:', id)}
-              onDelete={(id) => console.log('Delete benefit:', id)}
-              onMarkUsed={(id) => console.log('Mark used:', id)}
-              gridColumns={3}
-            />
-          </section>
+              {/* Dashboard Summary */}
+              <DashboardSummary stats={summaryStats} />
+
+              {/* Benefits Section */}
+              <section>
+                <div className="flex items-center justify-between mb-6">
+                  <h3
+                    className="text-lg font-semibold text-[var(--color-text)]"
+                    style={{ fontSize: 'var(--text-h4)' }}
+                  >
+                    Benefits on {cards.find((c) => c.id === selectedCardId)?.name || 'Selected Card'}
+                  </h3>
+                  <Button variant="secondary" size="sm">
+                    + Add Benefit
+                  </Button>
+                </div>
+
+                {/* Benefits Grid */}
+                <BenefitsGrid
+                  benefits={mockBenefits}
+                  onEdit={(id) => console.log('Edit benefit:', id)}
+                  onDelete={(id) => console.log('Delete benefit:', id)}
+                  onMarkUsed={(id) => console.log('Mark used:', id)}
+                  gridColumns={3}
+                />
+              </section>
+            </>
+          )}
         </div>
       </main>
 
@@ -260,11 +522,7 @@ export default function DashboardPage() {
       <AddCardModal
         isOpen={isAddCardModalOpen}
         onClose={() => setIsAddCardModalOpen(false)}
-        onCardAdded={(card) => {
-          // Refresh cards list or add new card to UI
-          console.log('Card added:', card);
-          // TODO: Refresh dashboard data
-        }}
+        onCardAdded={handleCardAdded}
       />
     </div>
   );

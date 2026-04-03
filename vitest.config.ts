@@ -12,16 +12,20 @@ export default defineConfig({
     // Code coverage configuration
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'text-summary', 'json', 'html'],
       exclude: [
         'node_modules/',
         'tests/',
+        'src/__tests__/',
         'src/__tests__/mocks/',
+        '.next/',
+        'coverage/',
       ],
       lines: 80,
       functions: 80,
       branches: 75,
       statements: 80,
+      all: true,
     },
     reporters: ['verbose'],
   },

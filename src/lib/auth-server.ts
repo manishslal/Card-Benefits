@@ -12,6 +12,7 @@
 
 import { getAuthUserId } from './auth-context';
 import { prisma } from './prisma';
+import { AppError, ERROR_CODES } from './errors';
 
 // ============================================================
 // Error Code Constants
@@ -66,12 +67,12 @@ export interface OwnershipCheckResult {
  * ```
  *
  * @returns Authenticated user ID (non-null)
- * @throws {Error} With message 'Not authenticated' if no user ID in context
+ * @throws {AppError} With code AUTH_MISSING if no user ID in context
  */
 export function getAuthUserIdOrThrow(): string {
   const userId = getAuthUserId();
   if (!userId) {
-    throw new Error('Not authenticated');
+    throw new AppError(ERROR_CODES.AUTH_MISSING);
   }
   return userId;
 }

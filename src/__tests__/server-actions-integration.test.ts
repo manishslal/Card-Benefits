@@ -15,7 +15,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { addCardToWallet } from '@/actions/wallet';
 import { toggleBenefit, updateUserDeclaredValue } from '@/actions/benefits';
-import { ERROR_CODES, ERROR_MESSAGES } from '@/lib/errors';
+import { ERROR_CODES, ERROR_MESSAGES, AppError } from '@/lib/errors';
 import { Prisma } from '@prisma/client';
 
 // Mock dependencies
@@ -125,7 +125,7 @@ describe('Server Actions - addCardToWallet', () => {
   describe('Authentication', () => {
     it('rejects request with no authenticated user', async () => {
       vi.mocked(getAuthUserIdOrThrow).mockImplementation(() => {
-        throw new Error('No session');
+        throw new AppError(ERROR_CODES.AUTH_MISSING);
       });
 
       const result = await addCardToWallet(
@@ -169,6 +169,22 @@ describe('Server Actions - addCardToWallet', () => {
       vi.mocked(getAuthUserIdOrThrow).mockReturnValue(userId);
       vi.mocked(verifyPlayerOwnership).mockResolvedValue({ isOwner: true });
 
+      const mockMasterCard = {
+        id: masterCardId,
+        name: 'Amex Platinum',
+        defaultAnnualFee: 0,
+        masterBenefits: [
+          {
+            id: 'benefit-1',
+            name: 'Airline credit',
+            type: 'FIXED_VALUE',
+            stickerValue: 20000,
+            resetCadence: 'ANNUAL',
+            isActive: true,
+          },
+        ],
+      };
+
       const mockUserCard = {
         id: 'card-123',
         playerId,
@@ -177,7 +193,6 @@ describe('Server Actions - addCardToWallet', () => {
         renewalDate: new Date('2025-12-31'),
         createdAt: new Date(),
         updatedAt: new Date(),
-        masterCard: { id: masterCardId, name: 'Amex Platinum' },
         userBenefits: [
           {
             id: 'benefit-1',
@@ -196,9 +211,11 @@ describe('Server Actions - addCardToWallet', () => {
             updatedAt: new Date(),
           },
         ],
+        masterCard: mockMasterCard,
       };
 
-      vi.mocked(prisma.$transaction).mockResolvedValue(mockUserCard);
+      vi.mocked(prisma.masterCard.findUniqueOrThrow).mockResolvedValue(mockMasterCard as any);
+      vi.mocked(prisma.$transaction).mockResolvedValue(mockUserCard as any);
 
       const result = await addCardToWallet(
         playerId,
@@ -599,6 +616,13 @@ describe('Response Format Consistency', () => {
     vi.mocked(getAuthUserIdOrThrow).mockReturnValue('user-123');
     vi.mocked(verifyPlayerOwnership).mockResolvedValue({ isOwner: true });
 
+    const mockMasterCard = {
+      id: 'master-123',
+      name: 'Test Card',
+      defaultAnnualFee: 0,
+      masterBenefits: [],
+    };
+
     const mockCard = {
       id: 'card-123',
       playerId: 'player-123',
@@ -607,11 +631,12 @@ describe('Response Format Consistency', () => {
       renewalDate: new Date('2025-12-31'),
       createdAt: new Date(),
       updatedAt: new Date(),
-      masterCard: { id: 'master-123', name: 'Test Card' },
+      masterCard: mockMasterCard,
       userBenefits: [],
     };
 
-    vi.mocked(prisma.$transaction).mockResolvedValue(mockCard);
+    vi.mocked(prisma.masterCard.findUniqueOrThrow).mockResolvedValue(mockMasterCard as any);
+    vi.mocked(prisma.$transaction).mockResolvedValue(mockCard as any);
 
     const result = await addCardToWallet(
       'a0000000-0000-4000-8000-000000000000',

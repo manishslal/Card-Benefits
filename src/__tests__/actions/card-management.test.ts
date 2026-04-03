@@ -59,8 +59,7 @@ describe('getPlayerCards', () => {
 
     vi.mocked(authServer.getAuthUserIdOrThrow).mockReturnValue(userId);
     vi.mocked(authServer.verifyPlayerOwnership).mockResolvedValue({
-      isOwner: true,
-      accessLevel: 'OWNER'
+      isOwner: true
     });
 
     const mockCards = [
@@ -90,9 +89,9 @@ describe('getPlayerCards', () => {
 
     const result = await cardActions.getPlayerCards(playerId);
 
-    expect(result.success).toBe(true);
-    expect(result.data?.cards).toHaveLength(1);
-    expect(result.data?.total).toBe(1);
+    assertSuccess(result);
+    expect(result.data.cards).toHaveLength(1);
+    expect(result.data.total).toBe(1);
     expect(authServer.verifyPlayerOwnership).toHaveBeenCalledWith(playerId, userId);
   });
 

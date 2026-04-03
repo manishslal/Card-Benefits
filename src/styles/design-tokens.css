@@ -9,8 +9,8 @@
      COLORS - LIGHT MODE (Default)
      ======================================== */
 
-  /* Primary Blue */
-  --color-primary: #4080ff;
+  /* Primary Blue - Darkened for WCAG AA contrast (4.5:1 minimum) */
+  --color-primary: #3356D0;
   --color-primary-light: #e0ecff;
 
   /* Secondary / Accent Orange */
@@ -155,7 +155,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     /* Primary - Brightened for dark mode */
-    --color-primary: #60a5fa;
+    --color-primary: #4F94FF;
     --color-primary-light: #1e3a8a;
 
     /* Secondary - Brightened */

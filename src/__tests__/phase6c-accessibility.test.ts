@@ -59,7 +59,7 @@ describe('Color Contrast (WCAG 2.1 AA)', () => {
     const lightBg = '#ffffff'; // --color-bg (light)
     const lightText = '#1e293b'; // --color-text (light)
     const lightTextSecondary = '#64748b'; // --color-text-secondary (light)
-    const lightPrimary = '#4080ff'; // --color-primary (light)
+    const lightPrimary = '#3356D0'; // --color-primary (light) - FIXED for 4.5:1 contrast
 
     it('Body text on background meets 4.5:1 minimum (AA)', () => {
       const ratio = getContrastRatio(lightBg, lightText);

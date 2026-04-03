@@ -141,7 +141,6 @@ async function calculateROIValues(benefit: UserBenefit) {
 
   // Level 1: Benefit ROI
   // ROI = (benefit value / annual fee) * 100
-  const effectiveValue = benefit.userDeclaredValue ?? benefit.stickerValue;
   const benefitROI = calculateBenefitROI(benefit.userDeclaredValue, benefit.stickerValue, annualFee);
 
   // Level 2: Card ROI
@@ -643,11 +642,22 @@ export async function getBenefitValueHistory(
       });
     }
 
-    // ── Parse history ───────────────────────────────────────────────────────
-    // Note: Value history tracking disabled (valueHistory field not in schema)
-    // const fullHistory = parseValueHistory(benefit.valueHistory);
-    // Return last N entries (newest first)
-    // const history = fullHistory.slice(-limit).reverse();
+    // ── Parse value history ──────────────────────────────────────────────────
+    // Extract and return history from JSON storage
+    let history: any[] = [];
+    if (benefit.valueHistory) {
+      try {
+        const fullHistory = JSON.parse(benefit.valueHistory);
+        // Return last N entries (newest first)
+        history = Array.isArray(fullHistory)
+          ? fullHistory.slice(-limit).reverse()
+          : [];
+      } catch (e) {
+        // If parsing fails, return empty history
+        console.error('[getBenefitValueHistory] Failed to parse valueHistory:', e);
+        history = [];
+      }
+    }
 
     return createSuccessResponse({
       benefitId,
@@ -656,8 +666,8 @@ export async function getBenefitValueHistory(
         type: benefit.userDeclaredValue ? 'custom' : 'sticker',
         changedAt: benefit.updatedAt,
       },
-      history: [], // Empty history since feature is disabled
-      totalChanges: 0,
+      history,
+      totalChanges: history.length,
     });
   } catch (error) {
     if (error instanceof AppError) {
@@ -721,12 +731,85 @@ export async function revertUserDeclaredValue(
       });
     }
 
-    // ── Get history and find target entry ───────────────────────────────────
-    // Note: Value history tracking disabled (valueHistory field not in schema)
-    // For now, revert feature is disabled
-    
-    return createErrorResponse(ERROR_CODES.INTERNAL_ERROR, {
-      reason: 'Revert feature is not yet available',
+    // ── Parse value history ──────────────────────────────────────────────────
+    let history: any[] = [];
+    if (benefit.valueHistory) {
+      try {
+        const parsed = JSON.parse(benefit.valueHistory);
+        history = Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return createErrorResponse(ERROR_CODES.INTERNAL_ERROR, {
+          reason: 'Failed to parse value history',
+        });
+      }
+    }
+
+    // ── Validate history index ───────────────────────────────────────────────
+    if (history.length === 0) {
+      return createErrorResponse(ERROR_CODES.VALIDATION_FIELD, {
+        field: 'historyIndex',
+        reason: 'No history available for this benefit',
+      });
+    }
+
+    if (historyIndex >= history.length) {
+      return createErrorResponse(ERROR_CODES.VALIDATION_FIELD, {
+        field: 'historyIndex',
+        reason: `History index out of range (max: ${history.length - 1})`,
+        received: historyIndex,
+      });
+    }
+
+    // ── Get the target history entry ──────────────────────────────────────────
+    const targetEntry = history[historyIndex];
+    const revertToValue = targetEntry.value;
+
+    // ── Create revert audit record ────────────────────────────────────────────
+    const now = new Date();
+    const revertRecord = {
+      value: revertToValue,
+      changedAt: now.toISOString(),
+      changedBy: userId,
+      source: 'revert' as const,
+      reason: `Reverted to value from ${targetEntry.changedAt}`,
+    };
+
+    // ── Append revert entry to history ────────────────────────────────────────
+    const updatedHistory = [...history, revertRecord];
+
+    // ── Update benefit with reverted value ────────────────────────────────────
+    const updatedBenefit = await prisma.userBenefit.update({
+      where: { id: benefitId },
+      data: {
+        userDeclaredValue: revertToValue,
+        valueHistory: JSON.stringify(updatedHistory),
+        updatedAt: now,
+      },
+    });
+
+    // ── Calculate updated ROI values ──────────────────────────────────────────
+    let rois;
+    try {
+      rois = await calculateROIValues(updatedBenefit);
+    } catch (calcError) {
+      console.error('[revertUserDeclaredValue] ROI calculation failed:', calcError);
+      rois = { benefit: 0, card: 0, player: 0, household: 0 };
+    }
+
+    // ── Invalidate ROI cache ──────────────────────────────────────────────────
+    invalidateROICache([
+      `CARD:${benefit.userCardId}`,
+    ]);
+
+    return createSuccessResponse({
+      benefit: updatedBenefit,
+      rois,
+      affectedCards: [benefit.userCardId],
+      valueBefore: benefit.userDeclaredValue ?? benefit.stickerValue,
+      valueAfter: revertToValue,
+      changeAmount: revertToValue - (benefit.userDeclaredValue ?? benefit.stickerValue),
+      changePercent: 0, // Will be calculated on UI
+      changedAt: now,
     });
   } catch (error) {
     if (error instanceof AppError) {

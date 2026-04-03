@@ -79,7 +79,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               transition-all duration-200
               placeholder:text-[var(--color-text-secondary)]
               focus:outline-none focus:border-[var(--color-primary)]
-              focus:shadow-[0_0_0_4px_rgba(64,128,255,0.1)]
+              focus:shadow-[0_0_0_4px_rgba(51,86,208,0.1)]
               focus:ring-3 focus:ring-[var(--color-primary)]/10
               disabled:bg-[var(--color-bg-secondary)] disabled:cursor-not-allowed
               ${error ? '!border-[var(--color-error)] !shadow-[0_0_0_4px_rgba(239,68,68,0.1)]' : ''}

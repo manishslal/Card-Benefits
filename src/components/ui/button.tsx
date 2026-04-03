@@ -52,12 +52,12 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ].join(' ');
 
     const variantClasses = {
-      primary: `bg-gradient-to-br from-[var(--color-primary)] to-[#3968dd] text-white shadow-md
+      primary: `bg-gradient-to-br from-[var(--color-primary)] to-[#2844a0] text-white shadow-md
         ${!disabled && !isLoading ? 'hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0' : ''}`,
       secondary: `border-2 border-[var(--color-primary)] text-[var(--color-primary)] bg-transparent
-        ${!disabled && !isLoading ? 'hover:bg-[rgba(64,128,255,0.12)]' : ''}`,
+        ${!disabled && !isLoading ? 'hover:bg-[rgba(51,86,208,0.12)]' : ''}`,
       tertiary: `text-[var(--color-primary)] bg-transparent
-        ${!disabled && !isLoading ? 'hover:bg-[rgba(64,128,255,0.08)] hover:border-b-2 hover:border-[var(--color-primary)]' : ''}`,
+        ${!disabled && !isLoading ? 'hover:bg-[rgba(51,86,208,0.08)] hover:border-b-2 hover:border-[var(--color-primary)]' : ''}`,
       outline: `border border-[var(--color-border)] text-[var(--color-text)] bg-transparent
         ${!disabled && !isLoading ? 'hover:bg-[var(--color-bg-secondary)]' : ''}`,
       accent: `bg-[var(--color-secondary)] text-white shadow-md

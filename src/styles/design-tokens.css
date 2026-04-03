@@ -17,16 +17,16 @@
   --color-secondary: #f59e0b;
   --color-secondary-light: #fef3c7;
 
-  /* Success Green */
-  --color-success: #10b981;
+  /* Success Green - Darkened for 3:1 contrast requirement */
+  --color-success: #0a7d57;
   --color-success-light: #d1fae5;
 
   /* Error Red */
   --color-error: #ef4444;
   --color-error-light: #fee2e2;
 
-  /* Warning Yellow */
-  --color-warning: #eab308;
+  /* Warning Yellow - Changed to Amber for better contrast */
+  --color-warning: #d97706;
   --color-warning-light: #fef08a;
 
   /* Info Cyan */
@@ -162,16 +162,16 @@
     --color-secondary: #fbbf24;
     --color-secondary-light: #78350f;
 
-    /* Success - Brightened */
-    --color-success: #34d399;
+    /* Success - Brightened for dark mode */
+    --color-success: #10b981;
     --color-success-light: #064e3b;
 
     /* Error - Brightened */
     --color-error: #f87171;
     --color-error-light: #7f1d1d;
 
-    /* Warning - Brightened */
-    --color-warning: #facc15;
+    /* Warning - Brightened (Orange/Amber for better contrast) */
+    --color-warning: #fb923c;
     --color-warning-light: #713f12;
 
     /* Info - Brightened */

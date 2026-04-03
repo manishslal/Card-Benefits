@@ -38,7 +38,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
     ].join(' ');
 
     const gradientClass = variant === 'gradient' 
-      ? 'bg-gradient-to-br from-[rgba(64,128,255,0.05)] to-[rgba(245,158,11,0.05)]'
+      ? 'bg-gradient-to-br from-[rgba(51,86,208,0.05)] to-[rgba(217,119,6,0.05)]'
       : '';
 
     return (

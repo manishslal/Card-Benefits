@@ -33,7 +33,7 @@ export function Header({ title = 'Card Benefits Tracker', showDarkModeToggle = t
             <div
               className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-lg"
               style={{
-                background: 'linear-gradient(135deg, var(--color-primary) 0%, #3968dd 100%)',
+                background: 'linear-gradient(135deg, var(--color-primary) 0%, #2844a0 100%)',
               }}
             >
               CB

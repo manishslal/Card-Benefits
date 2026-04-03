@@ -43,7 +43,7 @@ vi.mock('@/lib/auth-server', () => ({
 }));
 
 vi.mock('@/lib/benefitDates', () => ({
-  calcExpirationDate: vi.fn(() => new Date('2025-12-31')),
+  calcExpirationDate: vi.fn(() => new Date('2027-12-31')),
 }));
 
 import { prisma } from '@/lib/prisma';
@@ -71,7 +71,7 @@ describe('Server Actions - addCardToWallet', () => {
       const result = await addCardToWallet(
         'invalid-id',
         'a0000000-0000-4000-8000-000000000000',
-        new Date('2025-12-31')
+        new Date('2027-12-31')
       );
 
       expect(result.success).toBe(false);
@@ -85,7 +85,7 @@ describe('Server Actions - addCardToWallet', () => {
       const result = await addCardToWallet(
         'a0000000-0000-4000-8000-000000000000',
         'not-a-uuid',
-        new Date('2025-12-31')
+        new Date('2027-12-31')
       );
 
       expect(result.success).toBe(false);
@@ -131,7 +131,7 @@ describe('Server Actions - addCardToWallet', () => {
       const result = await addCardToWallet(
         'a0000000-0000-4000-8000-000000000000',
         'a0000000-0000-4000-8000-000000000001',
-        new Date('2025-12-31')
+        new Date('2027-12-31')
       );
 
       expect(result.success).toBe(false);
@@ -149,7 +149,7 @@ describe('Server Actions - addCardToWallet', () => {
       const result = await addCardToWallet(
         'a0000000-0000-4000-8000-000000000000',
         'a0000000-0000-4000-8000-000000000001',
-        new Date('2025-12-31')
+        new Date('2027-12-31')
       );
 
       expect(result.success).toBe(false);
@@ -190,7 +190,7 @@ describe('Server Actions - addCardToWallet', () => {
         playerId,
         masterCardId,
         actualAnnualFee: 0,
-        renewalDate: new Date('2025-12-31'),
+        renewalDate: new Date('2027-12-31'),
         createdAt: new Date(),
         updatedAt: new Date(),
         userBenefits: [
@@ -204,7 +204,7 @@ describe('Server Actions - addCardToWallet', () => {
             isUsed: false,
             claimedAt: null,
             timesUsed: 0,
-            expirationDate: new Date('2025-12-31'),
+            expirationDate: new Date('2027-12-31'),
             userCardId: 'card-123',
             playerId,
             createdAt: new Date(),
@@ -220,7 +220,7 @@ describe('Server Actions - addCardToWallet', () => {
       const result = await addCardToWallet(
         playerId,
         masterCardId,
-        new Date('2025-12-31')
+        new Date('2027-12-31')
       );
 
       expect(result.success).toBe(true);
@@ -242,12 +242,12 @@ describe('Server Actions - addCardToWallet', () => {
         clientVersion: '1.0',
       });
 
-      vi.mocked(prisma.$transaction).mockRejectedValue(error);
+      vi.mocked(prisma.masterCard.findUniqueOrThrow).mockRejectedValue(error);
 
       const result = await addCardToWallet(
         'a0000000-0000-4000-8000-000000000000',
         'a0000000-0000-4000-8000-000000000001',
-        new Date('2025-12-31')
+        new Date('2027-12-31')
       );
 
       expect(result.success).toBe(false);
@@ -259,6 +259,13 @@ describe('Server Actions - addCardToWallet', () => {
       vi.mocked(getAuthUserIdOrThrow).mockReturnValue('user-123');
       vi.mocked(verifyPlayerOwnership).mockResolvedValue({ isOwner: true });
 
+      const mockMasterCard = {
+        id: 'master-123',
+        name: 'Test Card',
+        defaultAnnualFee: 0,
+        masterBenefits: [],
+      };
+
       const error = new Prisma.PrismaClientKnownRequestError(
         'Unique constraint failed',
         {
@@ -267,12 +274,13 @@ describe('Server Actions - addCardToWallet', () => {
         }
       );
 
+      vi.mocked(prisma.masterCard.findUniqueOrThrow).mockResolvedValue(mockMasterCard as any);
       vi.mocked(prisma.$transaction).mockRejectedValue(error);
 
       const result = await addCardToWallet(
         'a0000000-0000-4000-8000-000000000000',
         'a0000000-0000-4000-8000-000000000001',
-        new Date('2025-12-31')
+        new Date('2027-12-31')
       );
 
       expect(result.success).toBe(false);
@@ -284,13 +292,21 @@ describe('Server Actions - addCardToWallet', () => {
       vi.mocked(getAuthUserIdOrThrow).mockReturnValue('user-123');
       vi.mocked(verifyPlayerOwnership).mockResolvedValue({ isOwner: true });
 
+      const mockMasterCard = {
+        id: 'master-123',
+        name: 'Test Card',
+        defaultAnnualFee: 0,
+        masterBenefits: [],
+      };
+
       const error = new Error('Unexpected database error');
+      vi.mocked(prisma.masterCard.findUniqueOrThrow).mockResolvedValue(mockMasterCard as any);
       vi.mocked(prisma.$transaction).mockRejectedValue(error);
 
       const result = await addCardToWallet(
         'a0000000-0000-4000-8000-000000000000',
         'a0000000-0000-4000-8000-000000000001',
-        new Date('2025-12-31')
+        new Date('2027-12-31')
       );
 
       expect(result.success).toBe(false);
@@ -388,7 +404,7 @@ describe('Server Actions - toggleBenefit', () => {
         stickerValue: 10000,
         userDeclaredValue: null,
         resetCadence: 'ANNUAL',
-        expirationDate: new Date('2025-12-31'),
+        expirationDate: new Date('2027-12-31'),
         userCardId: 'card-123',
         playerId: 'player-123',
         createdAt: new Date(),
@@ -422,7 +438,7 @@ describe('Server Actions - toggleBenefit', () => {
         stickerValue: 10000,
         userDeclaredValue: null,
         resetCadence: 'ANNUAL',
-        expirationDate: new Date('2025-12-31'),
+        expirationDate: new Date('2027-12-31'),
         userCardId: 'card-123',
         playerId: 'player-123',
         createdAt: new Date(),
@@ -526,7 +542,7 @@ describe('Server Actions - updateUserDeclaredValue', () => {
         claimedAt: null,
         timesUsed: 0,
         resetCadence: 'ANNUAL',
-        expirationDate: new Date('2025-12-31'),
+        expirationDate: new Date('2027-12-31'),
         userCardId: 'card-123',
         playerId: 'player-123',
         createdAt: new Date(),
@@ -559,7 +575,7 @@ describe('Server Actions - updateUserDeclaredValue', () => {
         claimedAt: null,
         timesUsed: 0,
         resetCadence: 'ANNUAL',
-        expirationDate: new Date('2025-12-31'),
+        expirationDate: new Date('2027-12-31'),
         userCardId: 'card-123',
         playerId: 'player-123',
         createdAt: new Date(),
@@ -628,7 +644,7 @@ describe('Response Format Consistency', () => {
       playerId: 'player-123',
       masterCardId: 'master-123',
       actualAnnualFee: 0,
-      renewalDate: new Date('2025-12-31'),
+      renewalDate: new Date('2027-12-31'),
       createdAt: new Date(),
       updatedAt: new Date(),
       masterCard: mockMasterCard,
@@ -641,7 +657,7 @@ describe('Response Format Consistency', () => {
     const result = await addCardToWallet(
       'a0000000-0000-4000-8000-000000000000',
       'a0000000-0000-4000-8000-000000000001',
-      new Date('2025-12-31')
+      new Date('2027-12-31')
     );
 
     // Success response must have:
@@ -663,7 +679,7 @@ describe('Response Format Consistency', () => {
     const result = await addCardToWallet(
       'invalid-id',
       'a0000000-0000-4000-8000-000000000001',
-      new Date('2025-12-31')
+      new Date('2027-12-31')
     );
 
     // Error response must have:

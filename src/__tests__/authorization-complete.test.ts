@@ -395,7 +395,7 @@ describe('Server Action Authorization Enforcement', () => {
   it('rejects unauthenticated request when no user ID', () => {
     mockAuthUserId = null;
 
-    expect(() => getAuthUserIdOrThrow()).toThrow('Not authenticated');
+    expect(() => getAuthUserIdOrThrow()).toThrow('Unauthorized');
   });
 
   it('returns user ID when authenticated', () => {
@@ -418,7 +418,7 @@ describe('Server Action Authorization Enforcement', () => {
     // Simulate server action that requires auth
     expect(() => {
       getAuthUserIdOrThrow();
-    }).toThrow('Not authenticated');
+    }).toThrow('Unauthorized');
   });
 
   it('combines auth + ownership checks in secure sequence', async () => {
@@ -486,7 +486,7 @@ describe('Server Action Authorization Enforcement', () => {
     mockAuthUserId = null;
 
     // Subsequent check should throw
-    expect(() => getAuthUserIdOrThrow()).toThrow('Not authenticated');
+    expect(() => getAuthUserIdOrThrow()).toThrow('Unauthorized');
   });
 
   it('prevents bypass of ownership checks in server actions', async () => {

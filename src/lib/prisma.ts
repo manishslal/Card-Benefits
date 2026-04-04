@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
 // Singleton pattern to avoid multiple Prisma client instances
+// CRITICAL: Must cache in BOTH development AND production
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
 export const prisma =
@@ -9,7 +10,12 @@ export const prisma =
     log: process.env.NODE_ENV === 'development' ? ['query'] : [],
   });
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+// Cache the Prisma instance in global scope for both dev and production
+// This prevents creating a new connection pool on every request
+// In production, this is critical to avoid exhausting database connections
+if (!globalForPrisma.prisma) {
+  globalForPrisma.prisma = prisma;
+}
 
 // Common database operations
 export const db = {

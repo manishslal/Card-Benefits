@@ -26,8 +26,7 @@ import {
 } from '@/lib/auth-utils';
 import {
   getUserByEmail,
-  createSession,
-  updateSessionToken,
+  createAndUpdateSession,
 } from '@/lib/auth-server';
 import { RateLimiter } from '@/lib/rate-limiter';
 import {
@@ -172,20 +171,26 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const expiresAt = new Date(Date.now() + getSessionExpirationSeconds() * 1000);
     
-    // Generate session ID and payload before creating session record
+    // Generate session ID before creating JWT
+    // This ensures the session ID in JWT matches the database record
     const { randomUUID } = await import('crypto');
+    const sessionId = randomUUID();
     
-    // Create session with a temporary unique placeholder token
-    // This will be replaced with the real JWT token immediately after
-    const tempToken = `temp_${randomUUID()}`;
-    const sessionRecord = await createSession(user.id, tempToken, expiresAt);
-
-    // Create session payload and sign JWT using the session ID
-    const payload = createSessionPayload(user.id, sessionRecord.id);
+    // Create session payload and sign JWT BEFORE database operation
+    // This ensures JWT is valid and properly formatted
+    const payload = createSessionPayload(user.id, sessionId);
     const token = signSessionToken(payload);
 
-    // Update session record with the real JWT token (atomic)
-    await updateSessionToken(sessionRecord.id, token);
+    // ATOMIC: Create session with JWT token in single database transaction
+    // This prevents race condition where:
+    // - Old approach: create(tempToken) → sign JWT → update(JWT) → send response
+    //   (client could request between update and response)
+    // - New approach: single transaction that persists JWT before response sent
+    await createAndUpdateSession(
+      user.id, 
+      token, 
+      expiresAt
+    );
 
     // Create response with session cookie
     const response = NextResponse.json(

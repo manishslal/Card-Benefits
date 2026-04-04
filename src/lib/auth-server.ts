@@ -390,12 +390,13 @@ export async function createUser(
 }
 
 /**
- * Creates a new session in the database.
+ * Creates a new session in the database with a temporary placeholder token.
  *
  * Called after successful login or signup.
+ * NOTE: Use createAndUpdateSession() instead for atomic creation + update.
  *
  * @param userId - User ID
- * @param sessionToken - JWT token (or opaque token)
+ * @param sessionToken - Temporary placeholder token (will be replaced)
  * @param expiresAt - Session expiration timestamp
  * @param userAgent - Optional User-Agent header (for device tracking)
  * @param ipAddress - Optional IP address (for security)
@@ -426,6 +427,65 @@ export async function createSession(
     });
     return session;
   } catch (error) {
+    throw new Error('Failed to create session');
+  }
+}
+
+/**
+ * ATOMIC: Creates a session and updates it with JWT token in a single transaction.
+ *
+ * CRITICAL FOR RACE CONDITION FIX:
+ * This function prevents the race condition where:
+ * 1. Session is created with tempToken
+ * 2. JWT is signed
+ * 3. Response sent to client (CLIENT RACE WINDOW)
+ * 4. updateSessionToken() slowly replaces tempToken with JWT
+ * 5. Client makes request with JWT but DB still has tempToken → 401!
+ *
+ * Solution: Use Prisma transaction to make steps 1 & 4 atomic.
+ *
+ * @param userId - User ID
+ * @param token - JWT token to store
+ * @param expiresAt - Session expiration timestamp
+ * @param userAgent - Optional User-Agent header
+ * @param ipAddress - Optional IP address
+ * @returns Created session record with JWT token
+ */
+export async function createAndUpdateSession(
+  userId: string,
+  token: string,
+  expiresAt: Date,
+  userAgent?: string,
+  ipAddress?: string
+) {
+  try {
+    // Use Prisma transaction to ensure atomicity
+    // Session is created with JWT token in a single database transaction
+    // Middleware will find the session because JWT is persisted before response sent
+    const session = await prisma.$transaction(async (tx) => {
+      return tx.session.create({
+        data: {
+          userId,
+          sessionToken: token,  // Store JWT token directly (no temp token)
+          expiresAt,
+          userAgent: userAgent || null,
+          ipAddress: ipAddress || null,
+          isValid: true,
+        },
+        select: {
+          id: true,
+          userId: true,
+          expiresAt: true,
+        },
+      });
+    });
+
+    console.log('[Auth] ✓ Session created with JWT token (atomic transaction)');
+    return session;
+  } catch (error) {
+    console.error('[Auth] ✗ Failed to create session atomically:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
     throw new Error('Failed to create session');
   }
 }

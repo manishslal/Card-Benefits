@@ -9,6 +9,9 @@ import CardSwitcher from '@/components/features/CardSwitcher';
 import DashboardSummary from '@/components/features/DashboardSummary';
 import BenefitsGrid from '@/components/features/BenefitsGrid';
 import { AddCardModal } from '@/components/AddCardModal';
+import { AddBenefitModal } from '@/components/AddBenefitModal';
+import { EditBenefitModal } from '@/components/EditBenefitModal';
+import { DeleteBenefitConfirmationDialog } from '@/components/DeleteBenefitConfirmationDialog';
 import { CreditCard, Settings, Plus } from 'lucide-react';
 
 /**
@@ -19,7 +22,7 @@ import { CreditCard, Settings, Plus } from 'lucide-react';
  * - Real user cards loaded from API (BLOCKER #7 FIX)
  * - Card switcher for navigating between cards
  * - Dashboard summary statistics
- * - Benefits grid view
+ * - Benefits grid view with fully wired modals
  * - Responsive layout
  * - Dark mode support
  * - Loading and error states
@@ -40,6 +43,20 @@ interface CardData {
   customName?: string | null;
 }
 
+interface BenefitData {
+  id: string;
+  name: string;
+  type: string;
+  stickerValue: number;
+  userDeclaredValue: number | null;
+  resetCadence: string;
+  status: 'active' | 'expiring' | 'expired' | 'pending';
+  expirationDate?: Date | string | null;
+  description?: string;
+  value?: number;
+  usage?: number;
+}
+
 export default function DashboardPage() {
   // ============================================================
   // State Management - Real Data Loading
@@ -51,6 +68,16 @@ export default function DashboardPage() {
   const [selectedCardId, setSelectedCardId] = useState<string>('');
   const [isAddCardModalOpen, setIsAddCardModalOpen] = useState(false);
   const [userName, setUserName] = useState('User');
+
+  // ============================================================
+  // State Management - Benefit Modals
+  // ============================================================
+
+  const [benefits, setBenefits] = useState<BenefitData[]>([]);
+  const [isAddBenefitOpen, setIsAddBenefitOpen] = useState(false);
+  const [isEditBenefitOpen, setIsEditBenefitOpen] = useState(false);
+  const [isDeleteBenefitOpen, setIsDeleteBenefitOpen] = useState(false);
+  const [selectedBenefit, setSelectedBenefit] = useState<BenefitData | null>(null);
 
   // ============================================================
   // Effect: Load user cards from API (BLOCKER #7 implementation)
@@ -172,15 +199,79 @@ export default function DashboardPage() {
   };
 
   // ============================================================
+  // Handler: Edit Benefit - Opens edit modal with selected benefit
+  // Following the pattern from card detail page
+  // ============================================================
+
+  const handleEditBenefitClick = (benefitId: string) => {
+    const benefit = benefits.find((b) => b.id === benefitId);
+    if (benefit) {
+      setSelectedBenefit(benefit);
+      setIsEditBenefitOpen(true);
+    }
+  };
+
+  // ============================================================
+  // Handler: Delete Benefit - Opens confirmation dialog
+  // Following the pattern from card detail page
+  // ============================================================
+
+  const handleDeleteBenefitClick = (benefitId: string) => {
+    const benefit = benefits.find((b) => b.id === benefitId);
+    if (benefit) {
+      setSelectedBenefit(benefit);
+      setIsDeleteBenefitOpen(true);
+    }
+  };
+
+  // ============================================================
+  // Handler: Benefit Updated - Updates benefits array after modal success
+  // Called by EditBenefitModal onBenefitUpdated callback
+  // ============================================================
+
+  const handleBenefitUpdated = (updatedBenefit: BenefitData) => {
+    setBenefits(benefits.map((b) => (b.id === updatedBenefit.id ? updatedBenefit : b)));
+    setIsEditBenefitOpen(false);
+    setSelectedBenefit(null);
+  };
+
+  // ============================================================
+  // Handler: Benefit Added - Adds new benefit to array after modal success
+  // Called by AddBenefitModal onBenefitAdded callback
+  // ============================================================
+
+  const handleBenefitAdded = (newBenefit: BenefitData) => {
+    setBenefits([...benefits, newBenefit]);
+    setIsAddBenefitOpen(false);
+  };
+
+  // ============================================================
+  // Handler: Benefit Deleted - Removes benefit from array after confirmation
+  // Called by DeleteBenefitConfirmationDialog onConfirm callback
+  // ============================================================
+
+  const handleBenefitDeleted = () => {
+    if (selectedBenefit) {
+      setBenefits(benefits.filter((b) => b.id !== selectedBenefit.id));
+    }
+    setIsDeleteBenefitOpen(false);
+    setSelectedBenefit(null);
+  };
+
+  // ============================================================
   // Mock Benefits (to be replaced with real benefit data in future)
   // In production, benefits would come from selected card's data
   // ============================================================
 
-  const mockBenefits = [
+  const mockBenefits: BenefitData[] = [
     {
       id: '1',
       name: 'Travel Credit',
       description: 'Annual $300 travel statement credit',
+      type: 'StatementCredit',
+      stickerValue: 30000, // $300 in cents
+      userDeclaredValue: null,
+      resetCadence: 'CalendarYear',
       status: 'active' as const,
       expirationDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
       value: 300,
@@ -190,6 +281,10 @@ export default function DashboardPage() {
       id: '2',
       name: 'Airport Lounge Access',
       description: 'Unlimited airport lounge access',
+      type: 'UsagePerk',
+      stickerValue: 15000, // $150 in cents
+      userDeclaredValue: null,
+      resetCadence: 'CardmemberYear',
       status: 'active' as const,
       expirationDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
       value: 150,
@@ -199,6 +294,10 @@ export default function DashboardPage() {
       id: '3',
       name: 'Dining Credit',
       description: 'Annual $100 dining statement credit',
+      type: 'StatementCredit',
+      stickerValue: 10000, // $100 in cents
+      userDeclaredValue: null,
+      resetCadence: 'CalendarYear',
       status: 'expiring' as const,
       expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       value: 100,
@@ -208,6 +307,10 @@ export default function DashboardPage() {
       id: '4',
       name: 'Concierge Service',
       description: '24/7 concierge support',
+      type: 'UsagePerk',
+      stickerValue: 20000, // $200 in cents
+      userDeclaredValue: null,
+      resetCadence: 'CardmemberYear',
       status: 'active' as const,
       value: 200,
       usage: 45,
@@ -216,6 +319,10 @@ export default function DashboardPage() {
       id: '5',
       name: 'Statement Credit',
       description: 'Streaming services credit',
+      type: 'StatementCredit',
+      stickerValue: 2000, // $20 in cents
+      userDeclaredValue: null,
+      resetCadence: 'Monthly',
       status: 'expired' as const,
       expirationDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
       value: 20,
@@ -225,6 +332,10 @@ export default function DashboardPage() {
       id: '6',
       name: 'Insurance Coverage',
       description: 'Travel insurance coverage',
+      type: 'UsagePerk',
+      stickerValue: 50000, // $500 in cents
+      userDeclaredValue: null,
+      resetCadence: 'OneTime',
       status: 'pending' as const,
       value: 500,
       usage: 0,
@@ -475,17 +586,21 @@ export default function DashboardPage() {
                   >
                     Benefits on {cards.find((c) => c.id === selectedCardId)?.name || 'Selected Card'}
                   </h3>
-                  <Button variant="secondary" size="sm">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setIsAddBenefitOpen(true)}
+                  >
                     + Add Benefit
                   </Button>
                 </div>
 
                 {/* Benefits Grid */}
                 <BenefitsGrid
-                  benefits={mockBenefits}
-                  onEdit={(id) => console.log('Edit benefit:', id)}
-                  onDelete={(id) => console.log('Delete benefit:', id)}
-                  onMarkUsed={(id) => console.log('Mark used:', id)}
+                  benefits={mockBenefits as any}
+                  onEdit={handleEditBenefitClick}
+                  onDelete={handleDeleteBenefitClick}
+                  onMarkUsed={handleEditBenefitClick}
                   gridColumns={3}
                 />
               </section>
@@ -512,6 +627,36 @@ export default function DashboardPage() {
         isOpen={isAddCardModalOpen}
         onClose={() => setIsAddCardModalOpen(false)}
         onCardAdded={handleCardAdded}
+      />
+
+      {/* Add Benefit Modal */}
+      <AddBenefitModal
+        cardId={selectedCardId}
+        isOpen={isAddBenefitOpen}
+        onClose={() => setIsAddBenefitOpen(false)}
+        onBenefitAdded={handleBenefitAdded}
+      />
+
+      {/* Edit Benefit Modal */}
+      <EditBenefitModal
+        benefit={selectedBenefit as any}
+        isOpen={isEditBenefitOpen}
+        onClose={() => {
+          setIsEditBenefitOpen(false);
+          setSelectedBenefit(null);
+        }}
+        onBenefitUpdated={handleBenefitUpdated}
+      />
+
+      {/* Delete Benefit Confirmation Dialog */}
+      <DeleteBenefitConfirmationDialog
+        benefit={selectedBenefit}
+        isOpen={isDeleteBenefitOpen}
+        onClose={() => {
+          setIsDeleteBenefitOpen(false);
+          setSelectedBenefit(null);
+        }}
+        onConfirm={handleBenefitDeleted}
       />
     </div>
   );

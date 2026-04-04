@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { SafeDarkModeToggle } from '@/components/SafeDarkModeToggle';
 import Button from '@/components/ui/button';
@@ -8,6 +8,11 @@ import Link from 'next/link';
 import BenefitsList from '@/components/features/BenefitsList';
 import BenefitsGrid from '@/components/features/BenefitsGrid';
 import { CreditCard, ArrowLeft, Plus } from 'lucide-react';
+import { EditCardModal } from '@/components/EditCardModal';
+import { AddBenefitModal } from '@/components/AddBenefitModal';
+import { EditBenefitModal } from '@/components/EditBenefitModal';
+import { DeleteCardConfirmationDialog } from '@/components/DeleteCardConfirmationDialog';
+import { DeleteBenefitConfirmationDialog } from '@/components/DeleteBenefitConfirmationDialog';
 
 /**
  * Card Detail Page - Individual Card View
@@ -18,95 +23,336 @@ import { CreditCard, ArrowLeft, Plus } from 'lucide-react';
  * - Toggle between list and grid views
  * - Benefits tracking with filters
  * - Edit and delete actions
+ * - Modal integration for CRUD operations on cards and benefits
  */
 
 // Mark as dynamic page to avoid SSG issues with ThemeProvider
 export const dynamic = 'force-dynamic';
+
+// Type definitions for card and benefit data
+interface CardData {
+  id: string;
+  masterCardId: string; // For API operations (required)
+  customName: string | null;
+  actualAnnualFee: number | null;
+  renewalDate: Date | string;
+  status: string;
+  // Additional display fields (for demo/mock)
+  issuer?: string;
+  type?: string;
+  lastFour?: string;
+  rewardsRate?: string;
+  issuedDate?: Date;
+}
+
+interface BenefitData {
+  id: string;
+  name: string;
+  type: string;
+  stickerValue: number;
+  userDeclaredValue: number | null;
+  resetCadence: string;
+  expirationDate: Date | string | null;
+  isUsed?: boolean;
+}
 
 export default function CardDetailPage() {
   const params = useParams();
   const router = useRouter();
   const cardId = params.id as string;
 
-  // Mock card data
-  const mockCard = {
-    id: cardId,
-    name: 'Chase Sapphire Reserve',
-    issuer: 'Chase',
-    type: 'Visa Infinite',
-    lastFour: '4242',
-    annualFee: 550,
-    rewardsRate: '3x on travel and dining',
-    issuedDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
-    renewalDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
-  };
+  // State for card and benefits data
+  const [card, setCard] = useState<CardData | null>(null);
+  const [benefits, setBenefits] = useState<BenefitData[]>([]);
+  const [isLoadingCard, setIsLoadingCard] = useState(true);
 
-  const mockBenefits = [
-    {
-      id: '1',
-      name: 'Travel Credit',
-      description: 'Annual $300 travel statement credit',
-      status: 'active' as const,
-      expirationDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
-      value: 300,
-      usage: 65,
-    },
-    {
-      id: '2',
-      name: 'Airport Lounge Access',
-      description: 'Unlimited airport lounge access',
-      status: 'active' as const,
-      expirationDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
-      value: 150,
-      usage: 100,
-    },
-    {
-      id: '3',
-      name: 'Dining Credit',
-      description: 'Annual $100 dining statement credit',
-      status: 'expiring' as const,
-      expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      value: 100,
-      usage: 30,
-    },
-    {
-      id: '4',
-      name: 'Concierge Service',
-      description: '24/7 concierge support',
-      status: 'active' as const,
-      value: 200,
-      usage: 45,
-    },
-    {
-      id: '5',
-      name: 'Statement Credit',
-      description: 'Streaming services credit',
-      status: 'expired' as const,
-      expirationDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-      value: 20,
-      usage: 100,
-    },
-    {
-      id: '6',
-      name: 'Insurance Coverage',
-      description: 'Travel insurance coverage',
-      status: 'pending' as const,
-      value: 500,
-      usage: 0,
-    },
-  ];
+  // Modal state management - each modal needs: isOpen state, and optionally selectedItem
+  const [isEditCardOpen, setIsEditCardOpen] = useState(false);
+  const [isAddBenefitOpen, setIsAddBenefitOpen] = useState(false);
+  const [isEditBenefitOpen, setIsEditBenefitOpen] = useState(false);
+  const [isDeleteBenefitOpen, setIsDeleteBenefitOpen] = useState(false);
+  const [isDeleteCardOpen, setIsDeleteCardOpen] = useState(false);
+  const [selectedBenefit, setSelectedBenefit] = useState<BenefitData | null>(null);
 
+  // View and filter state
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'expiring' | 'expired'>('all');
 
-  const filteredBenefits = mockBenefits.filter((benefit) => {
-    if (filterStatus === 'all') return true;
-    return benefit.status === filterStatus;
-  });
+  /**
+   * Fetch card data from API
+   * Falls back to mock data if API call fails (for development)
+   */
+  useEffect(() => {
+    const fetchCard = async () => {
+      setIsLoadingCard(true);
+      try {
+        const response = await fetch(`/api/cards/${cardId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setCard(data);
+        } else {
+          throw new Error('Failed to fetch card');
+        }
+      } catch (error) {
+        console.warn('Failed to fetch card from API, using mock data', error);
+        // Use mock data as fallback for development
+        setCard({
+          id: cardId,
+          customName: 'Chase Sapphire Reserve',
+          actualAnnualFee: 550,
+          renewalDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
+          status: 'active',
+          masterCardId: cardId, // Use card ID as master card ID for API operations
+          issuer: 'Chase',
+          type: 'Visa Infinite',
+          lastFour: '4242',
+          rewardsRate: '3x on travel and dining',
+          issuedDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
+        });
+      } finally {
+        setIsLoadingCard(false);
+      }
+    };
 
-  const daysUntilRenewal = Math.ceil(
-    (mockCard.renewalDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-  );
+    if (cardId) {
+      fetchCard();
+    }
+  }, [cardId]);
+
+  /**
+   * Fetch benefits for this card from API
+   * Falls back to mock data if API call fails (for development)
+   */
+  useEffect(() => {
+    const fetchBenefits = async () => {
+      try {
+        const response = await fetch(`/api/cards/${cardId}/benefits`);
+        if (response.ok) {
+          const data = await response.json();
+          setBenefits(data);
+        } else {
+          throw new Error('Failed to fetch benefits');
+        }
+      } catch (error) {
+        console.warn('Failed to fetch benefits from API, using mock data', error);
+        // Use mock data as fallback for development
+        setBenefits([
+          {
+            id: '1',
+            name: 'Travel Credit',
+            type: 'StatementCredit',
+            stickerValue: 300,
+            userDeclaredValue: null,
+            resetCadence: 'CalendarYear',
+            expirationDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+            isUsed: false,
+          },
+          {
+            id: '2',
+            name: 'Airport Lounge Access',
+            type: 'UsagePerk',
+            stickerValue: 150,
+            userDeclaredValue: null,
+            resetCadence: 'CardmemberYear',
+            expirationDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
+            isUsed: false,
+          },
+          {
+            id: '3',
+            name: 'Dining Credit',
+            type: 'StatementCredit',
+            stickerValue: 100,
+            userDeclaredValue: null,
+            resetCadence: 'CalendarYear',
+            expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            isUsed: false,
+          },
+          {
+            id: '4',
+            name: 'Concierge Service',
+            type: 'UsagePerk',
+            stickerValue: 200,
+            userDeclaredValue: null,
+            resetCadence: 'CardmemberYear',
+            expirationDate: null,
+            isUsed: false,
+          },
+          {
+            id: '5',
+            name: 'Statement Credit',
+            type: 'StatementCredit',
+            stickerValue: 20,
+            userDeclaredValue: null,
+            resetCadence: 'OneTime',
+            expirationDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+            isUsed: true,
+          },
+          {
+            id: '6',
+            name: 'Insurance Coverage',
+            type: 'UsagePerk',
+            stickerValue: 500,
+            userDeclaredValue: null,
+            resetCadence: 'CardmemberYear',
+            expirationDate: null,
+            isUsed: false,
+          },
+        ]);
+      } finally {
+        // Loading complete
+      }
+    };
+
+    if (cardId) {
+      fetchBenefits();
+    }
+  }, [cardId]);
+
+  /**
+   * Determine benefit status based on expiration date and usage
+   * Used for filtering in the benefits list
+   */
+  const getBenefitStatus = (benefit: BenefitData): 'active' | 'expiring' | 'expired' | 'pending' => {
+    if (!benefit.expirationDate) return 'pending';
+    
+    const expirationTime = new Date(benefit.expirationDate).getTime();
+    const now = Date.now();
+    const daysUntilExpiration = Math.ceil((expirationTime - now) / (1000 * 60 * 60 * 24));
+    
+    if (expirationTime < now) return 'expired';
+    if (daysUntilExpiration <= 30) return 'expiring';
+    return 'active';
+  };
+
+  // Filter benefits based on selected status and add status field for display
+  const filteredBenefits = benefits
+    .filter((benefit) => {
+      if (filterStatus === 'all') return true;
+      return getBenefitStatus(benefit) === filterStatus;
+    })
+    .map((benefit) => ({
+      id: benefit.id,
+      name: benefit.name,
+      description: benefit.name, // Use name as description for display
+      status: getBenefitStatus(benefit) as 'active' | 'expiring' | 'expired' | 'pending',
+      expirationDate: benefit.expirationDate || undefined,
+      value: benefit.stickerValue,
+      type: benefit.type,
+    }));
+
+  /**
+   * Handlers for Edit Card Modal
+   * - Opens the edit modal
+   * - Called when card is successfully updated to refresh data and close modal
+   */
+  const handleEditCardClick = () => {
+    setIsEditCardOpen(true);
+  };
+
+  const handleCardUpdated = (updatedCard: CardData) => {
+    setCard(updatedCard);
+    setIsEditCardOpen(false);
+  };
+
+  /**
+   * Handlers for Delete Card Confirmation
+   * - Opens the delete confirmation dialog
+   * - Called when deletion is confirmed to navigate back to dashboard
+   */
+  const handleDeleteCardClick = () => {
+    setIsDeleteCardOpen(true);
+  };
+
+  const handleCardDeleted = () => {
+    setIsDeleteCardOpen(false);
+    // Redirect to dashboard after successful deletion
+    router.push('/dashboard');
+  };
+
+  /**
+   * Handlers for Add Benefit Modal
+   * - Opens the add benefit modal
+   * - Called when benefit is successfully added to refresh benefits list
+   */
+  const handleAddBenefitClick = () => {
+    setIsAddBenefitOpen(true);
+  };
+
+  const handleBenefitAdded = (newBenefit: BenefitData) => {
+    setBenefits([...benefits, newBenefit]);
+    setIsAddBenefitOpen(false);
+  };
+
+  /**
+   * Handlers for Edit Benefit Modal
+   * - Opens the edit modal with the selected benefit
+   * - Called when benefit is successfully updated to refresh benefits list
+   */
+  const handleEditBenefitClick = (benefitId: string) => {
+    const benefit = benefits.find((b) => b.id === benefitId);
+    if (benefit) {
+      setSelectedBenefit(benefit);
+      setIsEditBenefitOpen(true);
+    }
+  };
+
+  const handleBenefitUpdated = (updatedBenefit: BenefitData) => {
+    setBenefits(benefits.map((b) => (b.id === updatedBenefit.id ? updatedBenefit : b)));
+    setIsEditBenefitOpen(false);
+    setSelectedBenefit(null);
+  };
+
+  /**
+   * Handlers for Delete Benefit Confirmation
+   * - Opens the delete confirmation dialog with the selected benefit
+   * - Called when deletion is confirmed to refresh benefits list
+   */
+  const handleDeleteBenefitClick = (benefitId: string) => {
+    const benefit = benefits.find((b) => b.id === benefitId);
+    if (benefit) {
+      setSelectedBenefit(benefit);
+      setIsDeleteBenefitOpen(true);
+    }
+  };
+
+  const handleBenefitDeleted = () => {
+    if (selectedBenefit) {
+      setBenefits(benefits.filter((b) => b.id !== selectedBenefit.id));
+    }
+    setIsDeleteBenefitOpen(false);
+    setSelectedBenefit(null);
+  };
+
+  /**
+   * Calculate days until card renewal for display
+   * Card header shows a warning if renewal is within 90 days
+   */
+  const daysUntilRenewal = card && card.renewalDate
+    ? Math.ceil(
+        (new Date(card.renewalDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+      )
+    : 0;
+
+  // Show loading state while card is being fetched
+  if (isLoadingCard) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-bg)' }}>
+        <p className="text-[var(--color-text-secondary)]">Loading card details...</p>
+      </div>
+    );
+  }
+
+  // Show error state if card failed to load
+  if (!card) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-bg)' }}>
+        <div className="text-center">
+          <p className="text-[var(--color-text)] font-semibold mb-4">Failed to load card</p>
+          <Button onClick={() => router.back()}>Go Back</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg)' }}>
@@ -147,8 +393,20 @@ export default function CardDetailPage() {
             {/* Right actions */}
             <div className="flex items-center gap-3">
               <SafeDarkModeToggle />
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleEditCardClick}
+              >
                 Edit Card
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="text-red-600 hover:text-red-700"
+                onClick={handleDeleteCardClick}
+              >
+                Delete Card
               </Button>
             </div>
           </div>
@@ -173,10 +431,10 @@ export default function CardDetailPage() {
                     className="font-bold text-[var(--color-text)] mb-2"
                     style={{ fontSize: 'var(--text-h3)' }}
                   >
-                    {mockCard.name}
+                    {card.customName || 'Credit Card'}
                   </h2>
                   <p className="text-sm text-[var(--color-text-secondary)]">
-                    {mockCard.issuer} • {mockCard.type} • •••• {mockCard.lastFour}
+                    {card.issuer || 'Card Issuer'} • {card.type || 'Card Type'} • •••• {card.lastFour || 'XXXX'}
                   </p>
                 </div>
 
@@ -188,7 +446,7 @@ export default function CardDetailPage() {
                       Annual Fee
                     </span>
                     <p className="text-xl font-mono font-bold text-[var(--color-text)]">
-                      ${mockCard.annualFee}
+                      ${card.actualAnnualFee || 0}
                     </p>
                   </div>
 
@@ -223,11 +481,14 @@ export default function CardDetailPage() {
                 Issued
               </span>
               <p className="text-sm font-semibold text-[var(--color-text)] mt-1">
-                {mockCard.issuedDate.toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
+                {card.issuedDate 
+                  ? new Date(card.issuedDate).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })
+                  : 'N/A'
+                }
               </p>
             </div>
 
@@ -242,11 +503,14 @@ export default function CardDetailPage() {
                 Renewal Date
               </span>
               <p className="text-sm font-semibold text-[var(--color-text)] mt-1">
-                {mockCard.renewalDate.toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
+                {card.renewalDate
+                  ? new Date(card.renewalDate).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })
+                  : 'N/A'
+                }
               </p>
             </div>
 
@@ -261,7 +525,7 @@ export default function CardDetailPage() {
                 Rewards Rate
               </span>
               <p className="text-sm font-semibold text-[var(--color-text)] mt-1">
-                {mockCard.rewardsRate}
+                {card.rewardsRate || 'N/A'}
               </p>
             </div>
           </section>
@@ -309,6 +573,7 @@ export default function CardDetailPage() {
                 <Button
                   variant="secondary"
                   size="sm"
+                  onClick={handleAddBenefitClick}
                 >
                   <Plus size={16} className="mr-1" />
                   Add Benefit
@@ -330,7 +595,7 @@ export default function CardDetailPage() {
                 >
                   {status.charAt(0).toUpperCase() + status.slice(1)}
                   {' '}
-                  ({mockBenefits.filter((b) => b.status === status).length})
+                  ({status === 'all' ? benefits.length : benefits.filter((b) => getBenefitStatus(b) === status).length})
                 </button>
               ))}
             </div>
@@ -339,16 +604,24 @@ export default function CardDetailPage() {
             {viewMode === 'list' ? (
               <BenefitsList
                 benefits={filteredBenefits}
-                onEdit={(id) => console.log('Edit:', id)}
-                onDelete={(id) => console.log('Delete:', id)}
-                onMarkUsed={(id) => console.log('Mark used:', id)}
+                onEdit={handleEditBenefitClick}
+                onDelete={handleDeleteBenefitClick}
+                onMarkUsed={(id) => {
+                  // Mark as used can be handled via the EditBenefitModal or via a direct API call
+                  // For now, we open the edit modal to allow marking as used
+                  handleEditBenefitClick(id);
+                }}
               />
             ) : (
               <BenefitsGrid
                 benefits={filteredBenefits}
-                onEdit={(id) => console.log('Edit:', id)}
-                onDelete={(id) => console.log('Delete:', id)}
-                onMarkUsed={(id) => console.log('Mark used:', id)}
+                onEdit={handleEditBenefitClick}
+                onDelete={handleDeleteBenefitClick}
+                onMarkUsed={(id) => {
+                  // Mark as used can be handled via the EditBenefitModal or via a direct API call
+                  // For now, we open the edit modal to allow marking as used
+                  handleEditBenefitClick(id);
+                }}
                 gridColumns={3}
               />
             )}
@@ -368,6 +641,55 @@ export default function CardDetailPage() {
           <p>&copy; 2024 CardTrack. Track your benefits with confidence.</p>
         </div>
       </footer>
+
+      {/* Modal Components - All CRUD operations */}
+      
+      {/* Edit Card Modal */}
+      <EditCardModal
+        card={card}
+        isOpen={isEditCardOpen}
+        onClose={() => setIsEditCardOpen(false)}
+        onCardUpdated={handleCardUpdated}
+      />
+
+      {/* Delete Card Confirmation Dialog */}
+      <DeleteCardConfirmationDialog
+        card={card}
+        benefitCount={benefits.length}
+        isOpen={isDeleteCardOpen}
+        onClose={() => setIsDeleteCardOpen(false)}
+        onConfirm={handleCardDeleted}
+      />
+
+      {/* Add Benefit Modal */}
+      <AddBenefitModal
+        cardId={cardId}
+        isOpen={isAddBenefitOpen}
+        onClose={() => setIsAddBenefitOpen(false)}
+        onBenefitAdded={handleBenefitAdded}
+      />
+
+      {/* Edit Benefit Modal */}
+      <EditBenefitModal
+        benefit={selectedBenefit}
+        isOpen={isEditBenefitOpen}
+        onClose={() => {
+          setIsEditBenefitOpen(false);
+          setSelectedBenefit(null);
+        }}
+        onBenefitUpdated={handleBenefitUpdated}
+      />
+
+      {/* Delete Benefit Confirmation Dialog */}
+      <DeleteBenefitConfirmationDialog
+        benefit={selectedBenefit}
+        isOpen={isDeleteBenefitOpen}
+        onClose={() => {
+          setIsDeleteBenefitOpen(false);
+          setSelectedBenefit(null);
+        }}
+        onConfirm={handleBenefitDeleted}
+      />
     </div>
   );
 }

@@ -539,7 +539,12 @@ export default function SettingsPage() {
                     <Button
                       variant="secondary"
                       size="sm"
-                      onClick={() => {
+                      onClick={async () => {
+                        try {
+                          await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+                        } catch {
+                          // Redirect even if logout API fails
+                        }
                         window.location.href = '/login';
                       }}
                     >

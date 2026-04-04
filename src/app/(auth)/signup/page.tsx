@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import Button from '@/components/ui/button';
 import Input from '@/components/ui/Input';
 import { SafeDarkModeToggle } from '@/components/SafeDarkModeToggle';
+import { FormError } from '@/components/FormError';
 import { CreditCard } from 'lucide-react';
 
 /**
@@ -181,14 +182,7 @@ export default function SignupPage() {
             </p>
 
             {/* Error Message */}
-            {message && (
-              <div
-                className="p-3 rounded-lg mb-6 text-sm text-white"
-                style={{ backgroundColor: 'var(--color-error)' }}
-              >
-                {message}
-              </div>
-            )}
+            {message && <FormError message={message} type="error" />}
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-5">

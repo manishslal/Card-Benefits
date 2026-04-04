@@ -229,6 +229,7 @@ export async function GET(_request: NextRequest): Promise<NextResponse> {
                 userDeclaredValue: true,
                 resetCadence: true,
                 isUsed: true,
+                timesUsed: true,
                 expirationDate: true,
                 status: true,
               },

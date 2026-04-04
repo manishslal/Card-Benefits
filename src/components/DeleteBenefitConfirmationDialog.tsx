@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Button from '@/components/ui/button';
+import { FormError } from '@/components/FormError';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 
@@ -111,14 +112,14 @@ export function DeleteBenefitConfirmationDialog({
               Are you sure you want to delete <strong className="text-[var(--color-text)]">"{benefit.name}"</strong>?
             </DialogPrimitive.Description>
 
-            <div className="bg-[var(--color-error)] bg-opacity-10 border border-[var(--color-error)] border-opacity-20 rounded-md p-3 text-sm text-[var(--color-error)]">
+            {/* Warning message with WCAG AA contrast */}
+            <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-md p-3 text-sm text-red-900 dark:text-red-100">
               This action cannot be undone.
             </div>
 
+            {/* Error message with WCAG AA contrast */}
             {error && (
-              <div className="bg-[var(--color-error)] bg-opacity-10 border border-[var(--color-error)] border-opacity-20 rounded-md p-3 text-sm text-[var(--color-error)]">
-                {error}
-              </div>
+              <FormError message={error} type="error" />
             )}
 
             {/* Action Buttons */}

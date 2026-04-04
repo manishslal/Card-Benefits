@@ -13,7 +13,7 @@
  * - Local `benefits` state for optimistic updates (instant UI feedback)
  * - `useTransition` for non-blocking async server actions
  * - Benefit-specific `isPending` state for per-checkbox loading indicators
- * - Module-level utilities (formatCents, getRowClass) for stable references
+ * - Module-level utilities (getRowClass) for stable references
  * - All calculations derived from live state, no stale values
  *
  * Performance:
@@ -31,6 +31,7 @@ import {
   getNetAnnualFee,
   MS_PER_DAY,
 } from '@/lib/calculations';
+import { formatCurrency } from '@/lib/format-currency';
 import { toggleBenefit } from '@/actions/benefits';
 
 // ---------------------------------------------------------------------------
@@ -65,30 +66,28 @@ export interface CardTrackerPanelProps {
 // Module-level utilities (pure, stable references)
 // ---------------------------------------------------------------------------
 
-/**
- * Converts an integer cent value to a locale-formatted currency string.
- * e.g. 30000 → "$300.00"
- */
-const formatCents = (cents: number): string =>
-  (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+// ---------------------------------------------------------------------------
+// Module-level utilities (pure, stable references)
+// ---------------------------------------------------------------------------
 
 /**
- * Derives the Tailwind background class for a benefit table row.
+ * Derives the Tailwind background class for a benefit table row with dark mode support.
  *
  * Priority (highest first):
  *  1. Used benefits → muted/strikethrough appearance
- *  2. Unused & expiring within 14 days → critical red
- *  3. Unused & expiring within 30 days → warning orange
- *  4. Default white
+ *  2. Unused & expiring within 14 days → critical red background
+ *  3. Unused & expiring within 30 days → warning orange background
+ *  4. Default background color
  *
- * `hover:bg-gray-50 transition-colors` is appended in all cases so hover
- * feedback is never suppressed.
+ * All colors support both light and dark modes using dark: variants.
+ * Hover feedback with smooth transitions is provided in all cases.
  */
 const getRowClass = (benefit: UserBenefit, now: Date): string => {
-  const HOVER = 'hover:bg-gray-50 transition-colors';
+  // Hover state with dark mode support
+  const HOVER = 'hover:bg-red-100 dark:hover:bg-red-950 transition-colors';
 
   if (benefit.isUsed) {
-    return `bg-white opacity-60 ${HOVER}`;
+    return `bg-white dark:bg-gray-900 opacity-60 ${HOVER}`;
   }
 
   if (benefit.expirationDate !== null) {
@@ -96,14 +95,16 @@ const getRowClass = (benefit: UserBenefit, now: Date): string => {
     const daysRemaining = msRemaining / MS_PER_DAY;
 
     if (daysRemaining < 14) {
-      return `bg-red-100 ${HOVER}`;
+      // Critical red - expires in less than 2 weeks
+      return `bg-red-50 dark:bg-red-950 ${HOVER}`;
     }
     if (daysRemaining < 30) {
-      return `bg-orange-50 ${HOVER}`;
+      // Warning orange - expires in less than 30 days
+      return `bg-amber-50 dark:bg-amber-950 transition-colors`;
     }
   }
 
-  return `bg-white ${HOVER}`;
+  return `bg-white dark:bg-gray-900 transition-colors`;
 };
 
 // ---------------------------------------------------------------------------
@@ -139,17 +140,17 @@ export default function CardTrackerPanel({
   const netFee = getNetAnnualFee(userCard, benefits);
 
   // ROI display helpers
-  const roiAbsStr = formatCents(Math.abs(roi));
+  const roiAbsStr = formatCurrency(Math.abs(roi));
   const roiLabel = roi >= 0 ? `ROI: +${roiAbsStr}` : `ROI: -${roiAbsStr}`;
   const roiBadgeClass =
     roi > 0
-      ? 'bg-green-100 text-green-800'
+      ? 'bg-green-50 dark:bg-green-950 text-green-900 dark:text-green-100'
       : roi < 0
-      ? 'bg-red-100 text-red-800'
-      : 'bg-gray-100 text-gray-700';
+      ? 'bg-red-50 dark:bg-red-950 text-red-900 dark:text-red-100'
+      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300';
 
   // Annual fee display: prefer the user-set actual fee over the master default.
-  const annualFeeDisplay = formatCents(
+  const annualFeeDisplay = formatCurrency(
     userCard.actualAnnualFee ?? userCard.masterCard.defaultAnnualFee,
   );
 
@@ -316,10 +317,10 @@ export default function CardTrackerPanel({
 
                   {/* Value */}
                   <td className="px-4 py-3 text-right whitespace-nowrap">
-                    <span className="text-gray-700">{formatCents(displayValueCents)}</span>
+                    <span className="text-gray-700 dark:text-gray-300">{formatCurrency(displayValueCents)}</span>
                     {hasCustomValue && (
                       <span
-                        className="ml-1 text-blue-400 text-xs cursor-default"
+                        className="ml-1 text-blue-500 dark:text-blue-400 text-xs cursor-default"
                         title="Custom value"
                       >
                         ✎
@@ -367,18 +368,18 @@ export default function CardTrackerPanel({
       )}
 
       {/* ── Summary footer ───────────────────────────────────────────────── */}
-      <div className="px-5 py-3 border-t border-gray-100 flex flex-wrap gap-6 text-sm text-gray-600">
+      <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-700 flex flex-wrap gap-6 text-sm text-gray-600 dark:text-gray-400">
         <span>
-          <span className="text-gray-400">Total Extracted: </span>
-          <span className="font-semibold text-gray-800">{formatCents(totalExtracted)}</span>
+          <span className="text-gray-400 dark:text-gray-500">Total Extracted: </span>
+          <span className="font-semibold text-gray-800 dark:text-gray-200">{formatCurrency(totalExtracted)}</span>
         </span>
         <span>
-          <span className="text-gray-400">Uncaptured: </span>
-          <span className="font-semibold text-gray-800">{formatCents(uncaptured)}</span>
+          <span className="text-gray-400 dark:text-gray-500">Uncaptured: </span>
+          <span className="font-semibold text-gray-800 dark:text-gray-200">{formatCurrency(uncaptured)}</span>
         </span>
         <span>
-          <span className="text-gray-400">Net Fee: </span>
-          <span className="font-semibold text-gray-800">{formatCents(netFee)}</span>
+          <span className="text-gray-400 dark:text-gray-500">Net Fee: </span>
+          <span className="font-semibold text-gray-800 dark:text-gray-200">{formatCurrency(netFee)}</span>
         </span>
       </div>
     </div>

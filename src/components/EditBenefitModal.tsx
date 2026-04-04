@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Button from '@/components/ui/button';
 import Input from '@/components/ui/Input';
 import { UnifiedSelect } from '@/components/ui/select-unified';
+import { FormError } from '@/components/FormError';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 
@@ -242,17 +243,10 @@ export function EditBenefitModal({
 
           {/* Message */}
           {message && (
-            <div
-              className={`p-4 rounded-lg mb-6 text-sm ${
-                message.startsWith('✓')
-                  ? 'bg-[var(--color-success)] bg-opacity-10 text-[var(--color-success)]'
-                  : 'bg-[var(--color-error)] bg-opacity-10 text-[var(--color-error)]'
-              }`}
-              role="status"
-              aria-live="polite"
-            >
-              {message}
-            </div>
+            <FormError
+              message={message.replace(/^✓\s*/, '')}
+              type={message.startsWith('✓') ? 'success' : 'error'}
+            />
           )}
 
           {/* Form */}

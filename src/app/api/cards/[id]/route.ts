@@ -148,6 +148,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             resetCadence: true,
             expirationDate: true,
             isUsed: true,
+            timesUsed: true,
             status: true,
           },
         },

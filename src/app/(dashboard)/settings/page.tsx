@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { SafeDarkModeToggle } from '@/components/SafeDarkModeToggle';
+import { FormError } from '@/components/FormError';
 import Button from '@/components/ui/button';
 import Input from '@/components/ui/Input';
 import Link from 'next/link';
@@ -273,15 +274,10 @@ export default function SettingsPage() {
 
           {/* Message */}
           {message && (
-            <div
-              className={`p-4 rounded-lg mb-6 text-sm ${
-                message.startsWith('✓')
-                  ? 'bg-[var(--color-success)] bg-opacity-10 text-[var(--color-success)]'
-                  : 'bg-[var(--color-error)] bg-opacity-10 text-[var(--color-error)]'
-              }`}
-            >
-              {message}
-            </div>
+            <FormError
+              message={message.replace(/^✓\s*/, '')}
+              type={message.startsWith('✓') ? 'success' : 'error'}
+            />
           )}
 
           {/* Profile Tab */}

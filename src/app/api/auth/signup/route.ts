@@ -25,6 +25,7 @@ import {
 import {
   createUser,
   createSession,
+  updateSessionToken,
 } from '@/lib/auth-server';
 import {
   validateEmail,
@@ -111,16 +112,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Create user in database
     const user = await createUser(email, passwordHash, firstName, lastName);
 
-    // Create session
+    // Generate session ID and payload before creating session record
+    const { randomUUID } = await import('crypto');
+    
+    // Create session with a temporary unique placeholder token
+    // This will be replaced with the real JWT token immediately after
     const expiresAt = new Date(Date.now() + getSessionExpirationSeconds() * 1000);
-    const sessionRecord = await createSession(user.id, '', expiresAt);
+    const tempToken = `temp_${randomUUID()}`;
+    const sessionRecord = await createSession(user.id, tempToken, expiresAt);
 
-    // Create session payload and sign JWT
+    // Create session payload and sign JWT using the session ID
     const payload = createSessionPayload(user.id, sessionRecord.id);
     const token = signSessionToken(payload);
 
-    // Update session record with JWT token in a single operation
-    // CRITICAL: This update should be immediate and atomic at the database level
+    // Update session record with the real JWT token (atomic)
     await updateSessionToken(sessionRecord.id, token);
 
     // Create response with session cookie
@@ -138,6 +143,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     return response;
   } catch (error) {
+    // Log full error with stack trace for debugging
+    console.error('[Signup Error] Unexpected exception:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      type: error?.constructor?.name || typeof error,
+    });
+
     // Handle specific errors
     if (error instanceof Error) {
       if (error.message === 'Email already registered') {
@@ -151,9 +163,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           { status: ERROR_MESSAGES[ERROR_CODES.CONFLICT_DUPLICATE].statusCode }
         );
       }
-
-      // Log other errors for debugging
-      console.error('[Signup Error]', error.message);
     }
 
     // Generic error response
@@ -235,30 +244,6 @@ function validateSignupRequest(body: SignupRequest): {
     valid: Object.keys(errors).length === 0,
     errors: Object.keys(errors).length > 0 ? errors : undefined,
   };
-}
-
-/**
- * Updates session record with the JWT token
- * 
- * CRITICAL: This is called immediately after session creation.
- * The race window is minimal (microseconds), and the token is
- * validated by the middleware on every request. If this update
- * fails, the signup will fail on next API call.
- */
-async function updateSessionToken(sessionId: string, token: string): Promise<void> {
-  const { prisma } = await import('@/lib/prisma');
-  try {
-    await prisma.session.update({
-      where: { id: sessionId },
-      data: { sessionToken: token },
-    });
-  } catch (error) {
-    console.error('[Signup] Failed to update session token:', {
-      sessionId,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-    throw error;
-  }
 }
 
 /**

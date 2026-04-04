@@ -431,6 +431,40 @@ export async function createSession(
 }
 
 /**
+ * Updates a session record with the JWT token.
+ *
+ * Called immediately after session creation during signup/login.
+ * 
+ * This function is extracted to a shared module to ensure
+ * consistent behavior across all authentication flows and
+ * to use static imports instead of dynamic imports (which
+ * can cause issues with Prisma in Next.js).
+ *
+ * @param sessionId - ID of the session to update
+ * @param token - JWT token to store
+ * @returns void
+ * @throws Error if session not found or database update fails
+ */
+export async function updateSessionToken(
+  sessionId: string,
+  token: string
+): Promise<void> {
+  try {
+    await prisma.session.update({
+      where: { id: sessionId },
+      data: { sessionToken: token },
+    });
+  } catch (error) {
+    console.error('[Auth] Failed to update session token:', {
+      sessionId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    throw error;
+  }
+}
+
+/**
  * Gets a session by token.
  *
  * Called during session validation to check if session still exists and is valid.

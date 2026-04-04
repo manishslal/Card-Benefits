@@ -27,6 +27,7 @@ import {
 import {
   getUserByEmail,
   createSession,
+  updateSessionToken,
 } from '@/lib/auth-server';
 import { RateLimiter } from '@/lib/rate-limiter';
 import {
@@ -171,17 +172,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const expiresAt = new Date(Date.now() + getSessionExpirationSeconds() * 1000);
     
-    // Create session first (to get sessionId for payload)
-    // NOTE: Session is created with empty token temporarily
-    const sessionRecord = await createSession(user.id, '', expiresAt);
+    // Generate session ID and payload before creating session record
+    const { randomUUID } = await import('crypto');
+    
+    // Create session with a temporary unique placeholder token
+    // This will be replaced with the real JWT token immediately after
+    const tempToken = `temp_${randomUUID()}`;
+    const sessionRecord = await createSession(user.id, tempToken, expiresAt);
 
-    // Create session payload and sign JWT
-    // Now we have sessionId, so payload can include it
+    // Create session payload and sign JWT using the session ID
     const payload = createSessionPayload(user.id, sessionRecord.id);
     const token = signSessionToken(payload);
 
-    // Update session record with JWT token in a single operation
-    // CRITICAL: This update should be immediate and atomic at the database level
+    // Update session record with the real JWT token (atomic)
     await updateSessionToken(sessionRecord.id, token);
 
     // Create response with session cookie
@@ -199,10 +202,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     return response;
   } catch (error) {
-    // Log error for debugging
-    if (error instanceof Error) {
-      console.error('[Login Error]', error.message);
-    }
+    // Log full error with stack trace for debugging
+    console.error('[Login Error] Unexpected exception:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      type: error?.constructor?.name || typeof error,
+    });
 
     // Generic error response
     return NextResponse.json(
@@ -218,30 +223,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 // ============================================================
 // Helper Functions
 // ============================================================
-
-/**
- * Updates session record with the JWT token
- * 
- * CRITICAL: This is called immediately after session creation.
- * The race window is minimal (microseconds), and the token is
- * validated by the middleware on every request. If this update
- * fails, the login will fail on next API call.
- */
-async function updateSessionToken(sessionId: string, token: string): Promise<void> {
-  const { prisma } = await import('@/lib/prisma');
-  try {
-    await prisma.session.update({
-      where: { id: sessionId },
-      data: { sessionToken: token },
-    });
-  } catch (error) {
-    console.error('[Login] Failed to update session token:', {
-      sessionId,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-    throw error;
-  }
-}
 
 /**
  * Sets the session cookie on the response using Next.js cookies API

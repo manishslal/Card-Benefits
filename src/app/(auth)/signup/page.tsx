@@ -194,6 +194,7 @@ export default function SignupPage() {
             <form onSubmit={handleSubmit} className="space-y-5">
             {/* First Name Field */}
               <Input
+                id="signup-firstname"
                 label="First Name"
                 type="text"
                 name="firstName"
@@ -206,6 +207,7 @@ export default function SignupPage() {
 
               {/* Last Name Field */}
               <Input
+                id="signup-lastname"
                 label="Last Name"
                 type="text"
                 name="lastName"
@@ -218,6 +220,7 @@ export default function SignupPage() {
 
               {/* Email Field */}
               <Input
+                id="signup-email"
                 label="Email Address"
                 type="email"
                 name="email"
@@ -230,6 +233,7 @@ export default function SignupPage() {
 
               {/* Password Field */}
               <Input
+                id="signup-password"
                 label="Password"
                 type="password"
                 name="password"
@@ -243,6 +247,7 @@ export default function SignupPage() {
 
               {/* Confirm Password Field */}
               <Input
+                id="signup-confirm-password"
                 label="Confirm Password"
                 type="password"
                 name="confirmPassword"

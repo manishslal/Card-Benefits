@@ -258,6 +258,8 @@ export function EditBenefitModal({
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Benefit Name */}
             <Input
+        id="edit-benefit-field-3"
+        
               label="Benefit Name"
               type="text"
               name="name"
@@ -291,6 +293,8 @@ export function EditBenefitModal({
 
             {/* User Declared Value */}
             <Input
+        id="edit-benefit-field-2"
+        
               label="Your Estimated Value (Optional, in dollars)"
               type="number"
               name="userDeclaredValue"
@@ -316,6 +320,8 @@ export function EditBenefitModal({
 
             {/* Expiration Date */}
             <Input
+        id="edit-benefit-field-1"
+        
               label="Expiration Date (Optional)"
               type="date"
               name="expirationDate"

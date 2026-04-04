@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -14,6 +14,9 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 /**
  * Input Component - Design System Implementation
  * Includes label, hint text, error states, and icons
+ * 
+ * Hydration-Safe: Uses stable IDs (passed via id prop) instead of Math.random()
+ * to prevent server/client mismatch. Status icons and messages only render after mount.
  * 
  * Accessibility Features:
  * - Associated label with htmlFor
@@ -39,9 +42,20 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
-    const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
-    const errorId = `${inputId}-error`;
-    const hintId = `${inputId}-hint`;
+    // FIX: Use stable ID from prop instead of generating random one
+    // This ensures server and client render the same HTML, preventing hydration mismatch
+    const inputId = id;
+    
+    // FIX: Hydration guard - only render interactive elements after mount
+    // This ensures icons and error messages appear after client hydration
+    const [mounted, setMounted] = useState(false);
+    
+    useEffect(() => {
+      setMounted(true);
+    }, []);
+    
+    const errorId = inputId ? `${inputId}-error` : '';
+    const hintId = inputId ? `${inputId}-hint` : '';
 
     // Build aria-describedby dynamically based on what's present
     const ariaDescribedBy = [
@@ -89,26 +103,26 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             `}
             {...props}
           />
-          {/* Status icons (error or success) */}
-          {error && (
+          {/* Status icons - only render after mount to prevent hydration mismatch */}
+          {mounted && error && (
             <span className="absolute right-4 flex items-center justify-center text-[var(--color-error)]" aria-hidden="true">
               <AlertCircle size={20} />
             </span>
           )}
-          {!error && success && (
+          {mounted && !error && success && (
             <span className="absolute right-4 flex items-center justify-center text-[var(--color-success)]" aria-hidden="true">
               <CheckCircle size={20} />
             </span>
           )}
-          {!error && !success && icon && (
+          {mounted && !error && !success && icon && (
             <span className="absolute right-4 flex items-center justify-center text-[var(--color-text-secondary)]">
               {icon}
             </span>
           )}
         </div>
 
-        {/* Error message with role="alert" for screen readers */}
-        {error && (
+        {/* Error message with role="alert" for screen readers - only render after mount */}
+        {mounted && error && (
           <p 
             id={errorId}
             role="alert" 
@@ -119,8 +133,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           </p>
         )}
 
-        {/* Hint text */}
-        {!error && hint && (
+        {/* Hint text - only render after mount */}
+        {mounted && !error && hint && (
           <p 
             id={hintId}
             className="text-xs text-[var(--color-text-secondary)] mt-2"
@@ -129,8 +143,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           </p>
         )}
 
-        {/* Success message */}
-        {success && !error && (
+        {/* Success message - only render after mount */}
+        {mounted && success && !error && (
           <p className="text-xs text-[var(--color-success)] mt-2 flex items-center gap-1">
             <CheckCircle size={14} aria-hidden="true" />
             Looks good!

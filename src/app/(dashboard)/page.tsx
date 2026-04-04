@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { SafeDarkModeToggle } from '@/components/SafeDarkModeToggle';
 import Button from '@/components/ui/button';
 import EmptyState from '@/components/ui/EmptyState';
@@ -58,6 +59,7 @@ interface BenefitData {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   // ============================================================
   // State Management - Real Data Loading
   // ============================================================
@@ -477,7 +479,7 @@ export default function DashboardPage() {
 
             <Button
               variant="primary"
-              onClick={() => window.location.reload()}
+              onClick={() => router.refresh()}
               className="mx-auto"
             >
               Reload Dashboard

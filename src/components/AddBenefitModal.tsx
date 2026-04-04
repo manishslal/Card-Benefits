@@ -240,6 +240,8 @@ export function AddBenefitModal({
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Benefit Name */}
             <Input
+        id="add-benefit-field-4"
+        
               label="Benefit Name"
               type="text"
               name="name"
@@ -265,6 +267,8 @@ export function AddBenefitModal({
 
             {/* Sticker Value */}
             <Input
+        id="add-benefit-field-3"
+        
               label="Sticker Value (in dollars)"
               type="number"
               name="stickerValue"
@@ -291,6 +295,8 @@ export function AddBenefitModal({
 
             {/* User Declared Value (Optional) */}
             <Input
+        id="add-benefit-field-2"
+        
               label="Your Estimated Value (Optional, in dollars)"
               type="number"
               name="userDeclaredValue"
@@ -304,6 +310,8 @@ export function AddBenefitModal({
 
             {/* Expiration Date (Optional) */}
             <Input
+        id="add-benefit-field-1"
+        
               label="Expiration Date (Optional)"
               type="date"
               name="expirationDate"

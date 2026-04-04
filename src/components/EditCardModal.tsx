@@ -217,6 +217,8 @@ export function EditCardModal({
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Custom Name */}
             <Input
+        id="edit-card-field-3"
+        
               label="Card Nickname (Optional)"
               type="text"
               name="customName"
@@ -229,6 +231,8 @@ export function EditCardModal({
 
             {/* Annual Fee Override */}
             <Input
+        id="edit-card-field-2"
+        
               label="Annual Fee Override (Optional, in dollars)"
               type="number"
               name="actualAnnualFee"
@@ -242,6 +246,8 @@ export function EditCardModal({
 
             {/* Renewal Date */}
             <Input
+        id="edit-card-field-1"
+        
               label="Renewal Date"
               type="date"
               name="renewalDate"

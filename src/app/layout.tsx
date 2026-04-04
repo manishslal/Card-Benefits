@@ -14,6 +14,7 @@ import '@/styles/globals.css';
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import { ClientLayoutWrapper } from '@/components/ClientLayoutWrapper';
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -95,15 +96,17 @@ export default function RootLayout({
       </head>
       <body className="antialiased bg-[var(--color-bg)] text-[var(--color-text)]">
         <ThemeProvider defaultTheme="system" storageKey="theme-preference">
-          {/* Skip Link - Hidden by default, visible on focus (keyboard navigation) */}
-          <a
-            href="#main-content"
-            className="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded"
-          >
-            Skip to main content
-          </a>
-          
-          {children}
+          <ClientLayoutWrapper>
+            {/* Skip Link - Hidden by default, visible on focus (keyboard navigation) */}
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded"
+            >
+              Skip to main content
+            </a>
+            
+            {children}
+          </ClientLayoutWrapper>
         </ThemeProvider>
       </body>
     </html>

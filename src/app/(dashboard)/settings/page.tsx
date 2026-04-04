@@ -132,6 +132,39 @@ export default function SettingsPage() {
     }
   };
 
+  const handleSaveNotifications = async () => {
+    setIsLoading(true);
+    setMessage('');
+    setErrors({});
+
+    try {
+      // Call API to save notification preferences
+      const response = await fetch('/api/user/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          notificationPreferences: notifications,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.error || 'Failed to save preferences');
+        return;
+      }
+
+      setMessage('✓ Notification preferences saved successfully');
+      // Preferences are now persisted in database
+    } catch (error) {
+      console.error('Error saving notification preferences:', error);
+      setMessage('An error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleChangePassword = async () => {
     const newErrors: Record<string, string> = {};
 
@@ -268,7 +301,8 @@ export default function SettingsPage() {
 
                 <div className="space-y-4">
                   <Input
-                    label="First Name"
+                id="settings-firstname"
+                label="First Name"
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleChange}
@@ -276,7 +310,8 @@ export default function SettingsPage() {
                   />
 
                   <Input
-                    label="Last Name"
+                id="settings-lastname"
+                label="Last Name"
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleChange}
@@ -450,9 +485,11 @@ export default function SettingsPage() {
                 <Button
                   variant="primary"
                   className="mt-4"
-                  onClick={() => setMessage('✓ Notification preferences saved')}
+                  onClick={handleSaveNotifications}
+                  isLoading={isLoading}
+                  disabled={isLoading}
                 >
-                  Save Preferences
+                  {isLoading ? 'Saving...' : 'Save Preferences'}
                 </Button>
               </section>
             </div>

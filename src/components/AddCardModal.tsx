@@ -292,6 +292,8 @@ export function AddCardModal({ isOpen, onClose, onCardAdded }: AddCardModalProps
 
             {/* Renewal Date */}
             <Input
+        id="add-card-field-3"
+        
               label="Renewal Date"
               type="date"
               name="renewalDate"
@@ -315,6 +317,8 @@ export function AddCardModal({ isOpen, onClose, onCardAdded }: AddCardModalProps
 
             {/* Custom Name (Optional) */}
             <Input
+        id="add-card-field-2"
+        
               label="Card Nickname (Optional)"
               type="text"
               name="customName"
@@ -327,6 +331,8 @@ export function AddCardModal({ isOpen, onClose, onCardAdded }: AddCardModalProps
 
             {/* Custom Annual Fee (Optional) */}
             <Input
+        id="add-card-field-1"
+        
               label="Annual Fee Override (Optional, in dollars)"
               type="number"
               name="customAnnualFee"

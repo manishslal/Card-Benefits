@@ -73,6 +73,13 @@ const PROTECTED_ROUTES = new Set([
   '/wallet',
 ]);
 
+/** API route prefixes that REQUIRE authentication */
+const PROTECTED_API_PREFIXES = [
+  '/api/benefits',   // POST /api/benefits/add, PATCH/DELETE /api/benefits/[id]
+  '/api/cards',      // POST /api/cards/add, PATCH/DELETE /api/cards/[id], GET /api/cards/my-cards
+  '/api/user',       // POST /api/user/profile, GET /api/user/profile
+];
+
 /** Check if route is public API (matches prefix) */
 function isPublicApiRoute(pathname: string): boolean {
   return PUBLIC_API_ROUTES.some((route) => pathname.startsWith(route));
@@ -80,13 +87,18 @@ function isPublicApiRoute(pathname: string): boolean {
 
 /** Check if route requires authentication */
 function isProtectedRoute(pathname: string): boolean {
-  // Exact match for protected routes
+  // Exact match for protected page routes
   if (PROTECTED_ROUTES.has(pathname)) return true;
 
-  // Protected API routes (all /api/protected/*)
+  // Protected API route prefixes (NEW)
+  for (const prefix of PROTECTED_API_PREFIXES) {
+    if (pathname.startsWith(prefix)) return true;
+  }
+
+  // Legacy pattern: /api/protected/*
   if (pathname.startsWith('/api/protected/')) return true;
 
-  // Protected dynamic routes (e.g., /settings/profile, /cards/[id])
+  // Protected dynamic page routes (e.g., /settings/profile, /cards/[id])
   for (const route of PROTECTED_ROUTES) {
     if (pathname.startsWith(route + '/')) return true;
   }

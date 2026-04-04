@@ -164,6 +164,78 @@ function validateUpdateProfileRequest(body: UpdateProfileRequest): {
 }
 
 // ============================================================
+// GET Handler
+// ============================================================
+
+/**
+ * GET /api/user/profile handler
+ *
+ * Fetches the current authenticated user's profile information.
+ * This handler replaces /api/auth/user which was classified as public.
+ *
+ * @param _request - NextRequest with authenticated user context
+ * @returns NextResponse with user profile or error
+ */
+export async function GET(_request: NextRequest): Promise<NextResponse> {
+  try {
+    // Get authenticated user ID from context
+    // This is set by the middleware after JWT verification
+    const authContext = await getAuthContext();
+    const userId = authContext?.userId;
+
+    if (!userId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Not authenticated',
+        } as ErrorResponse,
+        { status: 401 }
+      );
+    }
+
+    // Fetch user from database
+    // Only include non-sensitive fields
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+      },
+    });
+
+    if (!user) {
+      // User was authenticated but no longer exists in database
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'User not found',
+        } as ErrorResponse,
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        user,
+      } as { success: true; user: typeof user },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('[Get User Profile Error]', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch user profile',
+      } as ErrorResponse,
+      { status: 500 }
+    );
+  }
+}
+
+// ============================================================
 // POST Handler
 // ============================================================
 

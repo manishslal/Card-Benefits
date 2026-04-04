@@ -1,0 +1,396 @@
+================================================================================
+PHASE 6 TECHNICAL SPECIFICATION - IMPLEMENTATION SUMMARY
+================================================================================
+
+CREATED: Two comprehensive technical specification documents
+LOCATION: .github/specs/
+
+Documents:
+1. PHASE6-SPECIFICATION-INDEX.md (26 KB) - Complete implementation guide
+2. PHASE6-COMPREHENSIVE-SPEC.md (11 KB) - Quick reference
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+
+CRITICAL ISSUE: Two QA audits identified 5 CRITICAL and 3 MEDIUM issues in button
+implementation. Phase 6 fixes all of them by implementing missing features and 
+connecting UI to database.
+
+SCOPE:
+- 6 new API endpoints (complete CRUD for cards and benefits)
+- 5 new modal/dialog UI components (with validation)
+- Wire all button onClick handlers
+- Database persistence for all operations
+- Comprehensive error handling
+
+ESTIMATED DURATION: 5-7 days (5 implementation phases)
+
+================================================================================
+CRITICAL ISSUES TO RESOLVE
+================================================================================
+
+1. ❌ Add Card button - Modal exists but NO submission logic
+2. ❌ Edit Card button - NO component, form, or API endpoint
+3. ❌ Add Benefit button - NO component, form, or API endpoint
+4. ❌ Edit Benefit button - Only console.log stub
+5. ❌ Delete Benefit button - Only console.log stub
+
+MEDIUM ISSUES:
+- Mark Used benefit has incomplete server persistence
+- View toggle issues
+- Form submission gaps
+
+================================================================================
+6 API ENDPOINTS TO CREATE
+================================================================================
+
+1. PATCH /api/cards/[id] - Edit Card
+   - Update: customName, actualAnnualFee, renewalDate
+   - Optimistic locking (version field)
+   - Returns 200 OK or 409 Conflict (version mismatch)
+
+2. DELETE /api/cards/[id] - Delete Card
+   - Soft delete (status = 'DELETED')
+   - Cascade: Archives all benefits
+   - Requires confirmation string (card name)
+   - Returns 200 OK with count of deleted benefits
+
+3. POST /api/benefits/add - Add Benefit
+   - Add from master catalog OR create custom
+   - Unique constraint: (userCardId, name)
+   - Returns 201 Created or 409 Conflict (duplicate)
+
+4. PATCH /api/benefits/[id] - Edit Benefit
+   - Update: name, userDeclaredValue, resetCadence, expirationDate
+   - Optimistic locking (version field)
+   - Returns 200 OK or 409 Conflict
+
+5. DELETE /api/benefits/[id] - Delete Benefit
+   - Soft delete (status = 'ARCHIVED')
+   - Returns 200 OK
+
+6. PATCH /api/benefits/[id]/toggle-used - Mark Used (Improve Existing)
+   - Toggle isUsed flag
+   - Increment timesUsed when marking used
+   - Returns 200 OK
+
+================================================================================
+5 UI COMPONENTS TO CREATE
+================================================================================
+
+1. EditCardModal.tsx
+   - Form: customName, actualAnnualFee, renewalDate
+   - Validation, optimistic locking, version handling
+   - Location: src/components/card-management/
+
+2. AddBenefitModal.tsx
+   - Two tabs: "From Catalog" and "Custom"
+   - Browse master benefits or create custom
+   - Location: src/components/card-management/
+
+3. EditBenefitModal.tsx
+   - Form: name, userDeclaredValue, resetCadence, expirationDate
+   - Read-only: type, stickerValue
+   - Unique name validation per card
+
+4. DeleteBenefitConfirmation.tsx
+   - Simple confirmation dialog
+   - Shows benefit name
+   - Destructive (red) Delete button
+
+5. DeleteCardConfirmation.tsx
+   - Confirmation with typed input (card name)
+   - Delete button disabled until exact match
+   - Shows count of benefits to delete
+
+================================================================================
+5 IMPLEMENTATION PHASES
+================================================================================
+
+PHASE 1: API Endpoints (2-3 days)
+  [ ] PATCH /api/cards/[id] - Edit Card
+  [ ] DELETE /api/cards/[id] - Delete Card
+  [ ] POST /api/benefits/add - Add Benefit
+  [ ] PATCH /api/benefits/[id] - Edit Benefit
+  [ ] DELETE /api/benefits/[id] - Delete Benefit
+  [ ] PATCH /api/benefits/[id]/toggle-used - Enhance existing
+  
+PHASE 2: Modal Components (3-4 days)
+  [ ] EditCardModal
+  [ ] AddBenefitModal
+  [ ] EditBenefitModal
+  [ ] DeleteBenefitConfirmation
+  [ ] DeleteCardConfirmation
+  [ ] Improve AddCardModal (from stub)
+
+PHASE 3: Button Wiring (1-2 days)
+  [ ] Wire CardTile menu actions
+  [ ] Wire CardRow action buttons
+  [ ] Wire CardDetailPanel benefit actions
+  [ ] Set up modal state management
+
+PHASE 4: Integration & Testing (1-2 days)
+  [ ] E2E flow testing
+  [ ] Error scenario testing
+  [ ] Accessibility testing
+
+PHASE 5: Polish & Optimization (1 day)
+  [ ] Performance tuning
+  [ ] Dark mode verification
+  [ ] Mobile responsiveness
+
+================================================================================
+KEY ARCHITECTURE PATTERNS
+================================================================================
+
+OPTIMISTIC LOCKING (Race Condition Prevention):
+- Every card/benefit has version field
+- Client sends version with PATCH requests
+- Server checks version matches before updating
+- Returns 409 Conflict if mismatch
+- Client shows "Card was edited by another user" message
+
+SOFT DELETES (Audit Trail):
+- Never hard delete from database
+- Mark status as 'DELETED' or 'ARCHIVED'
+- Preserve all history for audits
+- Enable future restore functionality
+
+CASCADE DELETES:
+- DELETE /api/cards/[id] → Archives all associated benefits
+- One atomic transaction (all-or-nothing)
+- Rollback on any error
+
+COMPONENT PATTERN (Radix UI):
+- Use Dialog, DialogContent, DialogHeader
+- React state for: form data, loading flag, errors, touched fields
+- Try/catch with specific error handling for different status codes
+- Toast notifications for user feedback
+- Dark mode support (Tailwind CSS classes)
+- Keyboard support (Escape to close)
+
+================================================================================
+SUCCESS CRITERIA (ALL MUST PASS)
+================================================================================
+
+✅ Functionality
+  - All 6 API endpoints implemented and tested
+  - All 5 modal components created and functional
+  - All button handlers wired to correct modals
+  - Data persists to database on all operations
+  - Card list refreshes after any change
+  - Optimistic locking prevents version conflicts
+  - Cascade delete works (card → benefits archived)
+  - All soft deletes preserve history
+  - Mark used toggle works with server verification
+
+✅ Validation
+  - Client-side validation shows errors before submit
+  - Server-side validation enforces constraints
+  - Duplicate benefit names prevented
+  - Invalid date formats rejected
+  - Required fields enforced
+  - Fee value ranges validated
+  - Authorization checked on all endpoints
+
+✅ Error Handling
+  - Network errors display user-friendly messages
+  - Timeout errors with retry option
+  - Version conflicts show "edited elsewhere" message
+  - 404 errors show "not found" message
+  - 403 errors show "no permission" message
+  - Validation errors show field-specific messages
+  - Form data preserved on error for retry
+
+✅ User Experience
+  - Loading states disable buttons during submission
+  - Toast notifications for success/error
+  - Modal closes on successful submission
+  - Form validation prevents invalid submissions
+  - Keyboard support (Tab, Escape)
+  - Dark mode styling complete
+  - Mobile-responsive layout
+  - No console.log stubs remain
+
+✅ Code Quality
+  - TypeScript strict mode compliance
+  - Zero TypeScript errors or warnings
+  - Follows established component patterns
+  - Comments explain complex logic
+  - Error handling comprehensive
+  - Performance optimized (no unnecessary renders)
+  - Code is readable and maintainable
+
+✅ Testing
+  - Unit tests for validation functions
+  - Unit tests for each modal component
+  - Integration tests for API endpoints
+  - E2E tests for complete flows
+  - Edge case tests (version conflicts, duplicates, etc.)
+  - Accessibility tests (keyboard, screen reader)
+  - Manual testing checklist completed
+  - Cross-browser testing passed
+  - Mobile testing passed
+
+================================================================================
+WHAT ALREADY EXISTS ✅
+================================================================================
+
+CardTile.tsx - Grid view with dropdown menu (View, Edit, Archive, Delete)
+CardRow.tsx - List view with action buttons
+CardDetailPanel.tsx - Side panel, ready to enhance
+AddCardModal.tsx - Stub (needs form integration)
+POST /api/cards/add - Working
+GET /api/cards/my-cards - Working
+Prisma Schema - Complete (User, Card, Benefit models)
+Type Definitions - Complete (card-management.ts)
+
+================================================================================
+WHAT'S MISSING ❌
+================================================================================
+
+EditCardModal component - Create with form & API
+PATCH /api/cards/[id] endpoint - Implement endpoint
+AddBenefitModal component - Create with form & API
+POST /api/benefits/add endpoint - Implement endpoint
+EditBenefitModal component - Create with form & API
+PATCH /api/benefits/[id] endpoint - Implement endpoint
+DeleteBenefitConfirmation component - Create confirmation & API
+DELETE /api/benefits/[id] endpoint - Implement endpoint
+DeleteCardConfirmation component - Create confirmation & API
+DELETE /api/cards/[id] endpoint - Implement endpoint
+Mark Used Toggle - Improve existing + UI
+Button Handlers - Wire all actions to modals
+
+================================================================================
+GETTING STARTED
+================================================================================
+
+1. Read the specification documents:
+   - .github/specs/PHASE6-SPECIFICATION-INDEX.md (full guide)
+   - .github/specs/PHASE6-COMPREHENSIVE-SPEC.md (quick reference)
+
+2. Review existing patterns:
+   - See src/components/card-management/AddCardModal.tsx (pattern template)
+   - Check src/types/card-management.ts (all types defined)
+   - Review existing API routes for reference
+
+3. Start implementation (in order):
+   - PHASE 1: Implement 6 API endpoints
+   - PHASE 2: Create 5 modal components
+   - PHASE 3: Wire button onClick handlers
+   - PHASE 4: E2E testing and edge cases
+   - PHASE 5: Polish and optimization
+
+4. Verify success:
+   - All tests pass (unit, integration, E2E)
+   - No TypeScript errors
+   - No console.log stubs
+   - All manual test cases pass
+   - Code ready for production deployment
+
+================================================================================
+COMPONENT PATTERN REFERENCE
+================================================================================
+
+All new modals should follow the AddCardModal pattern:
+
+- Use Radix UI Dialog (DialogContent, DialogHeader, DialogTitle)
+- Props interface clearly defined with TypeScript
+- useState for form fields, loading flag, and error states
+- Try/catch with error handling for different HTTP status codes
+- Toast notifications for user feedback
+- Loading state disables inputs and shows loading text
+- Error display above form
+- Disabled state on buttons during submission
+- Modal closes after success
+- No console.log - use proper error handling
+- Dark mode support (Tailwind CSS dark: variants)
+- Keyboard support (Escape to close)
+
+See specification for complete pattern code example.
+
+================================================================================
+CRITICAL PATTERNS
+================================================================================
+
+VALIDATION RULES:
+- customName: String, max 100 chars, alphanumeric + spaces/dashes/parens
+- actualAnnualFee: Integer >= 0, <= 1,000,000 (cents)
+- renewalDate: ISO date string, must be future date
+- benefitName: String, max 100 chars, unique per card
+- userDeclaredValue: Integer >= 0, <= 10,000,000
+- resetCadence: Enum (Monthly, CalendarYear, CardmemberYear, OneTime)
+
+ERROR RESPONSES:
+{
+  "success": false,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "User-friendly message",
+    "details": {
+      "field": "fieldName",      // For validation errors
+      "currentVersion": 2,       // For version conflicts
+      "..." : "..."
+    }
+  }
+}
+
+EDGE CASES TO HANDLE:
+- Version conflicts (two users editing same card)
+- Duplicate benefit creation (rapid clicks)
+- Network timeouts (30s limit with retry)
+- Session expiration (redirect to login)
+- Authorization failures (user tries to edit others' cards)
+- Cascade delete failures (partial deletions rolled back)
+- Form data preservation on error (sessionStorage)
+
+================================================================================
+QUICK REFERENCE
+================================================================================
+
+File Structure:
+  src/app/api/cards/[id]/route.ts                    # PATCH, DELETE
+  src/app/api/benefits/add/route.ts                  # POST
+  src/app/api/benefits/[id]/route.ts                 # PATCH, DELETE
+  src/app/api/benefits/[id]/toggle-used/route.ts    # PATCH (improve)
+
+  src/components/card-management/EditCardModal.tsx              # NEW
+  src/components/card-management/AddBenefitModal.tsx            # NEW
+  src/components/card-management/EditBenefitModal.tsx           # NEW
+  src/components/card-management/DeleteBenefitConfirmation.tsx  # NEW
+  src/components/card-management/DeleteCardConfirmation.tsx     # NEW
+
+Testing Checklist: See PHASE6-SPECIFICATION-INDEX.md (section: Manual Testing)
+
+Database: No schema changes needed - all fields already exist
+  - version field exists on UserCard and UserBenefit
+  - status field enables soft deletes
+  - Unique constraint on (userCardId, benefitName)
+
+================================================================================
+PHASE 6 STATUS: ✅ READY FOR IMPLEMENTATION
+================================================================================
+
+This specification is comprehensive and ready for a frontend engineer to
+implement without clarifying questions.
+
+- All features clearly defined
+- All API contracts specified
+- All component patterns documented
+- All edge cases identified
+- All success criteria listed
+- 5 implementation phases structured
+
+Estimated total effort: 5-7 days
+Team: One Expert React Frontend Engineer
+
+Questions? See specification documents for:
+  - Component pattern guide (section 10)
+  - User flows (section 7)
+  - API endpoints (section 5)
+  - Edge cases (section 8)
+  - Testing strategy (section 12)
+
+================================================================================

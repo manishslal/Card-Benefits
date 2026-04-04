@@ -163,6 +163,7 @@ export function AddCardModal({ isOpen, onClose, onCardAdded }: AddCardModalProps
       const response = await fetch('/api/cards/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           masterCardId: formData.masterCardId,
           renewalDate: formData.renewalDate,

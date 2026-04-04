@@ -142,7 +142,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const loadUserProfile = async () => {
       try {
-        const response = await fetch('/api/auth/user', {
+        const response = await fetch('/api/user/profile', {
           method: 'GET',
           credentials: 'include',
         });

@@ -123,6 +123,7 @@ export function AddBenefitModal({
       const response = await fetch('/api/benefits/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           userCardId: cardId,
           name: formData.name.trim(),

@@ -223,7 +223,8 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
       data: { status: 'ARCHIVED' },
     });
 
-    return NextResponse.json({ success: true }, { status: 204 });
+    // ✅ FIXED: Return 204 with NO BODY (HTTP spec compliant)
+    return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error('[Delete Benefit Error]', error);
     return NextResponse.json(

@@ -155,6 +155,7 @@ export function EditBenefitModal({
       const response = await fetch(`/api/benefits/${benefit.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           name: formData.name.trim(),
           userDeclaredValue,

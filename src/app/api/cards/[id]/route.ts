@@ -1,4 +1,5 @@
 /**
+ * GET /api/cards/[id] - Fetch card details with benefits
  * PATCH /api/cards/[id] - Edit card details
  * DELETE /api/cards/[id] - Delete card
  */
@@ -11,6 +12,36 @@ interface PatchCardRequest {
   customName?: string;
   actualAnnualFee?: number;
   renewalDate?: string;
+}
+
+interface GetCardResponse {
+  success: true;
+  card: {
+    id: string;
+    masterCardId: string;
+    customName: string | null;
+    actualAnnualFee: number | null;  // In cents
+    renewalDate: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+    benefits: {
+      id: string;
+      name: string;
+      type: string;
+      stickerValue: number;  // In cents
+      userDeclaredValue: number | null;  // In cents
+      resetCadence: string;
+      expirationDate: string | null;
+      isUsed: boolean;
+      status: string;
+    }[];
+  };
+}
+
+interface GetCardErrorResponse {
+  success: false;
+  error: string;
 }
 
 interface PatchCardResponse {
@@ -66,6 +97,113 @@ function validatePatchCardRequest(body: PatchCardRequest): {
     valid: Object.keys(errors).length === 0,
     errors: Object.keys(errors).length > 0 ? errors : undefined,
   };
+}
+
+/**
+ * GET /api/cards/[id] - Fetch card details with benefits
+ * 
+ * Returns:
+ * - Card details: id, customName, actualAnnualFee (in cents), renewalDate, status
+ * - Associated benefits: array of UserBenefit objects
+ * 
+ * Note: All monetary values are in CENTS (e.g., 55000 = $550)
+ */
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  try {
+    const authContext = await getAuthContext();
+    const userId = authContext?.userId;
+
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'Not authenticated' } as GetCardErrorResponse,
+        { status: 401 }
+      );
+    }
+
+    // Extract card ID from URL path: /api/cards/[id]
+    const cardId = request.nextUrl.pathname.split('/')[3];
+
+    if (!cardId) {
+      return NextResponse.json(
+        { success: false, error: 'Card ID required' } as GetCardErrorResponse,
+        { status: 400 }
+      );
+    }
+
+    // Fetch card with benefits from database
+    const card = await prisma.userCard.findUnique({
+      where: { id: cardId },
+      include: {
+        player: {
+          select: { userId: true },
+        },
+        userBenefits: {
+          where: { status: 'ACTIVE' },  // Only active benefits
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            stickerValue: true,  // Returned in cents
+            userDeclaredValue: true,  // Returned in cents
+            resetCadence: true,
+            expirationDate: true,
+            isUsed: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    if (!card) {
+      return NextResponse.json(
+        { success: false, error: 'Card not found' } as GetCardErrorResponse,
+        { status: 404 }
+      );
+    }
+
+    // Verify user owns this card
+    if (card.player.userId !== userId) {
+      return NextResponse.json(
+        { success: false, error: 'You do not have permission to view this card' } as GetCardErrorResponse,
+        { status: 403 }
+      );
+    }
+
+    // Return card with benefits
+    return NextResponse.json(
+      {
+        success: true,
+        card: {
+          id: card.id,
+          masterCardId: card.masterCardId,
+          customName: card.customName,
+          actualAnnualFee: card.actualAnnualFee,  // In cents
+          renewalDate: card.renewalDate.toISOString(),
+          status: card.status,
+          createdAt: card.createdAt.toISOString(),
+          updatedAt: card.updatedAt.toISOString(),
+          benefits: card.userBenefits.map((benefit) => ({
+            id: benefit.id,
+            name: benefit.name,
+            type: benefit.type,
+            stickerValue: benefit.stickerValue,  // In cents
+            userDeclaredValue: benefit.userDeclaredValue,  // In cents
+            resetCadence: benefit.resetCadence,
+            expirationDate: benefit.expirationDate?.toISOString() || null,
+            isUsed: benefit.isUsed,
+            status: benefit.status,
+          })),
+        },
+      } as GetCardResponse,
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('[Get Card Error]', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to fetch card details' } as GetCardErrorResponse,
+      { status: 500 }
+    );
+  }
 }
 
 export async function PATCH(request: NextRequest): Promise<NextResponse> {
@@ -207,7 +345,8 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
       },
     });
 
-    return NextResponse.json({ success: true }, { status: 204 });
+    // ✅ FIXED: Return 204 with NO BODY (HTTP spec compliant)
+    return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error('[Delete Card Error]', error);
     return NextResponse.json(

@@ -124,6 +124,7 @@ export function EditCardModal({
       const response = await fetch(`/api/cards/${card.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           customName: formData.customName || undefined,
           actualAnnualFee,

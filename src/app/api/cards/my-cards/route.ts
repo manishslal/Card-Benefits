@@ -51,7 +51,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthContext } from '@/lib/auth-context';
 import { prisma } from '@/lib/prisma';
 
 // ============================================================
@@ -168,11 +167,10 @@ function generateLastFour(cardId: string): string {
  * @param request - NextRequest with authenticated user context
  * @returns NextResponse with user's cards and summary, or error
  */
-export async function GET(_request: NextRequest): Promise<NextResponse> {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
-    // Get authenticated user ID from context
-    const authContext = await getAuthContext();
-    const userId = authContext?.userId;
+    // Get authenticated user ID from middleware-set request header
+    const userId = request.headers.get('x-user-id');
 
     if (!userId) {
       return NextResponse.json(

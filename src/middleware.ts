@@ -349,10 +349,19 @@ export async function middleware(request: NextRequest) {
     // =====================================================================
     // Auth successful! Set context and proceed
     // =====================================================================
-    return await runWithAuthContext(
+    const response = await runWithAuthContext(
       { userId },
       async () => NextResponse.next()
     );
+
+    // IMPORTANT: For protected APIs in Node.js runtime, we must pass userId via headers
+    // AsyncLocalStorage doesn't propagate from middleware to route handlers in Node.js
+    // So we add a custom header that route handlers can read
+    if (userId) {
+      response.headers.set('x-user-id', userId);
+    }
+
+    return response;
   }
 
   // =========================================================================

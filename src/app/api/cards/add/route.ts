@@ -34,7 +34,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthContext } from '@/lib/auth-context';
 import { prisma } from '@/lib/prisma';
 
 // ============================================================
@@ -81,9 +80,8 @@ interface ErrorResponse {
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    // Get authenticated user ID from context
-    const authContext = await getAuthContext();
-    const userId = authContext?.userId;
+    // Get authenticated user ID from middleware-set request header
+    const userId = request.headers.get('x-user-id');
 
     if (!userId) {
       return NextResponse.json(

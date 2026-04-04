@@ -5,7 +5,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthContext } from '@/lib/auth-context';
 import { prisma } from '@/lib/prisma';
 
 interface ToggleUsedRequest {
@@ -29,8 +28,7 @@ interface ErrorResponse {
 
 export async function PATCH(request: NextRequest): Promise<NextResponse> {
   try {
-    const authContext = await getAuthContext();
-    const userId = authContext?.userId;
+    const userId = request.headers.get('x-user-id');
 
     if (!userId) {
       return NextResponse.json(

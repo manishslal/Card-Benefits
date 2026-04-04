@@ -227,6 +227,78 @@ export default function DashboardPage() {
   };
 
   // ============================================================
+  // Handler: Mark Benefit as Used - Calls toggle-used API
+  // Wave 2: One-click benefit marking
+  // ============================================================
+
+  const handleMarkUsed = async (benefitId: string) => {
+    try {
+      // Optimistic UI update - mark the benefit as used immediately
+      setBenefits(
+        benefits.map((b) =>
+          b.id === benefitId
+            ? { ...b, isUsed: true }
+            : b
+        )
+      );
+
+      // Call the toggle-used API endpoint
+      const response = await fetch(`/api/benefits/${benefitId}/toggle-used`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ isUsed: true }),
+      });
+
+      if (!response.ok) {
+        // Revert optimistic update on error
+        setBenefits(
+          benefits.map((b) =>
+            b.id === benefitId
+              ? { ...b, isUsed: false }
+              : b
+          )
+        );
+
+        const errorData = await response.json();
+        console.error('Failed to mark benefit as used:', errorData);
+        alert(`Error: ${errorData.error || 'Failed to mark benefit as used'}`);
+        return;
+      }
+
+      // Success - benefit marked as used
+      const data = await response.json();
+      if (data.success) {
+        // Update benefit with response data (includes updated timesUsed)
+        setBenefits(
+          benefits.map((b) =>
+            b.id === benefitId
+              ? {
+                  ...b,
+                  isUsed: data.benefit.isUsed,
+                  // Note: timesUsed is not in our mock BenefitData, but will be in real API
+                }
+              : b
+          )
+        );
+        // Show success toast
+        alert('Benefit marked as used!');
+      }
+    } catch (error) {
+      console.error('Error marking benefit as used:', error);
+      // Revert optimistic update
+      setBenefits(
+        benefits.map((b) =>
+          b.id === benefitId
+            ? { ...b, isUsed: false }
+            : b
+        )
+      );
+      alert('Failed to mark benefit as used. Please try again.');
+    }
+  };
+
+  // ============================================================
   // Handler: Benefit Updated - Updates benefits array after modal success
   // Called by EditBenefitModal onBenefitUpdated callback
   // ============================================================
@@ -602,7 +674,7 @@ export default function DashboardPage() {
                   benefits={mockBenefits as any}
                   onEdit={handleEditBenefitClick}
                   onDelete={handleDeleteBenefitClick}
-                  onMarkUsed={handleEditBenefitClick}
+                  onMarkUsed={handleMarkUsed}
                   gridColumns={3}
                 />
               </section>

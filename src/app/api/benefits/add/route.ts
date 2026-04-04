@@ -68,6 +68,7 @@ interface AddBenefitResponse {
     resetCadence: string;
     userDeclaredValue: number | null;
     isUsed: boolean;
+    timesUsed: number;  // 🔑 Wave 2: Always included
     expirationDate: string | null;
     createdAt: string;
   };
@@ -197,6 +198,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           resetCadence: benefit.resetCadence,
           userDeclaredValue: benefit.userDeclaredValue,
           isUsed: benefit.isUsed,
+          timesUsed: benefit.timesUsed,  // 🔑 Wave 2: Include timesUsed
           expirationDate: benefit.expirationDate?.toISOString() || null,
           createdAt: benefit.createdAt.toISOString(),
         },

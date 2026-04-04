@@ -22,6 +22,7 @@ interface PatchBenefitResponse {
     userDeclaredValue: number | null;
     expirationDate: string | null;
     resetCadence: string;
+    timesUsed: number;  // 🔑 Wave 2: Include timesUsed
     updatedAt: string;
   };
 }
@@ -163,6 +164,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
           userDeclaredValue: updatedBenefit.userDeclaredValue,
           expirationDate: updatedBenefit.expirationDate?.toISOString() || null,
           resetCadence: updatedBenefit.resetCadence,
+          timesUsed: updatedBenefit.timesUsed,  // 🔑 Wave 2: Include timesUsed
           updatedAt: updatedBenefit.updatedAt.toISOString(),
         },
       } as PatchBenefitResponse,

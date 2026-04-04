@@ -324,6 +324,80 @@ export default function CardDetailPage() {
   };
 
   /**
+   * Handler: Mark Benefit as Used - Calls toggle-used API
+   * Wave 2: One-click benefit marking without opening a modal
+   * - Makes API call to toggle-used endpoint
+   * - Updates UI optimistically
+   * - Reverts on error
+   */
+  const handleMarkUsed = async (benefitId: string) => {
+    try {
+      // Optimistic UI update - mark the benefit as used immediately
+      setBenefits(
+        benefits.map((b) =>
+          b.id === benefitId
+            ? { ...b, isUsed: true }
+            : b
+        )
+      );
+
+      // Call the toggle-used API endpoint
+      const response = await fetch(`/api/benefits/${benefitId}/toggle-used`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ isUsed: true }),
+      });
+
+      if (!response.ok) {
+        // Revert optimistic update on error
+        setBenefits(
+          benefits.map((b) =>
+            b.id === benefitId
+              ? { ...b, isUsed: false }
+              : b
+          )
+        );
+
+        const errorData = await response.json();
+        console.error('Failed to mark benefit as used:', errorData);
+        alert(`Error: ${errorData.error || 'Failed to mark benefit as used'}`);
+        return;
+      }
+
+      // Success - benefit marked as used
+      const data = await response.json();
+      if (data.success) {
+        // Update benefit with response data (includes updated timesUsed)
+        setBenefits(
+          benefits.map((b) =>
+            b.id === benefitId
+              ? {
+                  ...b,
+                  isUsed: data.benefit.isUsed,
+                  // Note: timesUsed is not in our mock BenefitData, but will be in real API
+                }
+              : b
+          )
+        );
+        // Show success toast
+        alert('Benefit marked as used!');
+      }
+    } catch (error) {
+      console.error('Error marking benefit as used:', error);
+      // Revert optimistic update
+      setBenefits(
+        benefits.map((b) =>
+          b.id === benefitId
+            ? { ...b, isUsed: false }
+            : b
+        )
+      );
+      alert('Failed to mark benefit as used. Please try again.');
+    }
+  };
+
+  /**
    * Calculate days until card renewal for display
    * Card header shows a warning if renewal is within 90 days
    */
@@ -606,22 +680,14 @@ export default function CardDetailPage() {
                 benefits={filteredBenefits}
                 onEdit={handleEditBenefitClick}
                 onDelete={handleDeleteBenefitClick}
-                onMarkUsed={(id) => {
-                  // Mark as used can be handled via the EditBenefitModal or via a direct API call
-                  // For now, we open the edit modal to allow marking as used
-                  handleEditBenefitClick(id);
-                }}
+                onMarkUsed={handleMarkUsed}
               />
             ) : (
               <BenefitsGrid
                 benefits={filteredBenefits}
                 onEdit={handleEditBenefitClick}
                 onDelete={handleDeleteBenefitClick}
-                onMarkUsed={(id) => {
-                  // Mark as used can be handled via the EditBenefitModal or via a direct API call
-                  // For now, we open the edit modal to allow marking as used
-                  handleEditBenefitClick(id);
-                }}
+                onMarkUsed={handleMarkUsed}
                 gridColumns={3}
               />
             )}

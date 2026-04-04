@@ -3,6 +3,7 @@
  *
  * Provides rate limiting across multiple server instances using Redis.
  * Falls back to in-memory rate limiting if Redis is unavailable.
+ * ioredis is an optional dependency - only required when ENABLE_REDIS_RATE_LIMITING=true
  *
  * Usage:
  *   const result = await checkRateLimit('login', 'user@example.com', {
@@ -15,7 +16,19 @@
  *   }
  */
 
-import Redis from 'ioredis';
+// Conditionally import Redis only if needed
+// ioredis is optional - this module loads even if ioredis is not installed
+let Redis: any = null;
+let redisImportError: Error | null = null;
+
+try {
+  // Use require instead of import to make it optional at runtime
+  // This prevents TypeScript from failing at build time if ioredis is not installed
+  Redis = require('ioredis');
+} catch (error) {
+  redisImportError = error instanceof Error ? error : new Error('Failed to load ioredis');
+  console.debug('[RedisRateLimiter] ioredis not available (optional dependency)');
+}
 
 // Type definitions
 interface RateLimitOptions {
@@ -133,16 +146,16 @@ class InMemoryRateLimiter {
  * Lockout key: rl:{endpoint}:{identifier}:lockout_until
  */
 class RedisRateLimiter {
-  private redis: Redis;
+  private redis: any; // Type is 'any' because Redis is loaded conditionally
   private fallback: InMemoryRateLimiter;
   private isAvailable: boolean = true;
 
-  constructor(redis: Redis) {
+  constructor(redis: any) {
     this.redis = redis;
     this.fallback = new InMemoryRateLimiter();
 
     // Monitor Redis connection
-    this.redis.on('error', (err) => {
+    this.redis.on('error', (err: any) => {
       console.error('[RedisRateLimiter] Connection error:', err.message);
       this.isAvailable = false;
     });
@@ -364,7 +377,7 @@ class RedisRateLimiter {
 /**
  * Global instance management
  */
-let globalRedis: Redis | null = null;
+let globalRedis: any = null; // Type is 'any' because Redis is loaded conditionally
 let globalRateLimiter: RedisRateLimiter | null = null;
 
 /**
@@ -385,6 +398,17 @@ export function initializeRedisRateLimiter(): RedisRateLimiter {
     );
   }
 
+  // Check if ioredis is available
+  if (!Redis || redisImportError) {
+    console.warn(
+      '[RedisRateLimiter] ioredis not installed. To use Redis rate limiting, run: npm install ioredis'
+    );
+    throw new Error(
+      'ioredis module not available. Install it with: npm install ioredis\n' +
+      'Or disable Redis rate limiting by setting ENABLE_REDIS_RATE_LIMITING=false'
+    );
+  }
+
   globalRedis = new Redis(redisUrl, {
     // Connection pooling
     maxRetriesPerRequest: 3,
@@ -392,7 +416,7 @@ export function initializeRedisRateLimiter(): RedisRateLimiter {
     enableOfflineQueue: false,
 
     // Retry strategy: exponential backoff with max 2 seconds
-    retryStrategy: (times) => {
+    retryStrategy: (times: number) => {
       const delay = Math.min(times * 50, 2000);
       if (times > 10) {
         console.error('[RedisRateLimiter] Max retries exceeded, giving up');

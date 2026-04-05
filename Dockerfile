@@ -63,6 +63,9 @@ COPY --from=builder /app/.next ./.next
 # Only copy prisma if it exists (needed for migrations)
 COPY --from=builder /app/prisma ./prisma
 
+# Generate Prisma client in runtime (required for app to run)
+RUN npm run db:generate
+
 # Note: .env.example is for development reference only, not needed in production image
 
 # Change ownership to non-root user

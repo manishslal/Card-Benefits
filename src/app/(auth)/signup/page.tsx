@@ -113,6 +113,11 @@ export default function SignupPage() {
         return;
       }
 
+      // Store userId in localStorage for API calls
+      if (data.userId) {
+        localStorage.setItem('userId', data.userId);
+      }
+
       // Success - redirect to dashboard
       window.location.href = '/dashboard';
     } catch (error) {

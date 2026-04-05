@@ -80,35 +80,36 @@ export default function CardDetailPage() {
 
   /**
    * Fetch card data from API
-   * Falls back to mock data if API call fails (for development)
+   * Passes userId via x-user-id header for authentication
    */
   useEffect(() => {
     const fetchCard = async () => {
       setIsLoadingCard(true);
       try {
-        const response = await fetch(`/api/cards/${cardId}`);
+        // Get userId from localStorage (set during login)
+        const userId = localStorage.getItem('userId');
+        if (!userId) {
+          throw new Error('User not authenticated');
+        }
+
+        const response = await fetch(`/api/cards/${cardId}`, {
+          headers: {
+            'x-user-id': userId,
+            'Content-Type': 'application/json',
+          },
+        });
         if (response.ok) {
           const data = await response.json();
           setCard(data);
+        } else if (response.status === 401) {
+          throw new Error('Unauthorized - please log in again');
         } else {
-          throw new Error('Failed to fetch card');
+          throw new Error(`Failed to fetch card: ${response.status}`);
         }
       } catch (error) {
-        console.warn('Failed to fetch card from API, using mock data', error);
-        // Use mock data as fallback for development
-        setCard({
-          id: cardId,
-          customName: 'Chase Sapphire Reserve',
-          actualAnnualFee: 550,
-          renewalDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
-          status: 'active',
-          masterCardId: cardId, // Use card ID as master card ID for API operations
-          issuer: 'Chase',
-          type: 'Visa Infinite',
-          lastFour: '4242',
-          rewardsRate: '3x on travel and dining',
-          issuedDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
-        });
+        console.error('Failed to fetch card from API:', error);
+        // Don't show mock data - auth errors should be clear to user
+        setCard(null);
       } finally {
         setIsLoadingCard(false);
       }
@@ -121,85 +122,34 @@ export default function CardDetailPage() {
 
   /**
    * Fetch benefits for this card from API
-   * Falls back to mock data if API call fails (for development)
+   * Passes userId via x-user-id header for authentication
    */
   useEffect(() => {
     const fetchBenefits = async () => {
       try {
-        const response = await fetch(`/api/cards/${cardId}/benefits`);
+        const userId = localStorage.getItem('userId');
+        if (!userId) {
+          throw new Error('User not authenticated');
+        }
+
+        const response = await fetch(`/api/cards/${cardId}/benefits`, {
+          headers: {
+            'x-user-id': userId,
+            'Content-Type': 'application/json',
+          },
+        });
         if (response.ok) {
           const data = await response.json();
           setBenefits(data);
+        } else if (response.status === 401) {
+          throw new Error('Unauthorized - please log in again');
         } else {
-          throw new Error('Failed to fetch benefits');
+          throw new Error(`Failed to fetch benefits: ${response.status}`);
         }
       } catch (error) {
-        console.warn('Failed to fetch benefits from API, using mock data', error);
-        // Use mock data as fallback for development
-        setBenefits([
-          {
-            id: '1',
-            name: 'Travel Credit',
-            type: 'StatementCredit',
-            stickerValue: 300,
-            userDeclaredValue: null,
-            resetCadence: 'CalendarYear',
-            expirationDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
-            isUsed: false,
-          },
-          {
-            id: '2',
-            name: 'Airport Lounge Access',
-            type: 'UsagePerk',
-            stickerValue: 150,
-            userDeclaredValue: null,
-            resetCadence: 'CardmemberYear',
-            expirationDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
-            isUsed: false,
-          },
-          {
-            id: '3',
-            name: 'Dining Credit',
-            type: 'StatementCredit',
-            stickerValue: 100,
-            userDeclaredValue: null,
-            resetCadence: 'CalendarYear',
-            expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            isUsed: false,
-          },
-          {
-            id: '4',
-            name: 'Concierge Service',
-            type: 'UsagePerk',
-            stickerValue: 200,
-            userDeclaredValue: null,
-            resetCadence: 'CardmemberYear',
-            expirationDate: null,
-            isUsed: false,
-          },
-          {
-            id: '5',
-            name: 'Statement Credit',
-            type: 'StatementCredit',
-            stickerValue: 20,
-            userDeclaredValue: null,
-            resetCadence: 'OneTime',
-            expirationDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-            isUsed: true,
-          },
-          {
-            id: '6',
-            name: 'Insurance Coverage',
-            type: 'UsagePerk',
-            stickerValue: 500,
-            userDeclaredValue: null,
-            resetCadence: 'CardmemberYear',
-            expirationDate: null,
-            isUsed: false,
-          },
-        ]);
-      } finally {
-        // Loading complete
+        console.error('Failed to fetch benefits from API:', error);
+        // Show empty state instead of mock data
+        setBenefits([]);
       }
     };
 
@@ -467,21 +417,6 @@ export default function CardDetailPage() {
             {/* Right actions */}
             <div className="flex items-center gap-3">
               <SafeDarkModeToggle />
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleEditCardClick}
-              >
-                Edit Card
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="text-red-600 hover:text-red-700"
-                onClick={handleDeleteCardClick}
-              >
-                Delete Card
-              </Button>
             </div>
           </div>
         </div>
@@ -537,6 +472,32 @@ export default function CardDetailPage() {
                       {daysUntilRenewal} days
                     </p>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card Footer with Actions */}
+            <div className="mt-6 pt-6 border-t" style={{ borderColor: 'var(--color-border)' }}>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                <p className="text-xs text-[var(--color-text-secondary)]">
+                  Card ID: {card.id}
+                </p>
+                <div className="flex gap-3">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleEditCardClick}
+                  >
+                    Edit Card
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="text-red-600 hover:text-red-700"
+                    onClick={handleDeleteCardClick}
+                  >
+                    Delete Card
+                  </Button>
                 </div>
               </div>
             </div>

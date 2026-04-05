@@ -578,6 +578,8 @@ export default function SettingsPage() {
                         } catch {
                           // Redirect even if logout API fails
                         }
+                        // Clear userId from localStorage
+                        localStorage.removeItem('userId');
                         window.location.href = '/login';
                       }}
                     >

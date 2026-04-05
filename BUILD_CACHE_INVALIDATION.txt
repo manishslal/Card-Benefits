@@ -1,0 +1,3 @@
+# Build cache invalidation marker
+# Dashboard route fix - forces Railway to rebuild
+# src/app/(dashboard)/page.tsx is correctly configured and builds locally

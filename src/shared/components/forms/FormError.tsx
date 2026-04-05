@@ -3,10 +3,14 @@
 import { AlertCircle, CheckCircle, AlertTriangle, Info } from 'lucide-react';
 
 type MessageType = 'error' | 'success' | 'warning' | 'info';
+export type ErrorCategory = 'validation' | 'auth' | 'conflict' | 'server' | 'network';
 
 interface FormErrorProps {
   message?: string;
   type?: MessageType;
+  category?: ErrorCategory;
+  fieldName?: string;
+  onRetry?: () => void;
   className?: string;
 }
 
@@ -18,17 +22,27 @@ interface FormErrorProps {
  * 
  * Features:
  * - Supports 4 message types (error, success, warning, info)
+ * - Error categorization (validation, auth, conflict, server, network)
  * - Explicit light/dark mode backgrounds for WCAG AA contrast (4.5:1+)
  * - Proper ARIA labeling for screen readers
  * - Icon indicators for color-independent feedback
+ * - Retry button for network/server errors
  * - Responsive text sizing
  * - Full accessibility compliance
  * 
  * @example
- * <FormError message="Name is required" type="error" />
- * <FormError message="Changes saved!" type="success" />
+ * <FormError message="Name is required" type="error" category="validation" />
+ * <FormError message="Session expired" type="error" category="auth" />
+ * <FormError message="Network error" type="error" category="network" onRetry={retry} />
  */
-export function FormError({ message, type = 'error', className = '' }: FormErrorProps) {
+export function FormError({ 
+  message, 
+  type = 'error', 
+  category,
+  fieldName,
+  onRetry,
+  className = '' 
+}: FormErrorProps) {
   if (!message) return null;
 
   // Define styles for each message type with explicit light/dark mode colors
@@ -81,15 +95,30 @@ export function FormError({ message, type = 'error', className = '' }: FormError
   const styles = typeStyles[type];
   const Icon = styles.Icon;
 
+  // Determine if retry button should be shown
+  const showRetry = type === 'error' && (category === 'network' || category === 'server') && onRetry;
+
   return (
     <div
       className={`flex items-center gap-3 p-3 rounded-lg border ${styles.bg} ${styles.text} ${styles.border} text-sm ${className}`}
       role="alert"
       aria-live={type === 'error' ? 'assertive' : 'polite'}
       aria-atomic="true"
+      {...(fieldName && { 'aria-describedby': `error-${fieldName}` })}
     >
       <Icon size={18} className={`flex-shrink-0 ${styles.icon}`} aria-hidden="true" />
-      <span>{message}</span>
+      <div className="flex-1">
+        <span>{message}</span>
+        {showRetry && (
+          <button
+            onClick={onRetry}
+            className="ml-2 underline hover:no-underline font-medium text-xs"
+            type="button"
+          >
+            Retry
+          </button>
+        )}
+      </div>
     </div>
   );
 }

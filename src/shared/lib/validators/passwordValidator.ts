@@ -111,3 +111,19 @@ export function getPasswordStrengthBg(strength: string): string {
       return 'bg-gray-400 dark:bg-gray-600';
   }
 }
+
+/**
+ * Quick check if a password is valid (meets minimum requirements).
+ */
+export function isPasswordValid(password: string): boolean {
+  return validatePassword(password).isValid;
+}
+
+/**
+ * Get user-friendly error message for password requirements.
+ */
+export function getPasswordErrorMessages(password: string): string[] {
+  const result = validatePassword(password);
+  if (result.isValid) return [];
+  return result.errors;
+}

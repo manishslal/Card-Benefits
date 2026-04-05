@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { SkeletonCard, SkeletonText, SkeletonList, LoadingSpinner, ProgressBar } from '@/shared/components/loaders';
+import { SkeletonCard, SkeletonText, SkeletonList, LoadingSpinner } from '@/shared/components/loaders';
+import { ProgressBar } from '@/shared/components/feedback';
 import { Button } from '@/shared/components/ui/button';
 
 /**

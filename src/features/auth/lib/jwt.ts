@@ -23,10 +23,11 @@ import { SessionPayload } from '../types';
 const JWT_ALGORITHM = 'HS256' as const;
 
 /**
- * Session token expiration: 30 days (in seconds)
+ * Session token expiration: 30 minutes (in seconds)
+ * WAVE1: Changed from 30 days to 30 minutes for session expiration management feature
  * Must match cookie Max-Age value
  */
-export const SESSION_EXPIRATION_SECONDS = 30 * 24 * 60 * 60; // 2,592,000 seconds
+export const SESSION_EXPIRATION_SECONDS = 30 * 60; // 1800 seconds (30 minutes)
 
 // ============================================================
 // Helper Functions

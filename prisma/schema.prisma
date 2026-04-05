@@ -70,6 +70,10 @@ model User {
   firstName         String?
   lastName          String?
 
+  // Password Reset Fields (WAVE1: Password Recovery)
+  passwordResetToken String?  @unique @db.VarChar(255)
+  passwordResetExpiry DateTime?
+
   // Relationships
   players           Player[]
   sessions          Session[]
@@ -83,6 +87,7 @@ model User {
 
   // Indexes
   @@index([email])
+  @@index([passwordResetToken])
 }
 
 model Session {

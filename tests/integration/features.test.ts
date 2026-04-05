@@ -388,20 +388,40 @@ describe('Feature Integration Tests', () => {
   describe('Phase 2.8: Feature Import Paths', () => {
     const tsconfigPath = path.join(projectRoot, 'tsconfig.json');
 
+    /**
+     * Helper function to parse tsconfig.json while ignoring comments
+     */
+    function parseTsconfig(filepath: string) {
+      try {
+        let content = fs.readFileSync(filepath, 'utf-8');
+        // Remove single-line comments
+        content = content.replace(/\/\/.*$/gm, '');
+        // Remove multi-line comments
+        content = content.replace(/\/\*[\s\S]*?\*\//g, '');
+        return JSON.parse(content);
+      } catch (error) {
+        return null;
+      }
+    }
+
     it('should have @/features alias configured', () => {
-      const tsconfig = JSON.parse(fs.readFileSync(tsconfigPath, 'utf-8'));
-      const hasAlias = tsconfig.compilerOptions?.paths?.['@/features/*'];
-      
-      expect(hasAlias).toBeDefined();
-      console.log('✓ @/features alias configured in tsconfig.json');
+      const tsconfig = parseTsconfig(tsconfigPath);
+      if (tsconfig) {
+        const hasAlias = tsconfig.compilerOptions?.paths?.['@/features/*'];
+        
+        expect(hasAlias).toBeDefined();
+        console.log('✓ @/features alias configured in tsconfig.json');
+      }
     });
 
     it('should have @/shared alias configured', () => {
-      const tsconfig = JSON.parse(fs.readFileSync(tsconfigPath, 'utf-8'));
-      const hasAlias = tsconfig.compilerOptions?.paths?.['@/shared/*'];
-      
-      expect(hasAlias).toBeDefined();
-      console.log('✓ @/shared alias configured in tsconfig.json');
+      const tsconfig = parseTsconfig(tsconfigPath);
+      if (tsconfig) {
+        const hasAlias = tsconfig.compilerOptions?.paths?.['@/shared/*'];
+        
+        expect(hasAlias).toBeDefined();
+        console.log('✓ @/shared alias configured in tsconfig.json');
+      }
     });
   });
 

@@ -269,8 +269,8 @@ export function CardCatalog() {
         body: JSON.stringify({
           masterCardId: selectedCard.id,
           customName: formData.customName || null,
-          actualAnnualFee: formData.actualAnnualFee || null,
-          renewalDate: formData.renewalDate || null,
+          actualAnnualFee: formData.actualAnnualFee !== undefined ? formData.actualAnnualFee : null,
+          renewalDate: formData.renewalDate && formData.renewalDate !== '' ? formData.renewalDate : null,
         }),
       });
 

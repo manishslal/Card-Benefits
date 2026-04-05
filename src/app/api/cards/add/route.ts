@@ -197,44 +197,49 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Create the UserCard record
-    const userCard = await prisma.userCard.create({
-      data: {
-        playerId: player.id,
-        masterCardId,
-        customName: customName && customName.trim() ? customName.trim() : null,
-        actualAnnualFee: actualAnnualFee !== undefined ? Math.round(actualAnnualFee) : null,
-        renewalDate,
-        isOpen: true,
-        status: 'ACTIVE',
-      },
-    });
+    // Create the UserCard and UserBenefits in a transaction for ACID compliance
+    const { card: userCard, benefitCount } = await prisma.$transaction(async (tx) => {
+      // Create the UserCard record
+      const card = await tx.userCard.create({
+        data: {
+          playerId: player.id,
+          masterCardId,
+          customName: customName && customName.trim() ? customName.trim() : null,
+          actualAnnualFee: actualAnnualFee !== undefined ? Math.round(actualAnnualFee) : null,
+          renewalDate,
+          isOpen: true,
+          status: 'ACTIVE',
+        },
+      });
 
-    // Fetch MasterBenefits for this card and clone them to UserBenefits
-    const masterBenefits = await prisma.masterBenefit.findMany({
-      where: {
-        masterCardId,
-        isActive: true,
-      },
-      orderBy: {
-        createdAt: 'asc',
-      },
-    });
+      // Fetch MasterBenefits for this card and clone them to UserBenefits
+      const masterBenefits = await tx.masterBenefit.findMany({
+        where: {
+          masterCardId,
+          isActive: true,
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
 
-    // Create UserBenefit records by cloning from MasterBenefits
-    const benefitsCreated = await prisma.userBenefit.createMany({
-      data: masterBenefits.map((masterBenefit) => ({
-        userCardId: userCard.id,
-        playerId: player.id,
-        name: masterBenefit.name,
-        type: masterBenefit.type,
-        stickerValue: masterBenefit.stickerValue,
-        resetCadence: masterBenefit.resetCadence,
-        isUsed: false,
-        timesUsed: 0,
-        expirationDate: null,
-        status: 'ACTIVE',
-      })),
+      // Create UserBenefit records by cloning from MasterBenefits
+      const benefitsCreated = await tx.userBenefit.createMany({
+        data: masterBenefits.map((masterBenefit) => ({
+          userCardId: card.id,
+          playerId: player.id,
+          name: masterBenefit.name,
+          type: masterBenefit.type,
+          stickerValue: masterBenefit.stickerValue,
+          resetCadence: masterBenefit.resetCadence,
+          isUsed: false,
+          timesUsed: 0,
+          expirationDate: null,
+          status: 'ACTIVE',
+        })),
+      });
+
+      return { card, benefitCount: benefitsCreated.count };
     });
 
     return NextResponse.json(
@@ -252,7 +257,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           createdAt: userCard.createdAt.toISOString(),
           updatedAt: userCard.updatedAt.toISOString(),
         },
-        benefitsCreated: benefitsCreated.count,
+        benefitsCreated: benefitCount,
         message: 'Card added to your collection',
       } as AddCardResponse,
       { status: 201 }

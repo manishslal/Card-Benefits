@@ -91,7 +91,8 @@ export default function CardDetailPage() {
         });
         if (response.ok) {
           const data = await response.json();
-          setCard(data);
+          // Extract card from response object - API returns { success: true, card: {...} }
+          setCard(data.card);
         } else if (response.status === 401) {
           throw new Error('Unauthorized - please log in again');
         } else {

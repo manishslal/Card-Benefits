@@ -68,6 +68,7 @@ export default function DashboardPage() {
   const [cards, setCards] = useState<CardData[]>([]);
   const [isLoadingCards, setIsLoadingCards] = useState(true);
   const [cardsError, setCardsError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const [selectedCardId, setSelectedCardId] = useState<string>('');
   const [isAddCardModalOpen, setIsAddCardModalOpen] = useState(false);
   const [userName, setUserName] = useState('User');
@@ -85,6 +86,15 @@ export default function DashboardPage() {
   // ============================================================
   // Effect: Load user cards from API (BLOCKER #7 implementation)
   // ============================================================
+
+  // Define retry constants at the top level
+  const MAX_RETRIES = 3;
+
+  const handleRetry = () => {
+    if (retryCount < MAX_RETRIES) {
+      setRetryCount(retryCount + 1);
+    }
+  };
 
   useEffect(() => {
     const loadUserCards = async () => {
@@ -140,9 +150,20 @@ export default function DashboardPage() {
           setSelectedCardId(transformedCards[0].id);
           setBenefits(transformedCards[0].benefits || []);
         }
+        
+        // Clear retry count on successful load
+        setRetryCount(0);
       } catch (error) {
         console.error('Error loading cards:', error);
-        setCardsError('Failed to load your cards. Please refresh the page.');
+        
+        // Set error message with retry information
+        const remainingRetries = MAX_RETRIES - retryCount;
+        if (remainingRetries > 0) {
+          setCardsError(`Failed to load your cards. You have ${remainingRetries} attempt${remainingRetries > 1 ? 's' : ''} remaining.`);
+        } else {
+          setCardsError('Failed to load your cards. Maximum retry attempts reached. Please refresh the page.');
+        }
+        
         // Fallback to empty state
         setCards([]);
       } finally {
@@ -151,7 +172,7 @@ export default function DashboardPage() {
     };
 
     loadUserCards();
-  }, []);
+  }, [retryCount]);
 
   // ============================================================
   // Effect: Load user profile for personalized greeting
@@ -520,13 +541,26 @@ export default function DashboardPage() {
               <p className="text-[var(--color-error)] font-medium">{cardsError}</p>
             </div>
 
-            <Button
-              variant="primary"
-              onClick={() => router.refresh()}
-              className="mx-auto"
-            >
-              Reload Dashboard
-            </Button>
+            <div className="flex flex-col gap-3">
+              {/* Retry Button - Disabled after MAX_RETRIES */}
+              <Button
+                variant="primary"
+                onClick={handleRetry}
+                disabled={retryCount >= MAX_RETRIES}
+                className={`mx-auto ${retryCount >= MAX_RETRIES ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {retryCount >= MAX_RETRIES ? 'Max Retries Reached' : 'Retry Loading Cards'}
+              </Button>
+
+              {/* Refresh Button - Always available as fallback */}
+              <Button
+                variant="outline"
+                onClick={() => router.refresh()}
+                className="mx-auto"
+              >
+                Reload Dashboard
+              </Button>
+            </div>
           </div>
         </main>
       </div>

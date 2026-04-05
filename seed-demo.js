@@ -11,7 +11,12 @@ async function main() {
     await prisma.user.deleteMany();
 
     const user = await prisma.user.create({
-      data: { email: 'demo@example.com', passwordHash: 'dummy_hash_for_demo' },
+      data: { 
+        email: 'demo@example.com', 
+        passwordHash: '$2b$10$...', // Dummy hash - NOT for production!
+        firstName: 'Demo',
+        lastName: 'User'
+      },
     });
 
     const player = await prisma.player.create({

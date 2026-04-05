@@ -82,10 +82,7 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
         {showLeftArrow && (
           <button
             onClick={() => scroll('left')}
-            className="hidden sm:flex absolute -left-2 z-10 items-center justify-center w-8 h-8 rounded-full
-              bg-[var(--color-bg)] border border-[var(--color-border)] shadow-sm
-              hover:bg-[var(--color-bg-secondary)] transition-all duration-200
-              focus-visible:outline-offset-2"
+            className="hidden sm:flex absolute -left-2 z-10 items-center justify-center w-8 h-8 rounded-full bg-[var(--color-bg)] border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-secondary)] transition-all duration-200 focus-visible:outline-offset-2"
             aria-label="Scroll cards left"
           >
             <ChevronLeft size={16} />
@@ -155,10 +152,7 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
         {showRightArrow && (
           <button
             onClick={() => scroll('right')}
-            className="hidden sm:flex absolute -right-2 z-10 items-center justify-center w-8 h-8 rounded-full
-              bg-[var(--color-bg)] border border-[var(--color-border)] shadow-sm
-              hover:bg-[var(--color-bg-secondary)] transition-all duration-200
-              focus-visible:outline-offset-2"
+            className="hidden sm:flex absolute -right-2 z-10 items-center justify-center w-8 h-8 rounded-full bg-[var(--color-bg)] border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-secondary)] transition-all duration-200 focus-visible:outline-offset-2"
             aria-label="Scroll cards right"
           >
             <ChevronRight size={16} />

@@ -85,24 +85,14 @@ export function DeleteCardConfirmationDialog({
         <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-black/50" />
         
         <DialogPrimitive.Content
-          aria-labelledby="delete-card-dialog-title"
-          aria-describedby="delete-card-dialog-description"
           className="fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] sm:max-w-sm translate-x-[-50%] translate-y-[-50%] rounded-lg shadow-lg p-6 mx-4 border border-[var(--color-border)]"
           style={{ backgroundColor: 'var(--color-bg)' }}
         >
-          {/* Title - MUST be direct child of DialogContent for Radix UI */}
-          <DialogPrimitive.Title
-            id="delete-card-dialog-title"
-            className="text-lg font-bold text-[var(--color-text)] mb-2"
-          >
+          <DialogPrimitive.Title className="text-lg font-bold text-[var(--color-text)] mb-2">
             Delete Card
           </DialogPrimitive.Title>
 
-          {/* Description - MUST be direct child of DialogContent for Radix UI */}
-          <DialogPrimitive.Description
-            id="delete-card-dialog-description"
-            className="text-sm text-[var(--color-text-secondary)] mb-4"
-          >
+          <DialogPrimitive.Description className="text-sm text-[var(--color-text-secondary)] mb-4">
             Are you sure you want to delete <strong className="text-[var(--color-text)]">"{card.customName || 'this card'}"</strong>?
           </DialogPrimitive.Description>
 

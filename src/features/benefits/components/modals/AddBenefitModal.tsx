@@ -194,24 +194,14 @@ export function AddBenefitModal({
         <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-black/50" />
         
         <DialogPrimitive.Content
-          aria-labelledby="add-benefit-modal-title"
-          aria-describedby="add-benefit-modal-description"
           className="fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] sm:max-w-lg md:max-w-2xl translate-x-[-50%] translate-y-[-50%] rounded-lg shadow-lg p-6 mx-4 max-h-[90vh] overflow-y-auto border border-[var(--color-border)]"
           style={{ backgroundColor: 'var(--color-bg)' }}
         >
-          {/* Title - MUST be direct child of DialogContent for Radix UI */}
-          <DialogPrimitive.Title
-            id="add-benefit-modal-title"
-            className="text-2xl font-bold text-[var(--color-text)] mb-2"
-          >
+          <DialogPrimitive.Title className="text-2xl font-bold text-[var(--color-text)] mb-2">
             Add Benefit
           </DialogPrimitive.Title>
 
-          {/* Description - MUST be direct child of DialogContent for Radix UI */}
-          <DialogPrimitive.Description
-            id="add-benefit-modal-description"
-            className="text-sm text-[var(--color-text-secondary)] mb-6"
-          >
+          <DialogPrimitive.Description className="text-sm text-[var(--color-text-secondary)] mb-6">
             Add a new benefit to this card
           </DialogPrimitive.Description>
 

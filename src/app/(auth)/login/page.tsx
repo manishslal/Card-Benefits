@@ -166,17 +166,33 @@ export default function LoginPage() {
               />
 
               {/* Password Field */}
-              <Input
-                id="login-password"
-                label="Password"
-                type="password"
-                name="password"
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={handleChange}
-                error={errors.password}
-                disabled={isLoading}
-              />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="login-password"
+                    className="block text-sm font-semibold text-[var(--color-text)]"
+                  >
+                    Password
+                  </label>
+                  <Link
+                    href="/forgot-password"
+                    className="text-xs font-semibold text-[var(--color-primary)] hover:underline focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] rounded"
+                    aria-label="Forgot password? Reset your password"
+                  >
+                    Forgot?
+                  </Link>
+                </div>
+                <Input
+                  id="login-password"
+                  type="password"
+                  name="password"
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={handleChange}
+                  error={errors.password}
+                  disabled={isLoading}
+                />
+              </div>
 
               {/* Submit Button */}
               <Button

@@ -134,6 +134,8 @@ module.exports = {
         'slide-up': 'slideUp var(--duration-base) var(--ease-bounce)',
         'slide-down': 'slideDown var(--duration-base) var(--ease-bounce)',
         'scale-in': 'scaleIn var(--duration-base) var(--ease-out)',
+        'shimmer': 'shimmer 2s infinite',
+        'in': 'slideInFromBottom 500ms ease-out',
       },
 
       // Keyframes
@@ -153,6 +155,14 @@ module.exports = {
         scaleIn: {
           '0%': { opacity: '0', transform: 'scale(0.95)' },
           '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '-1000px 0' },
+          '100%': { backgroundPosition: '1000px 0' },
+        },
+        slideInFromBottom: {
+          '0%': { opacity: '0', transform: 'translateY(16px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
         },
       },
 

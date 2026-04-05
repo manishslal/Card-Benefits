@@ -61,7 +61,11 @@ const PUBLIC_ROUTES = new Set([
 ]);
 
 /** API routes that do NOT require authentication */
-const PUBLIC_API_ROUTES = ['/api/auth'];
+const PUBLIC_API_ROUTES = [
+  '/api/auth',
+  '/api/cards/available',  // Card catalog for Add Card modal (public)
+  '/api/health',           // Health check
+];
 
 /** Routes that REQUIRE authentication */
 const PROTECTED_ROUTES = new Set([

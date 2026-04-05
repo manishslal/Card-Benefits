@@ -63,8 +63,7 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 
-# Copy .env.example as reference (not sensitive data)
-COPY .env.example ./
+# Note: .env.example is for development reference only, not needed in production image
 
 # Change ownership to non-root user
 RUN chown -R nextjs:nodejs /app

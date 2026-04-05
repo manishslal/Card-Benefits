@@ -47,6 +47,11 @@ model User {
   firstName      String?
   lastName       String?
   emailVerified  Boolean             @default(false)
+
+  // Password Reset Fields
+  passwordResetToken  String?  @unique @db.VarChar(255)
+  passwordResetExpiry DateTime?
+
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
   importJobs     ImportJob[]

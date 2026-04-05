@@ -227,16 +227,12 @@ export function AddCardModal({ isOpen, onClose, onCardAdded }: AddCardModalProps
           aria-describedby="add-card-modal-description"
           className="fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] sm:max-w-lg md:max-w-2xl translate-x-[-50%] translate-y-[-50%] rounded-lg shadow-lg p-6 mx-4 max-h-[90vh] overflow-y-auto border border-[var(--color-border)]"
           style={{ backgroundColor: 'var(--color-bg)' }}
-          onOpenAutoFocus={(e) => {
-            // Focus on the card select when modal opens
-            e.preventDefault();
-            setTimeout(() => {
+          onOpenAutoFocus={() => {
+            // Let Radix move focus into the dialog first (prevents aria-hidden conflict),
+            // then shift to the card select on the next frame.
+            requestAnimationFrame(() => {
               cardSelectRef.current?.focus();
-            }, 0);
-          }}
-          onCloseAutoFocus={(e) => {
-            // Return focus to trigger button (handled by Radix)
-            e.preventDefault();
+            });
           }}
         >
           {/* Title - MUST be direct child of DialogContent for Radix UI */}

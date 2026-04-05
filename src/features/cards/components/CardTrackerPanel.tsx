@@ -32,7 +32,7 @@ import {
   MS_PER_DAY,
 } from '@/features/cards/lib/calculations';
 import { formatCurrency } from '@/lib/format-currency';
-import { toggleBenefit } from '@/actions/benefits';
+import { toggleBenefit } from '@/features/benefits';
 
 // ---------------------------------------------------------------------------
 // Props

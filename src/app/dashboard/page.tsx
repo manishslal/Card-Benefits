@@ -8,11 +8,8 @@ import EmptyState from '@/components/ui/EmptyState';
 import Link from 'next/link';
 import CardSwitcher from '@/components/features/CardSwitcher';
 import DashboardSummary from '@/components/features/DashboardSummary';
-import BenefitsGrid from '@/components/features/BenefitsGrid';
+import { BenefitsGrid, AddBenefitModal, EditBenefitModal, DeleteBenefitConfirmationDialog } from '@/features/benefits';
 import { AddCardModal } from '@/features/cards/components/modals/AddCardModal';
-import { AddBenefitModal } from '@/components/AddBenefitModal';
-import { EditBenefitModal } from '@/components/EditBenefitModal';
-import { DeleteBenefitConfirmationDialog } from '@/components/DeleteBenefitConfirmationDialog';
 import { CreditCard, Settings, Plus } from 'lucide-react';
 
 /**

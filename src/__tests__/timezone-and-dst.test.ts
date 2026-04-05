@@ -20,7 +20,7 @@ import {
   isExpired,
   getDaysUntilExpiration,
   formatDateForUser,
-} from '@/lib/benefitDates';
+} from '@/features/benefits/lib';
 
 describe('Timezone and DST Handling', () => {
   describe('calcExpirationDate - Initial Expiration Calculation', () => {

@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { calcExpirationDate } from '@/lib/benefitDates';
+import { calcExpirationDate } from '@/features/benefits/lib';
 import { getAuthUserIdOrThrow, verifyPlayerOwnership } from '@/features/auth/lib/auth';
 import {
   validateUUID,

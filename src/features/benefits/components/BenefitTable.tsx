@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { toggleBenefit } from '@/actions/benefits';
-import { isExpired, getDaysUntilExpiration, formatDateForUser } from '@/lib/benefitDates';
+import { toggleBenefit } from '../actions/benefits';
+import { isExpired, getDaysUntilExpiration, formatDateForUser } from '../lib/benefitDates';
 
 /**
  * BenefitTable Component

@@ -5,14 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { SafeDarkModeToggle } from '@/components/SafeDarkModeToggle';
 import Button from '@/components/ui/button';
 import Link from 'next/link';
-import BenefitsList from '@/components/features/BenefitsList';
-import BenefitsGrid from '@/components/features/BenefitsGrid';
+import { BenefitsList, BenefitsGrid, AddBenefitModal, EditBenefitModal, DeleteBenefitConfirmationDialog } from '@/features/benefits';
 import { CreditCard, ArrowLeft, Plus } from 'lucide-react';
 import { EditCardModal } from '@/features/cards/components/modals/EditCardModal';
-import { AddBenefitModal } from '@/components/AddBenefitModal';
-import { EditBenefitModal } from '@/components/EditBenefitModal';
 import { DeleteCardConfirmationDialog } from '@/features/cards/components/modals/DeleteCardConfirmationDialog';
-import { DeleteBenefitConfirmationDialog } from '@/components/DeleteBenefitConfirmationDialog';
 
 /**
  * Card Detail Page - Individual Card View

@@ -16,7 +16,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { BenefitValueComparison } from '@/components/custom-values/BenefitValueComparison';
+import { BenefitValueComparison } from '@/features/benefits';
 
 describe('BenefitValueComparison Component', () => {
   const defaultProps = {

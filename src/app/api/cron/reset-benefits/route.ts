@@ -17,7 +17,7 @@
 import { NextResponse } from 'next/server';
 import { timingSafeEqual } from 'node:crypto';
 import { prisma } from '@/lib/prisma';
-import { getNextExpirationDate } from '@/lib/benefitDates';
+import { getNextExpirationDate } from '@/features/benefits/lib';
 import { RateLimiter } from '@/lib/rate-limiter';
 
 // ============================================================

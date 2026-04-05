@@ -1,0 +1,111 @@
+version: '3.8'
+
+services:
+  # ─────────────────────────────────────────────────────────────────────────
+  # PostgreSQL Database Service
+  # ─────────────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: card-benefits-db
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-card_benefits}
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persist database data across container restarts
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Next.js Application Service
+  # ─────────────────────────────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Build-time variables (if needed)
+        NODE_ENV: production
+    container_name: card-benefits-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database Configuration
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-card_benefits}
+      
+      # Node Environment
+      NODE_ENV: production
+      
+      # Next.js Configuration
+      NEXT_TELEMETRY_DISABLED: 1
+      
+      # Authentication Secrets (MUST be set from .env or secrets manager)
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set}
+      CRON_SECRET: ${CRON_SECRET:?CRON_SECRET must be set}
+      
+      # Optional: Redis for advanced features
+      # REDIS_URL: ${REDIS_URL:-}
+      
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      
+      # Optional: Additional environment variables
+      # Add any other required vars here
+    ports:
+      - "3000:3000"
+    volumes:
+      # Optional: Mount logs directory for persistence
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - app-network
+    restart: unless-stopped
+    
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Optional: Redis Service (for caching, rate limiting, sessions)
+  # Uncomment to enable
+  # ─────────────────────────────────────────────────────────────────────────
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: card-benefits-redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     - app-network
+  #   restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  # redis_data:
+  #   driver: local
+
+networks:
+  app-network:
+    driver: bridge

@@ -136,6 +136,214 @@ const MASTER_CARDS: CardSeed[] = [
       },
     ],
   },
+
+  // ── Chase Sapphire Preferred ────────────────────────────────────────────────
+  {
+    issuer: 'Chase',
+    cardName: 'Chase Sapphire Preferred',
+    defaultAnnualFee: 9500, // $95
+    cardImageUrl: 'https://creditcards.chase.com/images/sapphire-preferred.png',
+    benefits: [
+      {
+        name: '3x Points on Travel',
+        type: 'UsagePerk',
+        stickerValue: 0,
+        resetCadence: 'CalendarYear',
+      },
+      {
+        name: '3x Points on Dining',
+        type: 'UsagePerk',
+        stickerValue: 0,
+        resetCadence: 'CalendarYear',
+      },
+      {
+        name: '1x Points on All Other Purchases',
+        type: 'UsagePerk',
+        stickerValue: 0,
+        resetCadence: 'CalendarYear',
+      },
+      {
+        name: 'Trip Cancellation Insurance',
+        type: 'UsagePerk',
+        stickerValue: 0,
+        resetCadence: 'CalendarYear',
+      },
+    ],
+  },
+
+  // ── Discover It ─────────────────────────────────────────────────────────────
+  {
+    issuer: 'Discover',
+    cardName: 'Discover It',
+    defaultAnnualFee: 0, // No annual fee
+    cardImageUrl: 'https://www.discovercard.com/images/discover-it.png',
+    benefits: [
+      {
+        name: 'Cashback on Rotating Categories',
+        type: 'UsagePerk',
+        stickerValue: 0,
+        resetCadence: 'CalendarYear',
+      },
+      {
+        name: '1% Cashback on All Other Purchases',
+        type: 'UsagePerk',
+        stickerValue: 0,
+        resetCadence: 'CalendarYear',
+      },
+      {
+        name: 'Cash Back Match',
+        type: 'StatementCredit',
+        stickerValue: 0,
+        resetCadence: 'OneTime',
+      },
+    ],
+  },
+
+  // ── Capital One Venture X ────────────────────────────────────────────────────
+  {
+    issuer: 'Capital One',
+    cardName: 'Capital One Venture X',
+    defaultAnnualFee: 39500, // $395
+    cardImageUrl: 'https://www.capitalone.com/images/venture-x.png',
+    benefits: [
+      {
+        name: '$300 Travel Credit',
+        type: 'StatementCredit',
+        stickerValue: 30000, // $300/yr
+        resetCadence: 'CalendarYear',
+      },
+      {
+        name: '10x Miles on Travel & Dining',
+        type: 'UsagePerk',
+        stickerValue: 0,
+        resetCadence: 'CalendarYear',
+      },
+      {
+        name: 'Complimentary Airport Lounge Access',
+        type: 'UsagePerk',
+        stickerValue: 0,
+        resetCadence: 'CalendarYear',
+      },
+      {
+        name: 'Trip Delay Reimbursement',
+        type: 'UsagePerk',
+        stickerValue: 0,
+        resetCadence: 'CalendarYear',
+      },
+    ],
+  },
+
+  // ── Citi Prestige ──────────────────────────────────────────────────────────
+  {
+    issuer: 'Citi',
+    cardName: 'Citi Prestige',
+    defaultAnnualFee: 49500, // $495
+    cardImageUrl: 'https://www.citibank.com/images/prestige.png',
+    benefits: [
+      {
+        name: '$250 Travel Credit',
+        type: 'StatementCredit',
+        stickerValue: 25000, // $250/yr
+        resetCadence: 'CalendarYear',
+      },
+      {
+        name: '5x Points on Travel & Dining',
+        type: 'UsagePerk',
+        stickerValue: 0,
+        resetCadence: 'CalendarYear',
+      },
+      {
+        name: 'Fine Hotels & Resorts Program',
+        type: 'UsagePerk',
+        stickerValue: 0,
+        resetCadence: 'CalendarYear',
+      },
+      {
+        name: 'Complimentary Airport Lounge Access',
+        type: 'UsagePerk',
+        stickerValue: 0,
+        resetCadence: 'CalendarYear',
+      },
+    ],
+  },
+
+  // ── Bank of America Premium Rewards ─────────────────────────────────────────
+  {
+    issuer: 'Bank of America',
+    cardName: 'Bank of America Premium Rewards',
+    defaultAnnualFee: 9500, // $95
+    cardImageUrl: 'https://www.bankofamerica.com/images/premium-rewards.png',
+    benefits: [
+      {
+        name: '2x Cashback on All Purchases',
+        type: 'UsagePerk',
+        stickerValue: 0,
+        resetCadence: 'CalendarYear',
+      },
+      {
+        name: 'Cell Phone Protection',
+        type: 'UsagePerk',
+        stickerValue: 0,
+        resetCadence: 'CalendarYear',
+      },
+      {
+        name: 'Travel & Fraud Protection',
+        type: 'UsagePerk',
+        stickerValue: 0,
+        resetCadence: 'CalendarYear',
+      },
+    ],
+  },
+
+  // ── Wells Fargo Propel American Express ─────────────────────────────────────
+  {
+    issuer: 'Wells Fargo',
+    cardName: 'Wells Fargo Propel American Express',
+    defaultAnnualFee: 0, // No annual fee
+    cardImageUrl: 'https://www.wellsfargo.com/images/propel.png',
+    benefits: [
+      {
+        name: '3x Points on Travel & Dining',
+        type: 'UsagePerk',
+        stickerValue: 0,
+        resetCadence: 'CalendarYear',
+      },
+      {
+        name: '3x Points on Gas & Parking',
+        type: 'UsagePerk',
+        stickerValue: 0,
+        resetCadence: 'CalendarYear',
+      },
+      {
+        name: '1x Point on All Other Purchases',
+        type: 'UsagePerk',
+        stickerValue: 0,
+        resetCadence: 'CalendarYear',
+      },
+    ],
+  },
+
+  // ── Chase Freedom Unlimited ────────────────────────────────────────────────
+  {
+    issuer: 'Chase',
+    cardName: 'Chase Freedom Unlimited',
+    defaultAnnualFee: 0, // No annual fee
+    cardImageUrl: 'https://creditcards.chase.com/images/freedom-unlimited.png',
+    benefits: [
+      {
+        name: '1.5x Cash Back on All Purchases',
+        type: 'UsagePerk',
+        stickerValue: 0,
+        resetCadence: 'CalendarYear',
+      },
+      {
+        name: 'Intro 0% APR for 15 months',
+        type: 'UsagePerk',
+        stickerValue: 0,
+        resetCadence: 'OneTime',
+      },
+    ],
+  },
 ];
 
 // Main seed function

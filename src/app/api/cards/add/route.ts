@@ -1,40 +1,49 @@
 /**
  * POST /api/cards/add
  *
- * Adds a new credit card to the user's wallet.
+ * Adds a new credit card to the user's wallet (creates UserCard and associated UserBenefits)
+ *
+ * Authentication: Required (via session/JWT in cookies)
  *
  * Request body:
  * {
- *   masterCardId: string;         // ID of the card template to add
- *   renewalDate: string;          // ISO date string (e.g., "2025-12-31")
- *   customName?: string;          // Optional custom card name
- *   customAnnualFee?: number;     // Optional override of annual fee (in cents)
+ *   masterCardId: string;         // ID of the card template to add (required)
+ *   customName?: string;          // Optional custom card name (max 100 chars)
+ *   actualAnnualFee?: number;     // Optional override of annual fee in cents
+ *   renewalDate?: string;         // Optional ISO 8601 date (defaults to 1 year from now)
  * }
  *
  * Response (201 Created):
  * {
- *   success: true;
- *   card: {
- *     id: string;
- *     playerId: string;
- *     masterCardId: string;
- *     customName: string | null;
- *     actualAnnualFee: number | null;
- *     renewalDate: string;
- *     status: string;
- *   }
+ *   "success": true,
+ *   "userCard": {
+ *     "id": "usercard_123",
+ *     "playerId": "player_456",
+ *     "masterCardId": "mastercard_001",
+ *     "customName": "My Chase Sapphire",
+ *     "actualAnnualFee": 9500,
+ *     "renewalDate": "2025-12-01T00:00:00Z",
+ *     "isOpen": true,
+ *     "status": "ACTIVE",
+ *     "createdAt": "2024-11-20T15:45:00Z",
+ *     "updatedAt": "2024-11-20T15:45:00Z"
+ *   },
+ *   "benefitsCreated": 8,
+ *   "message": "Card added to your collection"
  * }
  *
  * Errors:
- * - 400: Invalid input (missing required fields, invalid date, etc.)
+ * - 400: Validation error or invalid input
  * - 401: Not authenticated
+ * - 403: Forbidden (player access denied)
  * - 404: MasterCard not found
- * - 409: Card already exists for this player
+ * - 409: Duplicate card (already in collection)
  * - 500: Server error
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/shared/lib';
+import { prisma } from '@/shared/lib/prisma';
+import { getAuthContext } from '@/features/auth/context/auth-context';
 
 // ============================================================
 // Type Definitions
@@ -44,42 +53,33 @@ interface AddCardRequest {
   masterCardId?: string;
   renewalDate?: string;
   customName?: string;
-  customAnnualFee?: number;
-}
-
-interface UserBenefitDisplay {
-  id: string;
-  userCardId: string;
-  name: string;
-  type: string;
-  stickerValue: number;
-  resetCadence: string;
-  userDeclaredValue: number | null;
-  isUsed: boolean;
-  timesUsed: number;
-  expirationDate: string | null;
-  status: string;
-  createdAt: string;
+  actualAnnualFee?: number;
 }
 
 interface AddCardResponse {
   success: true;
-  card: {
+  userCard: {
     id: string;
     playerId: string;
     masterCardId: string;
     customName: string | null;
     actualAnnualFee: number | null;
     renewalDate: string;
+    isOpen: boolean;
     status: string;
-    userBenefits: UserBenefitDisplay[];
+    createdAt: string;
+    updatedAt: string;
   };
+  benefitsCreated: number;
+  message: string;
 }
 
 interface ErrorResponse {
   success: false;
   error: string;
+  code?: string;
   fieldErrors?: Record<string, string>;
+  details?: string;
 }
 
 // ============================================================
@@ -89,21 +89,23 @@ interface ErrorResponse {
 /**
  * POST /api/cards/add handler
  * 
- * Creates a new UserCard for the authenticated user's primary player
+ * Creates a new UserCard and associated UserBenefits for the authenticated user
  * 
- * @param request - NextRequest with authenticated user context
+ * @param request - NextRequest with authenticated user context from middleware
  * @returns NextResponse with created card or error
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    // Get authenticated user ID from middleware-set request header
-    const userId = request.headers.get('x-user-id');
+    // Get authenticated user ID from middleware auth context
+    const authContext = getAuthContext();
+    const userId = authContext?.userId;
 
     if (!userId) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Not authenticated',
+          error: 'Authentication required',
+          code: 'UNAUTHORIZED',
         } as ErrorResponse,
         { status: 401 }
       );
@@ -112,13 +114,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Parse request body
     const body = await request.json().catch(() => ({})) as AddCardRequest;
 
-    // Validate required fields
+    // Validate required fields and input format
     const validation = validateAddCardRequest(body);
     if (!validation.valid) {
       return NextResponse.json(
         {
           success: false,
           error: 'Validation failed',
+          code: 'VALIDATION_ERROR',
           fieldErrors: validation.errors,
         } as ErrorResponse,
         { status: 400 }
@@ -126,14 +129,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const masterCardId = body.masterCardId as string;
-    const renewalDate = new Date(body.renewalDate as string);
-    const { customName, customAnnualFee } = body;
+    // Default renewal date to 1 year from now if not provided
+    const renewalDate = body.renewalDate 
+      ? new Date(body.renewalDate)
+      : new Date(new Date().setFullYear(new Date().getFullYear() + 1));
+    const { customName, actualAnnualFee } = body;
 
-    // Get user's primary player
+    // Get user's primary player profile
     const player = await prisma.player.findFirst({
       where: {
         userId,
-        playerName: 'Primary',
+        isActive: true,
+      },
+      orderBy: {
+        createdAt: 'asc', // Get first/primary player
       },
     });
 
@@ -141,9 +150,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json(
         {
           success: false,
-          error: 'Primary player not found',
+          error: 'Player profile not found',
+          code: 'PLAYER_NOT_FOUND',
         } as ErrorResponse,
-        { status: 404 }
+        { status: 403 }
       );
     }
 
@@ -156,8 +166,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json(
         {
           success: false,
-          error: 'Card template not found',
-          fieldErrors: { masterCardId: 'This card does not exist in our database' },
+          error: 'Card not found',
+          code: 'CARD_NOT_FOUND',
+          fieldErrors: { masterCardId: 'This card no longer exists in our database' },
         } as ErrorResponse,
         { status: 404 }
       );
@@ -173,25 +184,28 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       },
     });
 
+    // Return 409 if card already exists and is not deleted
     if (existingCard && existingCard.status !== 'DELETED') {
       return NextResponse.json(
         {
           success: false,
-          error: 'You already have this card in your wallet',
-          fieldErrors: { masterCardId: 'This card is already added to your account' },
+          error: 'Card already in collection',
+          code: 'CARD_DUPLICATE',
+          details: 'You already own this card. View it in your collection.',
         } as ErrorResponse,
         { status: 409 }
       );
     }
 
-    // Create the UserCard
+    // Create the UserCard record
     const userCard = await prisma.userCard.create({
       data: {
         playerId: player.id,
         masterCardId,
-        customName: customName?.trim() || null,
-        actualAnnualFee: customAnnualFee !== undefined ? Math.round(customAnnualFee) : null,
+        customName: customName && customName.trim() ? customName.trim() : null,
+        actualAnnualFee: actualAnnualFee !== undefined ? Math.round(actualAnnualFee) : null,
         renewalDate,
+        isOpen: true,
         status: 'ACTIVE',
       },
     });
@@ -202,67 +216,54 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         masterCardId,
         isActive: true,
       },
+      orderBy: {
+        createdAt: 'asc',
+      },
     });
 
-    // Clone each MasterBenefit to a UserBenefit with reset counters
-    const userBenefits = await Promise.all(
-      masterBenefits.map((masterBenefit) =>
-        prisma.userBenefit.create({
-          data: {
-            userCardId: userCard.id,
-            playerId: player.id,
-            name: masterBenefit.name,
-            type: masterBenefit.type,
-            stickerValue: masterBenefit.stickerValue,
-            resetCadence: masterBenefit.resetCadence,
-            userDeclaredValue: null, // User can customize later
-            isUsed: false,
-            timesUsed: 0,
-            expirationDate: null, // Can be set when benefit is used
-            status: 'ACTIVE',
-          },
-        })
-      )
-    );
-
-    // Transform response with benefits
-    const userBenefitDisplays: UserBenefitDisplay[] = userBenefits.map((benefit) => ({
-      id: benefit.id,
-      userCardId: benefit.userCardId,
-      name: benefit.name,
-      type: benefit.type,
-      stickerValue: benefit.stickerValue,
-      resetCadence: benefit.resetCadence,
-      userDeclaredValue: benefit.userDeclaredValue,
-      isUsed: benefit.isUsed,
-      timesUsed: benefit.timesUsed,
-      expirationDate: benefit.expirationDate?.toISOString() || null,
-      status: benefit.status,
-      createdAt: benefit.createdAt.toISOString(),
-    }));
+    // Create UserBenefit records by cloning from MasterBenefits
+    const benefitsCreated = await prisma.userBenefit.createMany({
+      data: masterBenefits.map((masterBenefit) => ({
+        userCardId: userCard.id,
+        playerId: player.id,
+        name: masterBenefit.name,
+        type: masterBenefit.type,
+        stickerValue: masterBenefit.stickerValue,
+        resetCadence: masterBenefit.resetCadence,
+        isUsed: false,
+        timesUsed: 0,
+        expirationDate: null,
+        status: 'ACTIVE',
+      })),
+    });
 
     return NextResponse.json(
       {
         success: true,
-        card: {
+        userCard: {
           id: userCard.id,
           playerId: userCard.playerId,
           masterCardId: userCard.masterCardId,
           customName: userCard.customName,
           actualAnnualFee: userCard.actualAnnualFee,
           renewalDate: userCard.renewalDate.toISOString(),
+          isOpen: userCard.isOpen,
           status: userCard.status,
-          userBenefits: userBenefitDisplays,
+          createdAt: userCard.createdAt.toISOString(),
+          updatedAt: userCard.updatedAt.toISOString(),
         },
+        benefitsCreated: benefitsCreated.count,
+        message: 'Card added to your collection',
       } as AddCardResponse,
       { status: 201 }
     );
   } catch (error) {
-    console.error('[Add Card Error]', error);
+    console.error('[POST /api/cards/add Error]', error);
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to add card',
+        code: 'SERVER_ERROR',
       } as ErrorResponse,
       { status: 500 }
     );
@@ -274,7 +275,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 // ============================================================
 
 /**
- * Validates the add card request structure
+ * Validates the add card request structure and values
+ * 
+ * Validation rules:
+ * - masterCardId: Required, string
+ * - customName: Optional, max 100 characters
+ * - actualAnnualFee: Optional, non-negative integer (in cents)
+ * - renewalDate: Optional, must be ISO 8601 date in future
  */
 function validateAddCardRequest(body: AddCardRequest): {
   valid: boolean;
@@ -282,36 +289,43 @@ function validateAddCardRequest(body: AddCardRequest): {
 } {
   const errors: Record<string, string> = {};
 
-  // Validate masterCardId
+  // Validate masterCardId (required)
   if (!body.masterCardId || typeof body.masterCardId !== 'string') {
     errors.masterCardId = 'Card selection is required';
   }
 
-  // Validate renewalDate
-  if (!body.renewalDate || typeof body.renewalDate !== 'string') {
-    errors.renewalDate = 'Renewal date is required';
-  } else {
-    const date = new Date(body.renewalDate);
-    if (isNaN(date.getTime())) {
-      errors.renewalDate = 'Invalid date format';
-    } else if (date < new Date()) {
-      errors.renewalDate = 'Renewal date must be in the future';
+  // Validate renewalDate (optional, but validate if provided)
+  if (body.renewalDate !== undefined && body.renewalDate !== null) {
+    if (typeof body.renewalDate !== 'string') {
+      errors.renewalDate = 'Renewal date must be a date string';
+    } else {
+      const date = new Date(body.renewalDate);
+      if (isNaN(date.getTime())) {
+        errors.renewalDate = 'Invalid date format (use ISO 8601)';
+      } else if (date < new Date()) {
+        errors.renewalDate = 'Renewal date must be in the future';
+      }
     }
   }
 
   // Validate customName (optional, but validate if provided)
   if (body.customName !== undefined && body.customName !== null) {
-    if (typeof body.customName !== 'string' || body.customName.trim().length === 0) {
-      errors.customName = 'Card name must be a non-empty string';
-    } else if (body.customName.trim().length > 100) {
-      errors.customName = 'Card name is too long (max 100 characters)';
+    if (typeof body.customName !== 'string') {
+      errors.customName = 'Card name must be a string';
+    } else if (body.customName.trim().length === 0) {
+      // Empty string after trim is invalid
+      errors.customName = 'Card name cannot be empty';
+    } else if (body.customName.length > 100) {
+      errors.customName = 'Card name must be 100 characters or less';
     }
   }
 
-  // Validate customAnnualFee (optional, but validate if provided)
-  if (body.customAnnualFee !== undefined && body.customAnnualFee !== null) {
-    if (typeof body.customAnnualFee !== 'number' || body.customAnnualFee < 0) {
-      errors.customAnnualFee = 'Annual fee must be a non-negative number';
+  // Validate actualAnnualFee (optional, but validate if provided)
+  if (body.actualAnnualFee !== undefined && body.actualAnnualFee !== null) {
+    if (typeof body.actualAnnualFee !== 'number' || !Number.isInteger(body.actualAnnualFee)) {
+      errors.actualAnnualFee = 'Annual fee must be a whole number (cents)';
+    } else if (body.actualAnnualFee < 0 || body.actualAnnualFee > 999900) {
+      errors.actualAnnualFee = 'Annual fee must be between 0 and 999900 cents ($0 - $9,999)';
     }
   }
 

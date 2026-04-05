@@ -1,13 +1,13 @@
 /**
  * GET /api/cards/available
  *
- * Returns all available credit cards from the MasterCard catalog with optional filtering
+ * Returns available credit cards from the MasterCard catalog with pagination and filtering
  *
  * Query Parameters:
- * - issuer?: string - Filter by card issuer (e.g., "Chase", "American Express")
- * - search?: string - Search by card name (case-insensitive)
- * - limit?: number - Max results to return (default: 50, max: 500)
- * - offset?: number - Pagination offset (default: 0)
+ * - page?: number - Page number starting from 1 (default: 1)
+ * - limit?: number - Cards per page (default: 12, max: 50)
+ * - issuer?: string - Filter by card issuer (case-insensitive partial match)
+ * - search?: string - Search by card name (case-insensitive partial match)
  *
  * Response 200 (Success):
  * {
@@ -20,21 +20,22 @@
  *       "defaultAnnualFee": 9500, // in cents ($95.00)
  *       "cardImageUrl": "https://cdn.example.com/cards/...",
  *       "benefits": {
- *         "count": 3,
- *         "preview": ["$300 travel credit", "3x points on dining", "Emergency assistance"]
+ *         "count": 8,
+ *         "preview": ["$300 travel credit", "3x points on dining", "2x points on travel"]
  *       }
  *     }
  *   ],
  *   "pagination": {
- *     "total": 450,
- *     "limit": 50,
- *     "offset": 0,
+ *     "total": 47,
+ *     "page": 1,
+ *     "limit": 12,
+ *     "totalPages": 4,
  *     "hasMore": true
  *   }
  * }
  *
  * Errors:
- * - 400: Invalid parameters (invalid limit, offset, etc.)
+ * - 400: Invalid parameters (invalid page, limit, etc.)
  * - 500: Server error
  */
 
@@ -66,8 +67,9 @@ interface AvailableCard {
  */
 interface PaginationMeta {
   total: number;
+  page: number;
   limit: number;
-  offset: number;
+  totalPages: number;
   hasMore: boolean;
 }
 
@@ -96,8 +98,10 @@ interface ErrorResponse {
 /**
  * GET /api/cards/available handler
  *
- * Retrieves available credit cards from the master catalog with optional filtering
+ * Retrieves available credit cards from the master catalog with pagination and optional filtering
  * by issuer, search term, and pagination.
+ *
+ * Performance SLO: p95 < 500ms
  *
  * @param request - NextRequest with optional query parameters
  * @returns NextResponse with available cards or error
@@ -108,39 +112,41 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const searchParams = request.nextUrl.searchParams;
     const issuer = searchParams.get('issuer');
     const search = searchParams.get('search');
-    const limitStr = searchParams.get('limit') || '50';
-    const offsetStr = searchParams.get('offset') || '0';
+    const pageStr = searchParams.get('page') || '1';
+    const limitStr = searchParams.get('limit') || '12';
 
     // Parse and validate pagination parameters
-    const limit = Math.min(Math.max(parseInt(limitStr, 10) || 50, 1), 500); // Clamp between 1-500
-    const offset = Math.max(parseInt(offsetStr, 10) || 0, 0);
+    // Page-based pagination: page starts at 1, min 1
+    const page = Math.max(parseInt(pageStr, 10) || 1, 1);
+    // Limit: default 12, min 1, max 50
+    const limit = Math.min(Math.max(parseInt(limitStr, 10) || 12, 1), 50);
 
-    if (isNaN(limit) || isNaN(offset)) {
+    if (isNaN(page) || isNaN(limit)) {
       return NextResponse.json(
         {
           success: false,
           error: 'Invalid pagination parameters',
-          details: 'limit and offset must be valid integers',
+          details: 'page and limit must be valid integers (page >= 1, 1 <= limit <= 50)',
         } as ErrorResponse,
         { status: 400 }
       );
     }
 
-    // Build Prisma query filter
-    const whereClause: Record<string, any> = {
-      // Only include active cards (if needed for soft-delete filtering)
-      // You can add: isActive: true if that field exists
-    };
+    // Calculate offset from page number
+    const offset = (page - 1) * limit;
 
-    // Apply issuer filter if provided
+    // Build Prisma query filter
+    const whereClause: Record<string, any> = {};
+
+    // Apply issuer filter if provided (case-insensitive partial match)
     if (issuer && issuer.trim().length > 0) {
       whereClause.issuer = {
         contains: issuer.trim(),
-        mode: 'insensitive', // Case-insensitive search
+        mode: 'insensitive', // Case-insensitive search (works with PostgreSQL and SQLite)
       };
     }
 
-    // Apply search filter if provided (searches card name)
+    // Apply search filter if provided (searches card name, case-insensitive)
     if (search && search.trim().length > 0) {
       whereClause.cardName = {
         contains: search.trim(),
@@ -152,7 +158,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const [totalCount, masterCards] = await Promise.all([
       // Get total count matching filters
       prisma.masterCard.count({ where: whereClause }),
-      // Get paginated results with benefits
+      // Get paginated results with benefit preview
       prisma.masterCard.findMany({
         where: whereClause,
         select: {
@@ -166,13 +172,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
               name: true,
             },
             where: {
-              isActive: true, // Only active benefits
+              isActive: true, // Only include active benefits
             },
-            take: 3, // Get up to 3 benefits for preview
+            take: 3, // Preview up to 3 benefits
+            orderBy: {
+              createdAt: 'asc',
+            },
           },
         },
         orderBy: {
-          issuer: 'asc', // Sort by issuer alphabetically
+          issuer: 'asc', // Sort by issuer alphabetically, then by creation date
         },
         take: limit,
         skip: offset,
@@ -192,12 +201,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       },
     }));
 
+    // Calculate total pages
+    const totalPages = Math.ceil(totalCount / limit);
+
     // Construct pagination metadata
     const pagination: PaginationMeta = {
       total: totalCount,
+      page,
       limit,
-      offset,
-      hasMore: offset + limit < totalCount,
+      totalPages,
+      hasMore: page < totalPages,
     };
 
     return NextResponse.json(

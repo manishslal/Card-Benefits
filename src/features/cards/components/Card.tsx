@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import BenefitTable from './BenefitTable';
+import BenefitTable from '@/components/BenefitTable';
 import { CreditCard, Calendar, TrendingUp, TrendingDown, ChevronDown } from 'lucide-react';
 import { getEffectiveROI, getUncapturedValue } from '@/features/cards/lib/calculations';
 import { formatDateForUser } from '@/lib/benefitDates';

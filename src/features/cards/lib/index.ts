@@ -5,4 +5,13 @@
 
 export * from './calculations';
 export * from './validation';
-export * from './roi-calculator';
+// Explicitly import from roi-calculator to avoid conflicts
+export {
+  calculateBenefitROI,
+  calculatePlayerROI,
+  calculateHouseholdROI,
+  getROI,
+  invalidateROICache,
+  clearROICache,
+  getROICacheStats,
+} from './roi-calculator';

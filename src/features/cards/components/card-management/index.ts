@@ -12,4 +12,4 @@ export { CardFiltersPanel } from './CardFiltersPanel';
 export { CardDetailPanel } from './CardDetailPanel';
 export { BulkActionBar } from './BulkActionBar';
 // Type exports
-export type * from '@/types/card-management';
+export type * from '@/features/cards/types';

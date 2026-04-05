@@ -16,7 +16,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { EditableValueField } from '@/components/custom-values/EditableValueField';
+import { EditableValueField } from '@/features/custom-values/components/EditableValueField';
 
 describe('EditableValueField Component', () => {
   const defaultProps = {

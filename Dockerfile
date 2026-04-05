@@ -60,7 +60,7 @@ COPY --from=dependencies /app/package*.json ./
 
 # Copy built application from builder stage
 COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
+# Only copy prisma if it exists (needed for migrations)
 COPY --from=builder /app/prisma ./prisma
 
 # Note: .env.example is for development reference only, not needed in production image

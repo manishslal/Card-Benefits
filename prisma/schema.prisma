@@ -1,294 +1,193 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+generator client {
+  provider = "prisma-client-js"
+}
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
-// ============================================================
-// Layer 1: Master Catalog (Read-Only Templates)
-// Represents canonical definitions of credit cards and benefits
-// ============================================================
-
 model MasterCard {
-  id                String   @id @default(cuid())
-  issuer            String   // e.g., "Chase", "American Express", "Discover"
-  cardName          String   // e.g., "Chase Sapphire Reserve"
-  defaultAnnualFee  Int      // In cents (e.g., 55000 = $550)
-  cardImageUrl      String   // CDN URL to card image
+  id               String          @id @default(cuid())
+  issuer           String
+  cardName         String
+  defaultAnnualFee Int
+  cardImageUrl     String
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  masterBenefits   MasterBenefit[]
+  userCards        UserCard[]
 
-  // Relationships
-  masterBenefits    MasterBenefit[]
-  userCards         UserCard[]
-
-  // Metadata
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  // Indexes & Constraints
+  @@unique([issuer, cardName])
   @@index([issuer])
   @@index([cardName])
-  @@unique([issuer, cardName])
 }
 
 model MasterBenefit {
-  id                String   @id @default(cuid())
-  masterCardId      String   // FK to MasterCard
-  name              String   // e.g., "Travel Credit", "Dining Rebate"
-  type              String   // Enum: 'StatementCredit' | 'UsagePerk'
-  stickerValue      Int      // In cents (e.g., 30000 = $300)
-  resetCadence      String   // Enum: 'Monthly' | 'CalendarYear' | 'CardmemberYear' | 'OneTime'
+  id           String     @id @default(cuid())
+  masterCardId String
+  name         String
+  type         String
+  stickerValue Int
+  resetCadence String
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  masterCard   MasterCard @relation(fields: [masterCardId], references: [id], onDelete: Cascade)
 
-  // Relationships
-  masterCard        MasterCard @relation(fields: [masterCardId], references: [id], onDelete: Cascade)
-
-  // Metadata
-  isActive          Boolean @default(true) // Soft-delete for deprecated benefits
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  // Indexes
   @@index([masterCardId])
   @@index([type])
   @@index([resetCadence])
 }
 
-// ============================================================
-// Layer 2: User Wallet (Editable Clones & Tracking)
-// Represents user-owned cards and claimed benefits
-// ============================================================
-
 model User {
-  id                String   @id @default(cuid())
-  email             String   @unique
-  passwordHash      String
-  firstName         String?
-  lastName          String?
+  id             String              @id @default(cuid())
+  email          String              @unique
+  passwordHash   String
+  firstName      String?
+  lastName       String?
+  emailVerified  Boolean             @default(false)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  importJobs     ImportJob[]
+  players        Player[]
+  sessions       Session[]
+  importProfiles UserImportProfile[]
 
-  // Password Reset Fields (WAVE1: Password Recovery)
-  passwordResetToken String?  @unique @db.VarChar(255)
-  passwordResetExpiry DateTime?
-
-  // Relationships
-  players           Player[]
-  sessions          Session[]
-  importJobs        ImportJob[]
-  importProfiles    UserImportProfile[]
-
-  // Metadata
-  emailVerified     Boolean @default(false)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  // Indexes
   @@index([email])
-  @@index([passwordResetToken])
 }
 
 model Session {
-  id                String   @id @default(cuid())
-  userId            String   // FK to User
-  user              User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String   @id @default(cuid())
+  userId       String
+  sessionToken String   @unique
+  expiresAt    DateTime
+  isValid      Boolean  @default(true)
+  userAgent    String?
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Session metadata
-  sessionToken      String   @unique  // Signed JWT payload
-  expiresAt         DateTime  // Expiration timestamp
-  isValid           Boolean @default(true)  // For soft revocation
-
-  // Device tracking
-  userAgent         String?  // For device identification
-  ipAddress         String?  // For suspicious login detection
-
-  // Metadata
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  // Indexes
   @@index([userId])
   @@index([expiresAt])
 }
 
 model Player {
-  id                String   @id @default(cuid())
-  userId            String   // FK to User
-  playerName        String   // e.g., "Primary", "Spouse"
-  isActive          Boolean @default(true)
+  id           String        @id @default(cuid())
+  userId       String
+  playerName   String
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  importJobs   ImportJob[]
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userBenefits UserBenefit[]
+  userCards    UserCard[]
 
-  // Relationships
-  user              User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userCards         UserCard[]
-  userBenefits      UserBenefit[]
-  importJobs        ImportJob[]
-
-  // Metadata
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  // Indexes & Constraints
-  @@index([userId])
   @@unique([userId, playerName])
+  @@index([userId])
 }
 
-// CardStatus enum for card state management
-// Using string type since SQLite doesn't support native enums
-// Valid values: ACTIVE, PENDING, PAUSED, ARCHIVED, DELETED
 model UserCard {
-  id                String   @id @default(cuid())
-  playerId          String   // FK to Player
-  masterCardId      String   // FK to MasterCard (template reference)
+  id                  String        @id @default(cuid())
+  playerId            String
+  masterCardId        String
+  customName          String?
+  actualAnnualFee     Int?
+  renewalDate         DateTime
+  isOpen              Boolean       @default(true)
+  status              String        @default("ACTIVE")
+  statusChangedAt     DateTime?
+  statusChangedReason String?
+  statusChangedBy     String?
+  archivedAt          DateTime?
+  archivedBy          String?
+  archivedReason      String?
+  importedFrom        String?
+  importedAt          DateTime?
+  version             Int           @default(1)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  userBenefits        UserBenefit[]
+  masterCard          MasterCard    @relation(fields: [masterCardId], references: [id])
+  player              Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
-  // Cloned/Customizable Fields
-  customName        String?  // User rename (e.g., "Amex Gold - Jon")
-  actualAnnualFee   Int?     // Override fee (in cents; null = use default)
-  renewalDate       DateTime // Card anniversary for benefit resets
-  isOpen            Boolean @default(true) // Card is active in wallet (DEPRECATED: use status instead)
-
-  // Card Status Management (NEW)
-  status            String @default("ACTIVE") // ACTIVE|PENDING|PAUSED|ARCHIVED|DELETED
-  statusChangedAt   DateTime?  // When status last changed
-  statusChangedReason String?  // Why status changed
-  statusChangedBy   String?    // Who changed it (userId)
-
-  // Archive Metadata (NEW)
-  archivedAt        DateTime?  // When archived
-  archivedBy        String?    // Who archived (userId)
-  archivedReason    String?    // Why archived
-
-  // Import Audit Fields
-  importedFrom      String?   // ImportJob ID for audit trail
-  importedAt        DateTime? // When bulk imported (vs manual creation)
-  version           Int       @default(1) // For optimistic locking (conflict detection)
-
-  // Relationships
-  player            Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  masterCard        MasterCard @relation(fields: [masterCardId], references: [id], onDelete: Restrict)
-  userBenefits      UserBenefit[]
-
-  // Metadata
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  // Indexes & Constraints
+  @@unique([playerId, masterCardId])
   @@index([playerId])
   @@index([masterCardId])
   @@index([playerId, masterCardId])
   @@index([playerId, status])
   @@index([renewalDate])
   @@index([archivedAt])
-  @@unique([playerId, masterCardId])
 }
 
 model UserBenefit {
-  id                String   @id @default(cuid())
-  userCardId        String   // FK to UserCard
-  playerId          String   // FK to Player (denormalized for query optimization)
+  id                String    @id @default(cuid())
+  userCardId        String
+  playerId          String
+  name              String
+  type              String
+  stickerValue      Int
+  resetCadence      String
+  userDeclaredValue Int?
+  isUsed            Boolean   @default(false)
+  timesUsed         Int       @default(0)
+  expirationDate    DateTime?
+  status            String    @default("ACTIVE")
+  importedFrom      String?
+  importedAt        DateTime?
+  version           Int       @default(1)
+  valueHistory      String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  claimedAt         DateTime?
+  player            Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  userCard          UserCard  @relation(fields: [userCardId], references: [id], onDelete: Cascade)
 
-  // Cloned Fields from MasterBenefit
-  name              String   // Benefit name (e.g., "Uber Cash")
-  type              String   // Enum: 'StatementCredit' | 'UsagePerk'
-  stickerValue      Int      // Original benefit value (in cents)
-  resetCadence      String   // Enum: 'Monthly' | 'CalendarYear' | 'CardmemberYear' | 'OneTime'
-
-  // User Customization & Tracking
-  userDeclaredValue Int?     // User's estimated actual value (e.g., "$10 Uber worth $8 to me")
-  isUsed            Boolean @default(false) // User has claimed/utilized this benefit
-  timesUsed         Int @default(0) // Count of times benefit was used/reset
-  expirationDate    DateTime? // When benefit expires
-  
-  // Benefit Status (NEW - for archive management)
-  status            String @default("ACTIVE") // ACTIVE | ARCHIVED (mirrors parent card status)
-
-  // Import Audit Fields
-  importedFrom      String?   // ImportJob ID for audit trail
-  importedAt        DateTime? // When bulk imported (vs manual creation)
-  version           Int       @default(1) // For optimistic locking
-
-  // Value History Audit Trail (FR6 - Change Audit Trail)
-  // Stores immutable record of every value change for compliance and accountability
-  // Format: JSON array of { value, changedAt, changedBy, source, reason }
-  // Append-only: never delete or modify existing entries
-  valueHistory      String?   // JSON array of historical value changes (see types/custom-values.ts)
-
-  // Relationships
-  userCard          UserCard @relation(fields: [userCardId], references: [id], onDelete: Cascade)
-  player            Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
-
-  // Metadata
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  claimedAt         DateTime? // When user marked benefit as used
-
-  // Indexes & Constraints
+  @@unique([userCardId, name])
   @@index([userCardId])
   @@index([playerId])
   @@index([userCardId, name])
   @@index([type])
   @@index([isUsed])
   @@index([expirationDate])
-  @@unique([userCardId, name])
 }
 
-// ============================================================
-// Layer 3: Import/Export Audit Trail
-// Tracks bulk import/export operations with full history
-// ============================================================
-
 model ImportJob {
-  id                String    @id @default(cuid())
-  
-  // Relationships & Context
-  playerId          String
-  userId            String
-  player            Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // File Metadata
-  fileName          String                              // Original uploaded filename
-  fileFormat        String                              // 'CSV' | 'XLSX'
-  fileSize          Int                                 // Bytes uploaded
-  fileHash          String?                             // SHA-256 for integrity checking (optional)
-  
-  // Import Status & Counts
-  status            String    @default("Uploaded")      // 'Uploaded'|'Parsing'|'Validating'|'PreviewReady'|'Processing'|'Committed'|'Failed'|'FAILED_ROLLBACK_REQUIRED'|'Cancelled'
-  totalRecords      Int                                 // Total rows in file
-  processedRecords  Int       @default(0)              // Successfully created/updated
-  skippedRecords    Int       @default(0)              // User chose to skip
-  failedRecords     Int       @default(0)              // Validation failures (blocking)
-  warningRecords    Int       @default(0)              // Validation warnings (non-blocking)
-  
-  // Import Type Breakdown
-  importType        String                              // 'Cards'|'Benefits'|'Mixed'
-  cardsCreated      Int       @default(0)
-  cardsUpdated      Int       @default(0)
-  benefitsCreated   Int       @default(0)
-  benefitsUpdated   Int       @default(0)
-  
-  // Data Storage
-  errorLog          String?                             // JSON array of error objects
-  previewData       String?                             // JSON preview before commit (can be large)
-  conflictLog       String?                             // JSON log of duplicate resolution decisions
-  
-  // Column Mapping
-  columnMappings    String?                             // JSON map of file columns to system fields
-  detectionConfidence Float? @default(1.0)            // Avg confidence of auto-mapped columns
-  
-  // Timestamps
-  createdAt         DateTime  @default(now())
-  uploadedAt        DateTime?                           // When file fully uploaded
-  parsedAt          DateTime?                           // When parsing completed
-  validatedAt       DateTime?                           // When validation completed
-  committedAt       DateTime?                           // When transaction committed
-  completedAt       DateTime?                           // Final completion timestamp
-  
-  // Relationships
-  records           ImportRecord[]
-  
-  // Indexes for common queries
+  id                  String         @id @default(cuid())
+  playerId            String
+  userId              String
+  fileName            String
+  fileFormat          String
+  fileSize            Int
+  fileHash            String?
+  status              String         @default("Uploaded")
+  totalRecords        Int
+  processedRecords    Int            @default(0)
+  skippedRecords      Int            @default(0)
+  failedRecords       Int            @default(0)
+  warningRecords      Int            @default(0)
+  importType          String
+  cardsCreated        Int            @default(0)
+  cardsUpdated        Int            @default(0)
+  benefitsCreated     Int            @default(0)
+  benefitsUpdated     Int            @default(0)
+  errorLog            String?
+  previewData         String?
+  conflictLog         String?
+  columnMappings      String?
+  detectionConfidence Float?         @default(1.0)
+  createdAt           DateTime       @default(now())
+  uploadedAt          DateTime?
+  parsedAt            DateTime?
+  validatedAt         DateTime?
+  committedAt         DateTime?
+  completedAt         DateTime?
+  player              Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  records             ImportRecord[]
+
   @@index([playerId])
   @@index([userId])
   @@index([status])
@@ -297,43 +196,28 @@ model ImportJob {
 }
 
 model ImportRecord {
-  id                String    @id @default(cuid())
-  
-  // Relationships
-  importJobId       String
-  importJob         ImportJob @relation(fields: [importJobId], references: [id], onDelete: Cascade)
-  
-  // Record Context
-  recordType        String                              // 'Card' | 'Benefit'
-  rowNumber         Int                                 // Line in original file (1-indexed)
-  sequenceIndex     Int                                 // Order in final batch (for deduplication within batch)
-  
-  // Original Data
-  data              String                              // JSON: original row as parsed
-  normalizedData    String?                             // JSON: after parsing & type conversion
-  
-  // Validation Status
-  status            String    @default("Valid")        // 'Valid'|'Duplicate'|'Conflict'|'Warning'|'Error'|'Skipped'|'Applied'
-  validationErrors  String?                             // JSON array of error messages
-  validationWarnings String?                            // JSON array of warnings
-  
-  // Duplicate Detection
-  isDuplicate       Boolean   @default(false)
-  duplicateOf       String?                             // ID of existing record this duplicates
-  userResolution    String?                             // 'Skip'|'Update'|'Merge' (how user resolved it)
-  
-  // Applied Results
-  createdCardId     String?                             // If card was created
-  createdBenefitId  String?                             // If benefit was created
-  updatedCardId     String?                             // If card was updated
-  updatedBenefitId  String?                             // If benefit was updated
-  appliedData       String?                             // JSON: what was actually stored
-  
-  // Metadata
-  processedAt       DateTime?
-  appliedAt         DateTime?
-  
-  // Indexes
+  id                 String    @id @default(cuid())
+  importJobId        String
+  recordType         String
+  rowNumber          Int
+  sequenceIndex      Int
+  data               String
+  normalizedData     String?
+  status             String    @default("Valid")
+  validationErrors   String?
+  validationWarnings String?
+  isDuplicate        Boolean   @default(false)
+  duplicateOf        String?
+  userResolution     String?
+  createdCardId      String?
+  createdBenefitId   String?
+  updatedCardId      String?
+  updatedBenefitId   String?
+  appliedData        String?
+  processedAt        DateTime?
+  appliedAt          DateTime?
+  importJob          ImportJob @relation(fields: [importJobId], references: [id], onDelete: Cascade)
+
   @@index([importJobId])
   @@index([status])
   @@index([rowNumber])
@@ -343,20 +227,17 @@ model ImportRecord {
 model UserImportProfile {
   id                String    @id @default(cuid())
   userId            String
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  name              String                              // User-friendly name (e.g., "My standard export format")
+  name              String
   description       String?
-  fileFormat        String                              // 'CSV' | 'XLSX'
-  
-  columnMappings    String                              // JSON: {"FileColumn": "SystemField"}
-  mappingConfidence Float    @default(1.0)
-  
-  usageCount        Int      @default(0)               // How many times used
+  fileFormat        String
+  columnMappings    String
+  mappingConfidence Float     @default(1.0)
+  usageCount        Int       @default(0)
   lastUsedAt        DateTime?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([lastUsedAt])
 }

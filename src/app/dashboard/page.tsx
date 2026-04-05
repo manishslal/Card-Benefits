@@ -10,6 +10,7 @@ import { CardSwitcher, DashboardSummary } from '@/shared/components/features';
 import { BenefitsGrid, AddBenefitModal, EditBenefitModal, DeleteBenefitConfirmationDialog } from '@/features/benefits';
 import { AddCardModal } from '@/features/cards/components/modals/AddCardModal';
 import { CreditCard, Settings, Plus } from 'lucide-react';
+import { SkeletonCard } from '@/shared/components/loaders';
 
 /**
  * Dashboard Page - Redesigned
@@ -472,13 +473,37 @@ export default function DashboardPage() {
         </header>
 
         {/* Loading Content */}
-        <main className="flex-1 px-4 md:px-8 py-8 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-pulse mb-4">
-              <div className="h-8 w-32 bg-[var(--color-border)] rounded mx-auto mb-4" />
-              <div className="h-4 w-48 bg-[var(--color-border)] rounded mx-auto" />
+        <main className="flex-1 px-4 md:px-8 py-8">
+          <div className="max-w-6xl mx-auto space-y-8">
+            {/* Loading Header Skeleton */}
+            <div className="space-y-2">
+              <div className="h-8 w-48 bg-[var(--color-border)] rounded animate-pulse" />
+              <div className="h-4 w-72 bg-[var(--color-border)] rounded animate-pulse" />
             </div>
-            <p className="text-[var(--color-text-secondary)]">Loading your cards...</p>
+
+            {/* Loading Card Switcher Skeleton */}
+            <div className="flex gap-4">
+              <div className="h-10 w-32 bg-[var(--color-border)] rounded animate-pulse" />
+              <div className="h-10 w-32 bg-[var(--color-border)] rounded animate-pulse" />
+              <div className="h-10 w-32 bg-[var(--color-border)] rounded animate-pulse" />
+            </div>
+
+            {/* Loading Dashboard Summary Skeleton */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <SkeletonCard rows={2} showImage={false} />
+              <SkeletonCard rows={2} showImage={false} />
+              <SkeletonCard rows={2} showImage={false} />
+            </div>
+
+            {/* Loading Benefits Grid Skeleton */}
+            <div className="space-y-4">
+              <div className="h-6 w-56 bg-[var(--color-border)] rounded animate-pulse" />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <SkeletonCard rows={4} showImage={true} />
+                <SkeletonCard rows={4} showImage={true} />
+                <SkeletonCard rows={4} showImage={true} />
+              </div>
+            </div>
           </div>
         </main>
       </div>

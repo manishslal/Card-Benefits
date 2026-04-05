@@ -23,7 +23,7 @@ import {
   clearROICache,
   getROI,
   getROICacheStats,
-} from '@/lib/custom-values/roi-calculator';
+} from '@/features/cards/lib/roi-calculator';
 import {
   validateBenefitValue,
   parseCurrencyInput,

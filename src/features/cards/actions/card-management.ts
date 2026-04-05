@@ -30,7 +30,7 @@ import {
   validateCardStatusTransition,
   validateDeleteConfirmation,
   validateBulkUpdateInput
-} from '@/lib/card-validation';
+} from '@/features/cards/lib/validation';
 import {
   createErrorResponse,
   createSuccessResponse,
@@ -43,14 +43,14 @@ import {
   CardDetailsModel,
   CardWalletStats,
   CardStatus
-} from '@/types/card-management';
+} from '@/features/cards/types';
 import {
   getEffectiveAnnualFee,
   getDaysUntilRenewal,
   getRenewalStatus,
   calculateCardROI,
   calculateBenefitsSummary
-} from '@/lib/card-calculations';
+} from '@/features/cards/lib/calculations';
 import { Prisma } from '@prisma/client';
 
 /**

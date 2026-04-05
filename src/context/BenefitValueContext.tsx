@@ -18,7 +18,7 @@
 'use client';
 
 import React, { createContext, useCallback, useContext, useState } from 'react';
-import { getROI, invalidateROICache, clearROICache } from '@/lib/custom-values/roi-calculator';
+import { getROI, invalidateROICache, clearROICache } from '@/features/cards/lib/roi-calculator';
 
 /**
  * Context type definition

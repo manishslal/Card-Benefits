@@ -15,7 +15,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CardFilters, SavedFilter } from '@/types/card-management';
+import { CardFilters, SavedFilter } from '@/features/cards/types';
 import { Button } from '@/components/ui/button';
 import { ChevronDown } from 'lucide-react';
 import clsx from 'clsx';

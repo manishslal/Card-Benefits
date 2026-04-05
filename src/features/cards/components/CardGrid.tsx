@@ -1,7 +1,7 @@
 'use client';
 
 import Card from './Card';
-import type { UserCard } from '@/lib/calculations';
+import type { UserCard } from '@/features/cards/lib/calculations';
 
 interface Player {
   id: string;

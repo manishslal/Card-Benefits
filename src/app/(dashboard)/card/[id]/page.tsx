@@ -8,10 +8,10 @@ import Link from 'next/link';
 import BenefitsList from '@/components/features/BenefitsList';
 import BenefitsGrid from '@/components/features/BenefitsGrid';
 import { CreditCard, ArrowLeft, Plus } from 'lucide-react';
-import { EditCardModal } from '@/components/EditCardModal';
+import { EditCardModal } from '@/features/cards/components/modals/EditCardModal';
 import { AddBenefitModal } from '@/components/AddBenefitModal';
 import { EditBenefitModal } from '@/components/EditBenefitModal';
-import { DeleteCardConfirmationDialog } from '@/components/DeleteCardConfirmationDialog';
+import { DeleteCardConfirmationDialog } from '@/features/cards/components/modals/DeleteCardConfirmationDialog';
 import { DeleteBenefitConfirmationDialog } from '@/components/DeleteBenefitConfirmationDialog';
 
 /**

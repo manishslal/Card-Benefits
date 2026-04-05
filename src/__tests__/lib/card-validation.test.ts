@@ -16,7 +16,7 @@ import {
   validateBulkCardIds,
   validateCardUpdateInput,
   validateBulkUpdateInput
-} from '@/lib/card-validation';
+} from '@/features/cards/lib/validation';
 import { AppError, ERROR_CODES } from '@/lib/errors';
 
 // ============================================================================

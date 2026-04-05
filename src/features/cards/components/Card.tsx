@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import BenefitTable from './BenefitTable';
 import { CreditCard, Calendar, TrendingUp, TrendingDown, ChevronDown } from 'lucide-react';
-import { getEffectiveROI, getUncapturedValue } from '@/lib/calculations';
+import { getEffectiveROI, getUncapturedValue } from '@/features/cards/lib/calculations';
 import { formatDateForUser } from '@/lib/benefitDates';
-import type { UserCard } from '@/lib/calculations';
+import type { UserCard } from '@/features/cards/lib/calculations';
 
 /**
  * Card Component - Redesigned Card Tracker (Enhanced with Lucide Icons)

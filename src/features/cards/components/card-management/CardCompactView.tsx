@@ -9,12 +9,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CardTileProps } from '@/types/card-management';
+import { CardTileProps } from '@/features/cards/types';
 import {
   getStatusBadgeColor,
   getStatusLabel,
   formatCurrency
-} from '@/lib/card-calculations';
+} from '@/features/cards/lib/calculations';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,

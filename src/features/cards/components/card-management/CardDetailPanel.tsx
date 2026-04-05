@@ -7,7 +7,7 @@
 'use client';
 
 import React, { ReactElement } from 'react';
-import { CardDetailPanelProps } from '@/types/card-management';
+import { CardDetailPanelProps } from '@/features/cards/types';
 
 export function CardDetailPanel({
   card,

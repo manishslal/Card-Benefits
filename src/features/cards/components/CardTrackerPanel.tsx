@@ -30,7 +30,7 @@ import {
   getUncapturedValue,
   getNetAnnualFee,
   MS_PER_DAY,
-} from '@/lib/calculations';
+} from '@/features/cards/lib/calculations';
 import { formatCurrency } from '@/lib/format-currency';
 import { toggleBenefit } from '@/actions/benefits';
 

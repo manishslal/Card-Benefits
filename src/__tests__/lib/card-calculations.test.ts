@@ -22,8 +22,8 @@ import {
   cardContributesToROI,
   getRenewalStatusTooltip,
   calculateArchiveROIImpact
-} from '@/lib/card-calculations';
-import { CardDisplayModel } from '@/types/card-management';
+} from '@/features/cards/lib/calculations';
+import { CardDisplayModel } from '@/features/cards/types';
 
 // ============================================================================
 // Effective Annual Fee Calculation Tests

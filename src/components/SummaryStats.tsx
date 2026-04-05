@@ -1,12 +1,12 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { Player } from '@/lib/calculations';
+import type { Player } from '@/features/cards/lib/calculations';
 import {
   getHouseholdROI,
   getHouseholdTotalCaptured,
   getHouseholdActiveCount,
-} from '@/lib/calculations';
+} from '@/features/cards/lib/calculations';
 
 /**
  * SummaryStats Component

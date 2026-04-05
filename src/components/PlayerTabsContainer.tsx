@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import type { Player, UserCard, UserBenefit } from '@prisma/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import CardTrackerPanel from './CardTrackerPanel';
+import CardTrackerPanel from '@/features/cards/components/CardTrackerPanel';
 import { Users } from 'lucide-react';
 
 /**

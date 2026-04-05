@@ -11,7 +11,7 @@
 import React, { useState } from 'react';
 import {
   CardTileProps
-} from '@/types/card-management';
+} from '@/features/cards/types';
 import {
   getDaysUntilRenewal,
   getRenewalStatus,
@@ -21,7 +21,7 @@ import {
   getStatusLabel,
   formatCurrency,
   formatPercentage
-} from '@/lib/card-calculations';
+} from '@/features/cards/lib/calculations';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,

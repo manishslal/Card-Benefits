@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import StatCard from '@/components/ui/StatCard';
+import StatCard from '@/features/cards/components/ui/StatCard';
 
 interface SummaryStatItem {
   label: string;

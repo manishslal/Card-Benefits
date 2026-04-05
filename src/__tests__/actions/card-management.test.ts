@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import * as cardActions from '@/actions/card-management';
+import * as cardActions from '@/features/cards/actions/card-management';
 import { AppError, ERROR_CODES } from '@/lib/errors';
 import { assertSuccess, assertError } from '@/__tests__/setup';
 
@@ -42,7 +42,7 @@ vi.mock('@/lib/card-validation', () => ({
 
 import { prisma } from '@/lib/prisma';
 import * as authServer from '@/features/auth/lib/auth';
-import * as cardValidation from '@/lib/card-validation';
+import * as cardValidation from '@/features/cards/lib/validation';
 
 // ============================================================================
 // getPlayerCards Tests

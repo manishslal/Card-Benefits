@@ -5,13 +5,13 @@
  * All validation functions throw AppError on failure.
  */
 
-import { ERROR_CODES, AppError } from './errors';
+import { ERROR_CODES, AppError } from '@/lib/errors';
 import {
   CardStatus,
   VALID_CARD_TRANSITIONS,
   CUSTOM_NAME_CONSTRAINTS,
   ANNUAL_FEE_CONSTRAINTS
-} from '@/types/card-management';
+} from '@/features/cards/types';
 
 /**
  * Validate a card status value

@@ -7,7 +7,7 @@
 'use client';
 
 import React, { ReactElement } from 'react';
-import { BulkActionBarProps } from '@/types/card-management';
+import { BulkActionBarProps } from '@/features/cards/types';
 
 export function BulkActionBar({
   selectedCount,

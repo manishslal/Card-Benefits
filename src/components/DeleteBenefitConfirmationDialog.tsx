@@ -51,6 +51,7 @@ export function DeleteBenefitConfirmationDialog({
       const response = await fetch(`/api/benefits/${benefit.id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
       });
 
       if (!response.ok) {

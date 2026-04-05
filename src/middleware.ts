@@ -349,17 +349,24 @@ export async function middleware(request: NextRequest) {
     // =====================================================================
     // Auth successful! Set context and proceed
     // =====================================================================
+    
+    // IMPORTANT: To pass userId from middleware to route handlers in Next.js,
+    // we must set it on the REQUEST headers (not response headers).
+    // NextResponse.next({ request: { headers } }) forwards modified request headers
+    // to the downstream route handler.
+    const requestHeaders = new Headers(request.headers);
+    if (userId) {
+      requestHeaders.set('x-user-id', userId);
+    }
+
     const response = await runWithAuthContext(
       { userId },
-      async () => NextResponse.next()
+      async () => NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      })
     );
-
-    // IMPORTANT: For protected APIs in Node.js runtime, we must pass userId via headers
-    // AsyncLocalStorage doesn't propagate from middleware to route handlers in Node.js
-    // So we add a custom header that route handlers can read
-    if (userId) {
-      response.headers.set('x-user-id', userId);
-    }
 
     return response;
   }

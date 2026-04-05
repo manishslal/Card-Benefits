@@ -53,6 +53,7 @@ export function DeleteCardConfirmationDialog({
       const response = await fetch(`/api/cards/${card.id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
       });
 
       if (!response.ok) {

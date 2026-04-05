@@ -86,17 +86,8 @@ export default function CardDetailPage() {
     const fetchCard = async () => {
       setIsLoadingCard(true);
       try {
-        // Get userId from localStorage (set during login)
-        const userId = localStorage.getItem('userId');
-        if (!userId) {
-          throw new Error('User not authenticated');
-        }
-
         const response = await fetch(`/api/cards/${cardId}`, {
-          headers: {
-            'x-user-id': userId,
-            'Content-Type': 'application/json',
-          },
+          credentials: 'include',
         });
         if (response.ok) {
           const data = await response.json();
@@ -108,7 +99,6 @@ export default function CardDetailPage() {
         }
       } catch (error) {
         console.error('Failed to fetch card from API:', error);
-        // Don't show mock data - auth errors should be clear to user
         setCard(null);
       } finally {
         setIsLoadingCard(false);
@@ -122,21 +112,12 @@ export default function CardDetailPage() {
 
   /**
    * Fetch benefits for this card from API
-   * Passes userId via x-user-id header for authentication
    */
   useEffect(() => {
     const fetchBenefits = async () => {
       try {
-        const userId = localStorage.getItem('userId');
-        if (!userId) {
-          throw new Error('User not authenticated');
-        }
-
         const response = await fetch(`/api/cards/${cardId}/benefits`, {
-          headers: {
-            'x-user-id': userId,
-            'Content-Type': 'application/json',
-          },
+          credentials: 'include',
         });
         if (response.ok) {
           const data = await response.json();
@@ -148,7 +129,6 @@ export default function CardDetailPage() {
         }
       } catch (error) {
         console.error('Failed to fetch benefits from API:', error);
-        // Show empty state instead of mock data
         setBenefits([]);
       }
     };

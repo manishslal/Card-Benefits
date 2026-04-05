@@ -42,6 +42,7 @@ interface CardData {
   lastFour: string;
   issuer: string;
   customName?: string | null;
+  benefits?: BenefitData[];
 }
 
 interface BenefitData {
@@ -106,7 +107,7 @@ export default function DashboardPage() {
           throw new Error(data.error || 'Failed to load cards');
         }
 
-        // Transform API response to card display format
+        // Transform API response to card display format (including benefits)
         const transformedCards: CardData[] = (data.cards || []).map((apiCard: any) => ({
           id: apiCard.id,
           name: apiCard.customName || apiCard.cardName,
@@ -114,13 +115,30 @@ export default function DashboardPage() {
           lastFour: apiCard.lastFour || '0000',
           issuer: apiCard.issuer,
           customName: apiCard.customName,
+          benefits: (apiCard.benefits || []).map((b: any) => ({
+            id: b.id,
+            name: b.name,
+            type: b.type,
+            stickerValue: b.stickerValue,
+            userDeclaredValue: b.userDeclaredValue,
+            resetCadence: b.resetCadence,
+            status: b.status?.toLowerCase() === 'active' ? 'active' as const
+              : b.status?.toLowerCase() === 'expired' ? 'expired' as const
+              : b.status?.toLowerCase() === 'expiring' ? 'expiring' as const
+              : 'pending' as const,
+            expirationDate: b.expirationDate,
+            description: b.description || '',
+            value: (b.userDeclaredValue || b.stickerValue) / 100,
+            usage: b.isUsed ? 100 : 0,
+          })),
         }));
 
         setCards(transformedCards);
 
-        // Set first card as selected if available
+        // Set first card as selected and load its benefits
         if (transformedCards.length > 0) {
           setSelectedCardId(transformedCards[0].id);
+          setBenefits(transformedCards[0].benefits || []);
         }
       } catch (error) {
         console.error('Error loading cards:', error);
@@ -163,6 +181,21 @@ export default function DashboardPage() {
   }, []);
 
   // ============================================================
+  // Effect: Update benefits when selected card changes
+  // ============================================================
+
+  useEffect(() => {
+    if (selectedCardId && cards.length > 0) {
+      const selectedCard = cards.find((c) => c.id === selectedCardId);
+      if (selectedCard?.benefits) {
+        setBenefits(selectedCard.benefits);
+      } else {
+        setBenefits([]);
+      }
+    }
+  }, [selectedCardId, cards]);
+
+  // ============================================================
   // Handler: Refresh cards after adding new card
   // ============================================================
 
@@ -185,13 +218,31 @@ export default function DashboardPage() {
             lastFour: apiCard.lastFour || '0000',
             issuer: apiCard.issuer,
             customName: apiCard.customName,
+            benefits: (apiCard.benefits || []).map((b: any) => ({
+              id: b.id,
+              name: b.name,
+              type: b.type,
+              stickerValue: b.stickerValue,
+              userDeclaredValue: b.userDeclaredValue,
+              resetCadence: b.resetCadence,
+              status: b.status?.toLowerCase() === 'active' ? 'active' as const
+                : b.status?.toLowerCase() === 'expired' ? 'expired' as const
+                : b.status?.toLowerCase() === 'expiring' ? 'expiring' as const
+                : 'pending' as const,
+              expirationDate: b.expirationDate,
+              description: b.description || '',
+              value: (b.userDeclaredValue || b.stickerValue) / 100,
+              usage: b.isUsed ? 100 : 0,
+            })),
           }));
 
           setCards(transformedCards);
 
-          // Select the newly added card
+          // Select the newly added card and load its benefits
           if (transformedCards.length > 0) {
-            setSelectedCardId(transformedCards[transformedCards.length - 1].id);
+            const newCard = transformedCards[transformedCards.length - 1];
+            setSelectedCardId(newCard.id);
+            setBenefits(newCard.benefits || []);
           }
         }
       }
@@ -333,99 +384,19 @@ export default function DashboardPage() {
   };
 
   // ============================================================
-  // Mock Benefits (to be replaced with real benefit data in future)
-  // In production, benefits would come from selected card's data
+  // Summary Statistics - Computed from real benefit data
   // ============================================================
-
-  const mockBenefits: BenefitData[] = [
-    {
-      id: '1',
-      name: 'Travel Credit',
-      description: 'Annual $300 travel statement credit',
-      type: 'StatementCredit',
-      stickerValue: 30000, // $300 in cents
-      userDeclaredValue: null,
-      resetCadence: 'CalendarYear',
-      status: 'active' as const,
-      expirationDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
-      value: 300,
-      usage: 65,
-    },
-    {
-      id: '2',
-      name: 'Airport Lounge Access',
-      description: 'Unlimited airport lounge access',
-      type: 'UsagePerk',
-      stickerValue: 15000, // $150 in cents
-      userDeclaredValue: null,
-      resetCadence: 'CardmemberYear',
-      status: 'active' as const,
-      expirationDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
-      value: 150,
-      usage: 100,
-    },
-    {
-      id: '3',
-      name: 'Dining Credit',
-      description: 'Annual $100 dining statement credit',
-      type: 'StatementCredit',
-      stickerValue: 10000, // $100 in cents
-      userDeclaredValue: null,
-      resetCadence: 'CalendarYear',
-      status: 'expiring' as const,
-      expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      value: 100,
-      usage: 30,
-    },
-    {
-      id: '4',
-      name: 'Concierge Service',
-      description: '24/7 concierge support',
-      type: 'UsagePerk',
-      stickerValue: 20000, // $200 in cents
-      userDeclaredValue: null,
-      resetCadence: 'CardmemberYear',
-      status: 'active' as const,
-      value: 200,
-      usage: 45,
-    },
-    {
-      id: '5',
-      name: 'Statement Credit',
-      description: 'Streaming services credit',
-      type: 'StatementCredit',
-      stickerValue: 2000, // $20 in cents
-      userDeclaredValue: null,
-      resetCadence: 'Monthly',
-      status: 'expired' as const,
-      expirationDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-      value: 20,
-      usage: 100,
-    },
-    {
-      id: '6',
-      name: 'Insurance Coverage',
-      description: 'Travel insurance coverage',
-      type: 'UsagePerk',
-      stickerValue: 50000, // $500 in cents
-      userDeclaredValue: null,
-      resetCadence: 'OneTime',
-      status: 'pending' as const,
-      value: 500,
-      usage: 0,
-    },
-  ];
 
   const summaryStats = [
     {
       label: 'Total Benefits',
-      value: mockBenefits.length,
+      value: benefits.length,
       icon: 'CreditCard',
       variant: 'default' as const,
     },
     {
       label: 'Total Value',
-      value: `$${mockBenefits.reduce((sum, b) => sum + (b.value || 0), 0)}`,
+      value: `$${benefits.reduce((sum, b) => sum + (b.value || 0), 0).toLocaleString()}`,
       icon: 'DollarSign',
       variant: 'default' as const,
     },
@@ -437,7 +408,7 @@ export default function DashboardPage() {
     },
     {
       label: 'Expiring Soon',
-      value: mockBenefits.filter((b) => b.status === 'expiring').length,
+      value: benefits.filter((b) => b.status === 'expiring').length,
       icon: 'Clock',
       variant: 'default' as const,
     },
@@ -611,7 +582,7 @@ export default function DashboardPage() {
                 Welcome, {userName}! 👋
               </h2>
               <p className="text-sm mt-1 text-[var(--color-text-secondary)]">
-                You have {cards.length} card{cards.length !== 1 ? 's' : ''} and {mockBenefits.length} benefits tracked
+                You have {cards.length} card{cards.length !== 1 ? 's' : ''} and {benefits.length} benefits tracked
               </p>
             </div>
 
@@ -671,7 +642,7 @@ export default function DashboardPage() {
 
                 {/* Benefits Grid */}
                 <BenefitsGrid
-                  benefits={mockBenefits as any}
+                  benefits={benefits as any}
                   onEdit={handleEditBenefitClick}
                   onDelete={handleDeleteBenefitClick}
                   onMarkUsed={handleMarkUsed}

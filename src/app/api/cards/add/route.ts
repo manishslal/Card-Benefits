@@ -47,6 +47,21 @@ interface AddCardRequest {
   customAnnualFee?: number;
 }
 
+interface UserBenefitDisplay {
+  id: string;
+  userCardId: string;
+  name: string;
+  type: string;
+  stickerValue: number;
+  resetCadence: string;
+  userDeclaredValue: number | null;
+  isUsed: boolean;
+  timesUsed: number;
+  expirationDate: string | null;
+  status: string;
+  createdAt: string;
+}
+
 interface AddCardResponse {
   success: true;
   card: {
@@ -57,6 +72,7 @@ interface AddCardResponse {
     actualAnnualFee: number | null;
     renewalDate: string;
     status: string;
+    userBenefits: UserBenefitDisplay[];
   };
 }
 
@@ -180,6 +196,51 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       },
     });
 
+    // Fetch MasterBenefits for this card and clone them to UserBenefits
+    const masterBenefits = await prisma.masterBenefit.findMany({
+      where: {
+        masterCardId,
+        isActive: true,
+      },
+    });
+
+    // Clone each MasterBenefit to a UserBenefit with reset counters
+    const userBenefits = await Promise.all(
+      masterBenefits.map((masterBenefit) =>
+        prisma.userBenefit.create({
+          data: {
+            userCardId: userCard.id,
+            playerId: player.id,
+            name: masterBenefit.name,
+            type: masterBenefit.type,
+            stickerValue: masterBenefit.stickerValue,
+            resetCadence: masterBenefit.resetCadence,
+            userDeclaredValue: null, // User can customize later
+            isUsed: false,
+            timesUsed: 0,
+            expirationDate: null, // Can be set when benefit is used
+            status: 'ACTIVE',
+          },
+        })
+      )
+    );
+
+    // Transform response with benefits
+    const userBenefitDisplays: UserBenefitDisplay[] = userBenefits.map((benefit) => ({
+      id: benefit.id,
+      userCardId: benefit.userCardId,
+      name: benefit.name,
+      type: benefit.type,
+      stickerValue: benefit.stickerValue,
+      resetCadence: benefit.resetCadence,
+      userDeclaredValue: benefit.userDeclaredValue,
+      isUsed: benefit.isUsed,
+      timesUsed: benefit.timesUsed,
+      expirationDate: benefit.expirationDate?.toISOString() || null,
+      status: benefit.status,
+      createdAt: benefit.createdAt.toISOString(),
+    }));
+
     return NextResponse.json(
       {
         success: true,
@@ -191,6 +252,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           actualAnnualFee: userCard.actualAnnualFee,
           renewalDate: userCard.renewalDate.toISOString(),
           status: userCard.status,
+          userBenefits: userBenefitDisplays,
         },
       } as AddCardResponse,
       { status: 201 }

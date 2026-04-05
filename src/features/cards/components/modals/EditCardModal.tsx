@@ -168,10 +168,12 @@ export function EditCardModal({
       if (!open) onClose();
     }}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-black/50" />
         
         <DialogPrimitive.Content
-          className="fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] sm:max-w-lg md:max-w-2xl translate-x-[-50%] translate-y-[-50%] rounded-lg shadow-lg p-6 mx-4 max-h-[90vh] overflow-y-auto"
+          aria-labelledby="edit-card-modal-title"
+          aria-describedby="edit-card-modal-description"
+          className="fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] sm:max-w-lg md:max-w-2xl translate-x-[-50%] translate-y-[-50%] rounded-lg shadow-lg p-6 mx-4 max-h-[90vh] overflow-y-auto border border-[var(--color-border)]"
           style={{ backgroundColor: 'var(--color-bg)' }}
         >
           {/* Header with title and close button */}

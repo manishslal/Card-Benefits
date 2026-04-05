@@ -220,15 +220,19 @@ export function AddCardModal({ isOpen, onClose, onCardAdded }: AddCardModalProps
       if (!open) onClose();
     }}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-black/50" />
         
         <DialogPrimitive.Content
-          className="fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] sm:max-w-lg md:max-w-2xl translate-x-[-50%] translate-y-[-50%] rounded-lg shadow-lg p-6 mx-4 max-h-[90vh] overflow-y-auto"
+          aria-labelledby="add-card-modal-title"
+          aria-describedby="add-card-modal-description"
+          className="fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] sm:max-w-lg md:max-w-2xl translate-x-[-50%] translate-y-[-50%] rounded-lg shadow-lg p-6 mx-4 max-h-[90vh] overflow-y-auto border border-[var(--color-border)]"
           style={{ backgroundColor: 'var(--color-bg)' }}
           onOpenAutoFocus={(e) => {
             // Focus on the card select when modal opens
             e.preventDefault();
-            cardSelectRef.current?.focus();
+            setTimeout(() => {
+              cardSelectRef.current?.focus();
+            }, 0);
           }}
           onCloseAutoFocus={(e) => {
             // Return focus to trigger button (handled by Radix)

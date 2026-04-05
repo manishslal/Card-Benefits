@@ -80,10 +80,12 @@ export function DeleteBenefitConfirmationDialog({
       if (!open) onClose();
     }}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-black/50" />
         
         <DialogPrimitive.Content
-          className="fixed left-[50%] top-[50%] z-50 w-full max-w-sm translate-x-[-50%] translate-y-[-50%] rounded-lg shadow-lg p-6 mx-4"
+          aria-labelledby="delete-benefit-dialog-title"
+          aria-describedby="delete-benefit-dialog-description"
+          className="fixed left-[50%] top-[50%] z-50 w-full max-w-sm translate-x-[-50%] translate-y-[-50%] rounded-lg shadow-lg p-6 mx-4 border border-[var(--color-border)]"
           style={{ backgroundColor: 'var(--color-bg)' }}
         >
           {/* Header with title and close button */}

@@ -90,14 +90,24 @@ export function DeleteCardConfirmationDialog({
           className="fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] sm:max-w-sm translate-x-[-50%] translate-y-[-50%] rounded-lg shadow-lg p-6 mx-4 border border-[var(--color-border)]"
           style={{ backgroundColor: 'var(--color-bg)' }}
         >
-          {/* Header with title and close button */}
-          <div className="flex items-center justify-between mb-4">
-            <DialogPrimitive.Title
-              id="delete-card-dialog-title"
-              className="text-lg font-bold text-[var(--color-text)]"
-            >
-              Delete Card
-            </DialogPrimitive.Title>
+          {/* Title - MUST be direct child of DialogContent for Radix UI */}
+          <DialogPrimitive.Title
+            id="delete-card-dialog-title"
+            className="text-lg font-bold text-[var(--color-text)] mb-2"
+          >
+            Delete Card
+          </DialogPrimitive.Title>
+
+          {/* Description - MUST be direct child of DialogContent for Radix UI */}
+          <DialogPrimitive.Description
+            id="delete-card-dialog-description"
+            className="text-sm text-[var(--color-text-secondary)] mb-4"
+          >
+            Are you sure you want to delete <strong className="text-[var(--color-text)]">"{card.customName || 'this card'}"</strong>?
+          </DialogPrimitive.Description>
+
+          {/* Close button */}
+          <div className="absolute top-4 right-4">
             <DialogPrimitive.Close asChild>
               <button
                 aria-label="Close dialog"
@@ -110,12 +120,6 @@ export function DeleteCardConfirmationDialog({
 
           {/* Content */}
           <div className="space-y-4">
-            <DialogPrimitive.Description
-              id="delete-card-dialog-description"
-              className="text-sm text-[var(--color-text-secondary)]"
-            >
-              Are you sure you want to delete <strong className="text-[var(--color-text)]">"{card.customName || 'this card'}"</strong>?
-            </DialogPrimitive.Description>
 
             {/* Warning message with WCAG AA contrast */}
             <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-md p-3 text-sm text-red-900 dark:text-red-100">

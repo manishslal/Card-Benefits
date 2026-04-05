@@ -25,7 +25,7 @@ vi.mock('@/lib/prisma', () => ({
   }
 }));
 
-vi.mock('@/lib/auth-server', () => ({
+vi.mock('@/features/auth/lib/auth', () => ({
   getAuthUserIdOrThrow: vi.fn(),
   verifyPlayerOwnership: vi.fn(),
   authorizeCardOperation: vi.fn()
@@ -41,7 +41,7 @@ vi.mock('@/lib/card-validation', () => ({
 }));
 
 import { prisma } from '@/lib/prisma';
-import * as authServer from '@/lib/auth-server';
+import * as authServer from '@/features/auth/lib/auth';
 import * as cardValidation from '@/lib/card-validation';
 
 // ============================================================================

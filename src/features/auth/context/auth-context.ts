@@ -165,3 +165,13 @@ export function getAuthError(): string | undefined {
 export function isAuthenticated(): boolean {
   return Boolean(getAuthUserId());
 }
+
+/**
+ * Gets the authenticated user ID from the current request context.
+ * Alias for getAuthUserId() for use in React hooks.
+ *
+ * @returns User ID string if authenticated, undefined otherwise
+ */
+export function useAuthUserId(): string | undefined {
+  return getAuthUserId();
+}

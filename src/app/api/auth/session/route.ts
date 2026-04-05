@@ -21,11 +21,9 @@ import {
   verifySessionToken,
   isSessionExpired,
   getSecondsUntilExpiration,
-} from '@/lib/auth-utils';
-import {
-  getSessionByToken,
+  validateSession,
   getUserById,
-} from '@/lib/auth-server';
+} from '@/features/auth/lib/auth';
 
 // ============================================================
 // Type Definitions
@@ -98,7 +96,7 @@ export async function GET(): Promise<NextResponse> {
 
     // CRITICAL: Check Session.isValid in database
     // This allows us to revoke sessions by setting isValid=false
-    const dbSession = await getSessionByToken(sessionCookie.value);
+    const dbSession = await validateSession(sessionCookie.value);
     if (!dbSession) {
       // Session was revoked or doesn't exist
       return NextResponse.json(

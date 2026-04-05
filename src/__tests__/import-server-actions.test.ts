@@ -64,7 +64,7 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 // Mock auth-server (used by server actions)
-vi.mock('@/lib/auth-server', () => ({
+vi.mock('@/features/auth/lib/auth', () => ({
   getAuthUserIdOrThrow: vi.fn(() => 'user-1'),
   verifyPlayerOwnership: vi.fn(async (playerId: string, userId: string) => {
     // Use the mocked prisma to check ownership (simulating real behavior)

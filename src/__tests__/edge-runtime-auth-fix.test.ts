@@ -20,8 +20,8 @@ import {
   verifySessionToken,
   createSessionPayload,
   isSessionExpired,
-} from '@/lib/auth-utils';
-import type { SessionPayload } from '@/lib/auth-utils';
+} from '@/features/auth/lib/auth';
+import type { SessionPayload } from '@/features/auth/lib/auth';
 
 // ============================================================================
 // TEST CONSTANTS

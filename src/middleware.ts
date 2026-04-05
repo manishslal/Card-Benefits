@@ -12,15 +12,7 @@
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { runWithAuthContext } from '@/lib/auth-context';
-import {
-  verifySessionToken,
-  isSessionExpired,
-} from '@/lib/auth-utils';
-import {
-  getSessionByToken,
-  userExists,
-} from '@/lib/auth-server';
+import { runWithAuthContext, verifySessionToken, isSessionExpired, validateSession, userExists } from '@/features/auth/lib/auth';
 
 /**
  * MIDDLEWARE ARCHITECTURE: Direct JWT Verification in Node.js Runtime
@@ -189,7 +181,7 @@ async function verifySessionTokenDirect(
 
     // Step 3: Check if session is valid in database
     console.log('[Auth] Step 3: Looking up session in database...');
-    const dbSession = await getSessionByToken(token);
+    const dbSession = await validateSession(token);
     if (!dbSession) {
       // Session was revoked or doesn't exist
       console.error('[Auth] ✗ Step 3 failed: Session not found in database');

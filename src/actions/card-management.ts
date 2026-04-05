@@ -22,7 +22,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { getAuthUserIdOrThrow, verifyPlayerOwnership, authorizeCardOperation } from '@/lib/auth-server';
+import { getAuthUserIdOrThrow, verifyPlayerOwnership, authorizeCardOperation } from '@/features/auth/lib/auth';
 import {
   validateCustomName,
   validateAnnualFee,

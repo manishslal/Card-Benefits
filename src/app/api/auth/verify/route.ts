@@ -24,11 +24,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   verifySessionToken,
   isSessionExpired,
-} from '@/lib/auth-utils';
-import {
-  getSessionByToken,
+  validateSession,
   userExists,
-} from '@/lib/auth-server';
+} from '@/features/auth/lib/auth';
 
 // ============================================================
 // Type Definitions
@@ -103,7 +101,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // Step 3: Check if session is valid in database
-    const dbSession = await getSessionByToken(body.token);
+    const dbSession = await validateSession(body.token);
     if (!dbSession) {
       // Session was revoked or doesn't exist
       return NextResponse.json(

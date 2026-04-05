@@ -12,7 +12,7 @@
 import { generateExport, getExportHistory } from '@/lib/export/exporter';
 import { CARD_EXPORT_FIELDS, BENEFIT_EXPORT_FIELDS, ExportRequest } from '@/lib/export/schema';
 import { createErrorResponse, createSuccessResponse, AppError, ActionResponse } from '@/lib/errors';
-import { getAuthUserIdOrThrow, verifyPlayerOwnership } from '@/lib/auth-server';
+import { getAuthUserIdOrThrow, verifyPlayerOwnership } from '@/features/auth/lib/auth';
 
 // ============================================================================
 // Type Definitions

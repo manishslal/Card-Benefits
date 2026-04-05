@@ -15,7 +15,7 @@
  */
 
 import { prisma } from '@/lib/prisma';
-import { getAuthUserIdOrThrow, verifyBenefitOwnership } from '@/lib/auth-server';
+import { getAuthUserIdOrThrow, verifyBenefitOwnership } from '@/features/auth/lib/auth';
 import {
   validateBenefitValue,
   validateBenefitId,

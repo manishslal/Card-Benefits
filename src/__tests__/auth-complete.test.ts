@@ -24,8 +24,8 @@ import {
   isSessionExpired,
   getSecondsUntilExpiration,
   getSessionExpirationSeconds,
-} from '@/lib/auth-utils';
-import type { SessionPayload } from '@/lib/auth-utils';
+} from '@/features/auth/lib/auth';
+import type { SessionPayload } from '@/features/auth/lib/auth';
 
 // ============================================================================
 // SECTION 1: Password Hashing & Verification (8 tests)

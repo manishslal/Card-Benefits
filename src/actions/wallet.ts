@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { calcExpirationDate } from '@/lib/benefitDates';
-import { getAuthUserIdOrThrow, verifyPlayerOwnership } from '@/lib/auth-server';
+import { getAuthUserIdOrThrow, verifyPlayerOwnership } from '@/features/auth/lib/auth';
 import {
   validateUUID,
   validateDate,

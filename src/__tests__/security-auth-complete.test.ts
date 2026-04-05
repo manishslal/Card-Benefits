@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { validateEmail, validatePasswordStrength } from '@/lib/auth-utils';
+import { validateEmail, validatePasswordStrength } from '@/features/auth/lib/auth';
 
 // ============================================================================
 // SECTION 1: Cron Endpoint Timing-Safe Secret (8 tests)

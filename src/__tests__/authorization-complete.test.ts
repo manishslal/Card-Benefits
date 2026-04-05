@@ -28,14 +28,14 @@ import {
   getUserSessions,
   getSessionByToken,
   invalidateSession,
-} from '@/lib/auth-server';
+} from '@/features/auth/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 // Store for simulating AsyncLocalStorage behavior
 let mockAuthUserId: string | null = null;
 
 // Mock AsyncLocalStorage for getAuthUserId
-vi.mock('@/lib/auth-context', () => ({
+vi.mock('@/features/auth/context/auth-context', () => ({
   getAuthUserId: () => mockAuthUserId,
 }));
 

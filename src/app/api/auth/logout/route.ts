@@ -18,10 +18,8 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import {
   verifySessionToken,
-} from '@/lib/auth-utils';
-import {
   invalidateSession,
-} from '@/lib/auth-server';
+} from '@/features/auth/lib/auth';
 import {
   AppError,
   ERROR_CODES,

@@ -36,7 +36,7 @@ vi.mock('@/lib/prisma', () => ({
   },
 }));
 
-vi.mock('@/lib/auth-server', () => ({
+vi.mock('@/features/auth/lib/auth', () => ({
   getAuthUserIdOrThrow: vi.fn(),
   verifyPlayerOwnership: vi.fn(),
   verifyBenefitOwnership: vi.fn(),
@@ -51,7 +51,7 @@ import {
   getAuthUserIdOrThrow,
   verifyPlayerOwnership,
   verifyBenefitOwnership,
-} from '@/lib/auth-server';
+} from '@/features/auth/lib/auth';
 
 // ============================================================================
 // Test Suite: addCardToWallet

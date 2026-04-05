@@ -14,7 +14,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { getAuthUserIdOrThrow, verifyPlayerOwnership } from '@/lib/auth-server';
+import { getAuthUserIdOrThrow, verifyPlayerOwnership } from '@/features/auth/lib/auth';
 import {
   createErrorResponse,
   createSuccessResponse,

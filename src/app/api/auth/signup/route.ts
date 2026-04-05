@@ -21,11 +21,9 @@ import {
   createSessionPayload,
   signSessionToken,
   getSessionExpirationSeconds,
-} from '@/lib/auth-utils';
-import {
   createUser,
   createAndUpdateSession,
-} from '@/lib/auth-server';
+} from '@/features/auth/lib/auth';
 import {
   validateEmail,
   validateString,

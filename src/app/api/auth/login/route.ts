@@ -23,11 +23,9 @@ import {
   createSessionPayload,
   signSessionToken,
   getSessionExpirationSeconds,
-} from '@/lib/auth-utils';
-import {
   getUserByEmail,
   createAndUpdateSession,
-} from '@/lib/auth-server';
+} from '@/features/auth/lib/auth';
 import { RateLimiter } from '@/lib/rate-limiter';
 import {
   validateEmail,

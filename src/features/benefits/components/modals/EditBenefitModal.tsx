@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Button from '@/components/ui/button';
-import Input from '@/components/ui/Input';
-import { UnifiedSelect } from '@/components/ui/select-unified';
-import { FormError } from '@/components/FormError';
+import Button from '@/shared/components/ui/button';
+import Input from '@/shared/components/ui/Input';
+import { UnifiedSelect } from '@/shared/components/ui/select-unified';
+import { FormError } from '@/shared/components/forms';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 

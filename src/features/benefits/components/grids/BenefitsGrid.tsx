@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import Badge from '@/components/ui/Badge';
-import Button from '@/components/ui/button';
+import Badge from '@/shared/components/ui/Badge';
+import Button from '@/shared/components/ui/button';
 import { Plane, Tag, Utensils, DollarSign, Zap } from 'lucide-react';
 
 interface Benefit {

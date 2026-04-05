@@ -21,7 +21,7 @@
 
 'use server';
 
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/shared/lib';
 import { getAuthUserIdOrThrow, verifyPlayerOwnership, authorizeCardOperation } from '@/features/auth/lib/auth';
 import {
   validateCustomName,
@@ -37,7 +37,7 @@ import {
   AppError,
   ERROR_CODES,
   ActionResponse
-} from '@/lib/errors';
+} from '@/shared/lib';
 import {
   CardDisplayModel,
   CardDetailsModel,

@@ -15,14 +15,14 @@ import {
   getStatusLabel,
   formatCurrency
 } from '@/features/cards/lib/calculations';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/shared/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
   DropdownMenuItem,
   DropdownMenuSeparator
-} from '@/components/ui/dropdown-menu';
+} from '@/shared/components/ui/dropdown-menu';
 import { MoreVertical } from 'lucide-react';
 import clsx from 'clsx';
 

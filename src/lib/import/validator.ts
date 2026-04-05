@@ -12,7 +12,7 @@
  * - Warning: Non-blocking issues the user can proceed with
  */
 
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/shared/lib';
 
 // ============================================================================
 // Type Definitions

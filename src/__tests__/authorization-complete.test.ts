@@ -29,7 +29,7 @@ import {
   getSessionByToken,
   invalidateSession,
 } from '@/features/auth/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/shared/lib';
 
 // Store for simulating AsyncLocalStorage behavior
 let mockAuthUserId: string | null = null;

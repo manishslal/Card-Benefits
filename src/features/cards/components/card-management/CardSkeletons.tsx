@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Skeleton from '@/components/ui/Skeleton';
+import Skeleton from '@/shared/components/ui/Skeleton';
 
 /**
  * CardSkeletons Component - Loading Placeholders for Card Lists

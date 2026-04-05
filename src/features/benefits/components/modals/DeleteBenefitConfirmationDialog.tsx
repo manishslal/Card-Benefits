@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import Button from '@/components/ui/button';
-import { FormError } from '@/components/FormError';
+import Button from '@/shared/components/ui/button';
+import { FormError } from '@/shared/components/forms';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 

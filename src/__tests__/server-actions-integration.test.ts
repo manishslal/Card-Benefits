@@ -15,11 +15,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { addCardToWallet } from '@/actions/wallet';
 import { toggleBenefit, updateUserDeclaredValue } from '@/features/benefits';
-import { ERROR_CODES, ERROR_MESSAGES, AppError } from '@/lib/errors';
+import { ERROR_CODES, ERROR_MESSAGES, AppError } from '@/shared/lib';
 import { Prisma } from '@prisma/client';
 
 // Mock dependencies
-vi.mock('@/lib/prisma', () => ({
+vi.mock('@/shared/lib', () => ({
   prisma: {
     masterCard: {
       findUniqueOrThrow: vi.fn(),
@@ -46,7 +46,7 @@ vi.mock('@/lib/benefitDates', () => ({
   calcExpirationDate: vi.fn(() => new Date('2027-12-31')),
 }));
 
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/shared/lib';
 import {
   getAuthUserIdOrThrow,
   verifyPlayerOwnership,

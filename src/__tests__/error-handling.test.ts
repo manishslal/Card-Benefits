@@ -15,7 +15,7 @@ import {
   ERROR_MESSAGES,
   createErrorResponse,
   createSuccessResponse,
-} from '@/lib/errors';
+} from '@/shared/lib';
 
 // ============================================================================
 // AppError Class Tests

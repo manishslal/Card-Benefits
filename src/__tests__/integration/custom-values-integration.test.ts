@@ -14,7 +14,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/shared/lib';
 import {
   calculateCardROI,
   calculatePlayerROI,
@@ -30,7 +30,7 @@ import {
 } from '@/lib/custom-values/validation';
 
 // Mock Prisma
-vi.mock('@/lib/prisma', () => ({
+vi.mock('@/shared/lib', () => ({
   prisma: {
     userCard: {
       findUnique: vi.fn(),

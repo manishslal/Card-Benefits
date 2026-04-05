@@ -15,8 +15,8 @@
  */
 
 import React, { useState, useRef, useCallback } from 'react';
-import { Button, Input } from '@/components/ui';
-import { useToast } from '@/components/ui/use-toast';
+import { Button, Input } from '@/shared/components/ui';
+import { useToast } from '@/shared/components/ui/use-toast';
 import {
   parseCurrencyInput,
   formatCurrencyDisplay,
@@ -26,7 +26,7 @@ import {
   getUnusuallyHighWarning,
   getUnusuallyLowWarning,
 } from '@/lib/custom-values/validation';
-import { updateUserDeclaredValue } from '@/actions/custom-values';
+import { updateUserDeclaredValue } from '@/features/custom-values';
 
 interface EditableValueFieldProps {
   benefitId: string;

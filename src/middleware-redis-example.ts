@@ -320,7 +320,7 @@ export async function rateLimitAPI(request: NextRequest) {
  *
  * BEFORE (Current - in-memory):
  * ────────────────────────────────
- * import { loginRateLimiter } from '@/lib/rate-limiter';
+ * import { loginRateLimiter } from '@/shared/lib';
  *
  * export async function POST(request: Request) {
  *   const body = await request.json();

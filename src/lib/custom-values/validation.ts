@@ -11,7 +11,7 @@
  * - Max value: 999,999,999 cents ($9,999,999.99)
  */
 
-import { AppError, ERROR_CODES } from '@/lib/errors';
+import { AppError, ERROR_CODES } from '@/shared/lib';
 
 /**
  * Maximum safe value in cents (upper bound for input validation)

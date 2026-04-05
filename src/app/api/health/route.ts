@@ -34,7 +34,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/shared/lib';
 
 export async function GET() {
   const startTime = Date.now();

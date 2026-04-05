@@ -13,15 +13,15 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/shared/lib';
 import {
   findWithinBatchDuplicates,
   findDatabaseDuplicates,
   detectDuplicates,
-} from '@/lib/import/duplicate-detector';
+} from '@/features/import-export';
 
 // Mock Prisma
-vi.mock('@/lib/prisma', () => ({
+vi.mock('@/shared/lib', () => ({
   prisma: {
     userCard: {
       findUnique: vi.fn(),

@@ -12,8 +12,8 @@
  */
 
 import { getAuthUserId } from '../context/auth-context';
-import { prisma } from '@/lib/prisma';
-import { AppError, ERROR_CODES } from '@/lib/errors';
+import { prisma } from '@/shared/lib';
+import { AppError, ERROR_CODES } from '@/shared/lib';
 import type { OwnershipCheckResult } from '../types';
 
 // ============================================================

@@ -10,8 +10,8 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import type { ActionResponse, SuccessResponse, ErrorResponse } from '@/lib/errors';
-import type { ErrorCode } from '@/lib/errors';
+import type { ActionResponse, SuccessResponse, ErrorResponse } from '@/shared/lib';
+import type { ErrorCode } from '@/shared/lib';
 
 /**
  * Load .env.test and populate process.env with test-specific values.

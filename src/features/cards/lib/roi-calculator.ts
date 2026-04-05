@@ -17,7 +17,7 @@
  * - Household ROI: < 300ms
  */
 
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/shared/lib';
 
 /**
  * Cache for ROI values with TTL.

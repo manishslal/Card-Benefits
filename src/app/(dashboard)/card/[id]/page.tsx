@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { SafeDarkModeToggle } from '@/components/SafeDarkModeToggle';
-import Button from '@/components/ui/button';
+import { SafeDarkModeToggle } from '@/shared/components/ui';
+import Button from '@/shared/components/ui/button';
 import Link from 'next/link';
 import { BenefitsList, BenefitsGrid, AddBenefitModal, EditBenefitModal, DeleteBenefitConfirmationDialog } from '@/features/benefits';
 import { CreditCard, ArrowLeft, Plus } from 'lucide-react';

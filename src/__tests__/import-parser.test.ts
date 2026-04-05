@@ -20,7 +20,7 @@ import {
   validateFileFormat,
   detectColumnMapping,
   inferRecordType,
-} from '@/lib/import/parser';
+} from '@/features/import-export';
 
 // ============================================================================
 // SECTION 1: File Format Detection & Validation (15 tests)

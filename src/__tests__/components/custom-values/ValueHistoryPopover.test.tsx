@@ -16,7 +16,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ValueHistoryPopover } from '@/components/custom-values/ValueHistoryPopover';
-import type { BenefitValueChange } from '@/lib/types/custom-values';
+import type { BenefitValueChange } from '@/features/custom-values/types';
 
 describe('ValueHistoryPopover Component', () => {
   const mockHistory: BenefitValueChange[] = [

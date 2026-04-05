@@ -7,11 +7,11 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as cardActions from '@/features/cards/actions/card-management';
-import { AppError, ERROR_CODES } from '@/lib/errors';
+import { AppError, ERROR_CODES } from '@/shared/lib';
 import { assertSuccess, assertError } from '@/__tests__/setup';
 
 // Mock dependencies
-vi.mock('@/lib/prisma', () => ({
+vi.mock('@/shared/lib', () => ({
   prisma: {
     userCard: {
       findMany: vi.fn(),
@@ -40,7 +40,7 @@ vi.mock('@/lib/card-validation', () => ({
   validateBulkUpdateInput: vi.fn()
 }));
 
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/shared/lib';
 import * as authServer from '@/features/auth/lib/auth';
 import * as cardValidation from '@/features/cards/lib/validation';
 

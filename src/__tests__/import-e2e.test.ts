@@ -12,16 +12,16 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/shared/lib';
 import {
   uploadImportFile,
   validateImportFile,
   checkImportDuplicates,
   performImportCommit,
-} from '@/actions/import';
+} from '@/features/import-export';
 
 // Mock Prisma
-vi.mock('@/lib/prisma', () => ({
+vi.mock('@/shared/lib', () => ({
   prisma: {
     importJob: {
       create: vi.fn(),

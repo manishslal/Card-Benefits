@@ -27,12 +27,12 @@ import {
 import {
   validateEmail,
   validateString,
-} from '@/lib/validation';
+} from '@/shared/lib';
 import {
   AppError,
   ERROR_CODES,
   ERROR_MESSAGES,
-} from '@/lib/errors';
+} from '@/shared/lib';
 
 // ============================================================
 // Type Definitions

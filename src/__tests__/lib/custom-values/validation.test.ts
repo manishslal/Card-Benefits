@@ -28,7 +28,7 @@ import {
   getPresetsForBenefitType,
   MAX_BENEFIT_VALUE_CENTS,
 } from '@/lib/custom-values/validation';
-import { AppError } from '@/lib/errors';
+import { AppError } from '@/shared/lib';
 
 describe('validateBenefitValue', () => {
   // Valid values

@@ -5,7 +5,7 @@
  * All validation functions throw AppError on failure.
  */
 
-import { ERROR_CODES, AppError } from '@/lib/errors';
+import { ERROR_CODES, AppError } from '@/shared/lib';
 import {
   CardStatus,
   VALID_CARD_TRANSITIONS,

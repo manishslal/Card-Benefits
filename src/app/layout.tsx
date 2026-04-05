@@ -12,9 +12,9 @@ import '@/styles/design-tokens.css';
 import '@/styles/animations.css';
 import '@/styles/globals.css';
 import { Geist } from "next/font/google";
-import { cn } from "@/lib/utils";
-import { ThemeProvider } from '@/components/providers/ThemeProvider';
-import { ClientLayoutWrapper } from '@/components/ClientLayoutWrapper';
+import { cn } from "@/shared/lib";
+import { ThemeProvider } from '@/shared/components/providers/ThemeProvider';
+import { ClientLayoutWrapper } from '@/shared/components/layout';
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 

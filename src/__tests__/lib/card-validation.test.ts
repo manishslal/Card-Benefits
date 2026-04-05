@@ -17,7 +17,7 @@ import {
   validateCardUpdateInput,
   validateBulkUpdateInput
 } from '@/features/cards/lib/validation';
-import { AppError, ERROR_CODES } from '@/lib/errors';
+import { AppError, ERROR_CODES } from '@/shared/lib';
 
 // ============================================================================
 // Card Status Validation Tests

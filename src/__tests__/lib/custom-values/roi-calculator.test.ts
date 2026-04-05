@@ -22,10 +22,10 @@ import {
   clearROICache,
   getROICacheStats,
 } from '@/features/cards/lib/roi-calculator';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/shared/lib';
 
 // Mock Prisma
-vi.mock('@/lib/prisma', () => ({
+vi.mock('@/shared/lib', () => ({
   prisma: {
     userCard: {
       findUnique: vi.fn(),

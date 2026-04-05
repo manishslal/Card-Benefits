@@ -10,7 +10,7 @@
  */
 
 import { SessionPayload } from '../types';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/shared/lib';
 
 // ============================================================
 // Session Expiration

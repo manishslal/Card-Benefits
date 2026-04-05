@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/shared/lib';
 import {
   validateCardRecord,
   validateBenefitRecord,
@@ -26,10 +26,10 @@ import {
   validateStickerValue,
   validateDeclaredValue,
   type ValidationResult,
-} from '@/lib/import/validator';
+} from '@/features/import-export';
 
 // Mock Prisma
-vi.mock('@/lib/prisma', () => ({
+vi.mock('@/shared/lib', () => ({
   prisma: {
     masterCard: {
       findFirst: vi.fn(),

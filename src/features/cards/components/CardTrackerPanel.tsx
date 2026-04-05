@@ -31,7 +31,7 @@ import {
   getNetAnnualFee,
   MS_PER_DAY,
 } from '@/features/cards/lib/calculations';
-import { formatCurrency } from '@/lib/format-currency';
+import { formatCurrency } from '@/shared/lib';
 import { toggleBenefit } from '@/features/benefits';
 
 // ---------------------------------------------------------------------------

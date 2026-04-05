@@ -14,16 +14,16 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/shared/lib';
 import {
   uploadImportFile,
   validateImportFile,
   checkImportDuplicates,
   performImportCommit,
-} from '@/actions/import';
+} from '@/features/import-export';
 
 // Mock Prisma
-vi.mock('@/lib/prisma', () => ({
+vi.mock('@/shared/lib', () => ({
   prisma: {
     importJob: {
       create: vi.fn(),
@@ -68,7 +68,7 @@ vi.mock('@/features/auth/lib/auth', () => ({
   getAuthUserIdOrThrow: vi.fn(() => 'user-1'),
   verifyPlayerOwnership: vi.fn(async (playerId: string, userId: string) => {
     // Use the mocked prisma to check ownership (simulating real behavior)
-    const prismaModule = await import('@/lib/prisma');
+    const prismaModule = await import('@/shared/lib');
     const player = await (prismaModule.prisma as any).player.findUnique({
       where: { id: playerId },
       select: { userId: true },

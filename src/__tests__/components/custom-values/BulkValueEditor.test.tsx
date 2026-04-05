@@ -18,7 +18,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BulkValueEditor } from '@/components/custom-values/BulkValueEditor';
-import type { BenefitForBulkEdit } from '@/lib/types/custom-values';
+import type { BenefitForBulkEdit } from '@/features/custom-values/types';
 
 describe('BulkValueEditor Component', () => {
   const mockBenefits: BenefitForBulkEdit[] = [

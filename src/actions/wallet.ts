@@ -1,19 +1,19 @@
 'use server';
 
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/shared/lib';
 import { calcExpirationDate } from '@/features/benefits/lib';
 import { getAuthUserIdOrThrow, verifyPlayerOwnership } from '@/features/auth/lib/auth';
 import {
   validateUUID,
   validateDate,
-} from '@/lib/validation';
+} from '@/shared/lib';
 import {
   createErrorResponse,
   createSuccessResponse,
   AppError,
   ERROR_CODES,
   ActionResponse,
-} from '@/lib/errors';
+} from '@/shared/lib';
 import { Prisma } from '@prisma/client';
 import type { UserCard } from '@prisma/client';
 

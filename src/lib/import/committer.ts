@@ -16,8 +16,8 @@
  * - Error details are logged for debugging
  */
 
-import { prisma } from '@/lib/prisma';
-import { AppError } from '@/lib/errors';
+import { prisma } from '@/shared/lib';
+import { AppError } from '@/shared/lib';
 import { ImportRecordData } from './schema';
 import type { Prisma } from '@prisma/client';
 

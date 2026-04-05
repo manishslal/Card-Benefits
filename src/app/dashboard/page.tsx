@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { SafeDarkModeToggle } from '@/components/SafeDarkModeToggle';
-import Button from '@/components/ui/button';
-import EmptyState from '@/components/ui/EmptyState';
+import { SafeDarkModeToggle } from '@/shared/components/ui';
+import Button from '@/shared/components/ui/button';
+import EmptyState from '@/shared/components/ui/EmptyState';
 import Link from 'next/link';
 import CardSwitcher from '@/components/features/CardSwitcher';
 import DashboardSummary from '@/components/features/DashboardSummary';

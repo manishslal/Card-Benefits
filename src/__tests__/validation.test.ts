@@ -15,8 +15,8 @@ import {
   validateUUID,
   validateEnum,
   validateMonetaryValue,
-} from '@/lib/validation';
-import { AppError, ERROR_CODES } from '@/lib/errors';
+} from '@/shared/lib';
+import { AppError, ERROR_CODES } from '@/shared/lib';
 
 // ============================================================================
 // Email Validation Tests

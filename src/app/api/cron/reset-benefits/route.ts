@@ -16,9 +16,9 @@
 
 import { NextResponse } from 'next/server';
 import { timingSafeEqual } from 'node:crypto';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/shared/lib';
 import { getNextExpirationDate } from '@/features/benefits/lib';
-import { RateLimiter } from '@/lib/rate-limiter';
+import { RateLimiter } from '@/shared/lib';
 
 // ============================================================
 // Rate Limiter Setup

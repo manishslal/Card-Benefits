@@ -12,19 +12,19 @@
  * - Race condition handling uses conditional updates to detect concurrent changes
  */
 
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/shared/lib';
 import { getAuthUserIdOrThrow, verifyBenefitOwnership } from '@/features/auth/lib/auth';
 import {
   validateUUID,
   validateMonetaryValue,
-} from '@/lib/validation';
+} from '@/shared/lib';
 import {
   createErrorResponse,
   createSuccessResponse,
   AppError,
   ERROR_CODES,
   ActionResponse,
-} from '@/lib/errors';
+} from '@/shared/lib';
 import { Prisma } from '@prisma/client';
 import type { UserBenefit } from '@prisma/client';
 

@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import Button from '@/components/ui/button';
-import { SafeDarkModeToggle } from '@/components/SafeDarkModeToggle';
+import Button from '@/shared/components/ui/button';
+import { SafeDarkModeToggle } from '@/shared/components/ui';
 import React from 'react';
 import {
   CreditCard,

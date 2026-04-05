@@ -24,7 +24,7 @@ import {
   AppError,
   ERROR_CODES,
   ERROR_MESSAGES,
-} from '@/lib/errors';
+} from '@/shared/lib';
 
 // ============================================================
 // Type Definitions

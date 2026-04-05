@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import React, { useState } from 'react';
-import Button from '@/components/ui/button';
-import Input from '@/components/ui/Input';
-import { SafeDarkModeToggle } from '@/components/SafeDarkModeToggle';
-import { FormError } from '@/components/FormError';
+import Button from '@/shared/components/ui/button';
+import Input from '@/shared/components/ui/Input';
+import { SafeDarkModeToggle } from '@/shared/components/ui';
+import { FormError } from '@/shared/components/forms';
 import { CreditCard } from 'lucide-react';
 
 /**

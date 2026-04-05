@@ -26,15 +26,15 @@ import {
   getUserByEmail,
   createAndUpdateSession,
 } from '@/features/auth/lib/auth';
-import { RateLimiter } from '@/lib/rate-limiter';
+import { RateLimiter } from '@/shared/lib';
 import {
   validateEmail,
-} from '@/lib/validation';
+} from '@/shared/lib';
 import {
   AppError,
   ERROR_CODES,
   ERROR_MESSAGES,
-} from '@/lib/errors';
+} from '@/shared/lib';
 
 // ============================================================
 // Rate Limiting

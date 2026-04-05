@@ -8,8 +8,8 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import Input from '@/components/ui/Input';
+import { Button } from '@/shared/components/ui/button';
+import Input from '@/shared/components/ui/Input';
 import { Search, X } from 'lucide-react';
 
 interface CardSearchBarProps {

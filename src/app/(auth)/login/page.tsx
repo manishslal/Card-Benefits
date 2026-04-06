@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Button from '@/shared/components/ui/button';
 import Input from '@/shared/components/ui/Input';
 import { SafeDarkModeToggle } from '@/shared/components/ui';
@@ -9,12 +10,13 @@ import { FormError } from '@/shared/components/forms';
 import { CreditCard } from 'lucide-react';
 
 /**
- * Login Page - Redesigned
+ * Login Page - Redesigned with Session Expiration Handling
  * 
  * Features:
  * - Clean form layout with Input component
  * - Email and password fields with labels
  * - Form validation with error messages
+ * - Detects ?expired=true query param and shows friendly "session expired" banner
  * - Sign up link at bottom
  * - Card container with rounded corners
  * - Dark mode support
@@ -25,6 +27,9 @@ import { CreditCard } from 'lucide-react';
 export const dynamic = 'force-dynamic';
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const isSessionExpired = searchParams.get('expired') === 'true';
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -32,6 +37,14 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
+
+  // Auto-focus email field when page loads
+  useEffect(() => {
+    const emailInput = document.getElementById('login-email') as HTMLInputElement;
+    if (emailInput) {
+      setTimeout(() => emailInput.focus(), 100);
+    }
+  }, []);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -126,6 +139,43 @@ export default function LoginPage() {
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
+          {/* Session Expired Banner - Shows when ?expired=true in query params */}
+          {isSessionExpired && (
+            <div
+              className="mb-6 p-4 border-l-4 rounded"
+              style={{
+                backgroundColor: 'var(--color-bg)',
+                borderColor: '#f59e0b',
+              }}
+            >
+              <div className="flex gap-3">
+                <div className="flex-shrink-0">
+                  {/* Alert icon */}
+                  <svg
+                    className="h-5 w-5"
+                    style={{ color: '#f59e0b' }}
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm" style={{ color: '#92400e' }}>
+                    Session Expired
+                  </h3>
+                  <p className="text-sm mt-1" style={{ color: '#92400e' }}>
+                    Your session has expired. Please log in again to continue.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Card Container */}
           <div
             className="p-8 rounded-lg border"

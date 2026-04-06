@@ -223,16 +223,26 @@ async function verifySessionTokenDirect(
 // ============================================================================
 
 /**
- * Create unauthorized (401) response
- * Generic error message prevents information leaks
+ * Create unauthorized (401) response - REDIRECTS to login page
+ * 
+ * SECURITY & UX FIX: Instead of returning raw JSON error (which shows confusing
+ * black page to users), redirect to login page with friendly message.
+ * 
+ * Why redirect instead of JSON response:
+ * - User sees familiar login page, not raw JSON error
+ * - "Your session has expired" message is more helpful than "AUTH_UNAUTHORIZED"
+ * - Query param (?expired=true) allows login page to show banner
+ * - Browser handles redirect transparently
+ * - Session cookie is cleared automatically
+ * 
+ * @param baseUrl - The base URL from the request (used to construct redirect URL)
  */
-function createUnauthorizedResponse(
-  message: string = 'Unauthorized'
-): NextResponse {
-  const response = NextResponse.json(
-    { error: message, code: 'AUTH_UNAUTHORIZED' },
-    { status: 401 }
-  );
+function createUnauthorizedResponse(baseUrl: string): NextResponse {
+  // Redirect to login page with ?expired=true query param
+  // Login page will detect this and show friendly "session expired" message
+  const redirectUrl = new URL('/login?expired=true', baseUrl);
+  
+  const response = NextResponse.redirect(redirectUrl);
 
   // Clear session token cookie on auth failure
   response.cookies.delete('session');
@@ -322,7 +332,7 @@ export async function middleware(request: NextRequest) {
     if (!sessionToken) {
       // No token = no authentication
       console.error('[Middleware] No session token found in cookies');
-      return createUnauthorizedResponse('Authentication required');
+      return createUnauthorizedResponse(request.url);
     }
 
     console.log('[Middleware] Session token found, verifying...');
@@ -339,7 +349,7 @@ export async function middleware(request: NextRequest) {
     if (!valid || !userId) {
       // Session invalid, revoked, expired, or user deleted
       console.error('[Middleware] Token verification failed');
-      return createUnauthorizedResponse('Session invalid or revoked');
+      return createUnauthorizedResponse(request.url);
     }
 
     console.log(`[Middleware] ✓ Authentication successful for user ${userId}`);

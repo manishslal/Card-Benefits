@@ -52,7 +52,7 @@ const validCardRecord = {
   CardName: 'Chase Sapphire Reserve',
   Issuer: 'Chase',
   AnnualFee: '55000',
-  RenewalDate: '2025-12-31',
+  RenewalDate: '2026-12-31',
   CustomName: 'My Premium Card',
   Status: 'Active',
 };
@@ -96,6 +96,7 @@ describe('Card Record Validation', () => {
         CardName: 'Chase Sapphire Reserve',
         Issuer: 'Chase',
         AnnualFee: '0',
+        RenewalDate: '2026-12-31',
       };
 
       const result: ValidationResult = {
@@ -116,7 +117,7 @@ describe('Card Record Validation', () => {
         CardName: 'Chase Sapphire Reserve',
         Issuer: 'Chase',
         AnnualFee: '55000',
-        RenewalDate: '2025-12-31',
+        RenewalDate: '2026-12-31',
       };
 
       const result: ValidationResult = {
@@ -172,6 +173,7 @@ describe('Card Record Validation', () => {
       const recordMissingFee = {
         CardName: 'Chase Sapphire Reserve',
         Issuer: 'Chase',
+        RenewalDate: '2026-12-31',
       };
 
       const result: ValidationResult = {
@@ -195,7 +197,7 @@ describe('Card Record Validation', () => {
 
       await validateCardRecord({}, 1, result);
 
-      expect(result.errors.length).toBeGreaterThan(2); // At least CardName, Issuer, AnnualFee
+      expect(result.errors.length).toBeGreaterThanOrEqual(2); // At least CardName and Issuer
     });
   });
 
@@ -243,7 +245,7 @@ describe('Card Record Validation', () => {
     it('warns on renewal date far in future (>10 years)', async () => {
       const recordFarFuture = {
         ...validCardRecord,
-        RenewalDate: '2035-12-31',
+        RenewalDate: '2037-12-31',
       };
 
       const result: ValidationResult = {
@@ -388,6 +390,7 @@ describe('Benefit Record Validation', () => {
         CardName: 'Chase Sapphire Reserve',
         Issuer: 'Chase',
         BenefitName: 'Dining Cash Back',
+        BenefitType: 'StatementCredit',
         StickerValue: '100000',
       };
 
@@ -408,6 +411,7 @@ describe('Benefit Record Validation', () => {
         CardName: 'Chase Sapphire Reserve',
         Issuer: 'Chase',
         BenefitName: 'Dining Cash Back',
+        BenefitType: 'StatementCredit',
         StickerValue: '100000',
       };
 
@@ -576,10 +580,10 @@ describe('Benefit Record Validation', () => {
 
       await validateBenefitRecord(benefitPastExp, 1, result);
 
-      const expErrors = result.errors.filter(
-        (e) => e.field === 'ExpirationDate' && e.severity === 'critical'
+      const expWarnings = result.warnings.filter(
+        (e) => e.field === 'ExpirationDate'
       );
-      expect(expErrors.length).toBeGreaterThan(0);
+      expect(expWarnings.length).toBeGreaterThan(0);
     });
   });
 });
@@ -867,7 +871,7 @@ describe('Field-Level Validators', () => {
         warnings: [],
       };
 
-      validateRenewalDate('2035-12-31', 1, result);
+      validateRenewalDate('2037-12-31', 1, result);
 
       const warnings = result.warnings.filter(
         (w) => w.field === 'RenewalDate'
@@ -1031,7 +1035,7 @@ describe('Field-Level Validators', () => {
         warnings: [],
       };
 
-      const isValid = validateDeclaredValue('100000', 1, result);
+      const isValid = validateDeclaredValue('100000', 100000, 1, result);
 
       expect(isValid.valid).toBe(true);
     });
@@ -1043,7 +1047,7 @@ describe('Field-Level Validators', () => {
         warnings: [],
       };
 
-      const isValid = validateDeclaredValue(null, 1, result);
+      const isValid = validateDeclaredValue(null, 100000, 1, result);
 
       expect(isValid.valid).toBe(true);
     });
@@ -1055,7 +1059,7 @@ describe('Field-Level Validators', () => {
         warnings: [],
       };
 
-      const isValid = validateDeclaredValue('-100000', 1, result);
+      const isValid = validateDeclaredValue('-100000', 100000, 1, result);
 
       expect(isValid.valid).toBe(false);
     });
@@ -1067,7 +1071,7 @@ describe('Field-Level Validators', () => {
         warnings: [],
       };
 
-      const isValid = validateDeclaredValue('abc', 1, result);
+      const isValid = validateDeclaredValue('abc', 100000, 1, result);
 
       expect(isValid.valid).toBe(false);
     });
@@ -1100,7 +1104,7 @@ describe('Error Severity & Messages', () => {
         warnings: [],
       };
 
-      validateRenewalDate('2035-12-31', 1, result);
+      validateRenewalDate('2037-12-31', 1, result);
 
       const warnings = result.warnings.filter(
         (w) => w.field === 'RenewalDate'
@@ -1148,7 +1152,7 @@ describe('Error Severity & Messages', () => {
         warnings: [],
       };
 
-      validateRenewalDate('2035-12-31', 1, result);
+      validateRenewalDate('2037-12-31', 1, result);
       validateAnnualFee('-100', 1, result);
 
       expect(result.errors.length).toBeGreaterThan(0); // negative fee

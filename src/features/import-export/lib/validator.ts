@@ -201,9 +201,16 @@ export function validateAnnualFee(
   _rowNumber: number,
   result: ValidationResult
 ): { valid: boolean; value?: number } {
-  // Empty/null is allowed (uses default)
+  // Empty/null/undefined must be rejected
   if (fee === null || fee === '' || fee === undefined) {
-    return { valid: true, value: undefined };
+    result.errors.push(
+      createError(
+        'AnnualFee',
+        'Annual fee is required',
+        'Enter a number in cents (e.g., 55000 for $550) or 0 if no annual fee'
+      )
+    );
+    return { valid: false };
   }
 
   const numeric = parseMonetary(fee);
@@ -230,12 +237,12 @@ export function validateAnnualFee(
     return { valid: false };
   }
 
-  // Sanity check: max fee
-  if (numeric > 999999999) {
+  // Sanity check: max fee of $9999.99 (999999 cents)
+  if (numeric > 999999) {
     result.errors.push(
       createError(
         'AnnualFee',
-        `Annual fee exceeds maximum (${numeric} cents = $${(numeric / 100).toFixed(2)})`,
+        `Annual fee exceeds maximum of $9999.99 (got ${numeric} cents = $${(numeric / 100).toFixed(2)})`,
         'Check that the fee is reasonable'
       )
     );
@@ -651,15 +658,8 @@ export function validateUsage(
 export async function validateCardRecord(
   row: Record<string, any> | null | undefined,
   rowNumber: number,
-  _mapping?: Record<string, { systemField: string }>
-): Promise<ValidationResult> {
-  const result: ValidationResult = {
-    valid: true,
-    errors: [],
-    warnings: [],
-    normalizedData: {},
-  };
-
+  result: ValidationResult
+): Promise<void> {
   // Null safety: Check that row exists and is an object
   if (!row || typeof row !== 'object') {
     result.errors.push(
@@ -670,7 +670,7 @@ export async function validateCardRecord(
       )
     );
     result.valid = false;
-    return result;
+    return;
   }
 
   // Validate required fields
@@ -684,13 +684,13 @@ export async function validateCardRecord(
 
   if (!cardNameValid || result.errors.length > 0) {
     result.valid = false;
-    return result;
+    return;
   }
 
   const renewalDateRes = validateRenewalDate(row.RenewalDate, rowNumber, result);
   if (!renewalDateRes.valid) {
     result.valid = false;
-    return result;
+    return;
   }
 
   // Validate optional fields
@@ -710,7 +710,6 @@ export async function validateCardRecord(
   };
 
   result.valid = result.errors.length === 0;
-  return result;
 }
 
 /**
@@ -727,15 +726,8 @@ export async function validateCardRecord(
 export async function validateBenefitRecord(
   row: Record<string, any> | null | undefined,
   rowNumber: number,
-  _mapping?: Record<string, { systemField: string }>
-): Promise<ValidationResult> {
-  const result: ValidationResult = {
-    valid: true,
-    errors: [],
-    warnings: [],
-    normalizedData: {},
-  };
-
+  result: ValidationResult
+): Promise<void> {
   // Null safety: Check that row exists and is an object
   if (!row || typeof row !== 'object') {
     result.errors.push(
@@ -746,7 +738,7 @@ export async function validateBenefitRecord(
       )
     );
     result.valid = false;
-    return result;
+    return;
   }
 
   // Validate card fields (to link benefit to card)
@@ -760,7 +752,7 @@ export async function validateBenefitRecord(
 
   if (!cardNameValid || result.errors.length > 0) {
     result.valid = false;
-    return result;
+    return;
   }
 
   // Validate benefit fields
@@ -775,7 +767,7 @@ export async function validateBenefitRecord(
     result.errors.length > 0
   ) {
     result.valid = false;
-    return result;
+    return;
   }
 
   // Validate optional fields
@@ -806,5 +798,4 @@ export async function validateBenefitRecord(
   };
 
   result.valid = result.errors.length === 0;
-  return result;
 }

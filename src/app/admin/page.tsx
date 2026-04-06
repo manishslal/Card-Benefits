@@ -107,59 +107,63 @@ export default function AdminDashboard() {
     <div className="space-y-8">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Dashboard</h1>
-        <p className="text-slate-600 dark:text-slate-400 mt-2">
+        <h1 className="text-3xl font-bold text-[var(--color-text)]">Dashboard</h1>
+        <p className="text-[var(--color-text-secondary)] mt-2">
           System overview and recent activity
         </p>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 px-4 py-3 rounded-lg">
-          {error}
+        <div className="px-4 py-3 rounded-lg border" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'var(--color-error)' }}>
+          <p style={{ color: 'var(--color-error)' }}>{error}</p>
         </div>
       )}
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { 
-            label: 'Total Cards', 
-            value: isLoading ? '...' : cardCount, 
+          {
+            label: 'Total Cards',
+            value: isLoading ? '...' : cardCount,
             icon: '💳',
             loading: isLoading
           },
-          { 
-            label: 'Users', 
-            value: isLoading ? '...' : userCount, 
+          {
+            label: 'Users',
+            value: isLoading ? '...' : userCount,
             icon: '👥',
             loading: isLoading
           },
-          { 
-            label: 'Benefits', 
-            value: isLoading ? '...' : benefitCount, 
+          {
+            label: 'Benefits',
+            value: isLoading ? '...' : benefitCount,
             icon: '🎁',
             loading: isLoading
           },
-          { 
-            label: 'Audit Logs', 
-            value: auditLoading ? '...' : recentAudits.length, 
+          {
+            label: 'Audit Logs',
+            value: auditLoading ? '...' : recentAudits.length,
             icon: '📋',
             loading: auditLoading
           },
         ].map((stat, idx) => (
-          <div 
-            key={idx} 
-            className={`bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-6 ${
+          <div
+            key={idx}
+            className={`rounded-lg border p-6 ${
               stat.loading ? 'animate-pulse' : ''
             }`}
+            style={{
+              backgroundColor: 'var(--color-bg)',
+              borderColor: 'var(--color-border)',
+            }}
           >
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                <p className="text-sm font-medium text-[var(--color-text-secondary)]">
                   {stat.label}
                 </p>
-                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">
+                <p className="text-3xl font-bold text-[var(--color-text)] mt-2">
                   {stat.value}
                 </p>
               </div>
@@ -170,8 +174,8 @@ export default function AdminDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-6">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+      <div className="rounded-lg border p-6" style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }}>
+        <h2 className="text-lg font-semibold text-[var(--color-text)] mb-4">
           Quick Actions
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -184,7 +188,11 @@ export default function AdminDashboard() {
             <a
               key={idx}
               href={action.href}
-              className="flex items-center justify-center px-4 py-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 font-medium transition-colors"
+              className="flex items-center justify-center px-4 py-3 rounded-lg font-medium transition-colors hover:opacity-80"
+              style={{
+                backgroundColor: 'rgba(51, 86, 208, 0.1)',
+                color: 'var(--color-primary)',
+              }}
             >
               {action.label}
             </a>
@@ -193,8 +201,8 @@ export default function AdminDashboard() {
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-6">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+      <div className="rounded-lg border p-6" style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }}>
+        <h2 className="text-lg font-semibold text-[var(--color-text)] mb-4">
           Recent Activity
         </h2>
 
@@ -203,40 +211,42 @@ export default function AdminDashboard() {
             {[...Array(5)].map((_, idx) => (
               <div
                 key={idx}
-                className="h-16 bg-slate-200 dark:bg-slate-800 rounded-lg animate-pulse"
+                className="h-16 rounded-lg animate-pulse"
+                style={{ backgroundColor: 'var(--color-border)' }}
               />
             ))}
           </div>
         ) : recentAudits.length === 0 ? (
-          <p className="text-slate-600 dark:text-slate-400 text-center py-8">
+          <p className="text-[var(--color-text-secondary)] text-center py-8">
             No recent activity
           </p>
         ) : (
           <div className="space-y-4">
             {recentAudits.map((log: AuditLog, idx: number) => {
               // Format admin email - handle both old and new field names
-              const adminEmail = (log as any).adminUserEmail || 
-                                 (log as any).adminUser?.email || 
+              const adminEmail = (log as any).adminUserEmail ||
+                                 (log as any).adminUser?.email ||
                                  (log as any).adminUser?.firstName ||
                                  'Unknown user';
-              
+
               return (
                 <div
                   key={log.id || idx}
-                  className="flex items-center gap-4 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50"
+                  className="flex items-center gap-4 p-4 rounded-lg"
+                  style={{ backgroundColor: 'var(--color-bg-secondary)' }}
                 >
-                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400 font-semibold text-sm">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm" style={{ backgroundColor: 'rgba(51, 86, 208, 0.15)', color: 'var(--color-primary)' }}>
                     {(log.actionType?.[0] || '—').toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">
+                    <p className="text-sm font-medium text-[var(--color-text)]">
                       {log.actionType || 'Unknown'} {log.resourceType || 'resource'}
                     </p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                    <p className="text-xs text-[var(--color-text-secondary)]">
                       {adminEmail}
                     </p>
                   </div>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                  <span className="text-xs text-[var(--color-text-secondary)] whitespace-nowrap">
                     {log.createdAt
                       ? new Date(log.createdAt).toLocaleDateString()
                       : '—'}
@@ -250,7 +260,8 @@ export default function AdminDashboard() {
         <div className="mt-4">
           <a
             href="/admin/audit"
-            className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+            className="text-sm font-medium hover:underline transition-colors"
+            style={{ color: 'var(--color-primary)' }}
           >
             View all activity →
           </a>

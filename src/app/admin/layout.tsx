@@ -47,14 +47,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }, []);
 
   return (
-    <div className="flex h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="flex h-screen" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
       {/* Sidebar Navigation */}
-      <aside className="hidden md:flex md:w-64 flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
-        <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-200 dark:border-slate-800">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold">
+      <aside className="hidden md:flex md:w-64 flex-col border-r" style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }}>
+        <div className="flex items-center gap-3 px-6 py-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white" style={{ backgroundColor: 'var(--color-primary)' }}>
             CB
           </div>
-          <h1 className="text-lg font-bold text-slate-900 dark:text-white">
+          <h1 className="text-lg font-bold text-[var(--color-text)]">
             Admin
           </h1>
         </div>
@@ -67,25 +67,25 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             { href: '/admin/users', label: 'Users', icon: '👥' },
             { href: '/admin/audit', label: 'Audit Log', icon: '📋' },
           ].map((item) => (
-            <a
+            <Link
               key={item.href}
               href={item.href}
-              className="flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="flex items-center gap-3 px-4 py-2 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors hover:opacity-80"
             >
               <span className="text-lg">{item.icon}</span>
               <span>{item.label}</span>
-            </a>
+            </Link>
           ))}
         </nav>
 
         {/* Footer Section with User Info and Exit Button */}
-        <div className="px-4 py-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+        <div className="px-4 py-4 border-t space-y-3" style={{ borderColor: 'var(--color-border)' }}>
           {/* User Role Info */}
           <div className="text-xs">
-            <p className="text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">
+            <p className="text-[var(--color-text-secondary)] uppercase tracking-wider font-semibold">
               Role
             </p>
-            <p className="text-sm text-slate-900 dark:text-white font-medium mt-1">
+            <p className="text-sm text-[var(--color-text)] font-medium mt-1">
               {isLoading ? '...' : userRole || 'ADMIN'}
             </p>
           </div>
@@ -93,7 +93,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           {/* Back to Dashboard Button */}
           <Link
             href="/dashboard"
-            className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-sm font-medium"
+            className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg transition-colors text-sm font-medium hover:opacity-80"
+            style={{
+              backgroundColor: 'var(--color-bg-secondary)',
+              color: 'var(--color-text-secondary)',
+            }}
           >
             <span>←</span>
             <span>Back to Dashboard</span>
@@ -104,15 +108,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
-        <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-4">
+        <header className="border-b px-4 py-4" style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }}>
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">
+            <h1 className="text-xl font-bold text-[var(--color-text)]">
               Admin Dashboard
             </h1>
             {/* Mobile back button */}
             <Link
               href="/dashboard"
-              className="md:hidden px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-sm"
+              className="md:hidden px-3 py-2 rounded-lg transition-colors text-sm hover:opacity-80"
+              style={{
+                backgroundColor: 'var(--color-bg-secondary)',
+                color: 'var(--color-text-secondary)',
+              }}
             >
               ← Back
             </Link>

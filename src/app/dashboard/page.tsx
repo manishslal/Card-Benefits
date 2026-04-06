@@ -2,14 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { SafeDarkModeToggle } from '@/shared/components/ui';
 import Button from '@/shared/components/ui/button';
 import EmptyState from '@/shared/components/ui/EmptyState';
-import Link from 'next/link';
+import { AppHeader } from '@/shared/components/layout';
 import { CardSwitcher, DashboardSummary } from '@/shared/components/features';
 import { BenefitsGrid, AddBenefitModal, EditBenefitModal, DeleteBenefitConfirmationDialog } from '@/features/benefits';
 import { AddCardModal } from '@/features/cards/components/modals/AddCardModal';
-import { CreditCard, Settings, Plus } from 'lucide-react';
+import { Plus, CreditCard } from 'lucide-react';
 import { SkeletonCard } from '@/shared/components/loaders';
 
 /**
@@ -523,38 +522,7 @@ export default function DashboardPage() {
   if (isLoadingCards) {
     return (
       <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg)' }}>
-        {/* Header */}
-        <header
-          className="sticky top-0 z-40 border-b py-4"
-          style={{
-            backgroundColor: 'var(--color-bg)',
-            borderColor: 'var(--color-border)',
-          }}
-        >
-          <div className="max-w-6xl mx-auto px-4 md:px-8">
-            <div className="flex items-center justify-between">
-              <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold"
-                  style={{ backgroundColor: 'var(--color-primary)' }}
-                >
-                  <CreditCard size={20} />
-                </div>
-                <h1 className="text-lg font-bold text-[var(--color-text)]">CardTrack</h1>
-              </Link>
-
-              <div className="flex items-center gap-3">
-                <SafeDarkModeToggle />
-                <Link href="/settings">
-                  <Button variant="outline" size="sm">
-                    <Settings size={16} className="mr-2" />
-                    Settings
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </header>
+        <AppHeader />
 
         {/* Loading Content */}
         <main className="flex-1 px-4 md:px-8 py-8">
@@ -601,38 +569,7 @@ export default function DashboardPage() {
   if (cardsError && cards.length === 0) {
     return (
       <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg)' }}>
-        {/* Header */}
-        <header
-          className="sticky top-0 z-40 border-b py-4"
-          style={{
-            backgroundColor: 'var(--color-bg)',
-            borderColor: 'var(--color-border)',
-          }}
-        >
-          <div className="max-w-6xl mx-auto px-4 md:px-8">
-            <div className="flex items-center justify-between">
-              <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold"
-                  style={{ backgroundColor: 'var(--color-primary)' }}
-                >
-                  <CreditCard size={20} />
-                </div>
-                <h1 className="text-lg font-bold text-[var(--color-text)]">CardTrack</h1>
-              </Link>
-
-              <div className="flex items-center gap-3">
-                <SafeDarkModeToggle />
-                <Link href="/settings">
-                  <Button variant="outline" size="sm">
-                    <Settings size={16} className="mr-2" />
-                    Settings
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </header>
+        <AppHeader />
 
         {/* Error Content */}
         <main className="flex-1 px-4 md:px-8 py-8 flex items-center justify-center">
@@ -678,40 +615,17 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg)' }}>
-      {/* Header */}
-      <header
-        className="sticky top-0 z-40 border-b py-4"
+      <AppHeader />
+
+      {/* Welcome section below header */}
+      <div
+        className="border-b sticky top-16 z-30"
         style={{
           backgroundColor: 'var(--color-bg)',
           borderColor: 'var(--color-border)',
         }}
       >
-        <div className="max-w-6xl mx-auto px-4 md:px-8">
-          <div className="flex items-center justify-between mb-4">
-            {/* Logo */}
-            <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold"
-                style={{ backgroundColor: 'var(--color-primary)' }}
-              >
-                <CreditCard size={20} />
-              </div>
-              <h1 className="text-lg font-bold text-[var(--color-text)]">CardTrack</h1>
-            </Link>
-
-            {/* Right actions */}
-            <div className="flex items-center gap-3">
-              <SafeDarkModeToggle />
-              <Link href="/settings">
-                <Button variant="outline" size="sm">
-                  <Settings size={16} className="mr-2" />
-                  Settings
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          {/* Welcome section */}
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <h2
@@ -735,7 +649,7 @@ export default function DashboardPage() {
             </Button>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Main Content */}
       <main className="flex-1 px-4 md:px-8 py-8">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { apiClient } from '@/features/admin/lib/api-client';
 import type { AdminUser, PaginationInfo } from '@/features/admin/types/admin';
@@ -19,6 +19,46 @@ export default function UsersPage() {
   const [roleModalOpen, setRoleModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [newRole, setNewRole] = useState<'USER' | 'ADMIN'>('USER');
+
+  // Escape key handler for Role Change Modal
+  useEffect(() => {
+    if (!roleModalOpen) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setRoleModalOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+
+    // Cleanup: Remove listener when modal closes or component unmounts
+    return () => {
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [roleModalOpen]);
+
+  // Manage success message timeout with cleanup
+  useEffect(() => {
+    if (!success) return;
+
+    const timeoutId = setTimeout(() => {
+      setSuccess(null);
+    }, 3000);
+
+    return () => clearTimeout(timeoutId);
+  }, [success]);
+
+  // Manage error message timeout with cleanup
+  useEffect(() => {
+    if (!error) return;
+
+    const timeoutId = setTimeout(() => {
+      setError(null);
+    }, 5000);
+
+    return () => clearTimeout(timeoutId);
+  }, [error]);
 
   const { data, isLoading, mutate } = useSWR<UsersListResponse>(
     `/admin/users?page=${page}&limit=20${search ? `&search=${search}` : ''}`,
@@ -45,7 +85,6 @@ export default function UsersPage() {
       setSuccess(`Role updated successfully`);
       setRoleModalOpen(false);
       mutate();
-      setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to update role';
       setError(message);
@@ -178,7 +217,15 @@ export default function UsersPage() {
       </div>
 
       {roleModalOpen && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            // Only close if clicking on backdrop, not on modal content
+            if (e.target === e.currentTarget) {
+              setRoleModalOpen(false);
+            }
+          }}
+        >
           <div className="bg-white dark:bg-slate-900 rounded-lg max-w-md w-full p-6 border border-slate-200 dark:border-slate-800">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
               Change User Role

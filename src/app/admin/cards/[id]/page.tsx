@@ -24,17 +24,6 @@ export default function CardDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Helper function to validate URL
-  const isValidUrl = (url: string): boolean => {
-    if (!url) return true; // Optional field
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
   // Validation function for Add Benefit form
   const validateBenefitForm = (): string | null => {
     if (!benefitFormData.name.trim()) {
@@ -92,7 +81,7 @@ export default function CardDetailPage() {
     return () => clearTimeout(timeoutId);
   }, [error]);
 
-  const card = cardData?.data;
+  const { data: cardData, isLoading, mutate } = useSWR<CardDetailResponse>(
     cardId ? `/admin/cards/${cardId}` : null,
     async () => {
       if (!cardId) return null;
@@ -114,9 +103,16 @@ export default function CardDetailPage() {
       if (!cardId) return;
       setError(null);
 
+      // Validate before submit
+      const validationError = validateBenefitForm();
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
+
       try {
         await apiClient.post(`/cards/${cardId}/benefits`, {
-          name: benefitFormData.name,
+          name: benefitFormData.name.trim(),
           type: benefitFormData.type,
           stickerValue: parseFloat(benefitFormData.stickerValue),
           resetCadence: benefitFormData.resetCadence,
@@ -126,7 +122,6 @@ export default function CardDetailPage() {
         setShowBenefitModal(false);
         setSuccess('Benefit added successfully');
         mutate();
-        setTimeout(() => setSuccess(null), 3000);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to add benefit';
         setError(message);
@@ -145,7 +140,6 @@ export default function CardDetailPage() {
         await apiClient.delete(`/cards/${cardId}/benefits/${benefitId}`);
         setSuccess('Benefit deleted successfully');
         mutate();
-        setTimeout(() => setSuccess(null), 3000);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to delete benefit';
         setError(message);
@@ -241,7 +235,15 @@ export default function CardDetailPage() {
       </div>
 
       {showBenefitModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            // Only close if clicking on backdrop, not on modal content
+            if (e.target === e.currentTarget) {
+              setShowBenefitModal(false);
+            }
+          }}
+        >
           <div className="bg-white dark:bg-slate-900 rounded-lg max-w-md w-full p-6 border border-slate-200 dark:border-slate-800">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Add Benefit</h2>
 

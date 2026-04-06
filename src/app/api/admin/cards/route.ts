@@ -104,7 +104,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             field,
             message: String(message),
           })),
-        } as any,
+        } as Record<string, unknown>,
         { status: 400 }
       );
     }
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const query = parseResult.data!;
 
     // 3. Build filter conditions
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     // Filter by active status
     if (query.isActive !== undefined) {
@@ -146,7 +146,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     // 4. Build sort order
-    const orderBy: any = {};
+    const orderBy: Record<string, 'asc' | 'desc'> = {};
     switch (query.sortBy) {
       case 'issuer':
         orderBy.issuer = query.sortDirection;
@@ -253,7 +253,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // 2. Parse request body
-    let body: any;
+    let body: Record<string, unknown>;
     try {
       body = await request.json();
     } catch {
@@ -313,7 +313,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         cardName: input.cardName,
         defaultAnnualFee: input.defaultAnnualFee,
         cardImageUrl: input.cardImageUrl,
-        description: input.description,
         displayOrder: 0, // Default order, can be reordered later
         isActive: true,
         isArchived: false,
@@ -327,7 +326,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         displayOrder: true,
         isActive: true,
         isArchived: true,
-        description: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -345,7 +343,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         cardName: card.cardName,
         defaultAnnualFee: card.defaultAnnualFee,
         cardImageUrl: card.cardImageUrl,
-        description: card.description,
       },
       context.ipAddress,
       context.userAgent

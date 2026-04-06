@@ -46,8 +46,9 @@ interface ErrorResponse {
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; benefitId: string } }
+  context: { params: Promise<{ id: string; benefitId: string }> }
 ): Promise<NextResponse> {
+  const params = await context.params;
   try {
     // 1. Verify admin role
     let adminContext;

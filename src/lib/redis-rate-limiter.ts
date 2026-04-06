@@ -146,7 +146,7 @@ class InMemoryRateLimiter {
  * Lockout key: rl:{endpoint}:{identifier}:lockout_until
  */
 class RedisRateLimiter {
-  private redis: any; // Type is 'any' because Redis is loaded conditionally
+  private redis: any;
   private fallback: InMemoryRateLimiter;
   private isAvailable: boolean = true;
 
@@ -155,7 +155,7 @@ class RedisRateLimiter {
     this.fallback = new InMemoryRateLimiter();
 
     // Monitor Redis connection
-    this.redis.on('error', (err: any) => {
+    this.redis.on('error', (err: Error) => {
       console.error('[RedisRateLimiter] Connection error:', err.message);
       this.isAvailable = false;
     });
@@ -325,7 +325,7 @@ class RedisRateLimiter {
    * Get statistics for a specific identifier
    * Useful for monitoring and debugging
    */
-  async getStats(endpoint: string, identifier: string): Promise<Record<string, any>> {
+  async getStats(endpoint: string, identifier: string): Promise<Record<string, unknown>> {
     try {
       if (!this.isAvailable) {
         return { available: false, message: 'Redis unavailable' };
@@ -377,7 +377,7 @@ class RedisRateLimiter {
 /**
  * Global instance management
  */
-let globalRedis: any = null; // Type is 'any' because Redis is loaded conditionally
+let globalRedis: any = null;
 let globalRateLimiter: RedisRateLimiter | null = null;
 
 /**

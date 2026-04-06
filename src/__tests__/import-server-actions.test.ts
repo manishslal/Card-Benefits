@@ -22,41 +22,46 @@ import {
   performImportCommit,
 } from '@/features/import-export';
 
-// Mock Prisma
-vi.mock('@/shared/lib', () => ({
-  prisma: {
-    importJob: {
-      create: vi.fn(),
-      update: vi.fn(),
-      findUnique: vi.fn(),
+// Mock Prisma - use importOriginal to get actual exports like AppError
+vi.mock('@/shared/lib', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/shared/lib')>();
+  
+  return {
+    ...actual,
+    prisma: {
+      importJob: {
+        create: vi.fn(),
+        update: vi.fn(),
+        findUnique: vi.fn(),
+      },
+      importRecord: {
+        createMany: vi.fn(),
+        updateMany: vi.fn(),
+        findMany: vi.fn(),
+      },
+      masterCard: {
+        findFirst: vi.fn(),
+      },
+      userCard: {
+        findUnique: vi.fn(),
+        findMany: vi.fn(),
+        create: vi.fn(),
+        update: vi.fn(),
+      },
+      userBenefit: {
+        findMany: vi.fn(),
+        create: vi.fn(),
+        update: vi.fn(),
+      },
+      player: {
+        findUnique: vi.fn(),
+      },
+      user: {
+        findUnique: vi.fn(),
+      },
     },
-    importRecord: {
-      createMany: vi.fn(),
-      updateMany: vi.fn(),
-      findMany: vi.fn(),
-    },
-    masterCard: {
-      findFirst: vi.fn(),
-    },
-    userCard: {
-      findUnique: vi.fn(),
-      findMany: vi.fn(),
-      create: vi.fn(),
-      update: vi.fn(),
-    },
-    userBenefit: {
-      findMany: vi.fn(),
-      create: vi.fn(),
-      update: vi.fn(),
-    },
-    player: {
-      findUnique: vi.fn(),
-    },
-    user: {
-      findUnique: vi.fn(),
-    },
-  },
-}));
+  };
+});
 
 // Mock auth
 vi.mock('@/lib/auth', () => ({
@@ -365,11 +370,11 @@ describe('validateImportFile Server Action', () => {
         {
           id: 'rec-1',
           recordType: 'Card',
-          data: {
+          data: JSON.stringify({
             CardName: 'Chase Sapphire Reserve',
             Issuer: 'Chase',
             AnnualFee: '55000',
-          },
+          }),
         },
       ]);
       (prisma.masterCard.findFirst as any).mockResolvedValue(mockMasterCard);
@@ -405,11 +410,11 @@ describe('validateImportFile Server Action', () => {
         {
           id: 'rec-1',
           recordType: 'Card',
-          data: {
+          data: JSON.stringify({
             CardName: 'NonExistent',
             Issuer: 'Unknown',
             AnnualFee: '55000',
-          },
+          }),
         },
       ]);
       (prisma.masterCard.findFirst as any).mockResolvedValue(null); // Card not found
@@ -486,16 +491,16 @@ describe('validateImportFile Server Action', () => {
         {
           id: 'rec-1',
           recordType: 'Card',
-          data: {
+          data: JSON.stringify({
             AnnualFee: '-5000', // Invalid
-          },
+          }),
         },
         {
           id: 'rec-2',
           recordType: 'Card',
-          data: {
+          data: JSON.stringify({
             CardName: 'Unknown', // Invalid
-          },
+          }),
         },
       ]);
       (prisma.masterCard.findFirst as any).mockResolvedValue(null);
@@ -530,18 +535,18 @@ describe('checkImportDuplicates Server Action', () => {
         {
           id: 'rec-1',
           recordType: 'Card',
-          data: {
+          data: JSON.stringify({
             CardName: 'Chase Sapphire',
             Issuer: 'Chase',
-          },
+          }),
         },
         {
           id: 'rec-2',
           recordType: 'Card',
-          data: {
+          data: JSON.stringify({
             CardName: 'Chase Sapphire',
             Issuer: 'Chase',
-          },
+          }),
         },
       ]);
       (prisma.userCard.findUnique as any).mockResolvedValue(null);
@@ -567,10 +572,10 @@ describe('checkImportDuplicates Server Action', () => {
         {
           id: 'rec-1',
           recordType: 'Card',
-          data: {
+          data: JSON.stringify({
             CardName: 'Chase Sapphire Reserve',
             Issuer: 'Chase',
-          },
+          }),
         },
       ]);
       (prisma.masterCard.findFirst as any).mockResolvedValue(mockMasterCard);
@@ -591,11 +596,11 @@ describe('checkImportDuplicates Server Action', () => {
         {
           id: 'rec-1',
           recordType: 'Card',
-          data: {
+          data: JSON.stringify({
             CardName: 'Chase Sapphire Reserve',
             Issuer: 'Chase',
             AnnualFee: 55000,
-          },
+          }),
         },
       ]);
       (prisma.masterCard.findFirst as any).mockResolvedValue(mockMasterCard);
@@ -705,11 +710,11 @@ describe('performImportCommit Server Action', () => {
         {
           id: 'rec-1',
           recordType: 'Card',
-          data: {
+          data: JSON.stringify({
             CardName: 'Chase Sapphire Reserve',
             Issuer: 'Chase',
             AnnualFee: 55000,
-          },
+          }),
           status: 'Pending',
         },
       ]);
@@ -741,11 +746,11 @@ describe('performImportCommit Server Action', () => {
         {
           id: 'rec-1',
           recordType: 'Card',
-          data: {
+          data: JSON.stringify({
             CardName: 'Chase Sapphire Reserve',
             Issuer: 'Chase',
             AnnualFee: 55000,
-          },
+          }),
           status: 'Pending',
         },
       ]);
@@ -773,11 +778,11 @@ describe('performImportCommit Server Action', () => {
         {
           id: 'rec-1',
           recordType: 'Benefit',
-          data: {
+          data: JSON.stringify({
             CardName: 'Chase Sapphire Reserve',
             BenefitName: 'Cash Back',
             StickerValue: 300000,
-          },
+          }),
           status: 'Pending',
         },
       ]);
@@ -807,11 +812,11 @@ describe('performImportCommit Server Action', () => {
         {
           id: 'rec-1',
           recordType: 'Card',
-          data: {
+          data: JSON.stringify({
             CardName: 'Chase Sapphire Reserve',
             Issuer: 'Chase',
             AnnualFee: 55000,
-          },
+          }),
           status: 'Update',
         },
       ]);
@@ -845,11 +850,11 @@ describe('performImportCommit Server Action', () => {
         {
           id: 'rec-1',
           recordType: 'Card',
-          data: {
+          data: JSON.stringify({
             CardName: 'Chase Sapphire Reserve',
             Issuer: 'Chase',
             AnnualFee: 55000,
-          },
+          }),
           status: 'Skip',
         },
       ]);
@@ -948,11 +953,11 @@ describe('performImportCommit Server Action', () => {
         {
           id: 'rec-1',
           recordType: 'Card',
-          data: {
+          data: JSON.stringify({
             CardName: 'Chase Sapphire Reserve',
             Issuer: 'Chase',
             AnnualFee: 55000,
-          },
+          }),
         },
       ]);
       (prisma.userCard.create as any).mockRejectedValue(
@@ -1056,11 +1061,11 @@ describe('Full Import Workflow Integration', () => {
       {
         id: 'rec-1',
         recordType: 'Card',
-        data: {
+        data: JSON.stringify({
           CardName: 'Chase Sapphire Reserve',
           Issuer: 'Chase',
           AnnualFee: '55000',
-        },
+        }),
       },
     ]);
     (prisma.importJob.update as any).mockResolvedValue({

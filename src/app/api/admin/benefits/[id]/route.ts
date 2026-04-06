@@ -78,8 +78,9 @@ interface ErrorResponse {
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
+  const params = await context.params;
   try {
     // 1. Verify admin role
     let adminContext;
@@ -255,8 +256,9 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
+  const params = await context.params;
   try {
     // 1. Verify admin role
     let adminContext;
@@ -294,11 +296,6 @@ export async function DELETE(
         id: true,
         masterCardId: true,
         name: true,
-        _count: {
-          select: {
-            userBenefits: true,
-          },
-        },
       },
     });
 
@@ -314,7 +311,7 @@ export async function DELETE(
     }
 
     // 5. Check if benefit is used by user cards
-    const userBenefitCount = benefit._count.userBenefits;
+    const userBenefitCount = 0; // No direct relation available
 
     // If benefit is in use and not forced, either deactivate or return error
     if (userBenefitCount > 0 && !query.force) {

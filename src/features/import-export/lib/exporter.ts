@@ -350,8 +350,8 @@ export async function generateExport(request: ExportRequest): Promise<ExportData
       content: exportResult.content,
       fileSize,
       fileHash,
-      cardsCount: (exportResult as any).cardsCount ?? 0,
-      benefitsCount: (exportResult as any).benefitsCount ?? 0,
+      cardsCount: 'cardsCount' in exportResult ? exportResult.cardsCount : 0,
+      benefitsCount: 'benefitsCount' in exportResult ? exportResult.benefitsCount : 0,
     };
   } catch (error) {
     if (error instanceof AppError) {

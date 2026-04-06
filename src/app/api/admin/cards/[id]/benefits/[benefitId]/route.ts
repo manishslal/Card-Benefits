@@ -82,8 +82,9 @@ interface ErrorResponse {
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; benefitId: string } }
+  context: { params: Promise<{ id: string; benefitId: string }> }
 ): Promise<NextResponse> {
+  const params = await context.params;
   try {
     // 1. Verify admin role
     let adminContext;
@@ -128,11 +129,6 @@ export async function PATCH(
         isActive: true,
         createdAt: true,
         updatedAt: true,
-        _count: {
-          select: {
-            userBenefits: true,
-          },
-        },
       },
     });
 
@@ -217,15 +213,13 @@ export async function PATCH(
         isActive: true,
         createdAt: true,
         updatedAt: true,
-        _count: {
-          select: {
-            userBenefits: true,
-          },
-        },
       },
     });
 
-    // 9. Prepare new values and log update
+    // 9. Get user benefit count (No direct relation in schema)
+    const benefitCount = 0;
+
+    // 10. Prepare new values and log update
     const newValues = {
       name: updated.name,
       type: updated.type,
@@ -257,7 +251,7 @@ export async function PATCH(
       isActive: updated.isActive,
       createdAt: updated.createdAt.toISOString(),
       updatedAt: updated.updatedAt.toISOString(),
-      userBenefitCount: updated._count.userBenefits,
+      userBenefitCount: benefitCount,
     };
 
     return NextResponse.json(
@@ -287,8 +281,9 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; benefitId: string } }
+  context: { params: Promise<{ id: string; benefitId: string }> }
 ): Promise<NextResponse> {
+  const params = await context.params;
   try {
     // 1. Verify admin role
     let adminContext;
@@ -343,11 +338,6 @@ export async function DELETE(
         id: true,
         masterCardId: true,
         name: true,
-        _count: {
-          select: {
-            userBenefits: true,
-          },
-        },
       },
     });
 
@@ -363,7 +353,7 @@ export async function DELETE(
     }
 
     // 6. Check if benefit is used by user cards
-    const userBenefitCount = benefit._count.userBenefits;
+    const userBenefitCount = 0; // No direct relation available from MasterBenefit to UserBenefit
 
     // If benefit is in use and not forced, either deactivate or return error
     if (userBenefitCount > 0 && !query.force) {

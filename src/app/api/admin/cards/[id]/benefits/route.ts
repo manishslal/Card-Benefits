@@ -55,7 +55,6 @@ interface BenefitItem {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  userBenefitCount: number;
 }
 
 interface ListBenefitsResponse {
@@ -83,8 +82,9 @@ interface ErrorResponse {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
+  const params = await context.params;
   try {
     // 1. Verify admin role
     try {
@@ -158,11 +158,6 @@ export async function GET(
           isActive: true,
           createdAt: true,
           updatedAt: true,
-          _count: {
-            select: {
-              userBenefits: true,
-            },
-          },
         },
         orderBy: { createdAt: 'desc' },
         skip,
@@ -183,7 +178,6 @@ export async function GET(
       isActive: benefit.isActive,
       createdAt: benefit.createdAt.toISOString(),
       updatedAt: benefit.updatedAt.toISOString(),
-      userBenefitCount: benefit._count.userBenefits,
     }));
 
     return NextResponse.json(
@@ -219,8 +213,9 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
+  const params = await context.params;
   try {
     // 1. Verify admin role
     let adminContext;
@@ -316,11 +311,6 @@ export async function POST(
         isActive: true,
         createdAt: true,
         updatedAt: true,
-        _count: {
-          select: {
-            userBenefits: true,
-          },
-        },
       },
     });
 
@@ -352,7 +342,6 @@ export async function POST(
       isActive: benefit.isActive,
       createdAt: benefit.createdAt.toISOString(),
       updatedAt: benefit.updatedAt.toISOString(),
-      userBenefitCount: benefit._count.userBenefits,
     };
 
     return NextResponse.json(

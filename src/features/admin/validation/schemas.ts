@@ -330,7 +330,7 @@ export const SuccessResponseSchema = z.object({
   data: z.unknown(),
   pagination: PaginationMetaSchema.optional(),
   message: z.string().optional(),
-  changes: z.record(z.unknown()).optional(),
+  changes: z.record(z.string(), z.unknown()).optional(),
 });
 
 // ============================================================
@@ -373,7 +373,7 @@ export function parseRequestBody<T extends z.ZodSchema>(
     return { success: true, data };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const details = error.errors.map((err) => ({
+      const details = error.issues.map((err) => ({
         field: err.path.join('.'),
         message: err.message,
       }));

@@ -12,7 +12,7 @@
 export {
   // Pagination
   PaginationQuerySchema,
-  PaginationMeta,
+  type PaginationMeta,
   // Card Management
   CreateCardSchema,
   UpdateCardSchema,

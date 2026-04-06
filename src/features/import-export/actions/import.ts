@@ -20,6 +20,7 @@ import {
   createSuccessResponse,
   AppError,
   ActionResponse,
+  ErrorCode,
 } from '@/shared/lib';
 import { parseFile, detectColumnMapping } from '@/features/import-export/lib';
 import { detectDuplicates } from '@/features/import-export/lib';
@@ -53,7 +54,7 @@ export interface ParseResponse {
   preview: Array<{
     rowNumber: number;
     recordType: 'Card' | 'Benefit';
-    data: Record<string, any>;
+    data: Record<string, unknown>;
   }>;
   totalRecords: number;
   previewLimit: number;
@@ -76,7 +77,7 @@ export interface ValidateResponse {
     rowNumber: number;
     recordType: 'Card' | 'Benefit';
     status: 'Valid' | 'Warning' | 'Error';
-    data: Record<string, any>;
+    data: Record<string, unknown>;
     errors: Array<{
       field: string;
       message: string;
@@ -196,7 +197,7 @@ export async function uploadImportFile(
     });
   } catch (error) {
     if (error instanceof AppError) {
-      return createErrorResponse(error.code as any, error.details);
+      return createErrorResponse(error.code, error.details);
     }
 
     console.error('Upload error:', error);
@@ -252,7 +253,7 @@ export async function validateImportFile(
       rowNumber: number;
       recordType: 'Card' | 'Benefit';
       status: 'Valid' | 'Warning' | 'Error';
-      data: Record<string, any>;
+      data: Record<string, unknown>;
       errors: Array<{
         field: string;
         message: string;
@@ -302,7 +303,7 @@ export async function validateImportFile(
     });
   } catch (error) {
     if (error instanceof AppError) {
-      return createErrorResponse(error.code as any, error.details);
+      return createErrorResponse(error.code, error.details);
     }
 
     console.error('Validation error:', error);
@@ -328,12 +329,12 @@ export interface CheckDuplicatesResponse {
     recordType: 'Card' | 'Benefit';
     status: 'Duplicate';
     userDecision: null;
-    newRecord: Record<string, any>;
-    existingRecord: Record<string, any>;
+    newRecord: Record<string, unknown>;
+    existingRecord: Record<string, unknown>;
     differences: Array<{
       field: string;
-      existing: any;
-      new: any;
+      existing: unknown;
+      new: unknown;
     }>;
     suggestedActions: string[];
   }>;
@@ -413,7 +414,7 @@ export async function checkImportDuplicates(
     });
   } catch (error) {
     if (error instanceof AppError) {
-      return createErrorResponse(error.code as any, error.details);
+      return createErrorResponse(error.code, error.details);
     }
 
     console.error('Duplicate check error:', error);
@@ -485,7 +486,7 @@ export async function performImportCommit(
       normalizedData: r.normalizedData
         ? JSON.parse(r.normalizedData)
         : undefined,
-      status: r.status as any,
+      status: r.status as 'Valid' | 'Error' | 'Warning' | 'Duplicate' | 'Skipped' | 'Applied',
       errors: r.validationErrors
         ? JSON.parse(r.validationErrors)
         : [],
@@ -494,7 +495,7 @@ export async function performImportCommit(
         : [],
       isDuplicate: r.isDuplicate,
       duplicateOf: r.duplicateOf || undefined,
-      userResolution: (r.userResolution as any) || undefined,
+      userResolution: (r.userResolution as 'Skip' | 'Update' | 'Merge' | null) || undefined,
     }));
 
     // Commit import
@@ -506,7 +507,7 @@ export async function performImportCommit(
     });
 
     if (!commitResult.success) {
-      return createErrorResponse(commitResult.code as any, commitResult.details);
+      return createErrorResponse(commitResult.code as ErrorCode, commitResult.details);
     }
 
     const summary = `Successfully imported ${commitResult.cardsCreated + commitResult.cardsUpdated} cards and ${commitResult.benefitsCreated + commitResult.benefitsUpdated} benefits.`;
@@ -533,7 +534,7 @@ export async function performImportCommit(
     });
   } catch (error) {
     if (error instanceof AppError) {
-      return createErrorResponse(error.code as any, error.details);
+      return createErrorResponse(error.code, error.details);
     }
 
     console.error('Commit error:', error);

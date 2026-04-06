@@ -19,9 +19,9 @@ import {
  * 
  * @throws {AppError} If status is invalid
  */
-export function validateCardStatus(status: any): status is CardStatus {
+export function validateCardStatus(status: unknown): status is CardStatus {
   const validStatuses: CardStatus[] = ['ACTIVE', 'PENDING', 'PAUSED', 'ARCHIVED', 'DELETED'];
-  return validStatuses.includes(status);
+  return validStatuses.includes(status as CardStatus);
 }
 
 /**
@@ -137,7 +137,7 @@ export function validateAnnualFee(fee: number | null | undefined): void {
  * 
  * @throws {AppError} If date is invalid
  */
-export function validateRenewalDate(date: any, allowPast: boolean = false): void {
+export function validateRenewalDate(date: unknown, allowPast: boolean = false): void {
   if (!(date instanceof Date) || isNaN(date.getTime())) {
     throw new AppError(ERROR_CODES.VALIDATION_FIELD, {
       field: 'renewalDate',
@@ -189,7 +189,7 @@ export function validateDeleteConfirmation(
  * 
  * @throws {AppError} If validation fails
  */
-export function validateBulkCardIds(cardIds: any[]): void {
+export function validateBulkCardIds(cardIds: unknown): void {
   if (!Array.isArray(cardIds)) {
     throw new AppError(ERROR_CODES.VALIDATION_FIELD, {
       field: 'cardIds',
@@ -258,8 +258,8 @@ export function validateCardUpdateInput(input: Record<string, any>): void {
  * @throws {AppError} If validation fails
  */
 export function validateBulkUpdateInput(input: {
-  cardIds?: any[];
-  updates?: Record<string, any>;
+  cardIds?: unknown;
+  updates?: Record<string, unknown>;
 }): void {
   if (!input.cardIds) {
     throw new AppError(ERROR_CODES.VALIDATION_FIELD, {

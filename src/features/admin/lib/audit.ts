@@ -9,7 +9,7 @@
  */
 
 import { prisma } from '@/shared/lib';
-import type { AdminRequestContext } from './auth';
+import type { AdminRequestContext } from '../middleware/auth';
 
 // ============================================================
 // Types

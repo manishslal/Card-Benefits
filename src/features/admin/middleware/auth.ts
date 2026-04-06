@@ -87,7 +87,6 @@ export function extractRequestContext(request: NextRequest): {
   const ipAddress =
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     request.headers.get('x-real-ip') ||
-    request.ip ||
     null;
 
   const userAgent = request.headers.get('user-agent') || null;

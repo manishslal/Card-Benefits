@@ -166,7 +166,9 @@ export default function UsersPage() {
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          user.role === 'ADMIN'
+                          user.role === 'SUPER_ADMIN'
+                            ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300'
+                            : user.role === 'ADMIN'
                             ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
                             : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                         }`}>
@@ -177,7 +179,7 @@ export default function UsersPage() {
                         <button
                           onClick={() => {
                             setSelectedUser(user);
-                            setNewRole(user.role === 'ADMIN' ? 'USER' : 'ADMIN');
+                            setNewRole('USER');
                             setRoleModalOpen(true);
                           }}
                           className="px-3 py-1 rounded text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100"
@@ -231,9 +233,24 @@ export default function UsersPage() {
               Change User Role
             </h2>
 
-            <p className="text-slate-600 dark:text-slate-400 mb-6">
-              Promote {selectedUser.name} to {newRole}?
+            <p className="text-slate-600 dark:text-slate-400 mb-4">
+              Select a new role for {selectedUser.name}
             </p>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Role
+              </label>
+              <select
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value as 'USER' | 'ADMIN' | 'SUPER_ADMIN')}
+                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="USER">User</option>
+                <option value="ADMIN">Admin</option>
+                <option value="SUPER_ADMIN">Super Admin</option>
+              </select>
+            </div>
 
             <div className="flex gap-3">
               <button

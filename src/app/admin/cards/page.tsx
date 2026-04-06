@@ -1,11 +1,14 @@
 /**
  * Admin Cards Management Page
  * List, create, edit, and delete card types
+ * 
+ * Implements optimistic UI updates: immediately reflect user actions in UI,
+ * revert on error if API call fails. This provides fast, responsive UX.
  */
 
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import useSWR from 'swr';
 import { apiClient } from '@/features/admin/lib/api-client';
 import type { Card, PaginationInfo } from '@/features/admin/types/admin';
@@ -20,6 +23,8 @@ export default function CardsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteCardId, setDeleteCardId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     issuer: '',
     cardName: '',
@@ -28,6 +33,11 @@ export default function CardsPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Track request ID to prevent race condition - responses from older requests are ignored
+  const requestIdRef = useRef(0);
 
   // Helper function to validate URL
   const isValidUrl = (url: string): boolean => {
@@ -82,6 +92,24 @@ export default function CardsPage() {
     };
   }, [showCreateModal]);
 
+  // Escape key handler for Delete Modal
+  useEffect(() => {
+    if (!showDeleteModal) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowDeleteModal(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+
+    // Cleanup: Remove listener when modal closes or component unmounts
+    return () => {
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [showDeleteModal]);
+
   // Manage success message timeout with cleanup
   useEffect(() => {
     if (!success) return;
@@ -104,10 +132,14 @@ export default function CardsPage() {
     return () => clearTimeout(timeoutId);
   }, [error]);
 
-  // Fetch cards with pagination
+  // Fetch cards with pagination and request tracking for race condition prevention
   const { data, isLoading, mutate } = useSWR<CardsListResponse>(
     `/admin/cards?page=${page}&limit=20${search ? `&search=${search}` : ''}`,
     async () => {
+      // Increment request ID to track this request
+      requestIdRef.current += 1;
+      const currentRequestId = requestIdRef.current;
+
       try {
         const response = await apiClient.get('/cards', {
           params: {
@@ -116,7 +148,13 @@ export default function CardsPage() {
             search: search || undefined,
           },
         });
-        return response;
+
+        // Only update state if this is the latest request
+        // This prevents out-of-order responses from overwriting newer data
+        if (currentRequestId === requestIdRef.current) {
+          return response;
+        }
+        return null;
       } catch (err) {
         console.error('Error fetching cards:', err);
         throw err;
@@ -136,6 +174,37 @@ export default function CardsPage() {
         return;
       }
 
+      setIsSubmitting(true);
+
+      // Create optimistic card object for UI update
+      const optimisticCard: Card = {
+        id: `temp-${Date.now()}`, // Temporary ID
+        issuer: formData.issuer.trim(),
+        cardName: formData.cardName.trim(),
+        defaultAnnualFee: parseFloat(formData.defaultAnnualFee),
+        cardImageUrl: formData.cardImageUrl.trim(),
+        displayOrder: 0,
+        isActive: true,
+        isArchived: false,
+        benefitCount: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      // Store previous data for rollback in case of error
+      const previousData = data;
+
+      // Optimistically update UI with new card
+      if (data) {
+        mutate(
+          {
+            ...data,
+            data: [optimisticCard, ...data.data],
+          },
+          false // Don't revalidate immediately
+        );
+      }
+
       try {
         await apiClient.post('/cards', {
           issuer: formData.issuer.trim(),
@@ -147,30 +216,82 @@ export default function CardsPage() {
         setFormData({ issuer: '', cardName: '', defaultAnnualFee: '', cardImageUrl: '' });
         setShowCreateModal(false);
         setSuccess('Card created successfully');
+        
+        // Revalidate with server to get real card with actual ID
         mutate();
       } catch (err) {
+        // Rollback optimistic update on error
+        if (previousData) {
+          mutate(previousData, false);
+        }
         const message = err instanceof Error ? err.message : 'Failed to create card';
         setError(message);
+      } finally {
+        setIsSubmitting(false);
       }
     },
-    [formData, mutate]
+    [formData, data, mutate]
+  );
+
+  const handleDeleteCardConfirm = useCallback(
+    async () => {
+      if (!deleteCardId) return;
+
+      setIsDeleting(true);
+      setError(null);
+
+      // Store previous data for rollback in case of error
+      const previousData = data;
+
+      // Optimistically remove card from UI
+      if (data) {
+        mutate(
+          {
+            ...data,
+            data: data.data.filter((card: Card) => card.id !== deleteCardId),
+          },
+          false // Don't revalidate immediately
+        );
+      }
+
+      try {
+        await apiClient.delete(`/cards/${deleteCardId}`);
+        setSuccess('Card deleted successfully');
+        setShowDeleteModal(false);
+        setDeleteCardId(null);
+        
+        // Revalidate with server
+        mutate();
+      } catch (err) {
+        // Rollback optimistic update on error
+        if (previousData) {
+          mutate(previousData, false);
+        }
+        const message = err instanceof Error ? err.message : 'Failed to delete card';
+        setError(message);
+      } finally {
+        setIsDeleting(false);
+      }
+    },
+    [deleteCardId, data, mutate]
   );
 
   const handleDeleteCard = useCallback(
-    async (cardId: string) => {
-      if (!confirm('Are you sure you want to delete this card?')) return;
-
-      try {
-        await apiClient.delete(`/cards/${cardId}`);
-        setSuccess('Card deleted successfully');
-        mutate();
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to delete card';
-        setError(message);
-      }
+    (cardId: string) => {
+      setDeleteCardId(cardId);
+      setShowDeleteModal(true);
     },
-    [mutate]
+    []
   );
+
+  // Reset page to 1 when search changes to prevent pagination inconsistency
+  useEffect(() => {
+    // This effect ensures when user types in search, page resets to 1
+    // This prevents showing page 2 results with a new search query
+    if (page !== 1) {
+      setPage(1);
+    }
+  }, [search]);
 
   const cards = data?.data || [];
   const pagination = data?.pagination || { page: 1, limit: 20, total: 0, totalPages: 0, hasMore: false };
@@ -214,7 +335,7 @@ export default function CardsPage() {
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
-            setPage(1);
+            // Page reset is handled by useEffect to prevent race conditions
           }}
           className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
@@ -256,7 +377,14 @@ export default function CardsPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                   {cards.map((card: Card) => (
-                    <tr key={card.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <tr
+                      key={card.id}
+                      className={`transition-colors ${
+                        card.id.startsWith('temp-')
+                          ? 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100'
+                          : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                      }`}
+                    >
                       <td className="px-6 py-4 text-sm text-slate-900 dark:text-white font-medium">
                         {card.issuer}
                       </td>
@@ -271,12 +399,14 @@ export default function CardsPage() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <a
-                            href={`/admin/cards/${card.id}`}
-                            className="px-3 py-1 rounded text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30"
-                          >
-                            View
-                          </a>
+                          {!card.id.startsWith('temp-') && (
+                            <a
+                              href={`/admin/cards/${card.id}`}
+                              className="px-3 py-1 rounded text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                            >
+                              View
+                            </a>
+                          )}
                           <button
                             onClick={() => handleDeleteCard(card.id)}
                             className="px-3 py-1 rounded text-sm bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30"
@@ -299,15 +429,15 @@ export default function CardsPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setPage(Math.max(1, page - 1))}
-                  disabled={page === 1}
-                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 disabled:opacity-50"
+                  disabled={page === 1 || isLoading}
+                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setPage(page + 1)}
-                  disabled={!pagination.hasMore}
-                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 disabled:opacity-50"
+                  disabled={!pagination.hasMore || isLoading}
+                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>
@@ -341,9 +471,10 @@ export default function CardsPage() {
                 <input
                   type="text"
                   required
+                  disabled={isSubmitting}
                   value={formData.issuer}
                   onChange={(e) => setFormData({ ...formData, issuer: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                   placeholder="e.g., Visa, Mastercard"
                 />
               </div>
@@ -355,9 +486,10 @@ export default function CardsPage() {
                 <input
                   type="text"
                   required
+                  disabled={isSubmitting}
                   value={formData.cardName}
                   onChange={(e) => setFormData({ ...formData, cardName: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                   placeholder="e.g., Premium Card"
                 />
               </div>
@@ -369,11 +501,12 @@ export default function CardsPage() {
                 <input
                   type="number"
                   required
+                  disabled={isSubmitting}
                   min="0"
                   step="0.01"
                   value={formData.defaultAnnualFee}
                   onChange={(e) => setFormData({ ...formData, defaultAnnualFee: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                   placeholder="0.00"
                 />
               </div>
@@ -384,9 +517,10 @@ export default function CardsPage() {
                 </label>
                 <input
                   type="url"
+                  disabled={isSubmitting}
                   value={formData.cardImageUrl}
                   onChange={(e) => setFormData({ ...formData, cardImageUrl: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                   placeholder="https://example.com/image.jpg"
                 />
               </div>
@@ -395,18 +529,62 @@ export default function CardsPage() {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                  disabled={isSubmitting}
+                  className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium transition-colors"
+                  disabled={isSubmitting}
+                  className="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  Create Card
+                  {isSubmitting && <span className="animate-spin">⏳</span>}
+                  {isSubmitting ? 'Creating...' : 'Create Card'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Modal */}
+      {showDeleteModal && deleteCardId && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            // Only close if clicking on backdrop, not on modal content
+            if (e.target === e.currentTarget) {
+              setShowDeleteModal(false);
+            }
+          }}
+        >
+          <div className="bg-white dark:bg-slate-900 rounded-lg max-w-md w-full p-6 border border-slate-200 dark:border-slate-800">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+              Delete Card
+            </h2>
+
+            <p className="text-slate-600 dark:text-slate-400 mb-6">
+              Are you sure you want to delete this card? This action cannot be undone.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteCardConfirm}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isDeleting && <span className="animate-spin">⏳</span>}
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
           </div>
         </div>
       )}

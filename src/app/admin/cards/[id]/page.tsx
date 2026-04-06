@@ -23,6 +23,8 @@ export default function CardDetailPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   // Validation function for Add Benefit form
   const validateBenefitForm = (): string | null => {
@@ -110,6 +112,39 @@ export default function CardDetailPage() {
         return;
       }
 
+      setIsSubmitting(true);
+
+      // Create optimistic benefit object for UI update
+      const optimisticBenefit: Benefit = {
+        id: `temp-${Date.now()}`, // Temporary ID
+        masterCardId: cardId,
+        name: benefitFormData.name.trim(),
+        type: benefitFormData.type as any,
+        stickerValue: parseFloat(benefitFormData.stickerValue),
+        resetCadence: benefitFormData.resetCadence as any,
+        isDefault: false,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      // Store previous data for rollback in case of error
+      const previousData = cardData;
+
+      // Optimistically update UI with new benefit
+      if (cardData) {
+        mutate(
+          {
+            ...cardData,
+            data: {
+              ...cardData.data,
+              benefits: [...(cardData.data.benefits || []), optimisticBenefit],
+            },
+          },
+          false // Don't revalidate immediately
+        );
+      }
+
       try {
         await apiClient.post(`/cards/${cardId}/benefits`, {
           name: benefitFormData.name.trim(),
@@ -121,13 +156,21 @@ export default function CardDetailPage() {
         setBenefitFormData({ name: '', type: 'INSURANCE', stickerValue: '', resetCadence: 'ANNUAL' });
         setShowBenefitModal(false);
         setSuccess('Benefit added successfully');
+        
+        // Revalidate with server to get real benefit with actual ID
         mutate();
       } catch (err) {
+        // Rollback optimistic update on error
+        if (previousData) {
+          mutate(previousData, false);
+        }
         const message = err instanceof Error ? err.message : 'Failed to add benefit';
         setError(message);
+      } finally {
+        setIsSubmitting(false);
       }
     },
-    [cardId, benefitFormData, mutate]
+    [cardId, benefitFormData, cardData, mutate]
   );
 
   const handleDeleteBenefit = useCallback(
@@ -136,16 +179,43 @@ export default function CardDetailPage() {
       if (!confirm('Are you sure you want to delete this benefit?')) return;
       setError(null);
 
+      setIsDeleting(benefitId);
+
+      // Store previous data for rollback in case of error
+      const previousData = cardData;
+
+      // Optimistically remove benefit from UI
+      if (cardData) {
+        mutate(
+          {
+            ...cardData,
+            data: {
+              ...cardData.data,
+              benefits: (cardData.data.benefits || []).filter((b: Benefit) => b.id !== benefitId),
+            },
+          },
+          false // Don't revalidate immediately
+        );
+      }
+
       try {
         await apiClient.delete(`/cards/${cardId}/benefits/${benefitId}`);
         setSuccess('Benefit deleted successfully');
+        
+        // Revalidate with server
         mutate();
       } catch (err) {
+        // Rollback optimistic update on error
+        if (previousData) {
+          mutate(previousData, false);
+        }
         const message = err instanceof Error ? err.message : 'Failed to delete benefit';
         setError(message);
+      } finally {
+        setIsDeleting(null);
       }
     },
-    [cardId, mutate]
+    [cardId, cardData, mutate]
   );
 
   if (isLoading) {
@@ -214,18 +284,24 @@ export default function CardDetailPage() {
             {benefits.map((benefit: Benefit) => (
               <div
                 key={benefit.id}
-                className="flex items-center justify-between p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50"
+                className={`flex items-center justify-between p-4 rounded-lg transition-colors ${
+                  benefit.id.startsWith('temp-')
+                    ? 'bg-blue-100 dark:bg-blue-900/30'
+                    : 'bg-slate-50 dark:bg-slate-800/50'
+                }`}
               >
                 <div className="flex-1">
                   <p className="font-medium text-slate-900 dark:text-white">{benefit.name}</p>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
-                    {benefit.type} • ${benefit.stickerValue}
+                    {benefit.type} • ${benefit.stickerValue} • {benefit.resetCadence}
                   </p>
                 </div>
                 <button
                   onClick={() => handleDeleteBenefit(benefit.id)}
-                  className="px-3 py-1 rounded text-sm bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100"
+                  disabled={isDeleting === benefit.id}
+                  className="px-3 py-1 rounded text-sm bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 disabled:opacity-50 flex items-center gap-1"
                 >
+                  {isDeleting === benefit.id && <span className="animate-spin text-xs">⏳</span>}
                   Delete
                 </button>
               </div>
@@ -255,11 +331,12 @@ export default function CardDetailPage() {
                 <input
                   type="text"
                   required
+                  disabled={isSubmitting}
                   value={benefitFormData.name}
                   onChange={(e) =>
                     setBenefitFormData({ ...benefitFormData, name: e.target.value })
                   }
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                 />
               </div>
 
@@ -268,11 +345,12 @@ export default function CardDetailPage() {
                   Type *
                 </label>
                 <select
+                  disabled={isSubmitting}
                   value={benefitFormData.type}
                   onChange={(e) =>
                     setBenefitFormData({ ...benefitFormData, type: e.target.value })
                   }
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                 >
                   <option value="INSURANCE">Insurance</option>
                   <option value="CASHBACK">Cashback</option>
@@ -290,29 +368,52 @@ export default function CardDetailPage() {
                 <input
                   type="number"
                   required
+                  disabled={isSubmitting}
                   min="0"
                   step="0.01"
                   value={benefitFormData.stickerValue}
                   onChange={(e) =>
                     setBenefitFormData({ ...benefitFormData, stickerValue: e.target.value })
                   }
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Reset Cadence *
+                </label>
+                <select
+                  disabled={isSubmitting}
+                  value={benefitFormData.resetCadence}
+                  onChange={(e) =>
+                    setBenefitFormData({ ...benefitFormData, resetCadence: e.target.value })
+                  }
+                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                >
+                  <option value="DAILY">Daily</option>
+                  <option value="MONTHLY">Monthly</option>
+                  <option value="ANNUAL">Annual</option>
+                  <option value="ONE_TIME">One Time</option>
+                </select>
               </div>
 
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => setShowBenefitModal(false)}
-                  className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800"
+                  disabled={isSubmitting}
+                  className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium"
+                  disabled={isSubmitting}
+                  className="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  Add
+                  {isSubmitting && <span className="animate-spin">⏳</span>}
+                  {isSubmitting ? 'Adding...' : 'Add'}
                 </button>
               </div>
             </form>

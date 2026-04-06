@@ -59,8 +59,14 @@ export async function verifyAdminRole(request?: NextRequest): Promise<AdminReque
     try {
       // Verify JWT token signature and extract payload
       const payload = verifySessionToken(sessionToken);
-      userId = payload?.userId;
-      if (!userId) {
+      
+      // Validate payload structure - ensure it's an object with required fields
+      if (!payload || typeof payload !== 'object') {
+        throw new Error('INVALID_TOKEN');
+      }
+      
+      userId = payload.userId;
+      if (!userId || typeof userId !== 'string') {
         throw new Error('INVALID_TOKEN');
       }
     } catch (error) {
@@ -191,7 +197,7 @@ export async function tryGetAdminContext(
   request: NextRequest
 ): Promise<AdminRequestContext & { ipAddress: string | null; userAgent: string | null } | null> {
   try {
-    const adminContext = await verifyAdminRole();
+    const adminContext = await verifyAdminRole(request);
     const requestContext = extractRequestContext(request);
     return {
       ...adminContext,

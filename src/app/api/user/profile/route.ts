@@ -200,6 +200,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         email: true,
         firstName: true,
         lastName: true,
+        role: true,
       },
     });
 

@@ -5,8 +5,8 @@
 'use client';
 
 import React, { ReactNode } from 'react';
-import { AdminContextProvider } from '../context/AdminContext';
-import { UIContextProvider } from '../context/UIContext';
+import { AdminContextProvider } from '../../context/AdminContext';
+import { UIContextProvider } from '../../context/UIContext';
 
 interface AdminLayoutProps {
   children: ReactNode;

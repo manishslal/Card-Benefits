@@ -1,0 +1,323 @@
+/**
+ * Admin Cards Management Page
+ * List, create, edit, and delete card types
+ */
+
+'use client';
+
+import { useState, useCallback } from 'react';
+import useSWR from 'swr';
+import { apiClient } from '@/features/admin/lib/api-client';
+import type { Card, PaginationInfo } from '@/features/admin/types/admin';
+
+interface CardsListResponse {
+  success: boolean;
+  data: Card[];
+  pagination: PaginationInfo;
+}
+
+export default function CardsPage() {
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [formData, setFormData] = useState({
+    issuer: '',
+    cardName: '',
+    defaultAnnualFee: '',
+    cardImageUrl: '',
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  // Fetch cards with pagination
+  const { data, isLoading, mutate } = useSWR<CardsListResponse>(
+    `/admin/cards?page=${page}&limit=20${search ? `&search=${search}` : ''}`,
+    async () => {
+      try {
+        const response = await apiClient.get('/cards', {
+          params: {
+            page,
+            limit: 20,
+            search: search || undefined,
+          },
+        });
+        return response;
+      } catch (err) {
+        console.error('Error fetching cards:', err);
+        throw err;
+      }
+    }
+  );
+
+  const handleCreateCard = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    try {
+      await apiClient.post('/cards', {
+        issuer: formData.issuer,
+        cardName: formData.cardName,
+        defaultAnnualFee: parseFloat(formData.defaultAnnualFee),
+        cardImageUrl: formData.cardImageUrl,
+      });
+
+      setFormData({ issuer: '', cardName: '', defaultAnnualFee: '', cardImageUrl: '' });
+      setShowCreateModal(false);
+      setSuccess('Card created successfully');
+      mutate();
+
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create card';
+      setError(message);
+    }
+  }, [formData, mutate]);
+
+  const handleDeleteCard = useCallback(async (cardId: string) => {
+    if (!confirm('Are you sure you want to delete this card?')) return;
+
+    try {
+      await apiClient.delete(`/cards/${cardId}`);
+      setSuccess('Card deleted successfully');
+      mutate();
+
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to delete card';
+      setError(message);
+    }
+  }, [mutate]);
+
+  const cards = data?.data || [];
+  const pagination = data?.pagination || { page: 1, limit: 20, total: 0, totalPages: 0, hasMore: false };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Cards</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-2">
+            Manage master card types
+          </p>
+        </div>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium transition-colors"
+        >
+          + Add Card
+        </button>
+      </div>
+
+      {/* Notifications */}
+      {error && (
+        <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800">
+          {success}
+        </div>
+      )}
+
+      {/* Search */}
+      <div className="flex gap-4">
+        <input
+          type="text"
+          placeholder="Search cards..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      {/* Table */}
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+        {isLoading ? (
+          <div className="p-8 text-center">
+            <div className="inline-block animate-spin">⏳</div>
+            <p className="text-slate-600 dark:text-slate-400 mt-2">Loading cards...</p>
+          </div>
+        ) : cards.length === 0 ? (
+          <div className="p-8 text-center">
+            <p className="text-slate-600 dark:text-slate-400">No cards found</p>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      Issuer
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      Card Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      Annual Fee
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      Benefits
+                    </th>
+                    <th className="px-6 py-3 text-right text-sm font-semibold text-slate-900 dark:text-white">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                  {cards.map((card: Card) => (
+                    <tr key={card.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="px-6 py-4 text-sm text-slate-900 dark:text-white font-medium">
+                        {card.issuer}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                        {card.cardName}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                        ${card.defaultAnnualFee}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                        {card.benefitCount || 0} benefits
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <a
+                            href={`/admin/cards/${card.id}`}
+                            className="px-3 py-1 rounded text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                          >
+                            View
+                          </a>
+                          <button
+                            onClick={() => handleDeleteCard(card.id)}
+                            className="px-3 py-1 rounded text-sm bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="border-t border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
+              <span className="text-sm text-slate-600 dark:text-slate-400">
+                Page {pagination.page} of {pagination.totalPages}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPage(Math.max(1, page - 1))}
+                  disabled={page === 1}
+                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setPage(page + 1)}
+                  disabled={!pagination.hasMore}
+                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Create Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-lg max-w-md w-full p-6 border border-slate-200 dark:border-slate-800">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+              Create New Card
+            </h2>
+
+            <form onSubmit={handleCreateCard} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Issuer *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.issuer}
+                  onChange={(e) => setFormData({ ...formData, issuer: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Visa, Mastercard"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Card Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.cardName}
+                  onChange={(e) => setFormData({ ...formData, cardName: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Premium Card"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Annual Fee *
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  step="0.01"
+                  value={formData.defaultAnnualFee}
+                  onChange={(e) => setFormData({ ...formData, defaultAnnualFee: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Image URL
+                </label>
+                <input
+                  type="url"
+                  value={formData.cardImageUrl}
+                  onChange={(e) => setFormData({ ...formData, cardImageUrl: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="https://example.com/image.jpg"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium transition-colors"
+                >
+                  Create Card
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

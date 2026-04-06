@@ -2,29 +2,21 @@
  * Admin Dashboard Layout
  * Main layout wrapper for all admin pages
  * Handles navigation, theme, and responsive design
+ * 
+ * Note: Auth is verified in middleware.ts before this layout is reached
+ * Middleware ensures only ADMIN/SUPER_ADMIN users can access /admin routes
  */
 
 import { ReactNode } from 'react';
-import { redirect } from 'next/navigation';
-import { auth } from '@/auth';
 
 interface AdminLayoutProps {
   children: ReactNode;
 }
 
-export default async function AdminLayout({ children }: AdminLayoutProps) {
-  // Check authentication and admin role
-  const session = await auth();
+// Declare dynamic to match middleware auth verification
+export const dynamic = 'force-dynamic';
 
-  if (!session?.user) {
-    redirect('/login');
-  }
-
-  // Check if user has admin role
-  if (session.user.role !== 'ADMIN' && session.user.role !== 'SUPER_ADMIN') {
-    redirect('/dashboard');
-  }
-
+export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-950">
       {/* Sidebar Navigation */}
@@ -59,7 +51,7 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
 
         <div className="px-4 py-4 border-t border-slate-200 dark:border-slate-800">
           <div className="text-sm text-slate-600 dark:text-slate-400">
-            {session.user.email}
+            Admin User
           </div>
         </div>
       </aside>

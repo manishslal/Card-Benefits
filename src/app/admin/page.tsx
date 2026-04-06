@@ -8,21 +8,13 @@
 import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { apiClient } from '@/features/admin/lib/api-client';
-import type { DashboardMetrics, AuditLog, Card, AdminUser, Benefit } from '@/features/admin/types/admin';
-
-interface DashboardData {
-  metrics?: DashboardMetrics;
-  cards?: Card[];
-  users?: AdminUser[];
-  benefits?: Benefit[];
-  auditLogs?: AuditLog[];
-}
+import type { AuditLog } from '@/features/admin/types/admin';
 
 export default function AdminDashboard() {
   const [mounted, setMounted] = useState(false);
 
   // Fetch dashboard metrics
-  const { data: dashboardData, isLoading: metricsLoading, error: metricsError } = useSWR<any>(
+  const { data: dashboardData } = useSWR<any>(
     '/admin/cards',
     async () => {
       try {

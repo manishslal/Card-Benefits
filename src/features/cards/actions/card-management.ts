@@ -52,6 +52,20 @@ import {
   calculateBenefitsSummary
 } from '@/features/cards/lib/calculations';
 import { Prisma } from '@prisma/client';
+import type { UserCard, MasterCard, UserBenefit } from '@prisma/client';
+
+/**
+ * Type for UserCard with relations as returned from Prisma queries
+ */
+type UserCardWithRelations = UserCard & {
+  userBenefits: UserBenefit[];
+  masterCard: MasterCard;
+};
+
+/**
+ * Type for MasterCard as returned from Prisma queries
+ */
+type MasterCardType = MasterCard;
 
 /**
  * Format UserCard database record into CardDisplayModel for UI rendering
@@ -59,8 +73,8 @@ import { Prisma } from '@prisma/client';
  * Includes calculated fields like ROI, renewal countdown, and benefit counts
  */
 function formatCardForDisplay(
-  card: any, // UserCard with relations
-  masterCard: any
+  card: UserCardWithRelations,
+  masterCard: MasterCardType
 ): CardDisplayModel {
   const daysUntilRenewal = getDaysUntilRenewal(card.renewalDate);
   const renewalStatus = getRenewalStatus(daysUntilRenewal);
@@ -71,16 +85,16 @@ function formatCardForDisplay(
   );
 
   const annualBenefitsValue = (card.userBenefits || []).reduce(
-    (sum: number, b: any) => sum + b.stickerValue,
+    (sum: number, b: UserBenefit) => sum + b.stickerValue,
     0
   );
 
   const cardROI = calculateCardROI(annualBenefitsValue, effectiveAnnualFee);
   const activeBenefitsCount = (card.userBenefits || []).filter(
-    (b: any) => !b.expirationDate || b.expirationDate > new Date()
+    (b: UserBenefit) => !b.expirationDate || b.expirationDate > new Date()
   ).length;
   const claimedBenefitsCount = (card.userBenefits || []).filter(
-    (b: any) => b.isUsed
+    (b: UserBenefit) => b.isUsed
   ).length;
 
   return {
@@ -176,8 +190,8 @@ export async function getPlayerCards(
     };
 
     // Build sort order
-    // Note: Prisma requires specific type for orderBy
-    const orderBy: any = {};
+    // Use Prisma's OrderByWithRelationInput type for type safety
+    const orderBy: Prisma.UserCardOrderByWithRelationInput = {};
 
     switch (sortBy) {
       case 'name':
@@ -297,7 +311,12 @@ export async function getCardDetails(
 
     // Authorize BEFORE fetching full data
     // This follows least privilege principle - don't load more data than necessary
-    const authorized = await authorizeCardOperation(userId, cardOwnership as any, 'READ');
+    // Cast is safe: Prisma select query returns exact type needed
+    const authorized = await authorizeCardOperation(
+      userId,
+      cardOwnership as UserCard & { player: { userId: string } },
+      'READ'
+    );
     if (!authorized) {
       return createErrorResponse(ERROR_CODES.AUTHZ_DENIED);
     }

@@ -56,6 +56,88 @@ interface BenefitData {
   usage?: number;
 }
 
+/**
+ * API response types for cards endpoint
+ */
+interface ApiCard {
+  id: string;
+  issuer: string;
+  cardName: string;
+  customName?: string | null;
+  type?: string;
+  lastFour?: string;
+  benefits?: ApiBenefit[];
+}
+
+interface ApiBenefit {
+  id: string;
+  name: string;
+  type: string;
+  stickerValue: number;
+  userDeclaredValue?: number | null;
+  resetCadence: string;
+  status?: string;
+  expirationDate?: string | null;
+  description?: string;
+  isUsed?: boolean;
+}
+
+interface ApiCardsResponse {
+  success: boolean;
+  cards: ApiCard[];
+  error?: string;
+}
+
+/**
+ * Transform BenefitData to the format expected by BenefitsGrid component
+ * Strips fields not needed by the grid and ensures type compatibility
+ */
+function transformBenefitForGrid(benefit: BenefitData): {
+  id: string;
+  name: string;
+  description?: string;
+  status: 'active' | 'expiring' | 'expired' | 'pending';
+  expirationDate?: Date | string;
+  value?: number;
+  usage?: number;
+  type?: string;
+} {
+  return {
+    id: benefit.id,
+    name: benefit.name,
+    description: benefit.description,
+    status: benefit.status,
+    expirationDate: benefit.expirationDate || undefined,
+    value: benefit.value,
+    usage: benefit.usage,
+    type: benefit.type,
+  };
+}
+
+/**
+ * Transform BenefitData to format expected by EditBenefitModal component
+ */
+function transformBenefitForModal(benefit: BenefitData | null): {
+  id: string;
+  name: string;
+  type: string;
+  stickerValue: number;
+  userDeclaredValue: number | null;
+  resetCadence: string;
+  expirationDate: Date | string | null;
+} | null {
+  if (!benefit) return null;
+  return {
+    id: benefit.id,
+    name: benefit.name,
+    type: benefit.type,
+    stickerValue: benefit.stickerValue,
+    userDeclaredValue: benefit.userDeclaredValue,
+    resetCadence: benefit.resetCadence,
+    expirationDate: benefit.expirationDate || null,
+  };
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   // ============================================================
@@ -115,19 +197,20 @@ export default function DashboardPage() {
         }
 
         // Transform API response to card display format (including benefits)
-        const transformedCards: CardData[] = (data.cards || []).map((apiCard: any) => ({
+        const apiResponse = data as ApiCardsResponse;
+        const transformedCards: CardData[] = (apiResponse.cards || []).map((apiCard: ApiCard) => ({
           id: apiCard.id,
           name: apiCard.customName || apiCard.cardName,
           type: (apiCard.type || 'visa') as CardData['type'],
           lastFour: apiCard.lastFour || '0000',
           issuer: apiCard.issuer,
           customName: apiCard.customName,
-          benefits: (apiCard.benefits || []).map((b: any) => ({
+          benefits: (apiCard.benefits || []).map((b: ApiBenefit) => ({
             id: b.id,
             name: b.name,
             type: b.type,
             stickerValue: b.stickerValue,
-            userDeclaredValue: b.userDeclaredValue,
+            userDeclaredValue: b.userDeclaredValue || null,
             resetCadence: b.resetCadence,
             status: b.status?.toLowerCase() === 'active' ? 'active' as const
               : b.status?.toLowerCase() === 'expired' ? 'expired' as const
@@ -229,19 +312,20 @@ export default function DashboardPage() {
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.cards) {
-          const transformedCards: CardData[] = (data.cards || []).map((apiCard: any) => ({
+          const apiResponse = data as ApiCardsResponse;
+          const transformedCards: CardData[] = (apiResponse.cards || []).map((apiCard: ApiCard) => ({
             id: apiCard.id,
             name: apiCard.customName || apiCard.cardName,
             type: (apiCard.type || 'visa') as CardData['type'],
             lastFour: apiCard.lastFour || '0000',
             issuer: apiCard.issuer,
             customName: apiCard.customName,
-            benefits: (apiCard.benefits || []).map((b: any) => ({
+            benefits: (apiCard.benefits || []).map((b: ApiBenefit) => ({
               id: b.id,
               name: b.name,
               type: b.type,
               stickerValue: b.stickerValue,
-              userDeclaredValue: b.userDeclaredValue,
+              userDeclaredValue: b.userDeclaredValue || null,
               resetCadence: b.resetCadence,
               status: b.status?.toLowerCase() === 'active' ? 'active' as const
                 : b.status?.toLowerCase() === 'expired' ? 'expired' as const
@@ -697,7 +781,7 @@ export default function DashboardPage() {
 
                 {/* Benefits Grid */}
                 <BenefitsGrid
-                  benefits={benefits as any}
+                  benefits={benefits.map(transformBenefitForGrid)}
                   onEdit={handleEditBenefitClick}
                   onDelete={handleDeleteBenefitClick}
                   onMarkUsed={handleMarkUsed}
@@ -739,7 +823,7 @@ export default function DashboardPage() {
 
       {/* Edit Benefit Modal */}
       <EditBenefitModal
-        benefit={selectedBenefit as any}
+        benefit={transformBenefitForModal(selectedBenefit)}
         isOpen={isEditBenefitOpen}
         onClose={() => {
           setIsEditBenefitOpen(false);

@@ -14,7 +14,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { addCardToWallet } from '@/actions/wallet';
-import { toggleBenefit, updateUserDeclaredValue } from '@/features/benefits';
+import { toggleBenefit, updateUserDeclaredValue } from '@/features/benefits/actions/benefits';
 import { ERROR_CODES, ERROR_MESSAGES, AppError } from '@/shared/lib';
 import { Prisma } from '@prisma/client';
 

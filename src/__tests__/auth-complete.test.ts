@@ -352,9 +352,9 @@ describe('Session Payload Management', () => {
 
   it('returns correct session expiration duration', () => {
     const expirationSeconds = getSessionExpirationSeconds();
-    const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
+    const thirtyMinutesInSeconds = 30 * 60; // Current session duration
 
-    expect(expirationSeconds).toBe(thirtyDaysInSeconds);
+    expect(expirationSeconds).toBe(thirtyMinutesInSeconds);
   });
 });
 

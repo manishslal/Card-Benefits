@@ -112,13 +112,14 @@ class ApiClient {
     // Build URL: use absolute URL in production, relative in browser
     let urlString: string;
     if (typeof window !== 'undefined' && window.location.origin) {
-      urlString = new URL(endpoint, `${window.location.origin}${this.baseURL}`).toString();
+      // Proper string concatenation: origin + baseURL + endpoint
+      urlString = window.location.origin + this.baseURL + endpoint;
     } else {
       // Server-side or fallback
       urlString = `${this.baseURL}${endpoint}`;
     }
     
-    const url = new URL(urlString, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+    const url = new URL(urlString);
 
     // Add query parameters
     if (options.params) {
@@ -164,13 +165,14 @@ class ApiClient {
     // Build URL: use absolute URL in production, relative in browser
     let urlString: string;
     if (typeof window !== 'undefined' && window.location.origin) {
-      urlString = new URL(endpoint, `${window.location.origin}${this.baseURL}`).toString();
+      // Proper string concatenation: origin + baseURL + endpoint
+      urlString = window.location.origin + this.baseURL + endpoint;
     } else {
       // Server-side or fallback
       urlString = `${this.baseURL}${endpoint}`;
     }
     
-    const url = new URL(urlString, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+    const url = new URL(urlString);
     const data = await this.fetchWithRetry<T>(url.toString(), {
       method: 'POST',
       headers: this.getHeaders(),
@@ -190,13 +192,14 @@ class ApiClient {
     // Build URL: use absolute URL in production, relative in browser
     let urlString: string;
     if (typeof window !== 'undefined' && window.location.origin) {
-      urlString = new URL(endpoint, `${window.location.origin}${this.baseURL}`).toString();
+      // Proper string concatenation: origin + baseURL + endpoint
+      urlString = window.location.origin + this.baseURL + endpoint;
     } else {
       // Server-side or fallback
       urlString = `${this.baseURL}${endpoint}`;
     }
     
-    const url = new URL(urlString, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+    const url = new URL(urlString);
     const data = await this.fetchWithRetry<T>(url.toString(), {
       method: 'PATCH',
       headers: this.getHeaders(),
@@ -216,13 +219,14 @@ class ApiClient {
     // Build URL: use absolute URL in production, relative in browser
     let urlString: string;
     if (typeof window !== 'undefined' && window.location.origin) {
-      urlString = new URL(endpoint, `${window.location.origin}${this.baseURL}`).toString();
+      // Proper string concatenation: origin + baseURL + endpoint
+      urlString = window.location.origin + this.baseURL + endpoint;
     } else {
       // Server-side or fallback
       urlString = `${this.baseURL}${endpoint}`;
     }
     
-    const url = new URL(urlString, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+    const url = new URL(urlString);
 
     if (params) {
       Object.entries(params).forEach(([key, value]) => {

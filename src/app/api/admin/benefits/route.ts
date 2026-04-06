@@ -38,8 +38,9 @@ const ListBenefitsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   search: z.string().max(255).optional(),
-  sort: z.enum(['name', 'type', 'stickerValue']).optional(),
+  sort: z.enum(['name', 'type', 'stickerValue', 'card']).optional(),
   order: z.enum(['asc', 'desc']).default('asc'),
+  card: z.string().optional(), // NEW: filter by card ID
 });
 
 // ============================================================
@@ -57,6 +58,11 @@ interface BenefitItem {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  masterCard?: {
+    id: string;
+    cardName: string;
+    issuer?: string;
+  };
 }
 
 interface ListBenefitsResponse {
@@ -147,13 +153,23 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       ];
     }
 
+    // NEW: Filter by card ID if provided
+    if (query.card) {
+      where.masterCardId = query.card;
+    }
+
     // 4. Calculate pagination
     const skip = (query.page - 1) * query.limit;
 
     // 5. Build sort order
     const orderBy: any = {};
     if (query.sort) {
-      orderBy[query.sort] = query.order;
+      if (query.sort === 'card') {
+        // Sort by card name via relationship
+        orderBy.masterCard = { cardName: query.order };
+      } else {
+        orderBy[query.sort] = query.order;
+      }
     } else {
       // Default sort by createdAt descending if no sort specified
       orderBy.createdAt = 'desc';
@@ -175,6 +191,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           isActive: true,
           createdAt: true,
           updatedAt: true,
+          // NEW: Include masterCard relationship
+          masterCard: {
+            select: {
+              id: true,
+              cardName: true,
+              issuer: true,
+            },
+          },
         },
         orderBy,
         skip,
@@ -195,6 +219,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       isActive: benefit.isActive,
       createdAt: benefit.createdAt.toISOString(),
       updatedAt: benefit.updatedAt.toISOString(),
+      // NEW: Include masterCard data
+      masterCard: benefit.masterCard
+        ? {
+            id: benefit.masterCard.id,
+            cardName: benefit.masterCard.cardName,
+            issuer: benefit.masterCard.issuer,
+          }
+        : undefined,
     }));
 
     return NextResponse.json(

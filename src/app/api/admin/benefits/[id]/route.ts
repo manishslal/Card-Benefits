@@ -46,6 +46,11 @@ interface BenefitItem {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  masterCard?: {
+    id: string;
+    cardName: string;
+    issuer?: string;
+  };
 }
 
 interface UpdateBenefitResponse {
@@ -192,6 +197,14 @@ export async function PATCH(
         isActive: true,
         createdAt: true,
         updatedAt: true,
+        // NEW: Include masterCard relationship
+        masterCard: {
+          select: {
+            id: true,
+            cardName: true,
+            issuer: true,
+          },
+        },
       },
     });
 
@@ -227,6 +240,14 @@ export async function PATCH(
       isActive: updated.isActive,
       createdAt: updated.createdAt.toISOString(),
       updatedAt: updated.updatedAt.toISOString(),
+      // NEW: Include masterCard data
+      masterCard: updated.masterCard
+        ? {
+            id: updated.masterCard.id,
+            cardName: updated.masterCard.cardName,
+            issuer: updated.masterCard.issuer,
+          }
+        : undefined,
     };
 
     return NextResponse.json(

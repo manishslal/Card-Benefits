@@ -135,6 +135,12 @@ export interface Benefit {
   description?: string;
   createdAt: string;
   updatedAt: string;
+  // NEW: Include card information for display
+  masterCard?: {
+    id: string;
+    cardName: string;
+    issuer?: string;
+  };
 }
 
 export interface BenefitListResponse {

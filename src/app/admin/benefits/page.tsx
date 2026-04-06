@@ -6,6 +6,12 @@
  * Issue 13: Ensures all error messages use getErrorMessage() helper
  * Issue 14: Standardized page title format
  * Issue 15: Enhanced pagination button UX feedback
+ * 
+ * Phase 5 Enhancements:
+ * - Card column display showing associated MasterCard
+ * - Filter by card dropdown
+ * - Edit benefit modal
+ * - Currency formatting (cents to dollars display)
  */
 
 'use client';
@@ -14,6 +20,9 @@ import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import { AdminBreadcrumb } from '../_components/AdminBreadcrumb';
+import { CardFilterDropdown } from '../_components/CardFilterDropdown';
+import { EditBenefitModal } from '../_components/EditBenefitModal';
+import { formatCurrency } from '@/shared/lib/format-currency';
 import type { Benefit, PaginationInfo } from '@/features/admin/types/admin';
 
 interface BenefitsListResponse {
@@ -22,35 +31,49 @@ interface BenefitsListResponse {
   pagination: PaginationInfo;
 }
 
+interface CardOption {
+  id: string;
+  cardName: string;
+}
+
 // Type definitions for sortable columns
-type SortableBenefitColumn = 'name' | 'type' | 'stickerValue';
+type SortableBenefitColumn = 'name' | 'type' | 'stickerValue' | 'card';
 type SortOrder = 'asc' | 'desc';
+
 export default function BenefitsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  // Issue 12: Sorting state - persist in URL query params (initialize as null, read in useEffect)
   const [sortBy, setSortBy] = useState<SortableBenefitColumn | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  // NEW: Filter and edit modal state
+  const [selectedCard, setSelectedCard] = useState<string | null>(null);
+  const [availableCards, setAvailableCards] = useState<CardOption[]>([]);
+  const [editingBenefit, setEditingBenefit] = useState<Benefit | null>(null);
+
   // Issue 14: Standardize page title to "Admin Dashboard - Benefits"
   // Issue 12: Initialize sort params from URL on mount
   useEffect(() => {
     document.title = 'Admin Dashboard - Benefits';
     
-    // Read sorting params from URL query string using window.location (avoids useSearchParams SSR issues)
+    // Read sorting and card filter params from URL query string
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const sortParam = params.get('sort') as SortableBenefitColumn | null;
       const orderParam = params.get('order') as SortOrder | null;
+      const cardParam = params.get('card') as string | null;
       
       if (sortParam) {
         setSortBy(sortParam);
       }
       if (orderParam) {
         setSortOrder(orderParam);
+      }
+      if (cardParam) {
+        setSelectedCard(cardParam);
       }
     }
   }, []);
@@ -65,6 +88,7 @@ export default function BenefitsPage() {
       const params = new URLSearchParams();
       params.set('sort', column);
       params.set('order', newOrder);
+      if (selectedCard) params.set('card', selectedCard);
       window.history.pushState({}, '', `?${params.toString()}`);
     } else {
       setSortBy(column);
@@ -72,9 +96,34 @@ export default function BenefitsPage() {
       const params = new URLSearchParams();
       params.set('sort', column);
       params.set('order', 'asc');
+      if (selectedCard) params.set('card', selectedCard);
       window.history.pushState({}, '', `?${params.toString()}`);
     }
     setPage(1);
+  };
+
+  /**
+   * NEW: Handle card filter selection
+   */
+  const handleCardFilter = (cardId: string | null) => {
+    setSelectedCard(cardId);
+    setPage(1); // Reset to page 1 when filter changes
+    
+    // Update URL
+    const params = new URLSearchParams();
+    if (cardId) params.set('card', cardId);
+    if (sortBy) {
+      params.set('sort', sortBy);
+      params.set('order', sortOrder);
+    }
+    window.history.pushState({}, '', params.toString() ? `?${params.toString()}` : '?');
+  };
+
+  /**
+   * NEW: Handle edit button click
+   */
+  const handleEdit = (benefit: Benefit) => {
+    setEditingBenefit(benefit);
   };
 
   /**
@@ -107,10 +156,11 @@ export default function BenefitsPage() {
     return () => clearTimeout(timeoutId);
   }, [error]);
 
-  // Build fetch URL with sorting parameters - Issue 12
+  // Build fetch URL with sorting and card filter parameters
   const buildFetchUrl = (): string => {
     let url = `/admin/benefits?page=${page}&limit=20`;
     if (search) url += `&search=${search}`;
+    if (selectedCard) url += `&card=${selectedCard}`; // NEW: Add card filter
     if (sortBy) {
       url += `&sort=${sortBy}&order=${sortOrder}`;
     }
@@ -121,12 +171,12 @@ export default function BenefitsPage() {
     buildFetchUrl(),
     async () => {
       try {
-        // Issue 12: Pass sort parameters to API
         return await apiClient.get('/benefits', {
           params: { 
             page, 
             limit: 20, 
             search: search || undefined,
+            card: selectedCard || undefined, // NEW: Pass card filter
             sort: sortBy || undefined,
             order: sortBy ? sortOrder : undefined,
           },
@@ -135,12 +185,27 @@ export default function BenefitsPage() {
         console.error('[BenefitsPage] Failed to fetch benefits', {
           error: err instanceof Error ? err.message : String(err),
           endpoint: '/api/admin/benefits',
-          params: { page, limit: 20, search, sort: sortBy, order: sortOrder },
+          params: { page, limit: 20, search, card: selectedCard, sort: sortBy, order: sortOrder },
         });
         throw err;
       }
     }
   );
+
+  /**
+   * NEW: Extract unique cards from benefits data for filter dropdown
+   */
+  useEffect(() => {
+    if (data?.data) {
+      const uniqueCards = new Map();
+      data.data.forEach((benefit: Benefit) => {
+        if (benefit.masterCard && !uniqueCards.has(benefit.masterCard.id)) {
+          uniqueCards.set(benefit.masterCard.id, benefit.masterCard);
+        }
+      });
+      setAvailableCards(Array.from(uniqueCards.values()));
+    }
+  }, [data?.data]);
 
   const handleDeleteBenefit = async (benefitId: string) => {
     if (!confirm('Delete this benefit?')) return;
@@ -187,17 +252,35 @@ export default function BenefitsPage() {
         </div>
       )}
 
-      <div className="flex gap-4">
-        <input
-          type="text"
-          placeholder="Search benefits..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+      {/* NEW: Card Filter and Search Controls */}
+      <div className="flex flex-col gap-4 md:flex-row md:gap-4">
+        <div className="flex-1">
+          <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
+            Filter by Card
+          </label>
+          <CardFilterDropdown
+            cards={availableCards}
+            selectedCard={selectedCard}
+            onCardSelect={handleCardFilter}
+            disabled={isLoading}
+          />
+        </div>
+        <div className="flex-1">
+          <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
+            Search
+          </label>
+          <input
+            type="text"
+            placeholder="Search benefits..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            disabled={isLoading}
+            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+          />
+        </div>
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
@@ -226,6 +309,19 @@ export default function BenefitsPage() {
                         Name
                         <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
                           {getSortIndicator('name') || '↕'}
+                        </span>
+                      </button>
+                    </th>
+                    {/* NEW: Card column */}
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      <button
+                        onClick={() => handleSort('card')}
+                        className="group flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        title="Click to sort by card"
+                      >
+                        Card
+                        <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
+                          {getSortIndicator('card') || '↕'}
                         </span>
                       </button>
                     </th>
@@ -264,16 +360,30 @@ export default function BenefitsPage() {
                       <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">
                         {benefit.name}
                       </td>
+                      {/* NEW: Card column cell */}
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                        {benefit.masterCard?.cardName || 'N/A'}
+                      </td>
                       <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
                         {benefit.type}
                       </td>
+                      {/* NEW: Apply formatCurrency to display dollars instead of cents */}
                       <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
-                        ${benefit.stickerValue}
+                        {formatCurrency(benefit.stickerValue)}
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      {/* NEW: Add Edit button before Delete */}
+                      <td className="px-6 py-4 text-right flex gap-2 justify-end">
+                        <button
+                          onClick={() => handleEdit(benefit)}
+                          disabled={isLoading}
+                          className="px-3 py-1 rounded text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 disabled:opacity-50 transition-colors"
+                        >
+                          Edit
+                        </button>
                         <button
                           onClick={() => handleDeleteBenefit(benefit.id)}
-                          className="px-3 py-1 rounded text-sm bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100"
+                          disabled={isLoading}
+                          className="px-3 py-1 rounded text-sm bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 disabled:opacity-50 transition-colors"
                         >
                           Delete
                         </button>
@@ -309,6 +419,20 @@ export default function BenefitsPage() {
           </>
         )}
       </div>
+
+      {/* NEW: Edit Benefit Modal */}
+      {editingBenefit && (
+        <EditBenefitModal
+          benefit={editingBenefit}
+          isOpen={!!editingBenefit}
+          onClose={() => setEditingBenefit(null)}
+          onSaved={() => {
+            setEditingBenefit(null);
+            setSuccess('Benefit updated successfully');
+            mutate();
+          }}
+        />
+      )}
     </div>
   );
 }

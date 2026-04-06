@@ -18,17 +18,22 @@ import { prisma } from '@/shared/lib';
 // Type Definitions
 // ============================================================================
 
+/**
+ * Type for field values being compared for duplicates
+ */
+export type FieldValue = string | number | boolean | Date | null | undefined;
+
 export interface DuplicateMatch {
   id: string;
   rowNumber: number;
   recordType: 'Card' | 'Benefit';
   status: 'Duplicate';
-  newRecord: Record<string, any>;
-  existingRecord: Record<string, any>;
+  newRecord: Record<string, unknown>;
+  existingRecord: Record<string, unknown>;
   differences: Array<{
     field: string;
-    existing: any;
-    new: any;
+    existing: FieldValue;
+    new: FieldValue;
   }>;
   suggestedActions: Array<'Skip' | 'Update' | 'KeepBoth'>;
   userDecision?: 'Skip' | 'Update' | 'Merge' | null;
@@ -50,11 +55,11 @@ export interface DuplicateCheckResult {
  * Finds differences between two records
  */
 function findDifferences(
-  existing: Record<string, any>,
-  incoming: Record<string, any>,
+  existing: Record<string, unknown>,
+  incoming: Record<string, unknown>,
   fieldsToCompare: string[]
-): Array<{ field: string; existing: any; new: any }> {
-  const differences: Array<{ field: string; existing: any; new: any }> = [];
+): Array<{ field: string; existing: FieldValue; new: FieldValue }> {
+  const differences: Array<{ field: string; existing: FieldValue; new: FieldValue }> = [];
 
   for (const field of fieldsToCompare) {
     const existingVal = existing[field];

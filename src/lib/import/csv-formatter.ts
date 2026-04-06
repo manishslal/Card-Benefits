@@ -122,23 +122,10 @@ function formatField(
 
   switch (fieldType) {
     case 'date':
-      if (value instanceof Date) {
-        return formatDateField(value, options.dateFormat);
-      } else if (typeof value === 'string') {
-        return formatDateField(new Date(value), options.dateFormat);
-      } else {
-        return '';
-      }
+      return formatDateField(value instanceof Date ? value : new Date(value), options.dateFormat);
 
     case 'monetary':
-      if (typeof value === 'number') {
-        return formatMonetaryField(value, options.monetaryFormat);
-      } else if (typeof value === 'string') {
-        const num = parseInt(value, 10);
-        return formatMonetaryField(isNaN(num) ? 0 : num, options.monetaryFormat);
-      } else {
-        return '';
-      }
+      return formatMonetaryField(typeof value === 'number' ? value : parseInt(value, 10), options.monetaryFormat);
 
     case 'enum':
     case 'string':

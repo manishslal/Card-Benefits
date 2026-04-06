@@ -39,7 +39,7 @@ export interface CSVFormatOptions {
  * @param value Field value to escape
  * @returns Escaped CSV field
  */
-function escapeCSVField(value: any): string {
+function escapeCSVField(value: unknown): string {
   // Convert to string
   let str = value === null || value === undefined ? '' : String(value);
 
@@ -114,7 +114,7 @@ function formatMonetaryField(cents: number | null | undefined, format: string): 
  * @returns Formatted field value
  */
 function formatField(
-  value: any,
+  value: unknown,
   fieldType: string,
   options: CSVFormatOptions
 ): string {
@@ -122,10 +122,23 @@ function formatField(
 
   switch (fieldType) {
     case 'date':
-      return formatDateField(value instanceof Date ? value : new Date(value), options.dateFormat);
+      if (value instanceof Date) {
+        return formatDateField(value, options.dateFormat);
+      } else if (typeof value === 'string') {
+        return formatDateField(new Date(value), options.dateFormat);
+      } else {
+        return '';
+      }
 
     case 'monetary':
-      return formatMonetaryField(typeof value === 'number' ? value : parseInt(value, 10), options.monetaryFormat);
+      if (typeof value === 'number') {
+        return formatMonetaryField(value, options.monetaryFormat);
+      } else if (typeof value === 'string') {
+        const num = parseInt(value, 10);
+        return formatMonetaryField(isNaN(num) ? 0 : num, options.monetaryFormat);
+      } else {
+        return '';
+      }
 
     case 'enum':
     case 'string':

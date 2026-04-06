@@ -18,6 +18,19 @@ import { AppError } from '@/shared/lib';
 // Type Definitions
 // ============================================================================
 
+/**
+ * Type definitions for external libraries
+ */
+interface PapaParseError {
+  row: number;
+  message: string;
+}
+
+interface PapaParseResult {
+  data: Array<Record<string, string>>;
+  errors: PapaParseError[];
+}
+
 export interface ParsedRow {
   [key: string]: string | number | boolean | null | undefined;
 }
@@ -127,19 +140,19 @@ export function validateFileFormat(
 function parseCSV(csvContent: string): ParseResult {
   const startTime = performance.now();
 
-  // PapaParse configuration for robust CSV parsing  
-  const results = (Papa.parse as any)(csvContent, {
+  // PapaParse configuration for robust CSV parsing
+  const results = Papa.parse(csvContent, {
     header: true,
     skipEmptyLines: true,
     dynamicTyping: false, // Keep as strings initially
     quoteChar: '"',
     escapeChar: '"',
     transformHeader: (h: string) => h.trim(), // Trim header names
-  });
+  }) as PapaParseResult;
 
   // Check for parse errors
-  if ((results as any).errors?.length > 0) {
-    const firstError = (results as any).errors[0];
+  if (results.errors?.length > 0) {
+    const firstError = results.errors[0];
     throw new AppError('VALIDATION_FIELD', {
       field: 'csv_format',
       reason: `CSV parsing failed on line ${firstError.row}`,

@@ -46,7 +46,7 @@ function createError(
  * Parses a date string in ISO 8601 format (YYYY-MM-DD)
  * @returns Date or null if invalid
  */
-function parseISODate(value: unknown): Date | null {
+function parseISODate(value: any): Date | null {
   if (typeof value !== 'string') return null;
 
   const isoRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -59,7 +59,7 @@ function parseISODate(value: unknown): Date | null {
 /**
  * Normalizes monetary value from cents (integer)
  */
-function parseMonetary(value: unknown): number | null {
+function parseMonetary(value: any): number | null {
   const num = Number(value);
   return Number.isSafeInteger(num) ? num : null;
 }
@@ -77,8 +77,8 @@ function parseMonetary(value: unknown): number | null {
  * - Partial matches (fuzzy matching not supported here)
  */
 export async function validateCardName(
-  cardName: unknown,
-  issuer: unknown,
+  cardName: any,
+  issuer: any,
   _rowNumber: number,
   result: ValidationResult
 ): Promise<{ valid: boolean; value?: string }> {
@@ -154,7 +154,7 @@ export async function validateCardName(
  * Validates Issuer field
  */
 export function validateIssuer(
-  issuer: unknown,
+  issuer: any,
   _rowNumber: number,
   result: ValidationResult
 ): { valid: boolean; value?: string } {
@@ -197,7 +197,7 @@ export function validateIssuer(
  * Edge case #5: Negative annual fee
  */
 export function validateAnnualFee(
-  fee: unknown,
+  fee: any,
   _rowNumber: number,
   result: ValidationResult
 ): { valid: boolean; value?: number } {
@@ -252,7 +252,7 @@ export function validateAnnualFee(
  * Edge case #6: Past renewal date
  */
 export function validateRenewalDate(
-  date: unknown,
+  date: any,
   _rowNumber: number,
   result: ValidationResult
 ): { valid: boolean; value?: Date } {
@@ -315,7 +315,7 @@ export function validateRenewalDate(
  * Validates CustomName field
  */
 export function validateCustomName(
-  name: unknown,
+  name: any,
   _rowNumber: number,
   result: ValidationResult
 ): { valid: boolean; value?: string } {
@@ -347,7 +347,7 @@ export function validateCustomName(
  * Validates Status field
  */
 export function validateStatus(
-  status: unknown,
+  status: any,
   _rowNumber: number,
   result: ValidationResult
 ): { valid: boolean; value?: string } {
@@ -380,7 +380,7 @@ export function validateStatus(
  * Validates BenefitName field
  */
 export function validateBenefitName(
-  name: unknown,
+  name: any,
   _rowNumber: number,
   result: ValidationResult
 ): { valid: boolean; value?: string } {
@@ -425,7 +425,7 @@ export function validateBenefitName(
  * Validates BenefitType field
  */
 export function validateBenefitType(
-  type: unknown,
+  type: any,
   _rowNumber: number,
   result: ValidationResult
 ): { valid: boolean; value?: string } {
@@ -460,7 +460,7 @@ export function validateBenefitType(
  * Validates StickerValue field
  */
 export function validateStickerValue(
-  value: unknown,
+  value: any,
   _rowNumber: number,
   result: ValidationResult
 ): { valid: boolean; value?: number } {
@@ -505,7 +505,7 @@ export function validateStickerValue(
  * Validates DeclaredValue field
  */
 export function validateDeclaredValue(
-  value: unknown,
+  value: any,
   stickerValue: number,
   _rowNumber: number,
   result: ValidationResult
@@ -556,7 +556,7 @@ export function validateDeclaredValue(
  * Validates ExpirationDate field
  */
 export function validateExpirationDate(
-  date: unknown,
+  date: any,
   _rowNumber: number,
   result: ValidationResult
 ): { valid: boolean; value?: Date } {
@@ -604,7 +604,7 @@ export function validateExpirationDate(
  * Validates Usage field
  */
 export function validateUsage(
-  usage: unknown,
+  usage: any,
   _rowNumber: number,
   result: ValidationResult
 ): { valid: boolean; value?: string } {

@@ -1,52 +1,29 @@
 /**
  * GET /api/cards/my-cards
  *
- * Returns all credit cards owned by the authenticated user with their benefits
+ * Returns all credit cards owned by the authenticated user with their benefits and pagination
+ *
+ * Query Parameters:
+ * - page?: number - Page number starting from 1 (default: 1)
+ * - limit?: number - Cards per page (default: 20, max: 100)
  *
  * Response 200 (Success):
  * {
  *   "success": true,
- *   "cards": [
- *     {
- *       "id": "usercard_456",
- *       "masterCardId": "mastercard_123",
- *       "issuer": "Chase",
- *       "cardName": "Chase Sapphire Preferred",
- *       "customName": "Primary Sapphire",
- *       "type": "visa",
- *       "lastFour": "4242",
- *       "status": "ACTIVE",
- *       "renewalDate": "2025-12-31",
- *       "actualAnnualFee": 9500, // in cents ($95.00)
- *       "defaultAnnualFee": 9500,
- *       "cardImageUrl": "https://cdn.example.com/cards/...",
- *       "benefits": [
- *         {
- *           "id": "userbenefit_789",
- *           "name": "$300 Travel Credit",
- *           "type": "StatementCredit",
- *           "stickerValue": 30000, // in cents
- *           "userDeclaredValue": 30000,
- *           "resetCadence": "CalendarYear",
- *           "isUsed": false,
- *           "expirationDate": "2025-01-15",
- *           "status": "ACTIVE"
- *         }
- *       ],
- *       "createdAt": "2024-01-15T10:30:00Z"
- *     }
- *   ],
- *   "summary": {
- *     "totalCards": 1,
- *     "totalAnnualFees": 9500,
- *     "totalBenefitValue": 30000,
- *     "activeCards": 1,
- *     "activeBenefits": 1
+ *   "cards": [...],
+ *   "summary": {...},
+ *   "pagination": {
+ *     "total": 25,
+ *     "page": 1,
+ *     "limit": 20,
+ *     "totalPages": 2,
+ *     "hasMore": true
  *   }
  * }
  *
  * Errors:
  * - 401: Not authenticated
+ * - 400: Invalid pagination parameters
  * - 500: Server error
  */
 
@@ -57,64 +34,58 @@ import { prisma } from '@/shared/lib';
 // Type Definitions
 // ============================================================
 
-/**
- * Represents a single benefit associated with a user's card
- */
 interface BenefitDisplay {
   id: string;
   name: string;
-  type: string; // 'StatementCredit' | 'UsagePerk'
-  stickerValue: number; // in cents
-  userDeclaredValue: number | null; // in cents
-  resetCadence: string; // 'Monthly' | 'CalendarYear' | 'CardmemberYear' | 'OneTime'
+  type: string;
+  stickerValue: number;
+  userDeclaredValue: number | null;
+  resetCadence: string;
   isUsed: boolean;
   expirationDate: string | null;
   status: string;
 }
 
-/**
- * Represents a credit card owned by the user with full details
- */
 interface CardDisplay {
   id: string;
   masterCardId: string;
   issuer: string;
   cardName: string;
   customName: string | null;
-  type?: string; // 'visa', 'amex', 'mastercard' - derived from issuer or cardImageUrl
-  lastFour?: string; // Last 4 digits - can be derived or stored
-  status: string; // 'ACTIVE' | 'PENDING' | 'PAUSED' | 'ARCHIVED' | 'DELETED'
+  type?: string;
+  lastFour?: string;
+  status: string;
   renewalDate: string;
-  actualAnnualFee: number | null; // in cents
-  defaultAnnualFee: number; // in cents
+  actualAnnualFee: number | null;
+  defaultAnnualFee: number;
   cardImageUrl: string;
   benefits: BenefitDisplay[];
   createdAt: string;
 }
 
-/**
- * Summary statistics for user's card wallet
- */
 interface CardWalletSummary {
   totalCards: number;
-  totalAnnualFees: number; // in cents
-  totalBenefitValue: number; // in cents
+  totalAnnualFees: number;
+  totalBenefitValue: number;
   activeCards: number;
   activeBenefits: number;
 }
 
-/**
- * Success response for user cards endpoint
- */
+interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
 interface UserCardsResponse {
   success: true;
   cards: CardDisplay[];
   summary: CardWalletSummary;
+  pagination: PaginationMeta;
 }
 
-/**
- * Error response
- */
 interface ErrorResponse {
   success: false;
   error: string;
@@ -124,31 +95,16 @@ interface ErrorResponse {
 // Helper Functions
 // ============================================================
 
-/**
- * Derives card network type from issuer or image URL
- * Useful for frontend display logic
- *
- * @param issuer - Card issuer name
- * @returns Card type: 'visa', 'amex', 'mastercard', or 'other'
- */
 function getCardType(issuer: string): string {
   const lowerIssuer = issuer.toLowerCase();
   if (lowerIssuer.includes('american') || lowerIssuer.includes('amex')) return 'amex';
   if (lowerIssuer.includes('mastercard') || lowerIssuer.includes('mc')) return 'mastercard';
   if (lowerIssuer.includes('visa')) return 'visa';
   if (lowerIssuer.includes('discover')) return 'discover';
-  return 'visa'; // Default fallback
+  return 'visa';
 }
 
-/**
- * Generates a placeholder last-four digits
- * In production, this should be stored in the database
- *
- * @param cardId - Card ID for consistent generation
- * @returns Last four digits
- */
 function generateLastFour(cardId: string): string {
-  // Use first 4 hex chars of card ID and convert to digits
   const hex = cardId.substring(0, 4);
   const num = parseInt(hex, 16);
   return String(num % 10000).padStart(4, '0');
@@ -158,18 +114,8 @@ function generateLastFour(cardId: string): string {
 // GET Handler
 // ============================================================
 
-/**
- * GET /api/cards/my-cards handler
- *
- * Retrieves all cards owned by the authenticated user along with their benefits
- * and calculates wallet summary statistics.
- *
- * @param request - NextRequest with authenticated user context
- * @returns NextResponse with user's cards and summary, or error
- */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
-    // Get authenticated user ID from middleware-set request header
     const userId = request.headers.get('x-user-id');
 
     if (!userId) {
@@ -182,18 +128,38 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       );
     }
 
+    // Extract and validate pagination parameters
+    const searchParams = request.nextUrl.searchParams;
+    const pageStr = searchParams.get('page') || '1';
+    const limitStr = searchParams.get('limit') || '20';
+
+    const page = Math.max(parseInt(pageStr, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(limitStr, 10) || 20, 1), 100);
+
+    if (isNaN(page) || isNaN(limit)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid pagination parameters',
+        } as ErrorResponse,
+        { status: 400 }
+      );
+    }
+
+    const offset = (page - 1) * limit;
+
     // Fetch user's primary player and their cards
     const player = await prisma.player.findFirst({
       where: {
         userId,
-        playerName: 'Primary', // Only fetch primary player's cards for now
+        playerName: 'Primary',
       },
       select: {
         id: true,
         userCards: {
           where: {
             status: {
-              not: 'DELETED', // Exclude deleted cards
+              not: 'DELETED',
             },
           },
           select: {
@@ -216,7 +182,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             userBenefits: {
               where: {
                 status: {
-                  not: 'ARCHIVED', // Exclude archived benefits
+                  not: 'ARCHIVED',
                 },
               },
               select: {
@@ -243,8 +209,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       },
     });
 
-    // Handle case where primary player doesn't exist
     if (!player) {
+      const emptyPagination: PaginationMeta = {
+        total: 0,
+        page: 1,
+        limit,
+        totalPages: 0,
+        hasMore: false,
+      };
+
       return NextResponse.json(
         {
           success: true,
@@ -256,13 +229,19 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             activeCards: 0,
             activeBenefits: 0,
           },
+          pagination: emptyPagination,
         } as UserCardsResponse,
         { status: 200 }
       );
     }
 
-    // Transform database results into display DTOs
-    const cards: CardDisplay[] = player.userCards.map((userCard) => {
+    // Get total count and apply pagination
+    const allUserCards = player.userCards;
+    const totalCount = allUserCards.length;
+    const paginatedCards = allUserCards.slice(offset, offset + limit);
+
+    // Transform paginated results
+    const cards: CardDisplay[] = paginatedCards.map((userCard) => {
       const masterCard = userCard.masterCard;
       const benefits: BenefitDisplay[] = userCard.userBenefits.map((benefit) => ({
         id: benefit.id,
@@ -294,16 +273,36 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       };
     });
 
-    // Calculate summary statistics
+    // Calculate summary from ALL cards
     const summary: CardWalletSummary = {
-      totalCards: cards.length,
-      totalAnnualFees: cards.reduce((sum, card) => sum + (card.actualAnnualFee || card.defaultAnnualFee), 0),
-      totalBenefitValue: cards.reduce(
-        (sum, card) => sum + card.benefits.reduce((bSum, benefit) => bSum + (benefit.userDeclaredValue || benefit.stickerValue), 0),
+      totalCards: allUserCards.length,
+      totalAnnualFees: allUserCards.reduce(
+        (sum, card) => sum + (card.actualAnnualFee || card.masterCard.defaultAnnualFee),
         0
       ),
-      activeCards: cards.filter((card) => card.status === 'ACTIVE').length,
-      activeBenefits: cards.reduce((sum, card) => sum + card.benefits.filter((b) => b.status === 'ACTIVE' && !b.isUsed).length, 0),
+      totalBenefitValue: allUserCards.reduce(
+        (sum, card) =>
+          sum +
+          card.userBenefits.reduce(
+            (bSum, benefit) => bSum + (benefit.userDeclaredValue || benefit.stickerValue),
+            0
+          ),
+        0
+      ),
+      activeCards: allUserCards.filter((card) => card.status === 'ACTIVE').length,
+      activeBenefits: allUserCards.reduce(
+        (sum, card) => sum + card.userBenefits.filter((b) => b.status === 'ACTIVE' && !b.isUsed).length,
+        0
+      ),
+    };
+
+    const totalPages = Math.ceil(totalCount / limit);
+    const pagination: PaginationMeta = {
+      total: totalCount,
+      page,
+      limit,
+      totalPages,
+      hasMore: page < totalPages,
     };
 
     return NextResponse.json(
@@ -311,6 +310,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         success: true,
         cards,
         summary,
+        pagination,
       } as UserCardsResponse,
       { status: 200 }
     );

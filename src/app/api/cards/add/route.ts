@@ -43,7 +43,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib/prisma';
-import { getAuthContext } from '@/features/auth/context/auth-context';
+import { verifyToken } from '@/features/auth/lib/jwt';
 
 // ============================================================
 // Type Definitions
@@ -94,11 +94,41 @@ interface ErrorResponse {
  * @param request - NextRequest with authenticated user context from middleware
  * @returns NextResponse with created card or error
  */
+
+/**
+ * Extracts userId from request session cookie.
+ * Used in API routes where AsyncLocalStorage context is unavailable.
+ * 
+ * @param request - NextRequest to read session cookie from
+ * @returns userId if authenticated, null if not
+ */
+function getUserIdFromRequest(request: NextRequest): string | null {
+  try {
+    const sessionToken = request.cookies.get('session')?.value;
+    if (!sessionToken) {
+      return null;
+    }
+
+    // Verify JWT signature and extract payload
+    const payload = verifyToken(sessionToken);
+    
+    // Validate payload structure
+    if (!payload || typeof payload !== 'object') {
+      return null;
+    }
+    
+    const userId = (payload as Record<string, any>).userId;
+    return userId && typeof userId === 'string' ? userId : null;
+  } catch (error) {
+    console.error('[getUserIdFromRequest] Token verification failed:', error);
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    // Get authenticated user ID from middleware auth context
-    const authContext = getAuthContext();
-    const userId = authContext?.userId;
+    // Get authenticated user ID from request session cookie
+    const userId = getUserIdFromRequest(request);
 
     if (!userId) {
       return NextResponse.json(

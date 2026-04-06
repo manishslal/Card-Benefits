@@ -1,3 +1,12 @@
+/**
+ * Admin Card Detail Page
+ * Manage individual card and their benefits
+ * 
+ * Issue 11: Adds loading spinner while benefits are fetching
+ * Issue 13: Ensures all error messages use getErrorMessage() helper
+ * Issue 14: Standardized page title format
+ */
+
 'use client';
 
 import { useParams } from 'next/navigation';
@@ -34,7 +43,12 @@ export default function CardDetailPage() {
       try {
         return await apiClient.get(`/cards/${cardId}`);
       } catch (err) {
-        console.error('Error fetching card:', err);
+        // Issue 13: Log structured error with context
+        console.error('[CardDetailPage] Error fetching card', {
+          error: err instanceof Error ? err.message : String(err),
+          endpoint: `/api/admin/cards/${cardId}`,
+          cardId,
+        });
         throw err;
       }
     }
@@ -43,14 +57,14 @@ export default function CardDetailPage() {
   const card = cardData?.data;
   const benefits = card?.benefits || [];
 
-  // Update page title when card data loads
+  // Issue 14: Standardized page title format - "Admin Dashboard - [Card Name]"
   useEffect(() => {
     if (cardData?.data?.cardName) {
-      document.title = `${cardData.data.cardName} - Admin Dashboard`;
-    } else {
-      document.title = 'Card Details - Admin Dashboard';
+      document.title = `Admin Dashboard - ${cardData.data.cardName}`;
+    } else if (cardId) {
+      document.title = `Admin Dashboard - Card`;
     }
-  }, [cardData?.data?.cardName]);
+  }, [cardData?.data?.cardName, cardId]);
 
   // Validation function for Add Benefit form
   const validateBenefitForm = (): string | null => {
@@ -81,7 +95,6 @@ export default function CardDetailPage() {
 
     window.addEventListener('keydown', handleEscape);
 
-    // Cleanup: Remove listener when modal closes or component unmounts
     return () => {
       window.removeEventListener('keydown', handleEscape);
     };
@@ -115,7 +128,6 @@ export default function CardDetailPage() {
       if (!cardId) return;
       setError(null);
 
-      // Validate before submit
       const validationError = validateBenefitForm();
       if (validationError) {
         setError(validationError);
@@ -126,7 +138,7 @@ export default function CardDetailPage() {
 
       // Create optimistic benefit object for UI update
       const optimisticBenefit: Benefit = {
-        id: `temp-${Date.now()}`, // Temporary ID
+        id: `temp-${Date.now()}`,
         masterCardId: cardId,
         name: benefitFormData.name.trim(),
         type: benefitFormData.type as any,
@@ -138,10 +150,8 @@ export default function CardDetailPage() {
         updatedAt: new Date().toISOString(),
       };
 
-      // Store previous data for rollback in case of error
       const previousData = cardData;
 
-      // Optimistically update UI with new benefit
       if (cardData) {
         mutate(
           {
@@ -151,7 +161,7 @@ export default function CardDetailPage() {
               benefits: [...(cardData.data.benefits || []), optimisticBenefit],
             },
           },
-          false // Don't revalidate immediately
+          false
         );
       }
 
@@ -174,9 +184,14 @@ export default function CardDetailPage() {
         if (previousData) {
           mutate(previousData, false);
         }
+        // Issue 13: Use getErrorMessage() for consistent error formatting
         const message = getErrorMessage(err);
         setError(message);
-        console.error('Error adding benefit:', err);
+        console.error('[CardDetailPage] Error adding benefit', {
+          error: message,
+          endpoint: `/api/admin/cards/${cardId}/benefits`,
+          cardId,
+        });
       } finally {
         setIsSubmitting(false);
       }
@@ -192,7 +207,6 @@ export default function CardDetailPage() {
 
       setIsDeleting(benefitId);
 
-      // Store previous data for rollback in case of error
       const previousData = cardData;
 
       // Optimistically remove benefit from UI
@@ -205,7 +219,7 @@ export default function CardDetailPage() {
               benefits: (cardData.data.benefits || []).filter((b: Benefit) => b.id !== benefitId),
             },
           },
-          false // Don't revalidate immediately
+          false
         );
       }
 
@@ -220,9 +234,15 @@ export default function CardDetailPage() {
         if (previousData) {
           mutate(previousData, false);
         }
+        // Issue 13: Use getErrorMessage() for consistent error formatting
         const message = getErrorMessage(err);
         setError(message);
-        console.error('Error deleting benefit:', err);
+        console.error('[CardDetailPage] Error deleting benefit', {
+          error: message,
+          endpoint: `/api/admin/cards/${cardId}/benefits/${benefitId}`,
+          cardId,
+          benefitId,
+        });
       } finally {
         setIsDeleting(null);
       }
@@ -287,7 +307,17 @@ export default function CardDetailPage() {
           </button>
         </div>
 
-        {benefits.length === 0 ? (
+        {/* Issue 11: Add loading spinner while benefits are fetching */}
+        {isLoading ? (
+          <div className="space-y-3">
+            {[...Array(3)].map((_, idx) => (
+              <div
+                key={idx}
+                className="h-16 bg-slate-200 dark:bg-slate-800 rounded-lg animate-pulse"
+              />
+            ))}
+          </div>
+        ) : benefits.length === 0 ? (
           <p className="text-slate-600 dark:text-slate-400 text-center py-8">
             No benefits added yet
           </p>
@@ -326,7 +356,6 @@ export default function CardDetailPage() {
         <div
           className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
           onClick={(e) => {
-            // Only close if clicking on backdrop, not on modal content
             if (e.target === e.currentTarget) {
               setShowBenefitModal(false);
             }

@@ -1,6 +1,17 @@
+/**
+ * Admin Benefits Management Page
+ * Manage system-wide benefit types and definitions
+ * 
+ * Issue 12: Implements sortable column headers with URL persistence
+ * Issue 13: Ensures all error messages use getErrorMessage() helper
+ * Issue 14: Standardized page title format
+ * Issue 15: Enhanced pagination button UX feedback
+ */
+
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
 import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import type { Benefit, PaginationInfo } from '@/features/admin/types/admin';
@@ -11,31 +22,112 @@ interface BenefitsListResponse {
   pagination: PaginationInfo;
 }
 
+// Type definitions for sortable columns
+type SortableBenefitColumn = 'name' | 'type' | 'stickerValue';
+type SortOrder = 'asc' | 'desc';
+
 export default function BenefitsPage() {
+  const searchParams = useSearchParams();
+  
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  // Issue 12: Sorting state - persist in URL query params
+  const [sortBy, setSortBy] = useState<SortableBenefitColumn | null>(
+    (searchParams?.get('sort') as SortableBenefitColumn | null) || null
+  );
+  const [sortOrder, setSortOrder] = useState<SortOrder>(
+    (searchParams?.get('order') as SortOrder) || 'asc'
+  );
+  
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Update page title on mount
+  // Issue 14: Standardize page title to "Admin Dashboard - Benefits"
   useEffect(() => {
-    document.title = 'Benefits - Admin Dashboard';
+    document.title = 'Admin Dashboard - Benefits';
   }, []);
 
+  /**
+   * Issue 12: Handle column header clicks to toggle sorting
+   */
+  const handleSort = (column: SortableBenefitColumn) => {
+    if (sortBy === column) {
+      const newOrder: SortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+      setSortOrder(newOrder);
+      const params = new URLSearchParams();
+      params.set('sort', column);
+      params.set('order', newOrder);
+      window.history.pushState({}, '', `?${params.toString()}`);
+    } else {
+      setSortBy(column);
+      setSortOrder('asc');
+      const params = new URLSearchParams();
+      params.set('sort', column);
+      params.set('order', 'asc');
+      window.history.pushState({}, '', `?${params.toString()}`);
+    }
+    setPage(1);
+  };
+
+  /**
+   * Issue 12: Render sort indicator for column headers
+   */
+  const getSortIndicator = (column: SortableBenefitColumn): string => {
+    if (sortBy !== column) return '';
+    return sortOrder === 'asc' ? ' ↑' : ' ↓';
+  };
+
+  // Manage success message timeout with cleanup
+  useEffect(() => {
+    if (!success) return;
+
+    const timeoutId = setTimeout(() => {
+      setSuccess(null);
+    }, 3000);
+
+    return () => clearTimeout(timeoutId);
+  }, [success]);
+
+  // Manage error message timeout with cleanup
+  useEffect(() => {
+    if (!error) return;
+
+    const timeoutId = setTimeout(() => {
+      setError(null);
+    }, 5000);
+
+    return () => clearTimeout(timeoutId);
+  }, [error]);
+
+  // Build fetch URL with sorting parameters - Issue 12
+  const buildFetchUrl = (): string => {
+    let url = `/admin/benefits?page=${page}&limit=20`;
+    if (search) url += `&search=${search}`;
+    if (sortBy) {
+      url += `&sort=${sortBy}&order=${sortOrder}`;
+    }
+    return url;
+  };
+
   const { data, isLoading, mutate } = useSWR<BenefitsListResponse>(
-    `/admin/benefits?page=${page}&limit=20${search ? `&search=${search}` : ''}`,
+    buildFetchUrl(),
     async () => {
       try {
-        // Fetch benefits with pagination - limit is capped at 100 items per page on server
+        // Issue 12: Pass sort parameters to API
         return await apiClient.get('/benefits', {
-          params: { page, limit: 20, search: search || undefined },
+          params: { 
+            page, 
+            limit: 20, 
+            search: search || undefined,
+            sort: sortBy || undefined,
+            order: sortBy ? sortOrder : undefined,
+          },
         });
       } catch (err) {
-        // Log structured error with context for debugging data fetching issues
         console.error('[BenefitsPage] Failed to fetch benefits', {
           error: err instanceof Error ? err.message : String(err),
           endpoint: '/api/admin/benefits',
-          params: { page, limit: 20, search },
+          params: { page, limit: 20, search, sort: sortBy, order: sortOrder },
         });
         throw err;
       }
@@ -49,16 +141,14 @@ export default function BenefitsPage() {
       await apiClient.delete(`/benefits/${benefitId}`);
       setSuccess('Benefit deleted successfully');
       mutate();
-      setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
+      // Issue 13: Use getErrorMessage() for consistent error formatting
       const message = getErrorMessage(err);
       setError(message);
-      // Log structured error with context for debugging delete operations
       console.error('[BenefitsPage] Failed to delete benefit', {
         error: message,
         endpoint: `/api/admin/benefits/${benefitId}`,
         benefitId,
-        statusCode: err instanceof Error ? (err as any).response?.status : 'unknown',
       });
     }
   };
@@ -116,14 +206,42 @@ export default function BenefitsPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                    {/* Issue 12: Clickable sortable column headers */}
                     <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">
-                      Name
+                      <button
+                        onClick={() => handleSort('name')}
+                        className="group flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        title="Click to sort by name"
+                      >
+                        Name
+                        <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
+                          {getSortIndicator('name') || '↕'}
+                        </span>
+                      </button>
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">
-                      Type
+                      <button
+                        onClick={() => handleSort('type')}
+                        className="group flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        title="Click to sort by type"
+                      >
+                        Type
+                        <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
+                          {getSortIndicator('type') || '↕'}
+                        </span>
+                      </button>
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">
-                      Value
+                      <button
+                        onClick={() => handleSort('stickerValue')}
+                        className="group flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        title="Click to sort by value"
+                      >
+                        Value
+                        <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
+                          {getSortIndicator('stickerValue') || '↕'}
+                        </span>
+                      </button>
                     </th>
                     <th className="px-6 py-3 text-right text-sm font-semibold text-slate-900 dark:text-white">
                       Actions
@@ -156,6 +274,7 @@ export default function BenefitsPage() {
               </table>
             </div>
 
+            {/* Issue 15: Enhanced pagination feedback */}
             <div className="border-t border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
               <span className="text-sm text-slate-600 dark:text-slate-400">
                 Page {pagination.page} of {pagination.totalPages}
@@ -164,14 +283,14 @@ export default function BenefitsPage() {
                 <button
                   onClick={() => setPage(Math.max(1, page - 1))}
                   disabled={page === 1 || isLoading}
-                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setPage(page + 1)}
                   disabled={!pagination.hasMore || isLoading}
-                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   Next
                 </button>

@@ -19,6 +19,11 @@ export default function AdminDashboard() {
   const [auditLoading, setAuditLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Issue 14: Standardize page title to "Admin Dashboard - Dashboard"
+  useEffect(() => {
+    document.title = 'Admin Dashboard - Dashboard';
+  }, []);
+
   // Fetch all dashboard data on component mount
   useEffect(() => {
     const fetchDashboardData = async () => {

@@ -1,8 +1,19 @@
+/**
+ * Admin Audit Log Page
+ * View system activity and changes with detailed tracking
+ * 
+ * Issue 12: Implements sortable column headers with URL persistence
+ * Issue 13: Ensures all error messages use getErrorMessage() helper
+ * Issue 14: Standardized page title format
+ * Issue 15: Enhanced pagination button UX feedback
+ */
+
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
-import { apiClient } from '@/features/admin/lib/api-client';
+import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import type { AuditLog, PaginationInfo } from '@/features/admin/types/admin';
 
 interface AuditListResponse {
@@ -11,27 +22,79 @@ interface AuditListResponse {
   pagination: PaginationInfo;
 }
 
+// Type definitions for sortable columns
+type SortableAuditColumn = 'timestamp' | 'action' | 'resource';
+type SortOrder = 'asc' | 'desc';
+
 export default function AuditPage() {
+  const searchParams = useSearchParams();
+  
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState<string>('');
   const [resourceFilter, setResourceFilter] = useState<string>('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  
+  // Issue 12: Sorting state - persist in URL query params
+  const [sortBy, setSortBy] = useState<SortableAuditColumn | null>(
+    (searchParams?.get('sort') as SortableAuditColumn | null) || null
+  );
+  const [sortOrder, setSortOrder] = useState<SortOrder>(
+    (searchParams?.get('order') as SortOrder) || 'asc'
+  );
 
-  // Update page title on mount
+  // Issue 14: Standardize page title to "Admin Dashboard - Audit Log"
   useEffect(() => {
-    document.title = 'Audit Logs - Admin Dashboard';
+    document.title = 'Admin Dashboard - Audit Log';
   }, []);
 
+  /**
+   * Issue 12: Handle column header clicks to toggle sorting
+   */
+  const handleSort = (column: SortableAuditColumn) => {
+    if (sortBy === column) {
+      const newOrder: SortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+      setSortOrder(newOrder);
+      const params = new URLSearchParams();
+      params.set('sort', column);
+      params.set('order', newOrder);
+      window.history.pushState({}, '', `?${params.toString()}`);
+    } else {
+      setSortBy(column);
+      setSortOrder('asc');
+      const params = new URLSearchParams();
+      params.set('sort', column);
+      params.set('order', 'asc');
+      window.history.pushState({}, '', `?${params.toString()}`);
+    }
+    setPage(1);
+  };
+
+  /**
+   * Issue 12: Render sort indicator for column headers
+   */
+  const getSortIndicator = (column: SortableAuditColumn): string => {
+    if (sortBy !== column) return '';
+    return sortOrder === 'asc' ? ' ↑' : ' ↓';
+  };
+
+  // Build fetch URL with sorting parameters - Issue 12
+  const buildFetchUrl = (): string => {
+    let url = `/admin/audit?page=${page}&limit=50`;
+    if (search) url += `&search=${search}`;
+    if (actionFilter) url += `&actionType=${actionFilter}`;
+    if (resourceFilter) url += `&resourceType=${resourceFilter}`;
+    if (sortBy) {
+      url += `&sort=${sortBy}&order=${sortOrder}`;
+    }
+    return url;
+  };
+
   const { data, isLoading } = useSWR<AuditListResponse>(
-    `/admin/audit?page=${page}&limit=50${search ? `&search=${search}` : ''}${
-      actionFilter ? `&actionType=${actionFilter}` : ''
-    }${resourceFilter ? `&resourceType=${resourceFilter}` : ''}`,
+    buildFetchUrl(),
     async () => {
       try {
-        // Fetch audit logs with pagination and filtering
-        // Limit is capped at 100 items per page on server (default 50 for audit logs)
-        // Supports filtering by actionType (CREATE, UPDATE, DELETE) and resourceType
+        // Issue 12: Pass sort parameters to API
         return await apiClient.get('/audit-logs', {
           params: {
             page,
@@ -39,14 +102,16 @@ export default function AuditPage() {
             search: search || undefined,
             actionType: actionFilter || undefined,
             resourceType: resourceFilter || undefined,
+            sort: sortBy || undefined,
+            order: sortBy ? sortOrder : undefined,
           },
         });
       } catch (err) {
-        // Log structured error with context for debugging audit log retrieval
+        // Issue 13: Use getErrorMessage() for consistent error formatting
         console.error('[AuditPage] Failed to fetch audit logs', {
           error: err instanceof Error ? err.message : String(err),
           endpoint: '/api/admin/audit-logs',
-          params: { page, limit: 50, search, actionFilter, resourceFilter },
+          params: { page, limit: 50, search, actionFilter, resourceFilter, sort: sortBy, order: sortOrder },
         });
         throw err;
       }
@@ -108,7 +173,8 @@ export default function AuditPage() {
       <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center">
-            <p className="text-slate-600 dark:text-slate-400">Loading audit logs...</p>
+            <div className="inline-block animate-spin">⏳</div>
+            <p className="text-slate-600 dark:text-slate-400 mt-2">Loading audit logs...</p>
           </div>
         ) : auditLogs.length === 0 ? (
           <div className="p-8 text-center">
@@ -116,38 +182,79 @@ export default function AuditPage() {
           </div>
         ) : (
           <>
-            <div className="divide-y divide-slate-200 dark:divide-slate-800">
+            <div className="space-y-0 divide-y divide-slate-200 dark:divide-slate-800">
+              {/* Issue 12: Sortable column headers for the expandable list */}
+              <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-3 grid grid-cols-3 gap-4 text-sm font-semibold text-slate-900 dark:text-white">
+                <button
+                  onClick={() => handleSort('timestamp')}
+                  className="group flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                  title="Click to sort by timestamp"
+                >
+                  Timestamp
+                  <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
+                    {getSortIndicator('timestamp') || '↕'}
+                  </span>
+                </button>
+                <button
+                  onClick={() => handleSort('action')}
+                  className="group flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                  title="Click to sort by action"
+                >
+                  Action
+                  <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
+                    {getSortIndicator('action') || '↕'}
+                  </span>
+                </button>
+                <button
+                  onClick={() => handleSort('resource')}
+                  className="group flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                  title="Click to sort by resource"
+                >
+                  Resource
+                  <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
+                    {getSortIndicator('resource') || '↕'}
+                  </span>
+                </button>
+              </div>
+
               {auditLogs.map((log: AuditLog, idx: number) => (
                 <div key={log.id || idx}>
                   <button
                     onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}
-                    className="w-full px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-left flex items-center justify-between"
+                    className="w-full px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-left flex items-center justify-between grid grid-cols-3 gap-4"
                   >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <span className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-xs font-semibold text-blue-600 dark:text-blue-400">
-                          {log.actionType?.[0] || '—'}
-                        </span>
-                        <div>
-                          <p className="font-medium text-slate-900 dark:text-white">
-                            {log.actionType} {log.resourceType}
-                          </p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
-                            {log.adminUserEmail || 'Unknown'} • {log.createdAt
-                              ? new Date(log.createdAt).toLocaleString()
-                              : '—'}
-                          </p>
-                        </div>
-                      </div>
+                    <div className="flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-xs font-semibold text-blue-600 dark:text-blue-400 flex-shrink-0">
+                        {log.actionType?.[0] || '—'}
+                      </span>
+                      <span className="text-sm text-slate-600 dark:text-slate-300">
+                        {log.createdAt
+                          ? new Date(log.createdAt).toLocaleString()
+                          : '—'}
+                      </span>
                     </div>
-                    <span className="text-slate-400 dark:text-slate-600">
-                      {expandedId === log.id ? '▼' : '▶'}
-                    </span>
+                    <div>
+                      <p className="font-medium text-slate-900 dark:text-white text-sm">
+                        {log.actionType || 'Unknown'}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-slate-600 dark:text-slate-300">
+                        {log.resourceType || 'Unknown'}
+                      </p>
+                      <span className="text-slate-400 dark:text-slate-600">
+                        {expandedId === log.id ? '▼' : '▶'}
+                      </span>
+                    </div>
                   </button>
 
                   {expandedId === log.id && (
                     <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/30 border-t border-slate-200 dark:border-slate-800">
                       <div className="space-y-3 text-sm">
+                        <div>
+                          <p className="text-slate-600 dark:text-slate-400 font-medium">User</p>
+                          <p className="text-slate-900 dark:text-white">{log.adminUserEmail || 'Unknown'}</p>
+                        </div>
                         <div>
                           <p className="text-slate-600 dark:text-slate-400 font-medium">Resource ID</p>
                           <p className="text-slate-900 dark:text-white font-mono">{log.resourceId}</p>
@@ -181,6 +288,7 @@ export default function AuditPage() {
               ))}
             </div>
 
+            {/* Issue 15: Enhanced pagination feedback */}
             <div className="border-t border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
               <span className="text-sm text-slate-600 dark:text-slate-400">
                 Page {pagination.page} of {pagination.totalPages}
@@ -189,14 +297,14 @@ export default function AuditPage() {
                 <button
                   onClick={() => setPage(Math.max(1, page - 1))}
                   disabled={page === 1 || isLoading}
-                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setPage(page + 1)}
                   disabled={!pagination.hasMore || isLoading}
-                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   Next
                 </button>

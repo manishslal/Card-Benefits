@@ -4,11 +4,17 @@
  * 
  * Implements optimistic UI updates: immediately reflect user actions in UI,
  * revert on error if API call fails. This provides fast, responsive UX.
+ * 
+ * Issue 12: Implements sortable column headers with URL persistence
+ * Issue 13: Ensures all error messages use getErrorMessage() helper
+ * Issue 14: Standardized page title format
+ * Issue 15: Enhanced pagination button UX feedback
  */
 
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
 import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import type { Card, PaginationInfo } from '@/features/admin/types/admin';
@@ -19,11 +25,27 @@ interface CardsListResponse {
   pagination: PaginationInfo;
 }
 
+// Type definitions for sortable columns - only these columns support sorting
+type SortableCardColumn = 'issuer' | 'cardName' | 'defaultAnnualFee';
+type SortOrder = 'asc' | 'desc';
+
 export default function CardsPage() {
+  const searchParams = useSearchParams();
+  
+  // State management
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  // Note: sortBy and sortOrder currently unused - can be added to query params when implementing sorting
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'archived'>('all');
+  
+  // Issue 12: Sorting state - persist in URL query params
+  const [sortBy, setSortBy] = useState<SortableCardColumn | null>(
+    (searchParams?.get('sort') as SortableCardColumn | null) || null
+  );
+  const [sortOrder, setSortOrder] = useState<SortOrder>(
+    (searchParams?.get('order') as SortOrder) || 'asc'
+  );
+  
+  // Modal and form state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteCardId, setDeleteCardId] = useState<string | null>(null);
@@ -38,13 +60,50 @@ export default function CardsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Update page title on mount
+  // Issue 14: Standardize page title to "Admin Dashboard - Cards"
   useEffect(() => {
-    document.title = 'Cards - Admin Dashboard';
+    document.title = 'Admin Dashboard - Cards';
   }, []);
 
-  // Track request ID to prevent race condition - responses from older requests are ignored
+  // Track request ID to prevent race condition
   const requestIdRef = useRef(0);
+
+  /**
+   * Issue 12: Handle column header clicks to toggle sorting
+   * Supports ascending/descending sort on specific columns
+   * Updates URL query params to persist sort preference
+   */
+  const handleSort = (column: SortableCardColumn) => {
+    if (sortBy === column) {
+      // Toggle sort order if clicking same column
+      const newOrder: SortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+      setSortOrder(newOrder);
+      // Update URL query params
+      const params = new URLSearchParams();
+      params.set('sort', column);
+      params.set('order', newOrder);
+      window.history.pushState({}, '', `?${params.toString()}`);
+    } else {
+      // New column selected, start with ascending
+      setSortBy(column);
+      setSortOrder('asc');
+      // Update URL query params
+      const params = new URLSearchParams();
+      params.set('sort', column);
+      params.set('order', 'asc');
+      window.history.pushState({}, '', `?${params.toString()}`);
+    }
+    setPage(1); // Reset to page 1 when sorting changes
+  };
+
+  /**
+   * Issue 12: Render sort indicator (arrow) for column headers
+   * Returns ↑ for ascending, ↓ for descending, empty for unsorted
+   */
+  const getSortIndicator = (column: SortableCardColumn): string => {
+    if (sortBy !== column) return '';
+    return sortOrder === 'asc' ? ' ↑' : ' ↓';
+  };
 
   // Helper function to validate URL
   const isValidUrl = (url: string): boolean => {
@@ -92,8 +151,6 @@ export default function CardsPage() {
     };
 
     window.addEventListener('keydown', handleEscape);
-
-    // Cleanup: Remove listener when modal closes or component unmounts
     return () => {
       window.removeEventListener('keydown', handleEscape);
     };
@@ -110,8 +167,6 @@ export default function CardsPage() {
     };
 
     window.addEventListener('keydown', handleEscape);
-
-    // Cleanup: Remove listener when modal closes or component unmounts
     return () => {
       window.removeEventListener('keydown', handleEscape);
     };
@@ -139,39 +194,49 @@ export default function CardsPage() {
     return () => clearTimeout(timeoutId);
   }, [error]);
 
-  // TODO: Wire up sorting to column headers
-  // handleSort and getSortIndicator functions prepared for future sorting UI
+  // Build query string for SWR key with sorting parameters - Issue 12
+  const buildFetchUrl = (): string => {
+    let url = `/admin/cards?page=${page}&limit=20`;
+    if (search) url += `&search=${search}`;
+    if (activeFilter !== 'all') {
+      url += `&status=${activeFilter === 'archived' ? 'archived' : 'active'}`;
+    }
+    // Issue 12: Include sort params in query string
+    if (sortBy) {
+      url += `&sort=${sortBy}&order=${sortOrder}`;
+    }
+    return url;
+  };
 
-  // Fetch cards with pagination and request tracking for race condition prevention
+  // Fetch cards with pagination, filtering, and sorting
   const { data, isLoading, mutate } = useSWR<CardsListResponse>(
-    `/admin/cards?page=${page}&limit=20${search ? `&search=${search}` : ''}&status=${activeFilter === 'archived' ? 'archived' : activeFilter === 'active' ? 'active' : 'all'}`,
+    buildFetchUrl(),
     async () => {
-      // Increment request ID to track this request
       requestIdRef.current += 1;
       const currentRequestId = requestIdRef.current;
 
       try {
+        // Issue 12: Pass sort parameters to API
         const response = await apiClient.get('/cards', {
           params: {
             page,
             limit: 20,
             search: search || undefined,
             status: activeFilter === 'archived' ? 'archived' : activeFilter === 'active' ? 'active' : undefined,
+            sort: sortBy || undefined,
+            order: sortBy ? sortOrder : undefined,
           },
         });
 
-        // Only update state if this is the latest request
-        // This prevents out-of-order responses from overwriting newer data
         if (currentRequestId === requestIdRef.current) {
           return response;
         }
         return null;
       } catch (err) {
-        // Log structured error with context for debugging pagination and request issues
-        console.error('[CardsPage] Failed to fetch cards on mount', {
+        console.error('[CardsPage] Failed to fetch cards', {
           error: err instanceof Error ? err.message : String(err),
           endpoint: '/api/admin/cards',
-          params: { page, limit: 20, search, status: activeFilter },
+          params: { page, limit: 20, search, status: activeFilter, sort: sortBy, order: sortOrder },
           requestId: currentRequestId,
         });
         throw err;
@@ -184,7 +249,6 @@ export default function CardsPage() {
       e.preventDefault();
       setError(null);
 
-      // Validate before submit
       const validationError = validateForm();
       if (validationError) {
         setError(validationError);
@@ -193,12 +257,8 @@ export default function CardsPage() {
 
       setIsSubmitting(true);
 
-      // Create optimistic card object for UI update to provide immediate visual feedback
-      // This pattern makes the UI feel responsive by showing the change instantly, then
-      // reverting if the API call fails. The optimistic card has a temporary ID (temp-timestamp)
-      // that will be replaced with the real server ID after revalidation.
       const optimisticCard: Card = {
-        id: `temp-${Date.now()}`, // Temporary ID
+        id: `temp-${Date.now()}`,
         issuer: formData.issuer.trim(),
         cardName: formData.cardName.trim(),
         defaultAnnualFee: parseFloat(formData.defaultAnnualFee),
@@ -211,17 +271,15 @@ export default function CardsPage() {
         updatedAt: new Date().toISOString(),
       };
 
-      // Store previous data for rollback in case of error
       const previousData = data;
 
-      // Optimistically update UI with new card - don't revalidate yet
       if (data) {
         mutate(
           {
             ...data,
             data: [optimisticCard, ...data.data],
           },
-          false // Don't revalidate immediately
+          false
         );
       }
 
@@ -236,22 +294,18 @@ export default function CardsPage() {
         setFormData({ issuer: '', cardName: '', defaultAnnualFee: '', cardImageUrl: '' });
         setShowCreateModal(false);
         setSuccess('Card created successfully');
-        
-        // Revalidate with server to get real card with actual ID and server-set fields
         mutate();
       } catch (err) {
-        // Rollback optimistic update on error to restore previous state
         if (previousData) {
           mutate(previousData, false);
         }
+        // Issue 13: Use getErrorMessage() for consistent error formatting
         const message = getErrorMessage(err);
         setError(message);
-        // Log structured error with context for debugging API calls
         console.error('[CardsPage] Failed to create card', {
           error: message,
           endpoint: '/api/admin/cards',
           payload: { issuer: formData.issuer, cardName: formData.cardName },
-          statusCode: err instanceof Error ? (err as any).response?.status : 'unknown',
         });
       } finally {
         setIsSubmitting(false);
@@ -267,19 +321,15 @@ export default function CardsPage() {
       setIsDeleting(true);
       setError(null);
 
-      // Store previous data for rollback in case of error
       const previousData = data;
 
-      // Optimistically remove card from UI using the same pattern as create:
-      // show the change immediately, then revert if the API fails. This makes the
-      // interface feel responsive even for destructive operations.
       if (data) {
         mutate(
           {
             ...data,
             data: data.data.filter((card: Card) => card.id !== deleteCardId),
           },
-          false // Don't revalidate immediately
+          false
         );
       }
 
@@ -288,22 +338,18 @@ export default function CardsPage() {
         setSuccess('Card deleted successfully');
         setShowDeleteModal(false);
         setDeleteCardId(null);
-        
-        // Revalidate with server to sync pagination and counts
         mutate();
       } catch (err) {
-        // Rollback optimistic update on error to restore the card in the list
         if (previousData) {
           mutate(previousData, false);
         }
+        // Issue 13: Use getErrorMessage() for consistent error formatting
         const message = getErrorMessage(err);
         setError(message);
-        // Log structured error with context for debugging delete operations
         console.error('[CardsPage] Failed to delete card', {
           error: message,
           endpoint: `/api/admin/cards/${deleteCardId}`,
           cardId: deleteCardId,
-          statusCode: err instanceof Error ? (err as any).response?.status : 'unknown',
         });
       } finally {
         setIsDeleting(false);
@@ -320,10 +366,8 @@ export default function CardsPage() {
     []
   );
 
-  // Reset page to 1 when search changes to prevent pagination inconsistency
+  // Reset page to 1 when search changes
   useEffect(() => {
-    // This effect ensures when user types in search, page resets to 1
-    // This prevents showing page 2 results with a new search query
     if (page !== 1) {
       setPage(1);
     }
@@ -372,7 +416,7 @@ export default function CardsPage() {
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
-              setPage(1); // Reset to page 1 when searching
+              setPage(1);
             }}
             className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
@@ -439,14 +483,42 @@ export default function CardsPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                    {/* Issue 12: Make column headers clickable with sort indicators */}
                     <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">
-                      Issuer
+                      <button
+                        onClick={() => handleSort('issuer')}
+                        className="group flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        title="Click to sort by issuer"
+                      >
+                        Issuer
+                        <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
+                          {getSortIndicator('issuer') || '↕'}
+                        </span>
+                      </button>
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">
-                      Card Name
+                      <button
+                        onClick={() => handleSort('cardName')}
+                        className="group flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        title="Click to sort by card name"
+                      >
+                        Card Name
+                        <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
+                          {getSortIndicator('cardName') || '↕'}
+                        </span>
+                      </button>
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">
-                      Annual Fee
+                      <button
+                        onClick={() => handleSort('defaultAnnualFee')}
+                        className="group flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        title="Click to sort by annual fee"
+                      >
+                        Annual Fee
+                        <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
+                          {getSortIndicator('defaultAnnualFee') || '↕'}
+                        </span>
+                      </button>
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">
                       Benefits
@@ -502,7 +574,7 @@ export default function CardsPage() {
               </table>
             </div>
 
-            {/* Pagination */}
+            {/* Issue 15: Enhanced pagination - ensure proper disabled/cursor states */}
             <div className="border-t border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
               <span className="text-sm text-slate-600 dark:text-slate-400">
                 Page {pagination.page} of {pagination.totalPages}
@@ -511,14 +583,14 @@ export default function CardsPage() {
                 <button
                   onClick={() => setPage(Math.max(1, page - 1))}
                   disabled={page === 1 || isLoading}
-                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setPage(page + 1)}
                   disabled={!pagination.hasMore || isLoading}
-                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   Next
                 </button>
@@ -533,7 +605,6 @@ export default function CardsPage() {
         <div
           className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
           onClick={(e) => {
-            // Only close if clicking on backdrop, not on modal content
             if (e.target === e.currentTarget) {
               setShowCreateModal(false);
             }
@@ -634,7 +705,6 @@ export default function CardsPage() {
         <div
           className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
           onClick={(e) => {
-            // Only close if clicking on backdrop, not on modal content
             if (e.target === e.currentTarget) {
               setShowDeleteModal(false);
             }

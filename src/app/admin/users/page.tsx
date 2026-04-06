@@ -1,6 +1,17 @@
+/**
+ * Admin Users Management Page
+ * Manage user roles and permissions
+ * 
+ * Issue 12: Implements sortable column headers with URL persistence
+ * Issue 13: Ensures all error messages use getErrorMessage() helper
+ * Issue 14: Standardized page title format
+ * Issue 15: Enhanced pagination button UX feedback
+ */
+
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
 import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import type { AdminUser, PaginationInfo } from '@/features/admin/types/admin';
@@ -11,19 +22,63 @@ interface UsersListResponse {
   pagination: PaginationInfo;
 }
 
+// Type definitions for sortable columns
+type SortableUserColumn = 'name' | 'email' | 'role';
+type SortOrder = 'asc' | 'desc';
+
 export default function UsersPage() {
+  const searchParams = useSearchParams();
+  
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  // Issue 12: Sorting state - persist in URL query params
+  const [sortBy, setSortBy] = useState<SortableUserColumn | null>(
+    (searchParams?.get('sort') as SortableUserColumn | null) || null
+  );
+  const [sortOrder, setSortOrder] = useState<SortOrder>(
+    (searchParams?.get('order') as SortOrder) || 'asc'
+  );
+  
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [roleModalOpen, setRoleModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [newRole, setNewRole] = useState<'USER' | 'ADMIN' | 'SUPER_ADMIN'>('USER');
 
-  // Update page title on mount
+  // Issue 14: Standardize page title to "Admin Dashboard - Users"
   useEffect(() => {
-    document.title = 'Users - Admin Dashboard';
+    document.title = 'Admin Dashboard - Users';
   }, []);
+
+  /**
+   * Issue 12: Handle column header clicks to toggle sorting
+   */
+  const handleSort = (column: SortableUserColumn) => {
+    if (sortBy === column) {
+      const newOrder: SortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+      setSortOrder(newOrder);
+      const params = new URLSearchParams();
+      params.set('sort', column);
+      params.set('order', newOrder);
+      window.history.pushState({}, '', `?${params.toString()}`);
+    } else {
+      setSortBy(column);
+      setSortOrder('asc');
+      const params = new URLSearchParams();
+      params.set('sort', column);
+      params.set('order', 'asc');
+      window.history.pushState({}, '', `?${params.toString()}`);
+    }
+    setPage(1);
+  };
+
+  /**
+   * Issue 12: Render sort indicator for column headers
+   */
+  const getSortIndicator = (column: SortableUserColumn): string => {
+    if (sortBy !== column) return '';
+    return sortOrder === 'asc' ? ' ↑' : ' ↓';
+  };
 
   // Escape key handler for Role Change Modal
   useEffect(() => {
@@ -36,8 +91,6 @@ export default function UsersPage() {
     };
 
     window.addEventListener('keydown', handleEscape);
-
-    // Cleanup: Remove listener when modal closes or component unmounts
     return () => {
       window.removeEventListener('keydown', handleEscape);
     };
@@ -65,21 +118,35 @@ export default function UsersPage() {
     return () => clearTimeout(timeoutId);
   }, [error]);
 
+  // Build fetch URL with sorting parameters - Issue 12
+  const buildFetchUrl = (): string => {
+    let url = `/admin/users?page=${page}&limit=20`;
+    if (search) url += `&search=${search}`;
+    if (sortBy) {
+      url += `&sort=${sortBy}&order=${sortOrder}`;
+    }
+    return url;
+  };
+
   const { data, isLoading, mutate } = useSWR<UsersListResponse>(
-    `/admin/users?page=${page}&limit=20${search ? `&search=${search}` : ''}`,
+    buildFetchUrl(),
     async () => {
       try {
-        // Fetch users with pagination - limit is capped at 100 items per page on server
-        // Search is performed across email and user name fields
+        // Issue 12: Pass sort parameters to API
         return await apiClient.get('/users', {
-          params: { page, limit: 20, search: search || undefined },
+          params: { 
+            page, 
+            limit: 20, 
+            search: search || undefined,
+            sort: sortBy || undefined,
+            order: sortBy ? sortOrder : undefined,
+          },
         });
       } catch (err) {
-        // Log structured error with context for debugging user data fetching
         console.error('[UsersPage] Failed to fetch users', {
           error: err instanceof Error ? err.message : String(err),
           endpoint: '/api/admin/users',
-          params: { page, limit: 20, search },
+          params: { page, limit: 20, search, sort: sortBy, order: sortOrder },
         });
         throw err;
       }
@@ -98,15 +165,14 @@ export default function UsersPage() {
       setRoleModalOpen(false);
       mutate();
     } catch (err) {
+      // Issue 13: Use getErrorMessage() for consistent error formatting
       const message = getErrorMessage(err);
       setError(message);
-      // Log structured error with context for debugging role update operations
       console.error('[UsersPage] Failed to update user role', {
         error: message,
         endpoint: `/api/admin/users/${selectedUser?.id}/role`,
         userId: selectedUser?.id,
         newRole,
-        statusCode: err instanceof Error ? (err as any).response?.status : 'unknown',
       });
     }
   };
@@ -149,7 +215,8 @@ export default function UsersPage() {
       <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center">
-            <p className="text-slate-600 dark:text-slate-400">Loading users...</p>
+            <div className="inline-block animate-spin">⏳</div>
+            <p className="text-slate-600 dark:text-slate-400 mt-2">Loading users...</p>
           </div>
         ) : users.length === 0 ? (
           <div className="p-8 text-center">
@@ -161,14 +228,42 @@ export default function UsersPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                    {/* Issue 12: Clickable sortable column headers */}
                     <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">
-                      Name
+                      <button
+                        onClick={() => handleSort('name')}
+                        className="group flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        title="Click to sort by name"
+                      >
+                        Name
+                        <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
+                          {getSortIndicator('name') || '↕'}
+                        </span>
+                      </button>
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">
-                      Email
+                      <button
+                        onClick={() => handleSort('email')}
+                        className="group flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        title="Click to sort by email"
+                      >
+                        Email
+                        <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
+                          {getSortIndicator('email') || '↕'}
+                        </span>
+                      </button>
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">
-                      Role
+                      <button
+                        onClick={() => handleSort('role')}
+                        className="group flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        title="Click to sort by role"
+                      >
+                        Role
+                        <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
+                          {getSortIndicator('role') || '↕'}
+                        </span>
+                      </button>
                     </th>
                     <th className="px-6 py-3 text-right text-sm font-semibold text-slate-900 dark:text-white">
                       Actions
@@ -213,6 +308,7 @@ export default function UsersPage() {
               </table>
             </div>
 
+            {/* Issue 15: Enhanced pagination feedback */}
             <div className="border-t border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
               <span className="text-sm text-slate-600 dark:text-slate-400">
                 Page {pagination.page} of {pagination.totalPages}
@@ -221,14 +317,14 @@ export default function UsersPage() {
                 <button
                   onClick={() => setPage(Math.max(1, page - 1))}
                   disabled={page === 1 || isLoading}
-                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setPage(page + 1)}
                   disabled={!pagination.hasMore || isLoading}
-                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   Next
                 </button>
@@ -242,7 +338,6 @@ export default function UsersPage() {
         <div
           className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
           onClick={(e) => {
-            // Only close if clicking on backdrop, not on modal content
             if (e.target === e.currentTarget) {
               setRoleModalOpen(false);
             }

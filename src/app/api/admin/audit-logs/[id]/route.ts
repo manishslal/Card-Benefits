@@ -58,7 +58,7 @@ export async function GET(
   try {
     // 1. Verify admin role
     try {
-      await verifyAdminRole();
+      await verifyAdminRole(_request);
     } catch (error) {
       const code = (error as Error).message || 'ADMIN_ROLE_REQUIRED';
       return createAuthErrorResponse(code);

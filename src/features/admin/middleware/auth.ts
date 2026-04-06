@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib';
 import { getAuthUserId } from '@/features/auth/lib/auth';
+import { verifySessionToken } from '@/features/auth/lib/jwt';
 
 // ============================================================
 // Types
@@ -35,15 +36,42 @@ export interface AdminRequestContext {
 /**
  * Verifies that the user has admin role.
  * 
- * This function should be called in protected admin endpoints to enforce RBAC.
- * It throws if the user is not authenticated or doesn't have admin role.
+ * This function can be called in two contexts:
+ * 1. From server actions: uses getAuthUserId() from AsyncLocalStorage
+ * 2. From API routes: accepts request to read session cookie and verify JWT
  * 
+ * API routes must pass the NextRequest because they don't have AsyncLocalStorage context.
+ * 
+ * @param request - Optional NextRequest (required for API routes, optional for server actions)
  * @returns Admin user context
  * @throws Error if not authenticated or not admin
  */
-export async function verifyAdminRole(): Promise<AdminRequestContext> {
-  // Get authenticated user ID from context
-  const userId = getAuthUserId();
+export async function verifyAdminRole(request?: NextRequest): Promise<AdminRequestContext> {
+  let userId: string | undefined;
+
+  if (request) {
+    // API route context: read session cookie from request
+    const sessionToken = request.cookies.get('session')?.value;
+    if (!sessionToken) {
+      throw new Error('NOT_AUTHENTICATED');
+    }
+
+    try {
+      // Verify JWT token signature and extract payload
+      const payload = verifySessionToken(sessionToken);
+      userId = payload?.userId;
+      if (!userId) {
+        throw new Error('INVALID_TOKEN');
+      }
+    } catch (error) {
+      // Token verification failed (invalid signature, expired, etc.)
+      throw new Error('NOT_AUTHENTICATED');
+    }
+  } else {
+    // Server action context: use AsyncLocalStorage
+    userId = getAuthUserId();
+  }
+
   if (!userId) {
     throw new Error('NOT_AUTHENTICATED');
   }

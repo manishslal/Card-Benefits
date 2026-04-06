@@ -89,7 +89,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     // 1. Verify admin role
     try {
-      await verifyAdminRole();
+      await verifyAdminRole(request);
     } catch (error) {
       const code = (error as Error).message || 'ADMIN_ROLE_REQUIRED';
       return createAuthErrorResponse(code);
@@ -251,7 +251,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // 1. Verify admin role
     let adminContext;
     try {
-      adminContext = await verifyAdminRole();
+      adminContext = await verifyAdminRole(request);
     } catch (error) {
       const code = (error as Error).message || 'ADMIN_ROLE_REQUIRED';
       return createAuthErrorResponse(code);

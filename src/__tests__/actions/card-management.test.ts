@@ -11,19 +11,23 @@ import { AppError, ERROR_CODES } from '@/shared/lib';
 import { assertSuccess, assertError } from '@/__tests__/setup';
 
 // Mock dependencies
-vi.mock('@/shared/lib', () => ({
-  prisma: {
-    userCard: {
-      findMany: vi.fn(),
-      findUnique: vi.fn(),
-      count: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-      create: vi.fn()
-    },
-    $transaction: vi.fn()
-  }
-}));
+vi.mock('@/shared/lib', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/shared/lib')>();
+  return {
+    ...actual,
+    prisma: {
+      userCard: {
+        findMany: vi.fn(),
+        findUnique: vi.fn(),
+        count: vi.fn(),
+        update: vi.fn(),
+        delete: vi.fn(),
+        create: vi.fn()
+      },
+      $transaction: vi.fn()
+    }
+  };
+});
 
 vi.mock('@/features/auth/lib/auth', () => ({
   getAuthUserIdOrThrow: vi.fn(),
@@ -31,7 +35,7 @@ vi.mock('@/features/auth/lib/auth', () => ({
   authorizeCardOperation: vi.fn()
 }));
 
-vi.mock('@/lib/card-validation', () => ({
+vi.mock('@/features/cards/lib/validation', () => ({
   validateCustomName: vi.fn(),
   validateAnnualFee: vi.fn(),
   validateRenewalDate: vi.fn(),

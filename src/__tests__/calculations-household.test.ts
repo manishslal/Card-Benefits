@@ -8,12 +8,12 @@ import {
   getHouseholdTotalCaptured,
   getHouseholdActiveCount,
   MS_PER_DAY,
-} from '../lib/calculations';
+} from '@/features/cards/lib/calculations';
 import type {
   Player,
   UserCard,
   UserBenefit,
-} from '../lib/calculations';
+} from '@/features/cards/lib/calculations';
 
 // ---------------------------------------------------------------------------
 // Mock Builders

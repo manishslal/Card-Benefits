@@ -19,22 +19,26 @@ import { ERROR_CODES, ERROR_MESSAGES, AppError } from '@/shared/lib';
 import { Prisma } from '@prisma/client';
 
 // Mock dependencies
-vi.mock('@/shared/lib', () => ({
-  prisma: {
-    masterCard: {
-      findUniqueOrThrow: vi.fn(),
+vi.mock('@/shared/lib', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/shared/lib')>();
+  return {
+    ...actual,
+    prisma: {
+      masterCard: {
+        findUniqueOrThrow: vi.fn(),
+      },
+      userCard: {
+        create: vi.fn(),
+        findUniqueOrThrow: vi.fn(),
+      },
+      userBenefit: {
+        update: vi.fn(),
+        findUnique: vi.fn(),
+      },
+      $transaction: vi.fn(),
     },
-    userCard: {
-      create: vi.fn(),
-      findUniqueOrThrow: vi.fn(),
-    },
-    userBenefit: {
-      update: vi.fn(),
-      findUnique: vi.fn(),
-    },
-    $transaction: vi.fn(),
-  },
-}));
+  };
+});
 
 vi.mock('@/features/auth/lib/auth', () => ({
   getAuthUserIdOrThrow: vi.fn(),

@@ -21,40 +21,44 @@ import {
 } from '@/features/import-export';
 
 // Mock Prisma
-vi.mock('@/shared/lib', () => ({
-  prisma: {
-    importJob: {
-      create: vi.fn(),
-      update: vi.fn(),
-      findUnique: vi.fn(),
+vi.mock('@/shared/lib', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/shared/lib')>();
+  return {
+    ...actual,
+    prisma: {
+      importJob: {
+        create: vi.fn(),
+        update: vi.fn(),
+        findUnique: vi.fn(),
+      },
+      importRecord: {
+        createMany: vi.fn(),
+        updateMany: vi.fn(),
+        findMany: vi.fn(),
+      },
+      masterCard: {
+        findFirst: vi.fn(),
+      },
+      userCard: {
+        findUnique: vi.fn(),
+        findMany: vi.fn(),
+        create: vi.fn(),
+        update: vi.fn(),
+      },
+      userBenefit: {
+        findMany: vi.fn(),
+        create: vi.fn(),
+        update: vi.fn(),
+      },
+      player: {
+        findUnique: vi.fn(),
+      },
+      user: {
+        findUnique: vi.fn(),
+      },
     },
-    importRecord: {
-      createMany: vi.fn(),
-      updateMany: vi.fn(),
-      findMany: vi.fn(),
-    },
-    masterCard: {
-      findFirst: vi.fn(),
-    },
-    userCard: {
-      findUnique: vi.fn(),
-      findMany: vi.fn(),
-      create: vi.fn(),
-      update: vi.fn(),
-    },
-    userBenefit: {
-      findMany: vi.fn(),
-      create: vi.fn(),
-      update: vi.fn(),
-    },
-    player: {
-      findUnique: vi.fn(),
-    },
-    user: {
-      findUnique: vi.fn(),
-    },
-  },
-}));
+  };
+});
 
 // ============================================================================
 // TEST FIXTURES & HELPERS

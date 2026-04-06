@@ -30,24 +30,28 @@ import {
 } from '@/lib/custom-values/validation';
 
 // Mock Prisma
-vi.mock('@/shared/lib', () => ({
-  prisma: {
-    userCard: {
-      findUnique: vi.fn(),
-      update: vi.fn(),
+vi.mock('@/shared/lib', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/shared/lib')>();
+  return {
+    ...actual,
+    prisma: {
+      userCard: {
+        findUnique: vi.fn(),
+        update: vi.fn(),
+      },
+      player: {
+        findUnique: vi.fn(),
+      },
+      user: {
+        findUnique: vi.fn(),
+      },
+      userBenefit: {
+        update: vi.fn(),
+        findUnique: vi.fn(),
+      },
     },
-    player: {
-      findUnique: vi.fn(),
-    },
-    user: {
-      findUnique: vi.fn(),
-    },
-    userBenefit: {
-      update: vi.fn(),
-      findUnique: vi.fn(),
-    },
-  },
-}));
+  };
+});
 
 describe('Custom Values Integration Tests', () => {
   beforeEach(() => {

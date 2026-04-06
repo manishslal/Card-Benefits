@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     // Use globals like describe, it, expect without imports
     globals: true,
-    environment: 'node',
+    environment: 'jsdom',
     setupFiles: ['./src/__tests__/setup.ts'],
     // Exclude Playwright E2E tests and manual tests from Vitest (they have their own test runners)
     exclude: ['tests/**/*.spec.ts', 'tests/**/*.manual.test.ts', 'node_modules/**'],

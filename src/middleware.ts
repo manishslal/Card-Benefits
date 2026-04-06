@@ -67,6 +67,7 @@ const PROTECTED_ROUTES = new Set([
   '/cards',
   '/benefits',
   '/wallet',
+  '/admin',  // Admin dashboard (Phase 1)
 ]);
 
 /** API route prefixes that REQUIRE authentication */
@@ -74,6 +75,7 @@ const PROTECTED_API_PREFIXES = [
   '/api/benefits',   // POST /api/benefits/add, PATCH/DELETE /api/benefits/[id]
   '/api/cards',      // POST /api/cards/add, PATCH/DELETE /api/cards/[id], GET /api/cards/my-cards
   '/api/user',       // POST /api/user/profile, GET /api/user/profile
+  '/api/admin',      // Admin endpoints (Phase 1)
 ];
 
 /** Check if route is public API (matches prefix) */

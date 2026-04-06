@@ -13,6 +13,18 @@ model MasterCard {
   cardName         String
   defaultAnnualFee Int
   cardImageUrl     String
+  
+  // Display properties (NEW)
+  displayOrder     Int             @default(0)
+  isActive         Boolean         @default(true)
+  isArchived       Boolean         @default(false)
+  
+  // Audit fields (NEW)
+  createdByAdminId String?
+  archivedByAdminId String?
+  archivedAt       DateTime?
+  archivedReason   String?
+  
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
   masterBenefits   MasterBenefit[]
@@ -21,23 +33,37 @@ model MasterCard {
   @@unique([issuer, cardName])
   @@index([issuer])
   @@index([cardName])
+  @@index([displayOrder])
+  @@index([isActive])
+  @@index([isArchived])
 }
 
 model MasterBenefit {
-  id           String     @id @default(cuid())
-  masterCardId String
-  name         String
-  type         String
-  stickerValue Int
-  resetCadence String
-  isActive     Boolean    @default(true)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  masterCard   MasterCard @relation(fields: [masterCardId], references: [id], onDelete: Cascade)
+  id              String          @id @default(cuid())
+  masterCardId    String
+  
+  name            String
+  type            String
+  stickerValue    Int
+  resetCadence    String
+  
+  // Default behavior (NEW)
+  isDefault       Boolean         @default(true)
+  isActive        Boolean         @default(true)
+  
+  // Audit fields (NEW)
+  createdByAdminId String?
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  masterCard      MasterCard      @relation(fields: [masterCardId], references: [id], onDelete: Cascade)
 
   @@index([masterCardId])
   @@index([type])
   @@index([resetCadence])
+  @@index([isDefault])
+  @@index([isActive])
 }
 
 model User {
@@ -47,6 +73,10 @@ model User {
   firstName      String?
   lastName       String?
   emailVerified  Boolean             @default(false)
+
+  // Admin fields (NEW)
+  role           UserRole            @default(USER)
+  isActive       Boolean             @default(true)
 
   // Password Reset Fields
   passwordResetToken  String?  @unique @db.VarChar(255)
@@ -58,8 +88,16 @@ model User {
   players        Player[]
   sessions       Session[]
   importProfiles UserImportProfile[]
+  auditLogs      AdminAuditLog[]     // Admin who performed actions
 
   @@index([email])
+  @@index([role])
+  @@index([isActive])
+}
+
+enum UserRole {
+  USER
+  ADMIN
 }
 
 model Session {
@@ -245,4 +283,53 @@ model UserImportProfile {
 
   @@index([userId])
   @@index([lastUsedAt])
+}
+
+// ============================================================================
+// ADMIN AUDIT LOGGING - NEW (Phase 1)
+// ============================================================================
+
+model AdminAuditLog {
+  id              String          @id @default(cuid())
+  
+  // Who performed the action
+  adminUserId     String
+  adminUser       User            @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  
+  // What was changed
+  actionType      AuditActionType // CREATE, UPDATE, DELETE
+  resourceType    ResourceType    // CARD, BENEFIT, USER_ROLE, etc.
+  resourceId      String
+  resourceName    String?
+  
+  // Change details
+  oldValues       String?         // JSON string of previous values
+  newValues       String?         // JSON string of new values
+  
+  // Request context
+  ipAddress       String?
+  userAgent       String?
+  
+  // Timestamp
+  timestamp       DateTime        @default(now())
+  
+  @@index([adminUserId])
+  @@index([actionType])
+  @@index([resourceType])
+  @@index([resourceId])
+  @@index([timestamp])
+  @@index([adminUserId, timestamp])
+}
+
+enum AuditActionType {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+enum ResourceType {
+  CARD
+  BENEFIT
+  USER_ROLE
+  SYSTEM_SETTING
 }

@@ -29,6 +29,9 @@ export default function AuditPage() {
     }${resourceFilter ? `&resourceType=${resourceFilter}` : ''}`,
     async () => {
       try {
+        // Fetch audit logs with pagination and filtering
+        // Limit is capped at 100 items per page on server (default 50 for audit logs)
+        // Supports filtering by actionType (CREATE, UPDATE, DELETE) and resourceType
         return await apiClient.get('/audit-logs', {
           params: {
             page,
@@ -39,7 +42,12 @@ export default function AuditPage() {
           },
         });
       } catch (err) {
-        console.error('Error fetching audit logs:', err);
+        // Log structured error with context for debugging audit log retrieval
+        console.error('[AuditPage] Failed to fetch audit logs', {
+          error: err instanceof Error ? err.message : String(err),
+          endpoint: '/api/admin/audit-logs',
+          params: { page, limit: 50, search, actionFilter, resourceFilter },
+        });
         throw err;
       }
     }

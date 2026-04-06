@@ -26,11 +26,17 @@ export default function BenefitsPage() {
     `/admin/benefits?page=${page}&limit=20${search ? `&search=${search}` : ''}`,
     async () => {
       try {
+        // Fetch benefits with pagination - limit is capped at 100 items per page on server
         return await apiClient.get('/benefits', {
           params: { page, limit: 20, search: search || undefined },
         });
       } catch (err) {
-        console.error('Error fetching benefits:', err);
+        // Log structured error with context for debugging data fetching issues
+        console.error('[BenefitsPage] Failed to fetch benefits', {
+          error: err instanceof Error ? err.message : String(err),
+          endpoint: '/api/admin/benefits',
+          params: { page, limit: 20, search },
+        });
         throw err;
       }
     }
@@ -47,7 +53,13 @@ export default function BenefitsPage() {
     } catch (err) {
       const message = getErrorMessage(err);
       setError(message);
-      console.error('Error deleting benefit:', err);
+      // Log structured error with context for debugging delete operations
+      console.error('[BenefitsPage] Failed to delete benefit', {
+        error: message,
+        endpoint: `/api/admin/benefits/${benefitId}`,
+        benefitId,
+        statusCode: err instanceof Error ? (err as any).response?.status : 'unknown',
+      });
     }
   };
 

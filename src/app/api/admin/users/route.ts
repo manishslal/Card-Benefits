@@ -1,17 +1,23 @@
 /**
- * GET /api/admin/users - List Users
+ * GET /api/admin/users
  * 
- * Lists all users in the system with role and status information.
+ * @summary List all users in the system with role and status information
+ * @rateLimit 100 requests per minute (per admin user)
+ * @auth Required - Admin role
+ * @pagination Supports pagination with max 100 items per page (default 20 for users)
  *
  * Query Parameters:
- * - page?: number (default: 1)
- * - limit?: number (default: 20, max: 100)
- * - role?: 'USER' | 'ADMIN' (filter by role)
- * - search?: string (search by email or name)
- * - isActive?: boolean (filter by active status)
+ * - page?: number (default: 1) - Page number
+ * - limit?: number (default: 20, max: 100) - Items per page
+ * - role?: 'USER' | 'ADMIN' (optional) - Filter by user role
+ * - search?: string (optional, max 255 chars) - Search by email or full name
+ * - isActive?: boolean (optional) - Filter by active status
  *
- * Response 200: List of users with pagination
- * Errors: 400 (validation), 403 (forbidden), 500 (server)
+ * Response 200: List of users with pagination metadata
+ * Response 400: Invalid query parameters
+ * Response 401: Not authenticated
+ * Response 403: Not admin
+ * Response 500: Server error
  */
 
 import { NextRequest, NextResponse } from 'next/server';

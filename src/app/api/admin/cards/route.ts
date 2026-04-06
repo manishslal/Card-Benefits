@@ -1,26 +1,32 @@
 /**
  * GET /api/admin/cards
- *
- * Lists all master cards with pagination, search, and filtering.
+ * 
+ * @summary List all master cards with pagination, search, and filtering
+ * @rateLimit 100 requests per minute (per admin user)
+ * @auth Required - Admin role
+ * @pagination Supports pagination with max 100 items per page
  *
  * Query Parameters:
  * - page: number (default: 1) - Page number
  * - limit: number (default: 20, max: 100) - Items per page
- * - issuer?: string - Filter by issuer (case-insensitive)
- * - search?: string - Search in card name and issuer
+ * - issuer?: string - Filter by issuer (case-insensitive, max 255 chars)
+ * - search?: string - Search in card name and issuer (max 255 chars)
  * - isActive?: boolean - Filter by active status
  * - sortBy?: 'issuer' | 'cardName' | 'displayOrder' | 'updatedAt' (default: 'displayOrder')
  * - sortDirection?: 'asc' | 'desc' (default: 'asc')
  *
- * Response 200: List of cards with pagination
+ * Response 200: List of cards with pagination metadata
+ * Response 400: Invalid query parameters
  * Response 401: Not authenticated
  * Response 403: Not admin
- * Response 400: Invalid query parameters
  * Response 500: Server error
  *
  * POST /api/admin/cards
- *
- * Creates a new master card.
+ * 
+ * @summary Create a new master card
+ * @rateLimit 50 requests per minute (per admin user)
+ * @auth Required - Admin role
+ * @constraint Issuer + CardName must be unique (returns 409 if duplicate)
  *
  * Request Body:
  * {
@@ -28,14 +34,13 @@
  *   "cardName": string (required, max 200 chars)
  *   "defaultAnnualFee": number (required, >= 0)
  *   "cardImageUrl": string (required, valid URL)
- *   "description": string (optional, max 1000 chars)
  * }
  *
- * Response 201: Card created successfully
- * Response 400: Validation error or duplicate card
+ * Response 201: Card created successfully with full card object
+ * Response 400: Validation error (invalid params, bad URL, negative fee, etc)
  * Response 401: Not authenticated
  * Response 403: Not admin
- * Response 409: Duplicate card
+ * Response 409: Duplicate card (issuer + cardName already exists)
  * Response 500: Server error
  */
 

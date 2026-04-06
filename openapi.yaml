@@ -1,7 +1,24 @@
 openapi: 3.0.0
 info:
   title: Card Benefits Admin API
-  description: Admin management API for card and benefit administration
+  description: |
+    Admin management API for card and benefit administration.
+    
+    ## Rate Limiting
+    All endpoints are rate limited per admin user:
+    - List operations: 100-150 requests per minute
+    - Create operations: 50 requests per minute
+    - Update operations: 50 requests per minute
+    - Delete operations: 30 requests per minute
+    
+    ## Pagination
+    All list endpoints support pagination:
+    - Default limit: 20-50 items per page (varies by endpoint)
+    - Maximum limit: 100 items per page
+    - Responses include pagination metadata (total, page, limit, totalPages, hasMore)
+    
+    ## Authentication
+    All endpoints require admin role authentication via cookie (auth_token)
   version: 1.0.0
   contact:
     name: API Support
@@ -31,6 +48,10 @@ paths:
       summary: List all cards
       description: Retrieve paginated list of master cards with filtering and sorting
       operationId: listCards
+      x-rateLimit:
+        limit: 100
+        window: minute
+        description: 100 requests per minute per admin user
       parameters:
         - name: page
           in: query
@@ -128,6 +149,10 @@ paths:
       summary: Create a new card
       description: Create a new master card (issuer + cardName must be unique)
       operationId: createCard
+      x-rateLimit:
+        limit: 50
+        window: minute
+        description: 50 requests per minute per admin user
       requestBody:
         required: true
         content:
@@ -193,6 +218,10 @@ paths:
       summary: Get card details
       description: Retrieve single card by ID with benefit count
       operationId: getCard
+      x-rateLimit:
+        limit: 200
+        window: minute
+        description: 200 requests per minute per admin user
       parameters:
         - name: id
           in: path
@@ -227,6 +256,10 @@ paths:
       summary: Update card
       description: Update card properties (PATCH - partial update)
       operationId: updateCard
+      x-rateLimit:
+        limit: 50
+        window: minute
+        description: 50 requests per minute per admin user
       parameters:
         - name: id
           in: path
@@ -290,6 +323,10 @@ paths:
       summary: Delete card
       description: Delete card or archive if in use
       operationId: deleteCard
+      x-rateLimit:
+        limit: 30
+        window: minute
+        description: 30 requests per minute per admin user
       parameters:
         - name: id
           in: path
@@ -349,6 +386,10 @@ paths:
       summary: List benefits for card
       description: Get all benefits for a specific card
       operationId: listBenefits
+      x-rateLimit:
+        limit: 100
+        window: minute
+        description: 100 requests per minute per admin user
       parameters:
         - name: id
           in: path
@@ -397,6 +438,10 @@ paths:
       summary: Create benefit for card
       description: Create a new benefit for a specific card
       operationId: createBenefit
+      x-rateLimit:
+        limit: 50
+        window: minute
+        description: 50 requests per minute per admin user
       parameters:
         - name: id
           in: path
@@ -461,6 +506,10 @@ paths:
         - Benefits
       summary: Update benefit
       operationId: updateBenefit
+      x-rateLimit:
+        limit: 50
+        window: minute
+        description: 50 requests per minute per admin user
       parameters:
         - name: id
           in: path
@@ -499,6 +548,10 @@ paths:
         - Benefits
       summary: Delete benefit
       operationId: deleteBenefit
+      x-rateLimit:
+        limit: 30
+        window: minute
+        description: 30 requests per minute per admin user
       parameters:
         - name: id
           in: path
@@ -534,6 +587,10 @@ paths:
         - Users
       summary: List users
       operationId: listUsers
+      x-rateLimit:
+        limit: 100
+        window: minute
+        description: 100 requests per minute per admin user
       parameters:
         - name: page
           in: query
@@ -570,6 +627,10 @@ paths:
         - Audit Logs
       summary: List audit logs
       operationId: listAuditLogs
+      x-rateLimit:
+        limit: 150
+        window: minute
+        description: 150 requests per minute per admin user
       parameters:
         - name: page
           in: query
@@ -611,6 +672,10 @@ paths:
         - Audit Logs
       summary: Get audit log detail
       operationId: getAuditLog
+      x-rateLimit:
+        limit: 200
+        window: minute
+        description: 200 requests per minute per admin user
       parameters:
         - name: id
           in: path

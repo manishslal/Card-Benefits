@@ -1,21 +1,27 @@
 /**
- * GET /api/admin/audit-logs - List Audit Logs
- *
- * Lists audit logs with filtering and pagination.
+ * GET /api/admin/audit-logs
+ * 
+ * @summary List audit logs with filtering and pagination
+ * @rateLimit 150 requests per minute (per admin user)
+ * @auth Required - Admin role
+ * @pagination Supports pagination with max 100 items per page (default 50 for audit logs)
  *
  * Query Parameters:
- * - page?: number (default: 1)
- * - limit?: number (default: 50, max: 100)
- * - actionType?: 'CREATE' | 'UPDATE' | 'DELETE' (filter)
- * - resourceType?: 'CARD' | 'BENEFIT' | 'USER_ROLE' (filter)
- * - adminUserId?: string (filter by admin who made the change)
- * - resourceId?: string (filter by specific resource)
- * - startDate?: ISO 8601 datetime (filter from date)
- * - endDate?: ISO 8601 datetime (filter to date)
- * - search?: string (search in resource name)
+ * - page?: number (default: 1) - Page number
+ * - limit?: number (default: 50, max: 100) - Items per page
+ * - actionType?: 'CREATE' | 'UPDATE' | 'DELETE' (optional) - Filter by action type
+ * - resourceType?: 'CARD' | 'BENEFIT' | 'USER_ROLE' (optional) - Filter by resource type
+ * - adminUserId?: string (optional) - Filter by admin who made the change
+ * - resourceId?: string (optional) - Filter by specific resource ID
+ * - startDate?: ISO 8601 datetime (optional) - Filter from date (inclusive)
+ * - endDate?: ISO 8601 datetime (optional) - Filter to date (inclusive)
+ * - search?: string (optional, max 255 chars) - Search in resource name and details
  *
- * Response 200: List of audit logs with pagination
- * Errors: 400 (validation), 403 (forbidden), 500 (server)
+ * Response 200: List of audit logs with full change tracking (old/new values) and pagination metadata
+ * Response 400: Invalid query parameters (bad ISO date format, invalid action type, etc)
+ * Response 401: Not authenticated
+ * Response 403: Not admin
+ * Response 500: Server error
  */
 
 import { NextRequest, NextResponse } from 'next/server';

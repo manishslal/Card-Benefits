@@ -1,34 +1,63 @@
 /**
- * GET /api/admin/cards/[id] - Get Card Details
- * PATCH /api/admin/cards/[id] - Update Card
- * DELETE /api/admin/cards/[id] - Delete Card
+ * GET /api/admin/cards/[id]
+ * 
+ * @summary Get single card details including benefit count
+ * @rateLimit 200 requests per minute (per admin user)
+ * @auth Required - Admin role
+ * 
+ * Path Parameters:
+ * - id: string - Card ID
  *
- * GET Response 200: Card details with benefit count
- * Response 404: Card not found
+ * Response 200: Card details with benefit count
  * Response 401: Not authenticated
  * Response 403: Not admin
+ * Response 404: Card not found
  *
- * PATCH Request Body (all optional):
+ * PATCH /api/admin/cards/[id]
+ * 
+ * @summary Update card properties (partial update)
+ * @rateLimit 50 requests per minute (per admin user)
+ * @auth Required - Admin role
+ * @constraint Updated issuer + cardName combination must be unique (returns 409 if duplicate)
+ *
+ * Path Parameters:
+ * - id: string - Card ID
+ *
+ * Request Body (all optional - provide only fields to update):
  * {
- *   "cardName": string (optional, max 200)
+ *   "cardName": string (optional, max 200 chars)
  *   "defaultAnnualFee": number (optional, >= 0)
  *   "cardImageUrl": string (optional, valid URL)
  *   "isActive": boolean (optional)
  * }
  *
- * PATCH Response 200: Updated card
- * Response 400: Validation error or duplicate card
+ * Response 200: Updated card with change tracking (old/new values)
+ * Response 400: Validation error (invalid URL, negative fee, exceeds max length)
+ * Response 401: Not authenticated
+ * Response 403: Not admin
  * Response 404: Card not found
- * Response 409: Duplicate card
+ * Response 409: Duplicate card (issuer + cardName already exists)
  *
- * DELETE Query Parameters:
- * - force?: boolean (default: false) - Force delete even if in use
- * - archiveInstead?: boolean (default: false) - Archive instead of delete
+ * DELETE /api/admin/cards/[id]
+ * 
+ * @summary Delete card or archive if in use
+ * @rateLimit 30 requests per minute (per admin user)
+ * @auth Required - Admin role
+ * @constraint Cannot delete if card has assigned benefits (use archiveInstead=true or force=true)
  *
- * DELETE Response 200: Card deleted/archived
+ * Path Parameters:
+ * - id: string - Card ID
+ *
+ * Query Parameters:
+ * - force?: boolean (default: false) - Force delete even if card has benefits assigned
+ * - archiveInstead?: boolean (default: false) - Archive instead of delete if in use
+ *
+ * Response 200: Card deleted or archived with action type in response
  * Response 400: Invalid query parameters
+ * Response 401: Not authenticated
+ * Response 403: Not admin
  * Response 404: Card not found
- * Response 409: Card in use
+ * Response 409: Card in use (has benefits) - use force=true or archiveInstead=true
  */
 
 import { NextRequest, NextResponse } from 'next/server';

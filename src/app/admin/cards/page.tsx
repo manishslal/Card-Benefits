@@ -167,7 +167,13 @@ export default function CardsPage() {
         }
         return null;
       } catch (err) {
-        console.error('Error fetching cards:', err);
+        // Log structured error with context for debugging pagination and request issues
+        console.error('[CardsPage] Failed to fetch cards on mount', {
+          error: err instanceof Error ? err.message : String(err),
+          endpoint: '/api/admin/cards',
+          params: { page, limit: 20, search, status: activeFilter },
+          requestId: currentRequestId,
+        });
         throw err;
       }
     }
@@ -187,7 +193,10 @@ export default function CardsPage() {
 
       setIsSubmitting(true);
 
-      // Create optimistic card object for UI update
+      // Create optimistic card object for UI update to provide immediate visual feedback
+      // This pattern makes the UI feel responsive by showing the change instantly, then
+      // reverting if the API call fails. The optimistic card has a temporary ID (temp-timestamp)
+      // that will be replaced with the real server ID after revalidation.
       const optimisticCard: Card = {
         id: `temp-${Date.now()}`, // Temporary ID
         issuer: formData.issuer.trim(),
@@ -205,7 +214,7 @@ export default function CardsPage() {
       // Store previous data for rollback in case of error
       const previousData = data;
 
-      // Optimistically update UI with new card
+      // Optimistically update UI with new card - don't revalidate yet
       if (data) {
         mutate(
           {
@@ -228,16 +237,22 @@ export default function CardsPage() {
         setShowCreateModal(false);
         setSuccess('Card created successfully');
         
-        // Revalidate with server to get real card with actual ID
+        // Revalidate with server to get real card with actual ID and server-set fields
         mutate();
       } catch (err) {
-        // Rollback optimistic update on error
+        // Rollback optimistic update on error to restore previous state
         if (previousData) {
           mutate(previousData, false);
         }
         const message = getErrorMessage(err);
         setError(message);
-        console.error('Error creating card:', err);
+        // Log structured error with context for debugging API calls
+        console.error('[CardsPage] Failed to create card', {
+          error: message,
+          endpoint: '/api/admin/cards',
+          payload: { issuer: formData.issuer, cardName: formData.cardName },
+          statusCode: err instanceof Error ? (err as any).response?.status : 'unknown',
+        });
       } finally {
         setIsSubmitting(false);
       }
@@ -255,7 +270,9 @@ export default function CardsPage() {
       // Store previous data for rollback in case of error
       const previousData = data;
 
-      // Optimistically remove card from UI
+      // Optimistically remove card from UI using the same pattern as create:
+      // show the change immediately, then revert if the API fails. This makes the
+      // interface feel responsive even for destructive operations.
       if (data) {
         mutate(
           {
@@ -272,16 +289,22 @@ export default function CardsPage() {
         setShowDeleteModal(false);
         setDeleteCardId(null);
         
-        // Revalidate with server
+        // Revalidate with server to sync pagination and counts
         mutate();
       } catch (err) {
-        // Rollback optimistic update on error
+        // Rollback optimistic update on error to restore the card in the list
         if (previousData) {
           mutate(previousData, false);
         }
         const message = getErrorMessage(err);
         setError(message);
-        console.error('Error deleting card:', err);
+        // Log structured error with context for debugging delete operations
+        console.error('[CardsPage] Failed to delete card', {
+          error: message,
+          endpoint: `/api/admin/cards/${deleteCardId}`,
+          cardId: deleteCardId,
+          statusCode: err instanceof Error ? (err as any).response?.status : 'unknown',
+        });
       } finally {
         setIsDeleting(false);
       }

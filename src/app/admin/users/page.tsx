@@ -69,11 +69,18 @@ export default function UsersPage() {
     `/admin/users?page=${page}&limit=20${search ? `&search=${search}` : ''}`,
     async () => {
       try {
+        // Fetch users with pagination - limit is capped at 100 items per page on server
+        // Search is performed across email and user name fields
         return await apiClient.get('/users', {
           params: { page, limit: 20, search: search || undefined },
         });
       } catch (err) {
-        console.error('Error fetching users:', err);
+        // Log structured error with context for debugging user data fetching
+        console.error('[UsersPage] Failed to fetch users', {
+          error: err instanceof Error ? err.message : String(err),
+          endpoint: '/api/admin/users',
+          params: { page, limit: 20, search },
+        });
         throw err;
       }
     }
@@ -93,7 +100,14 @@ export default function UsersPage() {
     } catch (err) {
       const message = getErrorMessage(err);
       setError(message);
-      console.error('Error updating role:', err);
+      // Log structured error with context for debugging role update operations
+      console.error('[UsersPage] Failed to update user role', {
+        error: message,
+        endpoint: `/api/admin/users/${selectedUser?.id}/role`,
+        userId: selectedUser?.id,
+        newRole,
+        statusCode: err instanceof Error ? (err as any).response?.status : 'unknown',
+      });
     }
   };
 

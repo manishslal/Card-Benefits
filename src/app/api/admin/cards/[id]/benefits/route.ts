@@ -1,31 +1,50 @@
 /**
- * GET /api/admin/cards/[id]/benefits - List Benefits for Card
- * POST /api/admin/cards/[id]/benefits - Create Benefit for Card
+ * GET /api/admin/cards/[id]/benefits
+ * 
+ * @summary List all benefits for a specific card with pagination
+ * @rateLimit 100 requests per minute (per admin user)
+ * @auth Required - Admin role
+ * @pagination Supports pagination with max 100 items per page (default 50 for benefits)
  *
- * GET Query Parameters:
- * - page?: number (default: 1)
- * - limit?: number (default: 50)
- * - isActive?: boolean (filter)
+ * Path Parameters:
+ * - id: string - Card ID
  *
- * GET Response 200:
+ * Query Parameters:
+ * - page?: number (default: 1) - Page number
+ * - limit?: number (default: 50, max: 100) - Items per page
+ * - isActive?: boolean (optional) - Filter by active status
+ *
+ * Response 200: List of benefits for the card with pagination metadata
+ * Response 401: Not authenticated
+ * Response 403: Not admin
+ * Response 404: Card not found
+ *
+ * POST /api/admin/cards/[id]/benefits
+ * 
+ * @summary Create a new benefit for a specific card
+ * @rateLimit 50 requests per minute (per admin user)
+ * @auth Required - Admin role
+ * @constraint Benefit name must be unique within the card (returns 409 if duplicate within same card)
+ *
+ * Path Parameters:
+ * - id: string - Card ID
+ *
+ * Request Body:
  * {
- *   "success": true,
- *   "data": [{ id, name, type, stickerValue, resetCadence, isDefault, isActive, ... }],
- *   "pagination": { total, page, limit, totalPages, hasMore }
+ *   "name": string (required, max 200, unique per card)
+ *   "type": enum (required) - One of: INSURANCE | CASHBACK | TRAVEL | BANKING | POINTS | OTHER
+ *   "stickerValue": number (required, >= 0) - Display value of the benefit
+ *   "resetCadence": enum (required) - One of: ANNUAL | QUARTERLY | MONTHLY | ONE_TIME
+ *   "isDefault": boolean (optional, default: true) - Whether benefit is shown by default
  * }
  *
- * POST Request Body:
- * {
- *   "name": string (required, max 200, unique per card),
- *   "type": enum (required),
- *   "stickerValue": number (required, >= 0),
- *   "resetCadence": enum (required),
- *   "isDefault": boolean (optional, default: true),
- *   "description": string (optional, max 1000)
- * }
- *
- * POST Response 201: Benefit created successfully
- * Errors: 400 (validation), 404 (card not found), 409 (duplicate), 500 (server)
+ * Response 201: Benefit created successfully with full benefit object
+ * Response 400: Validation error (invalid type/cadence, exceeds max length, negative value)
+ * Response 401: Not authenticated
+ * Response 403: Not admin
+ * Response 404: Card not found
+ * Response 409: Duplicate benefit name within same card
+ * Response 500: Server error
  */
 
 import { NextRequest, NextResponse } from 'next/server';

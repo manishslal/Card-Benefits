@@ -18,7 +18,7 @@ export default function UsersPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [roleModalOpen, setRoleModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
-  const [newRole, setNewRole] = useState<'USER' | 'ADMIN'>('USER');
+  const [newRole, setNewRole] = useState<'USER' | 'ADMIN' | 'SUPER_ADMIN'>('USER');
 
   // Escape key handler for Role Change Modal
   useEffect(() => {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import useSWR from 'swr';
 import { apiClient } from '@/features/admin/lib/api-client';
 import type { Card, Benefit } from '@/features/admin/types/admin';
@@ -24,7 +24,75 @@ export default function CardDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const { data: cardData, isLoading, mutate } = useSWR<CardDetailResponse>(
+  // Helper function to validate URL
+  const isValidUrl = (url: string): boolean => {
+    if (!url) return true; // Optional field
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  // Validation function for Add Benefit form
+  const validateBenefitForm = (): string | null => {
+    if (!benefitFormData.name.trim()) {
+      return 'Benefit Name is required';
+    }
+
+    const stickerValue = parseFloat(benefitFormData.stickerValue);
+    if (isNaN(stickerValue)) {
+      return 'Sticker Value must be a valid number';
+    }
+    if (stickerValue < 0) {
+      return 'Sticker Value cannot be negative';
+    }
+
+    return null; // No errors
+  };
+
+  // Escape key handler for Benefit Modal
+  useEffect(() => {
+    if (!showBenefitModal) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowBenefitModal(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+
+    // Cleanup: Remove listener when modal closes or component unmounts
+    return () => {
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [showBenefitModal]);
+
+  // Manage success message timeout with cleanup
+  useEffect(() => {
+    if (!success) return;
+
+    const timeoutId = setTimeout(() => {
+      setSuccess(null);
+    }, 3000);
+
+    return () => clearTimeout(timeoutId);
+  }, [success]);
+
+  // Manage error message timeout with cleanup
+  useEffect(() => {
+    if (!error) return;
+
+    const timeoutId = setTimeout(() => {
+      setError(null);
+    }, 5000);
+
+    return () => clearTimeout(timeoutId);
+  }, [error]);
+
+  const card = cardData?.data;
     cardId ? `/admin/cards/${cardId}` : null,
     async () => {
       if (!cardId) return null;

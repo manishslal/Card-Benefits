@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import useSWR from 'swr';
 import { apiClient } from '@/features/admin/lib/api-client';
 import type { Card, PaginationInfo } from '@/features/admin/types/admin';
@@ -29,6 +29,81 @@ export default function CardsPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  // Helper function to validate URL
+  const isValidUrl = (url: string): boolean => {
+    if (!url) return true; // Optional field
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  // Validation function for Create Card form
+  const validateForm = (): string | null => {
+    if (!formData.issuer.trim()) {
+      return 'Issuer is required';
+    }
+    if (!formData.cardName.trim()) {
+      return 'Card Name is required';
+    }
+
+    const fee = parseFloat(formData.defaultAnnualFee);
+    if (isNaN(fee)) {
+      return 'Annual Fee must be a valid number';
+    }
+    if (fee < 0) {
+      return 'Annual Fee cannot be negative';
+    }
+
+    if (!isValidUrl(formData.cardImageUrl)) {
+      return 'Card Image URL must be a valid URL';
+    }
+
+    return null; // No errors
+  };
+
+  // Escape key handler for Create Modal
+  useEffect(() => {
+    if (!showCreateModal) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowCreateModal(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+
+    // Cleanup: Remove listener when modal closes or component unmounts
+    return () => {
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [showCreateModal]);
+
+  // Manage success message timeout with cleanup
+  useEffect(() => {
+    if (!success) return;
+
+    const timeoutId = setTimeout(() => {
+      setSuccess(null);
+    }, 3000);
+
+    return () => clearTimeout(timeoutId);
+  }, [success]);
+
+  // Manage error message timeout with cleanup
+  useEffect(() => {
+    if (!error) return;
+
+    const timeoutId = setTimeout(() => {
+      setError(null);
+    }, 5000);
+
+    return () => clearTimeout(timeoutId);
+  }, [error]);
+
   // Fetch cards with pagination
   const { data, isLoading, mutate } = useSWR<CardsListResponse>(
     `/admin/cards?page=${page}&limit=20${search ? `&search=${search}` : ''}`,
@@ -49,44 +124,53 @@ export default function CardsPage() {
     }
   );
 
-  const handleCreateCard = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+  const handleCreateCard = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setError(null);
 
-    try {
-      await apiClient.post('/cards', {
-        issuer: formData.issuer,
-        cardName: formData.cardName,
-        defaultAnnualFee: parseFloat(formData.defaultAnnualFee),
-        cardImageUrl: formData.cardImageUrl,
-      });
+      // Validate before submit
+      const validationError = validateForm();
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
 
-      setFormData({ issuer: '', cardName: '', defaultAnnualFee: '', cardImageUrl: '' });
-      setShowCreateModal(false);
-      setSuccess('Card created successfully');
-      mutate();
+      try {
+        await apiClient.post('/cards', {
+          issuer: formData.issuer.trim(),
+          cardName: formData.cardName.trim(),
+          defaultAnnualFee: parseFloat(formData.defaultAnnualFee),
+          cardImageUrl: formData.cardImageUrl.trim(),
+        });
 
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create card';
-      setError(message);
-    }
-  }, [formData, mutate]);
+        setFormData({ issuer: '', cardName: '', defaultAnnualFee: '', cardImageUrl: '' });
+        setShowCreateModal(false);
+        setSuccess('Card created successfully');
+        mutate();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to create card';
+        setError(message);
+      }
+    },
+    [formData, mutate]
+  );
 
-  const handleDeleteCard = useCallback(async (cardId: string) => {
-    if (!confirm('Are you sure you want to delete this card?')) return;
+  const handleDeleteCard = useCallback(
+    async (cardId: string) => {
+      if (!confirm('Are you sure you want to delete this card?')) return;
 
-    try {
-      await apiClient.delete(`/cards/${cardId}`);
-      setSuccess('Card deleted successfully');
-      mutate();
-
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to delete card';
-      setError(message);
-    }
-  }, [mutate]);
+      try {
+        await apiClient.delete(`/cards/${cardId}`);
+        setSuccess('Card deleted successfully');
+        mutate();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to delete card';
+        setError(message);
+      }
+    },
+    [mutate]
+  );
 
   const cards = data?.data || [];
   const pagination = data?.pagination || { page: 1, limit: 20, total: 0, totalPages: 0, hasMore: false };
@@ -235,7 +319,15 @@ export default function CardsPage() {
 
       {/* Create Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            // Only close if clicking on backdrop, not on modal content
+            if (e.target === e.currentTarget) {
+              setShowCreateModal(false);
+            }
+          }}
+        >
           <div className="bg-white dark:bg-slate-900 rounded-lg max-w-md w-full p-6 border border-slate-200 dark:border-slate-800">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
               Create New Card

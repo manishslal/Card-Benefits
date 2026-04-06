@@ -14,7 +14,6 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
 import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import type { Card, PaginationInfo } from '@/features/admin/types/admin';
@@ -30,20 +29,14 @@ type SortableCardColumn = 'issuer' | 'cardName' | 'defaultAnnualFee';
 type SortOrder = 'asc' | 'desc';
 
 export default function CardsPage() {
-  const searchParams = useSearchParams();
-  
   // State management
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'archived'>('all');
   
-  // Issue 12: Sorting state - persist in URL query params
-  const [sortBy, setSortBy] = useState<SortableCardColumn | null>(
-    (searchParams?.get('sort') as SortableCardColumn | null) || null
-  );
-  const [sortOrder, setSortOrder] = useState<SortOrder>(
-    (searchParams?.get('order') as SortOrder) || 'asc'
-  );
+  // Issue 12: Sorting state - persist in URL query params (initialize as null, read in useEffect)
+  const [sortBy, setSortBy] = useState<SortableCardColumn | null>(null);
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   
   // Modal and form state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -61,8 +54,23 @@ export default function CardsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Issue 14: Standardize page title to "Admin Dashboard - Cards"
+  // Issue 12: Initialize sort params from URL on mount
   useEffect(() => {
     document.title = 'Admin Dashboard - Cards';
+    
+    // Read sorting params from URL query string using window.location (avoids useSearchParams SSR issues)
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const sortParam = params.get('sort') as SortableCardColumn | null;
+      const orderParam = params.get('order') as SortOrder | null;
+      
+      if (sortParam) {
+        setSortBy(sortParam);
+      }
+      if (orderParam) {
+        setSortOrder(orderParam);
+      }
+    }
   }, []);
 
   // Track request ID to prevent race condition

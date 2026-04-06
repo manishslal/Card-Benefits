@@ -11,7 +11,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
 import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import type { AdminUser, PaginationInfo } from '@/features/admin/types/admin';
@@ -27,17 +26,11 @@ type SortableUserColumn = 'name' | 'email' | 'role';
 type SortOrder = 'asc' | 'desc';
 
 export default function UsersPage() {
-  const searchParams = useSearchParams();
-  
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  // Issue 12: Sorting state - persist in URL query params
-  const [sortBy, setSortBy] = useState<SortableUserColumn | null>(
-    (searchParams?.get('sort') as SortableUserColumn | null) || null
-  );
-  const [sortOrder, setSortOrder] = useState<SortOrder>(
-    (searchParams?.get('order') as SortOrder) || 'asc'
-  );
+  // Issue 12: Sorting state - persist in URL query params (initialize as null, read in useEffect)
+  const [sortBy, setSortBy] = useState<SortableUserColumn | null>(null);
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -46,8 +39,23 @@ export default function UsersPage() {
   const [newRole, setNewRole] = useState<'USER' | 'ADMIN' | 'SUPER_ADMIN'>('USER');
 
   // Issue 14: Standardize page title to "Admin Dashboard - Users"
+  // Issue 12: Initialize sort params from URL on mount
   useEffect(() => {
     document.title = 'Admin Dashboard - Users';
+    
+    // Read sorting params from URL query string using window.location (avoids useSearchParams SSR issues)
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const sortParam = params.get('sort') as SortableUserColumn | null;
+      const orderParam = params.get('order') as SortOrder | null;
+      
+      if (sortParam) {
+        setSortBy(sortParam);
+      }
+      if (orderParam) {
+        setSortOrder(orderParam);
+      }
+    }
   }, []);
 
   /**

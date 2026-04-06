@@ -16,6 +16,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import useSWR from 'swr';
 import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
+import { AdminBreadcrumb } from '../_components/AdminBreadcrumb';
 import type { Card, PaginationInfo } from '@/features/admin/types/admin';
 
 interface CardsListResponse {
@@ -386,6 +387,9 @@ export default function CardsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb Navigation */}
+      <AdminBreadcrumb currentPage="cards" />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

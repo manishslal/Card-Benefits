@@ -13,6 +13,7 @@
 import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { apiClient } from '@/features/admin/lib/api-client';
+import { AdminBreadcrumb } from '../_components/AdminBreadcrumb';
 import type { AuditLog, PaginationInfo } from '@/features/admin/types/admin';
 
 interface AuditListResponse {
@@ -131,6 +132,8 @@ export default function AuditPage() {
 
   return (
     <div className="space-y-6">
+      <AdminBreadcrumb currentPage="audit" />
+      
       <div>
         <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Audit Log</h1>
         <p className="text-slate-600 dark:text-slate-400 mt-2">System activity and changes</p>

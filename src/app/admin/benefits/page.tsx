@@ -13,6 +13,7 @@
 import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
+import { AdminBreadcrumb } from '../_components/AdminBreadcrumb';
 import type { Benefit, PaginationInfo } from '@/features/admin/types/admin';
 
 interface BenefitsListResponse {
@@ -165,6 +166,8 @@ export default function BenefitsPage() {
 
   return (
     <div className="space-y-6">
+      <AdminBreadcrumb currentPage="benefits" />
+      
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Benefits</h1>

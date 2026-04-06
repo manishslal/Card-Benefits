@@ -109,7 +109,16 @@ class ApiClient {
     endpoint: string,
     options: { cache?: number; params?: Record<string, any> } = {}
   ): Promise<T> {
-    const url = new URL(endpoint, this.baseURL);
+    // Build URL: use absolute URL in production, relative in browser
+    let urlString: string;
+    if (typeof window !== 'undefined' && window.location.origin) {
+      urlString = new URL(endpoint, `${window.location.origin}${this.baseURL}`).toString();
+    } else {
+      // Server-side or fallback
+      urlString = `${this.baseURL}${endpoint}`;
+    }
+    
+    const url = new URL(urlString, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
 
     // Add query parameters
     if (options.params) {
@@ -152,7 +161,16 @@ class ApiClient {
    * POST request
    */
   async post<T = any>(endpoint: string, body: any): Promise<T> {
-    const url = new URL(endpoint, this.baseURL);
+    // Build URL: use absolute URL in production, relative in browser
+    let urlString: string;
+    if (typeof window !== 'undefined' && window.location.origin) {
+      urlString = new URL(endpoint, `${window.location.origin}${this.baseURL}`).toString();
+    } else {
+      // Server-side or fallback
+      urlString = `${this.baseURL}${endpoint}`;
+    }
+    
+    const url = new URL(urlString, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
     const data = await this.fetchWithRetry<T>(url.toString(), {
       method: 'POST',
       headers: this.getHeaders(),
@@ -169,7 +187,16 @@ class ApiClient {
    * PATCH request
    */
   async patch<T = any>(endpoint: string, body: any): Promise<T> {
-    const url = new URL(endpoint, this.baseURL);
+    // Build URL: use absolute URL in production, relative in browser
+    let urlString: string;
+    if (typeof window !== 'undefined' && window.location.origin) {
+      urlString = new URL(endpoint, `${window.location.origin}${this.baseURL}`).toString();
+    } else {
+      // Server-side or fallback
+      urlString = `${this.baseURL}${endpoint}`;
+    }
+    
+    const url = new URL(urlString, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
     const data = await this.fetchWithRetry<T>(url.toString(), {
       method: 'PATCH',
       headers: this.getHeaders(),
@@ -186,7 +213,16 @@ class ApiClient {
    * DELETE request
    */
   async delete<T = any>(endpoint: string, params?: Record<string, any>): Promise<T> {
-    const url = new URL(endpoint, this.baseURL);
+    // Build URL: use absolute URL in production, relative in browser
+    let urlString: string;
+    if (typeof window !== 'undefined' && window.location.origin) {
+      urlString = new URL(endpoint, `${window.location.origin}${this.baseURL}`).toString();
+    } else {
+      // Server-side or fallback
+      urlString = `${this.baseURL}${endpoint}`;
+    }
+    
+    const url = new URL(urlString, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
 
     if (params) {
       Object.entries(params).forEach(([key, value]) => {

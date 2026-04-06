@@ -15,8 +15,14 @@ import XLSX from 'xlsx';
 // Type Definitions
 // ============================================================================
 
+/**
+ * Union type for cell values in XLSX format
+ * Excel cells can contain strings, numbers, dates, or null values
+ */
+export type XLSXCellValue = string | number | Date | boolean | null | undefined;
+
 export interface XLSXCell {
-  value: any;
+  value: XLSXCellValue;
   type: 'string' | 'number' | 'date' | 'formula';
   format?: string;
   comment?: string;
@@ -85,7 +91,7 @@ export function formatMonetaryCell(cents: number | null | undefined, format: str
  * @param maxWidth Maximum width to allow
  * @returns Recommended width
  */
-function calculateColumnWidth(values: any[], headerName: string, maxWidth: number = 50): number {
+function calculateColumnWidth(values: XLSXCellValue[], headerName: string, maxWidth: number = 50): number {
   let maxLength = headerName.length;
 
   for (const value of values) {
@@ -111,7 +117,7 @@ function calculateColumnWidth(values: any[], headerName: string, maxWidth: numbe
  */
 export function generateColumns(
   headers: string[],
-  data: any[][]
+  data: XLSXCellValue[][]
 ): Array<{ wch: number }> {
   const columns: Array<{ wch: number }> = [];
 
@@ -146,7 +152,7 @@ export function generateColumns(
 export function generateXLSX(
   sheetName: string,
   headers: string[],
-  data: any[][],
+  data: XLSXCellValue[][],
   fieldTypes: Array<{ type: string }>
 ): Uint8Array {
   // Create workbook and worksheet
@@ -221,9 +227,9 @@ export function generateXLSX(
  */
 export function generateXLSXMultiSheet(
   cardHeaders: string[],
-  cardData: any[][],
+  cardData: XLSXCellValue[][],
   benefitHeaders: string[],
-  benefitData: any[][],
+  benefitData: XLSXCellValue[][],
   cardFieldTypes: Array<{ type: string }>,
   benefitFieldTypes: Array<{ type: string }>
 ): Uint8Array {

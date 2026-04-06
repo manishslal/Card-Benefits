@@ -76,10 +76,11 @@ function findDifferences(
         : incomingVal;
 
     if (existingComp !== incomingComp) {
+      // Cast values: we know they're field values from record context
       differences.push({
         field,
-        existing: existingVal,
-        new: incomingVal,
+        existing: (existingVal as FieldValue),
+        new: (incomingVal as FieldValue),
       });
     }
   }

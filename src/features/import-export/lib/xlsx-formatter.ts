@@ -15,6 +15,12 @@ import XLSX from 'xlsx';
 // Type Definitions
 // ============================================================================
 
+/**
+ * Union type for cell values in XLSX format
+ * Excel cells can contain strings, numbers, dates, or null values
+ */
+export type XLSXCellValue = string | number | Date | boolean | null | undefined;
+
 export interface XLSXCell {
   value: XLSXCellValue;
   type: 'string' | 'number' | 'date' | 'formula';

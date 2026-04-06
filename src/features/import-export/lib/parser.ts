@@ -29,6 +29,14 @@ interface PapaParseError {
 interface PapaParseResult {
   data: Array<Record<string, string>>;
   errors: PapaParseError[];
+  meta?: {
+    delimiter?: string;
+    linebreak?: string;
+    aborted?: boolean;
+    truncated?: boolean;
+    cursor?: number;
+    fields?: string[];
+  };
 }
 
 export interface ParsedRow {
@@ -161,7 +169,7 @@ function parseCSV(csvContent: string): ParseResult {
   }
 
   const parseTimeMs = performance.now() - startTime;
-  const headers = results.meta.fields || [];
+  const headers = results.meta?.fields || [];
 
   // Filter out empty rows (rows with no non-empty values)
   const filteredRows = (results.data as ParsedRow[]).filter(

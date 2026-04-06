@@ -10,7 +10,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import useSWR from 'swr';
-import { apiClient } from '@/features/admin/lib/api-client';
+import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import type { Card, PaginationInfo } from '@/features/admin/types/admin';
 
 interface CardsListResponse {
@@ -22,6 +22,8 @@ interface CardsListResponse {
 export default function CardsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  // Note: sortBy and sortOrder currently unused - can be added to query params when implementing sorting
+  const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'archived'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteCardId, setDeleteCardId] = useState<string | null>(null);
@@ -137,9 +139,12 @@ export default function CardsPage() {
     return () => clearTimeout(timeoutId);
   }, [error]);
 
+  // TODO: Wire up sorting to column headers
+  // handleSort and getSortIndicator functions prepared for future sorting UI
+
   // Fetch cards with pagination and request tracking for race condition prevention
   const { data, isLoading, mutate } = useSWR<CardsListResponse>(
-    `/admin/cards?page=${page}&limit=20${search ? `&search=${search}` : ''}`,
+    `/admin/cards?page=${page}&limit=20${search ? `&search=${search}` : ''}&status=${activeFilter === 'archived' ? 'archived' : activeFilter === 'active' ? 'active' : 'all'}`,
     async () => {
       // Increment request ID to track this request
       requestIdRef.current += 1;
@@ -151,6 +156,7 @@ export default function CardsPage() {
             page,
             limit: 20,
             search: search || undefined,
+            status: activeFilter === 'archived' ? 'archived' : activeFilter === 'active' ? 'active' : undefined,
           },
         });
 
@@ -229,8 +235,9 @@ export default function CardsPage() {
         if (previousData) {
           mutate(previousData, false);
         }
-        const message = err instanceof Error ? err.message : 'Failed to create card';
+        const message = getErrorMessage(err);
         setError(message);
+        console.error('Error creating card:', err);
       } finally {
         setIsSubmitting(false);
       }
@@ -272,8 +279,9 @@ export default function CardsPage() {
         if (previousData) {
           mutate(previousData, false);
         }
-        const message = err instanceof Error ? err.message : 'Failed to delete card';
+        const message = getErrorMessage(err);
         setError(message);
+        console.error('Error deleting card:', err);
       } finally {
         setIsDeleting(false);
       }
@@ -332,18 +340,63 @@ export default function CardsPage() {
         </div>
       )}
 
-      {/* Search */}
-      <div className="flex gap-4">
-        <input
-          type="text"
-          placeholder="Search cards..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            // Page reset is handled by useEffect to prevent race conditions
-          }}
-          className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+      {/* Search and Filters */}
+      <div className="space-y-4">
+        <div className="flex gap-4">
+          <input
+            type="text"
+            placeholder="Search cards..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1); // Reset to page 1 when searching
+            }}
+            className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        
+        {/* Status Filter Buttons */}
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => {
+              setActiveFilter('all');
+              setPage(1);
+            }}
+            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+              activeFilter === 'all'
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white hover:bg-slate-300 dark:hover:bg-slate-600'
+            }`}
+          >
+            All Cards
+          </button>
+          <button
+            onClick={() => {
+              setActiveFilter('active');
+              setPage(1);
+            }}
+            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+              activeFilter === 'active'
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white hover:bg-slate-300 dark:hover:bg-slate-600'
+            }`}
+          >
+            Active Only
+          </button>
+          <button
+            onClick={() => {
+              setActiveFilter('archived');
+              setPage(1);
+            }}
+            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+              activeFilter === 'archived'
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white hover:bg-slate-300 dark:hover:bg-slate-600'
+            }`}
+          >
+            Archived Only
+          </button>
+        </div>
       </div>
 
       {/* Table */}

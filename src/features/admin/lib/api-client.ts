@@ -309,16 +309,19 @@ export const auditApi = {
 };
 
 /**
- * Error handling helper
+ * Error handling helper with comprehensive error code mappings
  */
 export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
+    // Authentication errors
     if ((error as any).code === 'AUTH_UNAUTHORIZED') {
       return 'Your session has expired. Please log in again.';
     }
     if ((error as any).code === 'FORBIDDEN_ADMIN_REQUIRED') {
       return 'You do not have permission to perform this action.';
     }
+    
+    // Card errors
     if ((error as any).code === 'CARD_NOT_FOUND') {
       return 'The card was not found.';
     }
@@ -328,7 +331,68 @@ export function getErrorMessage(error: unknown): string {
     if ((error as any).code === 'CARD_IN_USE') {
       return `This card is used by ${(error as any).userCardCount} user(s) and cannot be deleted without force.`;
     }
-    return error.message;
+    if ((error as any).code === 'INVALID_ANNUAL_FEE') {
+      return 'Annual fee must be a valid number greater than or equal to 0.';
+    }
+    if ((error as any).code === 'MISSING_ISSUER') {
+      return 'Card issuer is required (e.g., Visa, Mastercard, Amex).';
+    }
+    if ((error as any).code === 'MISSING_CARD_NAME') {
+      return 'Card name is required.';
+    }
+    
+    // Benefit errors
+    if ((error as any).code === 'BENEFIT_NOT_FOUND') {
+      return 'The benefit was not found.';
+    }
+    if ((error as any).code === 'DUPLICATE_BENEFIT') {
+      return 'A benefit with this name already exists for this card.';
+    }
+    if ((error as any).code === 'MISSING_BENEFIT_NAME') {
+      return 'Benefit name is required.';
+    }
+    if ((error as any).code === 'INVALID_STICKER_VALUE') {
+      return 'Sticker value must be a valid number greater than or equal to 0.';
+    }
+    if ((error as any).code === 'INVALID_RESET_CADENCE') {
+      return 'Invalid reset cadence. Valid options are: ANNUAL, CALENDAR, NEVER.';
+    }
+    
+    // User role errors
+    if ((error as any).code === 'USER_NOT_FOUND') {
+      return 'The user was not found.';
+    }
+    if ((error as any).code === 'INVALID_ROLE') {
+      return 'Invalid role. Valid options are: USER, ADMIN, SUPER_ADMIN.';
+    }
+    
+    // Validation errors - extract message from error
+    if ((error as any).status === 400) {
+      // Try to parse validation error details
+      if (error.message.includes('required')) {
+        return error.message;
+      }
+      return 'Invalid input provided. Please check your form and try again.';
+    }
+    
+    // Server errors
+    if ((error as any).status === 500) {
+      return 'Server error. Please try again later.';
+    }
+    if ((error as any).status === 503) {
+      return 'Service is temporarily unavailable. Please try again later.';
+    }
+    
+    // Network errors
+    if (error.message.includes('AbortError') || error.message.includes('timeout')) {
+      return 'Request timed out. Please check your connection and try again.';
+    }
+    if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
+      return 'Network error. Please check your internet connection.';
+    }
+    
+    // Return original error message if no specific mapping found
+    return error.message || 'An unexpected error occurred. Please try again.';
   }
   return 'An unexpected error occurred. Please try again.';
 }

@@ -3,7 +3,7 @@
 import { useParams } from 'next/navigation';
 import { useState, useCallback, useEffect } from 'react';
 import useSWR from 'swr';
-import { apiClient } from '@/features/admin/lib/api-client';
+import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import type { Card, Benefit } from '@/features/admin/types/admin';
 
 interface CardDetailResponse {
@@ -26,14 +26,31 @@ export default function CardDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
+  // Fetch card data first
+  const { data: cardData, isLoading, mutate } = useSWR<CardDetailResponse>(
+    cardId ? `/admin/cards/${cardId}` : null,
+    async () => {
+      if (!cardId) return null;
+      try {
+        return await apiClient.get(`/cards/${cardId}`);
+      } catch (err) {
+        console.error('Error fetching card:', err);
+        throw err;
+      }
+    }
+  );
+
+  const card = cardData?.data;
+  const benefits = card?.benefits || [];
+
   // Update page title when card data loads
   useEffect(() => {
-    if (card?.cardName) {
-      document.title = `${card.cardName} - Admin Dashboard`;
+    if (cardData?.data?.cardName) {
+      document.title = `${cardData.data.cardName} - Admin Dashboard`;
     } else {
       document.title = 'Card Details - Admin Dashboard';
     }
-  }, [card?.cardName]);
+  }, [cardData?.data?.cardName]);
 
   // Validation function for Add Benefit form
   const validateBenefitForm = (): string | null => {
@@ -91,22 +108,6 @@ export default function CardDetailPage() {
 
     return () => clearTimeout(timeoutId);
   }, [error]);
-
-  const { data: cardData, isLoading, mutate } = useSWR<CardDetailResponse>(
-    cardId ? `/admin/cards/${cardId}` : null,
-    async () => {
-      if (!cardId) return null;
-      try {
-        return await apiClient.get(`/cards/${cardId}`);
-      } catch (err) {
-        console.error('Error fetching card:', err);
-        throw err;
-      }
-    }
-  );
-
-  const card = cardData?.data;
-  const benefits = card?.benefits || [];
 
   const handleAddBenefit = useCallback(
     async (e: React.FormEvent) => {
@@ -173,8 +174,9 @@ export default function CardDetailPage() {
         if (previousData) {
           mutate(previousData, false);
         }
-        const message = err instanceof Error ? err.message : 'Failed to add benefit';
+        const message = getErrorMessage(err);
         setError(message);
+        console.error('Error adding benefit:', err);
       } finally {
         setIsSubmitting(false);
       }
@@ -218,8 +220,9 @@ export default function CardDetailPage() {
         if (previousData) {
           mutate(previousData, false);
         }
-        const message = err instanceof Error ? err.message : 'Failed to delete benefit';
+        const message = getErrorMessage(err);
         setError(message);
+        console.error('Error deleting benefit:', err);
       } finally {
         setIsDeleting(null);
       }

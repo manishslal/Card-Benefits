@@ -38,6 +38,7 @@ export default function SettingsPage() {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [notifications, setNotifications] = useState({
     expiringBenefits: true,
     newFeatures: false,
@@ -67,6 +68,8 @@ export default function SettingsPage() {
             lastName: data.user.lastName || '',
             email: data.user.email || '',
           }));
+          // Store user role to check if admin
+          setUserRole(data.user.role || null);
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
@@ -233,6 +236,14 @@ export default function SettingsPage() {
 
           {/* Right actions */}
           <div className="flex items-center gap-3">
+            {/* Admin Panel Button - Show only for admins */}
+            {userRole && (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') && (
+              <Link href="/admin">
+                <Button variant="primary" size="sm">
+                  ⚙️ Admin Panel
+                </Button>
+              </Link>
+            )}
             <SafeDarkModeToggle />
             <Link href="/dashboard">
               <Button variant="outline" size="sm">

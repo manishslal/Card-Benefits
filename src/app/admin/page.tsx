@@ -10,8 +10,6 @@ import { apiClient } from '@/features/admin/lib/api-client';
 import type { AuditLog } from '@/features/admin/types/admin';
 
 export default function AdminDashboard() {
-  const [mounted, setMounted] = useState(false);
-  
   // Dashboard metrics state
   const [cardCount, setCardCount] = useState(0);
   const [userCount, setUserCount] = useState(0);
@@ -98,7 +96,6 @@ export default function AdminDashboard() {
 
     fetchDashboardData();
     fetchAuditLogs();
-    setMounted(true);
   }, []);
 
   return (
@@ -235,8 +232,8 @@ export default function AdminDashboard() {
                     </p>
                   </div>
                   <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                    {log.timestamp || (log as any).createdAt
-                      ? new Date(log.timestamp || (log as any).createdAt).toLocaleDateString()
+                    {log.createdAt
+                      ? new Date(log.createdAt).toLocaleDateString()
                       : '—'}
                   </span>
                 </div>

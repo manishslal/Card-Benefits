@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import useSWR from 'swr';
-import { apiClient } from '@/features/admin/lib/api-client';
+import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import type { AdminUser, PaginationInfo } from '@/features/admin/types/admin';
 
 interface UsersListResponse {
@@ -91,8 +91,9 @@ export default function UsersPage() {
       setRoleModalOpen(false);
       mutate();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to update role';
+      const message = getErrorMessage(err);
       setError(message);
+      console.error('Error updating role:', err);
     }
   };
 
@@ -205,15 +206,15 @@ export default function UsersPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setPage(Math.max(1, page - 1))}
-                  disabled={page === 1}
-                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 disabled:opacity-50"
+                  disabled={page === 1 || isLoading}
+                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setPage(page + 1)}
-                  disabled={!pagination.hasMore}
-                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 disabled:opacity-50"
+                  disabled={!pagination.hasMore || isLoading}
+                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>

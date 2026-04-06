@@ -1,7 +1,10 @@
+'use client';
+
 /**
  * Formatting utilities for dates, numbers, and text
  */
 
+import React from 'react';
 import { format, formatDistance, parseISO } from 'date-fns';
 
 /**

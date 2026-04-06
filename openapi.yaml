@@ -1,0 +1,727 @@
+openapi: 3.0.0
+info:
+  title: Card Benefits Admin API
+  description: Admin management API for card and benefit administration
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: https://api.example.com
+    description: Production
+  - url: http://localhost:3000
+    description: Development
+
+tags:
+  - name: Cards
+    description: Card management operations
+  - name: Benefits
+    description: Benefit management operations
+  - name: Users
+    description: User and role management
+  - name: Audit Logs
+    description: Audit trail retrieval
+
+paths:
+  /api/admin/cards:
+    get:
+      tags:
+        - Cards
+      summary: List all cards
+      description: Retrieve paginated list of master cards with filtering and sorting
+      operationId: listCards
+      parameters:
+        - name: page
+          in: query
+          description: Page number (default 1)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Items per page (max 100, default 20)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: issuer
+          in: query
+          description: Filter by issuer (max 255 chars)
+          schema:
+            type: string
+            maxLength: 255
+        - name: search
+          in: query
+          description: Search in card name and issuer (max 255 chars)
+          schema:
+            type: string
+            maxLength: 255
+        - name: isActive
+          in: query
+          description: Filter by active status
+          schema:
+            type: boolean
+        - name: sortBy
+          in: query
+          description: Sort by field
+          schema:
+            type: string
+            enum:
+              - issuer
+              - cardName
+              - displayOrder
+              - updatedAt
+            default: displayOrder
+        - name: sortDirection
+          in: query
+          description: Sort direction
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: asc
+      responses:
+        "200":
+          description: Cards retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Card"
+                  pagination:
+                    $ref: "#/components/schemas/Pagination"
+        "400":
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Not authorized (admin required)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - cookieAuth: []
+
+    post:
+      tags:
+        - Cards
+      summary: Create a new card
+      description: Create a new master card (issuer + cardName must be unique)
+      operationId: createCard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - issuer
+                - cardName
+                - defaultAnnualFee
+                - cardImageUrl
+              properties:
+                issuer:
+                  type: string
+                  maxLength: 100
+                  example: "American Express"
+                cardName:
+                  type: string
+                  maxLength: 200
+                  example: "Gold Card"
+                defaultAnnualFee:
+                  type: integer
+                  minimum: 0
+                  example: 250
+                cardImageUrl:
+                  type: string
+                  format: uri
+                  example: "https://example.com/cards/amex-gold.png"
+      responses:
+        "201":
+          description: Card created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/Card"
+                  message:
+                    type: string
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Duplicate card (issuer + cardName combination exists)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - cookieAuth: []
+
+  /api/admin/cards/{id}:
+    get:
+      tags:
+        - Cards
+      summary: Get card details
+      description: Retrieve single card by ID with benefit count
+      operationId: getCard
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Card ID
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Card details retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Card"
+        "404":
+          description: Card not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - cookieAuth: []
+
+    patch:
+      tags:
+        - Cards
+      summary: Update card
+      description: Update card properties (PATCH - partial update)
+      operationId: updateCard
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Card ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cardName:
+                  type: string
+                  maxLength: 200
+                defaultAnnualFee:
+                  type: integer
+                  minimum: 0
+                cardImageUrl:
+                  type: string
+                  format: uri
+                isActive:
+                  type: boolean
+      responses:
+        "200":
+          description: Card updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Card"
+                  message:
+                    type: string
+                  changes:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        old:
+                          type: any
+                        new:
+                          type: any
+        "409":
+          description: Duplicate card name/issuer combination
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - cookieAuth: []
+
+    delete:
+      tags:
+        - Cards
+      summary: Delete card
+      description: Delete card or archive if in use
+      operationId: deleteCard
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Card ID
+          schema:
+            type: string
+        - name: force
+          in: query
+          description: Force delete even if in use
+          schema:
+            type: boolean
+            default: false
+        - name: archiveInstead
+          in: query
+          description: Archive instead of delete if in use
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Card deleted/archived
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      cardName:
+                        type: string
+                      action:
+                        type: string
+                        enum:
+                          - deleted
+                          - archived
+                  message:
+                    type: string
+        "409":
+          description: Card in use (cannot delete without force)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - cookieAuth: []
+
+  /api/admin/cards/{id}/benefits:
+    get:
+      tags:
+        - Benefits
+      summary: List benefits for card
+      description: Get all benefits for a specific card
+      operationId: listBenefits
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Benefits retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Benefit"
+                  pagination:
+                    $ref: "#/components/schemas/Pagination"
+      security:
+        - cookieAuth: []
+
+    post:
+      tags:
+        - Benefits
+      summary: Create benefit for card
+      description: Create a new benefit for a specific card
+      operationId: createBenefit
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - type
+                - stickerValue
+                - resetCadence
+              properties:
+                name:
+                  type: string
+                  maxLength: 200
+                type:
+                  type: string
+                  enum:
+                    - INSURANCE
+                    - CASHBACK
+                    - TRAVEL
+                    - BANKING
+                    - POINTS
+                    - OTHER
+                stickerValue:
+                  type: integer
+                  minimum: 0
+                resetCadence:
+                  type: string
+                  enum:
+                    - ANNUAL
+                    - QUARTERLY
+                    - MONTHLY
+                    - ONE_TIME
+                isDefault:
+                  type: boolean
+                  default: true
+      responses:
+        "201":
+          description: Benefit created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Benefit"
+      security:
+        - cookieAuth: []
+
+  /api/admin/cards/{id}/benefits/{benefitId}:
+    patch:
+      tags:
+        - Benefits
+      summary: Update benefit
+      operationId: updateBenefit
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: benefitId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  maxLength: 200
+                type:
+                  type: string
+                stickerValue:
+                  type: integer
+                resetCadence:
+                  type: string
+      responses:
+        "200":
+          description: Benefit updated
+      security:
+        - cookieAuth: []
+
+    delete:
+      tags:
+        - Benefits
+      summary: Delete benefit
+      operationId: deleteBenefit
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: benefitId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: force
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: deactivateInstead
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Benefit deleted/deactivated
+        "409":
+          description: Benefit in use
+      security:
+        - cookieAuth: []
+
+  /api/admin/users:
+    get:
+      tags:
+        - Users
+      summary: List users
+      operationId: listUsers
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: search
+          in: query
+          description: Search by email or name (max 255 chars)
+          schema:
+            type: string
+            maxLength: 255
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum:
+              - ADMIN
+              - USER
+      responses:
+        "200":
+          description: Users retrieved
+      security:
+        - cookieAuth: []
+
+  /api/admin/audit-logs:
+    get:
+      tags:
+        - Audit Logs
+      summary: List audit logs
+      operationId: listAuditLogs
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: actionType
+          in: query
+          schema:
+            type: string
+            enum:
+              - CREATE
+              - UPDATE
+              - DELETE
+        - name: resourceType
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          description: Search (max 255 chars)
+          schema:
+            type: string
+            maxLength: 255
+      responses:
+        "200":
+          description: Audit logs retrieved
+      security:
+        - cookieAuth: []
+
+  /api/admin/audit-logs/{id}:
+    get:
+      tags:
+        - Audit Logs
+      summary: Get audit log detail
+      operationId: getAuditLog
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Audit log retrieved
+        "404":
+          description: Not found
+      security:
+        - cookieAuth: []
+
+components:
+  schemas:
+    Card:
+      type: object
+      properties:
+        id:
+          type: string
+        issuer:
+          type: string
+        cardName:
+          type: string
+        defaultAnnualFee:
+          type: integer
+        cardImageUrl:
+          type: string
+          format: uri
+        displayOrder:
+          type: integer
+        isActive:
+          type: boolean
+        isArchived:
+          type: boolean
+        benefitCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Benefit:
+      type: object
+      properties:
+        id:
+          type: string
+        masterCardId:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        stickerValue:
+          type: integer
+        resetCadence:
+          type: string
+        isDefault:
+          type: boolean
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer
+        hasMore:
+          type: boolean
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+        code:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: auth_token
+      description: HTTP cookie authentication
+
+security:
+  - cookieAuth: []

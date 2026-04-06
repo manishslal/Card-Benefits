@@ -98,8 +98,8 @@ export type UpdateCardInput = z.infer<typeof UpdateCardSchema>;
  * Query parameters for listing cards
  */
 export const ListCardsQuerySchema = PaginationQuerySchema.extend({
-  issuer: z.string().optional(),
-  search: z.string().optional(),
+  issuer: z.string().max(255, 'Issuer filter must be 255 characters or less').optional(),
+  search: z.string().max(255, 'Search must be 255 characters or less').optional(),
   isActive: z.coerce.boolean().optional(),
   sortBy: z.enum(['issuer', 'cardName', 'displayOrder', 'updatedAt']).default('displayOrder'),
   sortDirection: z.enum(['asc', 'desc']).default('asc'),
@@ -248,7 +248,7 @@ export const UserRoleEnum = z.enum(['USER', 'ADMIN']);
  */
 export const ListUsersQuerySchema = PaginationQuerySchema.extend({
   role: UserRoleEnum.optional(),
-  search: z.string().optional(),
+  search: z.string().max(255, 'Search must be 255 characters or less').optional(),
   isActive: z.coerce.boolean().optional(),
 });
 
@@ -287,7 +287,7 @@ export const ListAuditLogsQuerySchema = PaginationQuerySchema.extend({
   resourceId: z.string().optional(),
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
-  search: z.string().optional(),
+  search: z.string().max(255, 'Search must be 255 characters or less').optional(),
 });
 
 export type ListAuditLogsQuery = z.infer<typeof ListAuditLogsQuerySchema>;

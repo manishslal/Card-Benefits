@@ -283,52 +283,54 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const input = parseResult.data!;
 
-    // 4. Check for duplicate card (issuer + cardName combination)
-    const existingCard = await prisma.masterCard.findFirst({
-      where: {
-        AND: [
-          { issuer: input.issuer },
-          { cardName: input.cardName },
-        ],
-      },
-      select: { id: true },
-    });
-
-    if (existingCard) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'A card with this issuer and name already exists',
-          code: 'DUPLICATE_CARD',
-          existingCardId: existingCard.id,
+    // 4. Create the card in a transaction to ensure atomicity
+    // If a duplicate is created between check and insert (race condition),
+    // the database unique constraint will catch it
+    const card = await prisma.$transaction(async (tx) => {
+      // Re-check for duplicate within transaction to minimize race window
+      const existingCard = await tx.masterCard.findFirst({
+        where: {
+          AND: [
+            { issuer: input.issuer },
+            { cardName: input.cardName },
+          ],
         },
-        { status: 409 }
-      );
-    }
+        select: { id: true },
+      });
 
-    // 5. Create the card in a transaction
-    const card = await prisma.masterCard.create({
-      data: {
-        issuer: input.issuer,
-        cardName: input.cardName,
-        defaultAnnualFee: input.defaultAnnualFee,
-        cardImageUrl: input.cardImageUrl,
-        displayOrder: 0, // Default order, can be reordered later
-        isActive: true,
-        isArchived: false,
-      },
-      select: {
-        id: true,
-        issuer: true,
-        cardName: true,
-        defaultAnnualFee: true,
-        cardImageUrl: true,
-        displayOrder: true,
-        isActive: true,
-        isArchived: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      if (existingCard) {
+        throw new Error('DUPLICATE_CARD');
+      }
+
+      // Create the card - unique constraint is the safety net if race condition occurs
+      return tx.masterCard.create({
+        data: {
+          issuer: input.issuer,
+          cardName: input.cardName,
+          defaultAnnualFee: input.defaultAnnualFee,
+          cardImageUrl: input.cardImageUrl,
+          displayOrder: 0, // Default order, can be reordered later
+          isActive: true,
+          isArchived: false,
+        },
+        select: {
+          id: true,
+          issuer: true,
+          cardName: true,
+          defaultAnnualFee: true,
+          cardImageUrl: true,
+          displayOrder: true,
+          isActive: true,
+          isArchived: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: {
+            select: {
+              masterBenefits: true,
+            },
+          },
+        },
+      });
     });
 
     // 6. Log audit trail
@@ -361,6 +363,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           displayOrder: card.displayOrder,
           isActive: card.isActive,
           isArchived: card.isArchived,
+          benefitCount: card._count?.masterBenefits || 0,
           createdAt: card.createdAt.toISOString(),
           updatedAt: card.updatedAt.toISOString(),
         },
@@ -370,6 +373,37 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   } catch (error) {
     console.error('[POST /api/admin/cards Error]', error);
+
+    // Handle specific error cases
+    const errorMessage = String(error);
+
+    // Catch duplicate card errors (from transaction or unique constraint)
+    if (
+      errorMessage.includes('DUPLICATE_CARD') ||
+      errorMessage.includes('Unique constraint failed')
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'A card with this issuer and name already exists',
+          code: 'DUPLICATE_CARD',
+        } as ErrorResponse,
+        { status: 409 }
+      );
+    }
+
+    // Catch audit logging failures (which now throw)
+    if (errorMessage.includes('Audit logging failed')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Failed to create audit trail - operation cannot proceed',
+          code: 'AUDIT_LOGGING_FAILED',
+        } as ErrorResponse,
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
       {
         success: false,

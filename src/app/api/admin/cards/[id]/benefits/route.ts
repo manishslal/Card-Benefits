@@ -266,55 +266,51 @@ export async function POST(
 
     const input = parseResult.data!;
 
-    // 5. Check for duplicate benefit name in this card
-    const existingBenefit = await prisma.masterBenefit.findFirst({
-      where: {
-        masterCardId: params.id,
-        name: {
-          equals: input.name,
-          mode: 'insensitive',
+    // 5. Create benefit in a transaction with duplicate check
+    const benefit = await prisma.$transaction(async (tx) => {
+      // Re-check for duplicate within transaction
+      const existingBenefit = await tx.masterBenefit.findFirst({
+        where: {
+          masterCardId: params.id,
+          name: {
+            equals: input.name,
+            mode: 'insensitive',
+          },
         },
-      },
-      select: { id: true },
+        select: { id: true },
+      });
+
+      if (existingBenefit) {
+        throw new Error('DUPLICATE_BENEFIT');
+      }
+
+      // Create benefit - unique constraint is safety net
+      return tx.masterBenefit.create({
+        data: {
+          masterCardId: params.id,
+          name: input.name,
+          type: input.type,
+          stickerValue: input.stickerValue,
+          resetCadence: input.resetCadence,
+          isDefault: input.isDefault ?? true,
+          isActive: true,
+        },
+        select: {
+          id: true,
+          masterCardId: true,
+          name: true,
+          type: true,
+          stickerValue: true,
+          resetCadence: true,
+          isDefault: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
     });
 
-    if (existingBenefit) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'A benefit with this name already exists for this card',
-          code: 'DUPLICATE_BENEFIT',
-        } as ErrorResponse,
-        { status: 409 }
-      );
-    }
-
-    // 6. Create benefit
-    const benefit = await prisma.masterBenefit.create({
-      data: {
-        masterCardId: params.id,
-        name: input.name,
-        type: input.type,
-        stickerValue: input.stickerValue,
-        resetCadence: input.resetCadence,
-        isDefault: input.isDefault ?? true,
-        isActive: true,
-      },
-      select: {
-        id: true,
-        masterCardId: true,
-        name: true,
-        type: true,
-        stickerValue: true,
-        resetCadence: true,
-        isDefault: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-
-    // 7. Log creation
+    // 6. Log creation
     await logResourceCreation(
       adminContext,
       'BENEFIT',
@@ -354,6 +350,33 @@ export async function POST(
     );
   } catch (error) {
     console.error('[POST /api/admin/cards/[id]/benefits Error]', error);
+
+    const errorMessage = String(error);
+
+    // Handle duplicate benefit error
+    if (errorMessage.includes('DUPLICATE_BENEFIT')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'A benefit with this name already exists for this card',
+          code: 'DUPLICATE_BENEFIT',
+        } as ErrorResponse,
+        { status: 409 }
+      );
+    }
+
+    // Catch audit logging failures
+    if (errorMessage.includes('Audit logging failed')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Failed to create audit trail - operation cannot proceed',
+          code: 'AUDIT_LOGGING_FAILED',
+        } as ErrorResponse,
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
       {
         success: false,

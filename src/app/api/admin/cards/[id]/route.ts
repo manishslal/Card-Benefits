@@ -13,7 +13,6 @@
  *   "cardName": string (optional, max 200)
  *   "defaultAnnualFee": number (optional, >= 0)
  *   "cardImageUrl": string (optional, valid URL)
- *   "description": string (optional, max 1000)
  *   "isActive": boolean (optional)
  * }
  *
@@ -58,7 +57,6 @@ interface CardDetailData {
   cardName: string;
   defaultAnnualFee: number;
   cardImageUrl: string;
-  description: string | null;
   displayOrder: number;
   isActive: boolean;
   isArchived: boolean;
@@ -112,7 +110,6 @@ function formatCardResponse(card: any): CardDetailData {
     cardName: card.cardName,
     defaultAnnualFee: card.defaultAnnualFee,
     cardImageUrl: card.cardImageUrl,
-    description: card.description || null,
     displayOrder: card.displayOrder,
     isActive: card.isActive,
     isArchived: card.isArchived,
@@ -134,7 +131,6 @@ async function fetchCardWithCount(cardId: string) {
       cardName: true,
       defaultAnnualFee: true,
       cardImageUrl: true,
-      description: true,
       displayOrder: true,
       isActive: true,
       isArchived: true,
@@ -164,7 +160,7 @@ async function countUserCardsForMasterCard(masterCardId: string): Promise<number
 // ============================================================
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   const params = await context.params;
@@ -243,7 +239,6 @@ export async function PATCH(
         cardName: true,
         defaultAnnualFee: true,
         cardImageUrl: true,
-        description: true,
         displayOrder: true,
         isActive: true,
       },
@@ -326,7 +321,6 @@ export async function PATCH(
           ...(input.cardName && { cardName: input.cardName }),
           ...(input.defaultAnnualFee !== undefined && { defaultAnnualFee: input.defaultAnnualFee }),
           ...(input.cardImageUrl && { cardImageUrl: input.cardImageUrl }),
-          ...(input.description !== undefined && { description: input.description }),
           ...(input.isActive !== undefined && { isActive: input.isActive }),
         },
         select: {
@@ -335,7 +329,6 @@ export async function PATCH(
           cardName: true,
           defaultAnnualFee: true,
           cardImageUrl: true,
-          description: true,
           displayOrder: true,
           isActive: true,
           isArchived: true,
@@ -364,9 +357,6 @@ export async function PATCH(
     if (input.cardImageUrl && input.cardImageUrl !== currentCard.cardImageUrl) {
       changes.cardImageUrl = { old: currentCard.cardImageUrl, new: input.cardImageUrl };
     }
-    if (input.description !== undefined && input.description !== currentCard.description) {
-      changes.description = { old: currentCard.description, new: input.description };
-    }
     if (input.isActive !== undefined && input.isActive !== currentCard.isActive) {
       changes.isActive = { old: currentCard.isActive, new: input.isActive };
     }
@@ -382,14 +372,12 @@ export async function PATCH(
           cardName: currentCard.cardName,
           defaultAnnualFee: currentCard.defaultAnnualFee,
           cardImageUrl: currentCard.cardImageUrl,
-          description: currentCard.description,
           isActive: currentCard.isActive,
         },
         {
           cardName: updatedCard.cardName,
           defaultAnnualFee: updatedCard.defaultAnnualFee,
           cardImageUrl: updatedCard.cardImageUrl,
-          description: updatedCard.description,
           isActive: updatedCard.isActive,
         },
         ipAddress,

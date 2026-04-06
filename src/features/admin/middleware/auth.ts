@@ -78,6 +78,7 @@ export async function verifyAdminRole(): Promise<AdminRequestContext> {
 
 /**
  * Extracts request context including IP and user agent
+ * Truncates user-agent to 500 chars to prevent unbounded storage
  */
 export function extractRequestContext(request: NextRequest): {
   ipAddress: string | null;
@@ -89,7 +90,11 @@ export function extractRequestContext(request: NextRequest): {
     request.headers.get('x-real-ip') ||
     null;
 
-  const userAgent = request.headers.get('user-agent') || null;
+  // Get user agent and truncate to prevent DoS
+  let userAgent = request.headers.get('user-agent') || null;
+  if (userAgent && userAgent.length > 500) {
+    userAgent = userAgent.substring(0, 500);
+  }
 
   return { ipAddress, userAgent };
 }

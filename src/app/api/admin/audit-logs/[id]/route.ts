@@ -101,7 +101,29 @@ export async function GET(
       );
     }
 
-    // 3. Parse JSON strings back to objects
+    // 3. Parse JSON strings back to objects with error handling
+    let oldValues: any = null;
+    let newValues: any = null;
+
+    try {
+      if (log.oldValues) {
+        oldValues = JSON.parse(log.oldValues);
+      }
+      if (log.newValues) {
+        newValues = JSON.parse(log.newValues);
+      }
+    } catch (parseError) {
+      console.error('[JSON Parse Error in Audit Log]', parseError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Audit log contains invalid JSON data',
+          code: 'INVALID_AUDIT_DATA',
+        } as ErrorResponse,
+        { status: 500 }
+      );
+    }
+
     const data: AuditLogDetail = {
       id: log.id,
       adminUserId: log.adminUserId,
@@ -110,8 +132,8 @@ export async function GET(
       resourceType: log.resourceType,
       resourceId: log.resourceId,
       resourceName: log.resourceName,
-      oldValues: log.oldValues ? JSON.parse(log.oldValues) : null,
-      newValues: log.newValues ? JSON.parse(log.newValues) : null,
+      oldValues,
+      newValues,
       ipAddress: log.ipAddress,
       userAgent: log.userAgent,
       timestamp: log.timestamp.toISOString(),

@@ -36,6 +36,8 @@ export interface AuditLogOptions {
  *
  * Safely serializes old and new values to JSON strings,
  * handling circular references gracefully.
+ *
+ * @throws Error if audit logging fails - compliance requires audit trail
  */
 export async function createAuditLog(
   options: AuditLogOptions
@@ -57,10 +59,10 @@ export async function createAuditLog(
 
     return auditLog.id;
   } catch (error) {
-    console.error('[Audit Log Error]', error);
-    // Don't throw - audit failures shouldn't block operations
-    // But log the error for monitoring
-    return '';
+    console.error('[Audit Log Error - CRITICAL]', error);
+    // CRITICAL FIX: Throw error instead of silently failing
+    // Audit trail is required for compliance - missing audits are data loss
+    throw new Error(`Audit logging failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 

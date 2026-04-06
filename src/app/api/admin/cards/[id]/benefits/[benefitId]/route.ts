@@ -216,8 +216,12 @@ export async function PATCH(
       },
     });
 
-    // 9. Get user benefit count (No direct relation in schema)
-    const benefitCount = 0;
+    // 9. Get user benefit count (query by name across all user cards)
+    const benefitCount = await prisma.userBenefit.count({
+      where: {
+        name: benefit.name,
+      },
+    });
 
     // 10. Prepare new values and log update
     const newValues = {
@@ -352,8 +356,12 @@ export async function DELETE(
       );
     }
 
-    // 6. Check if benefit is used by user cards
-    const userBenefitCount = 0; // No direct relation available from MasterBenefit to UserBenefit
+    // 6. Check if benefit is used by user cards (query by name across all user cards)
+    const userBenefitCount = await prisma.userBenefit.count({
+      where: {
+        name: benefit.name,
+      },
+    });
 
     // If benefit is in use and not forced, either deactivate or return error
     if (userBenefitCount > 0 && !query.force) {

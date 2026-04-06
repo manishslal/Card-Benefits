@@ -64,7 +64,7 @@ export async function verifyAdminRole(): Promise<AdminRequestContext> {
     throw new Error('USER_NOT_FOUND');
   }
 
-  if (user.role !== 'ADMIN') {
+  if (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
     throw new Error('ADMIN_ROLE_REQUIRED');
   }
 

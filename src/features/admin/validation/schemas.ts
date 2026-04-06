@@ -241,7 +241,7 @@ export type DeleteBenefitQuery = z.infer<typeof DeleteBenefitQuerySchema>;
 /**
  * User role enum validation
  */
-export const UserRoleEnum = z.enum(['USER', 'ADMIN']);
+export const UserRoleEnum = z.enum(['USER', 'ADMIN', 'SUPER_ADMIN']);
 
 /**
  * Query parameters for listing users

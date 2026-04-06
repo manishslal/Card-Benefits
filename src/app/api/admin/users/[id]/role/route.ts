@@ -1,12 +1,12 @@
 /**
  * PATCH /api/admin/users/[userId]/role - Assign or Update User Role
  *
- * Assigns or updates a user's role (USER or ADMIN).
+ * Assigns or updates a user's role (USER, ADMIN, or SUPER_ADMIN).
  * Prevents self-demotion (cannot remove own admin role).
  *
  * Request Body:
  * {
- *   "role": 'USER' | 'ADMIN' (required)
+ *   "role": 'USER' | 'ADMIN' | 'SUPER_ADMIN' (required)
  * }
  *
  * Response 200: Role updated successfully

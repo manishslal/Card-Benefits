@@ -98,6 +98,7 @@ model User {
 enum UserRole {
   USER
   ADMIN
+  SUPER_ADMIN
 }
 
 model Session {

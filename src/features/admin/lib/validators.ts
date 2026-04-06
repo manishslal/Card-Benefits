@@ -53,7 +53,7 @@ export const roleAssignmentSchema = z.object({
   userId: z
     .string()
     .min(1, 'User is required'),
-  role: z.enum(['USER', 'ADMIN']),
+  role: z.enum(['USER', 'ADMIN', 'SUPER_ADMIN']),
 });
 
 /**

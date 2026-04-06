@@ -26,6 +26,15 @@ export default function CardDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
+  // Update page title when card data loads
+  useEffect(() => {
+    if (card?.cardName) {
+      document.title = `${card.cardName} - Admin Dashboard`;
+    } else {
+      document.title = 'Card Details - Admin Dashboard';
+    }
+  }, [card?.cardName]);
+
   // Validation function for Add Benefit form
   const validateBenefitForm = (): string | null => {
     if (!benefitFormData.name.trim()) {

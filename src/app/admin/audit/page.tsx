@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { apiClient } from '@/features/admin/lib/api-client';
 import type { AuditLog, PaginationInfo } from '@/features/admin/types/admin';
@@ -17,6 +17,11 @@ export default function AuditPage() {
   const [actionFilter, setActionFilter] = useState<string>('');
   const [resourceFilter, setResourceFilter] = useState<string>('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // Update page title on mount
+  useEffect(() => {
+    document.title = 'Audit Logs - Admin Dashboard';
+  }, []);
 
   const { data, isLoading } = useSWR<AuditListResponse>(
     `/admin/audit?page=${page}&limit=50${search ? `&search=${search}` : ''}${

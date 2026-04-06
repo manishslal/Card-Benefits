@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { apiClient } from '@/features/admin/lib/api-client';
 import type { Benefit, PaginationInfo } from '@/features/admin/types/admin';
@@ -16,6 +16,11 @@ export default function BenefitsPage() {
   const [search, setSearch] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Update page title on mount
+  useEffect(() => {
+    document.title = 'Benefits - Admin Dashboard';
+  }, []);
 
   const { data, isLoading, mutate } = useSWR<BenefitsListResponse>(
     `/admin/benefits?page=${page}&limit=20${search ? `&search=${search}` : ''}`,

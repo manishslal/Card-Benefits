@@ -20,6 +20,11 @@ export default function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [newRole, setNewRole] = useState<'USER' | 'ADMIN' | 'SUPER_ADMIN'>('USER');
 
+  // Update page title on mount
+  useEffect(() => {
+    document.title = 'Users - Admin Dashboard';
+  }, []);
+
   // Escape key handler for Role Change Modal
   useEffect(() => {
     if (!roleModalOpen) return;

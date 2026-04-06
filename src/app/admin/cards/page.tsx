@@ -36,6 +36,11 @@ export default function CardsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Update page title on mount
+  useEffect(() => {
+    document.title = 'Cards - Admin Dashboard';
+  }, []);
+
   // Track request ID to prevent race condition - responses from older requests are ignored
   const requestIdRef = useRef(0);
 

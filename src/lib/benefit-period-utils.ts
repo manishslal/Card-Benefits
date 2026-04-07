@@ -8,12 +8,29 @@
  * - SEMI_ANNUAL: Half-years (Jan-Jun, Jul-Dec)
  * - ANNUAL: Card anniversary date
  * - CUSTOM: User-defined dates
+ * 
+ * PHASE 6C: Added claiming cadence support for enforcing benefit claiming limits
+ * - MONTHLY: Fixed amount resets 1st of month, expires at month-end
+ * - QUARTERLY: Fixed amount per quarter (with Amex Sept 18 split support)
+ * - SEMI_ANNUAL: Fixed amount per half-year (H1/H2)
+ * - FLEXIBLE_ANNUAL: Full amount available anytime during year
+ * - ONE_TIME: Single claim only
  */
 
 /**
  * Reset cadence enum - mirrors Prisma schema
  */
 export type ResetCadence = 'MONTHLY' | 'QUARTERLY' | 'SEMI_ANNUAL' | 'ANNUAL' | 'CUSTOM';
+
+/**
+ * Claiming cadence enum - Phase 6C: Controls how often a benefit can be claimed
+ */
+export type ClaimingCadence = 'MONTHLY' | 'QUARTERLY' | 'SEMI_ANNUAL' | 'FLEXIBLE_ANNUAL' | 'ONE_TIME';
+
+/**
+ * Urgency level for displaying benefit claiming status
+ */
+export type UrgencyLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 
 /**
  * Period boundary information

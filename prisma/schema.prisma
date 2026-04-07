@@ -51,6 +51,14 @@ model MasterBenefit {
   isDefault       Boolean         @default(true)
   isActive        Boolean         @default(true)
   
+  // Phase 6C: Claiming Cadence Fields (NEW)
+  // claimingCadence: MONTHLY | QUARTERLY | SEMI_ANNUAL | FLEXIBLE_ANNUAL | ONE_TIME
+  // claimingAmount: Amount per period in cents (e.g., 1500 = $15)
+  // claimingWindowEnd: For custom windows like "0918" for Amex Sept 18 split
+  claimingCadence String?
+  claimingAmount  Int?
+  claimingWindowEnd String?
+  
   // Audit fields (NEW)
   createdByAdminId String?
   
@@ -62,6 +70,7 @@ model MasterBenefit {
   @@index([masterCardId])
   @@index([type])
   @@index([resetCadence])
+  @@index([claimingCadence])
   @@index([isDefault])
   @@index([isActive])
 }

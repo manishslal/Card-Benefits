@@ -42,7 +42,8 @@ const DashboardSummary = React.forwardRef<HTMLDivElement, DashboardSummaryProps>
             Dashboard Overview
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Enhancement 2: Mobile-first responsive grid - 2 cols on mobile, 3 on tablet, 4 on desktop */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}

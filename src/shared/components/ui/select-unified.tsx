@@ -59,7 +59,7 @@ const SelectContent = React.forwardRef<
       position="popper"
       sideOffset={4}
       className={cn(
-        'relative z-50 max-h-60 min-w-[8rem] overflow-hidden rounded-md bg-[var(--color-bg)] text-[var(--color-text)] shadow-md border border-[var(--color-border)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-2 data-[state=open]:slide-in-from-left-2 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2',
+        'relative z-50 max-h-60 min-w-[8rem] max-w-[calc(100%-2rem)] overflow-hidden rounded-md bg-[var(--color-bg)] text-[var(--color-text)] shadow-md border border-[var(--color-border)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-2 data-[state=open]:slide-in-from-left-2 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2',
         className
       )}
       {...props}
@@ -101,7 +101,8 @@ const SelectItem = React.forwardRef<
       </SelectPrimitive.ItemIndicator>
     </span>
 
-    <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+    {/* Enhancement 1: Add truncate to handle long card names on mobile viewport */}
+    <SelectPrimitive.ItemText className="truncate">{children}</SelectPrimitive.ItemText>
   </SelectPrimitive.Item>
 ));
 SelectItem.displayName = SelectPrimitive.Item.displayName;

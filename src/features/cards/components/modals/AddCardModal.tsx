@@ -210,9 +210,10 @@ export function AddCardModal({ isOpen, onClose, onCardAdded }: AddCardModalProps
   if (!isOpen) return null;
 
   // Prepare select options for card selection
+  // Enhancement 1: Show only card name and annual fee (no issuer) to fit mobile viewport
   const cardOptions = availableCards.map((card) => ({
     value: card.id,
-    label: `${card.issuer} - ${card.cardName} ($${(card.defaultAnnualFee / 100).toFixed(2)}/yr)`,
+    label: `${card.cardName} ($${(card.defaultAnnualFee / 100).toFixed(2)}/yr)`,
   }));
 
   return (

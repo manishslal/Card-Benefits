@@ -9,7 +9,7 @@ interface Card {
   type: 'visa' | 'mastercard' | 'amex' | 'discover' | 'other';
   lastFour: string;
   issuer: string;
-  customName?: string;  // Enhancement 3: User's custom nickname (optional)
+  customName?: string | null;  // Enhancement 3: User's custom nickname (optional)
 }
 
 interface CardSwitcherProps {

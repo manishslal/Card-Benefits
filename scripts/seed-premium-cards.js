@@ -2,7 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
-// 26+ PREMIUM POINTS-BASED CREDIT CARDS WITH BENEFITS
+// PREMIUM POINTS-BASED CREDIT CARDS WITH ANNUAL FEES
 const PREMIUM_CARDS = [
   // CHASE SAPPHIRE SERIES
   {
@@ -32,6 +32,36 @@ const PREMIUM_CARDS = [
       { name: 'Trip Delay Reimbursement', type: 'Insurance', stickerValue: 50000, resetCadence: 'TripBased' },
       { name: 'Emergency Medical & Dental', type: 'Insurance', stickerValue: 50000, resetCadence: 'TripBased' },
       { name: 'Purchase Protection', type: 'Protection', stickerValue: 0, resetCadence: 'None' },
+    ],
+  },
+  {
+    issuer: 'Chase',
+    cardName: 'Chase Ink Preferred Business',
+    defaultAnnualFee: 9500,
+    benefits: [
+      { name: '3x Points on Business Purchases', type: 'Rewards', stickerValue: 0, resetCadence: 'None' },
+      { name: 'Business Expense Tracking', type: 'Service', stickerValue: 0, resetCadence: 'None' },
+      { name: 'Purchase Protection', type: 'Protection', stickerValue: 0, resetCadence: 'None' },
+    ],
+  },
+  {
+    issuer: 'Chase',
+    cardName: 'Chase Southwest Rapid Rewards Premier',
+    defaultAnnualFee: 6999,
+    benefits: [
+      { name: 'Free Checked Bags', type: 'TravelPerk', stickerValue: 30000, resetCadence: 'CalendarYear' },
+      { name: '2x Points on Southwest Flights', type: 'Rewards', stickerValue: 0, resetCadence: 'None' },
+      { name: 'Complimentary Boarding', type: 'TravelPerk', stickerValue: 5000, resetCadence: 'CalendarYear' },
+    ],
+  },
+  {
+    issuer: 'Chase',
+    cardName: 'Chase Hyatt Credit Card',
+    defaultAnnualFee: 9500,
+    benefits: [
+      { name: 'Free Night Award', type: 'TravelPerk', stickerValue: 30000, resetCadence: 'CardmemberYear' },
+      { name: '4x Points on Hyatt Hotels', type: 'Rewards', stickerValue: 0, resetCadence: 'None' },
+      { name: 'Elite Night Credits', type: 'TravelPerk', stickerValue: 10000, resetCadence: 'CalendarYear' },
     ],
   },
 
@@ -121,139 +151,6 @@ const PREMIUM_CARDS = [
       { name: 'Baggage Fee Credit', type: 'TravelPerk', stickerValue: 8000, resetCadence: 'CalendarYear' },
     ],
   },
-  {
-    issuer: 'Capital One',
-    cardName: 'Capital One Venture',
-    defaultAnnualFee: 0,
-    benefits: [
-      { name: '2x Miles on All Purchases', type: 'Rewards', stickerValue: 0, resetCadence: 'None' },
-      { name: 'Mile Redemption Flexibility', type: 'Rewards', stickerValue: 0, resetCadence: 'None' },
-      { name: 'Purchase Protection', type: 'Protection', stickerValue: 0, resetCadence: 'None' },
-    ],
-  },
-
-  // CHASE BUSINESS & FREEDOM
-  {
-    issuer: 'Chase',
-    cardName: 'Chase Ink Preferred Business',
-    defaultAnnualFee: 9500,
-    benefits: [
-      { name: '3x Points on Business Purchases', type: 'Rewards', stickerValue: 0, resetCadence: 'None' },
-      { name: 'Business Expense Tracking', type: 'Service', stickerValue: 0, resetCadence: 'None' },
-      { name: 'Purchase Protection', type: 'Protection', stickerValue: 0, resetCadence: 'None' },
-    ],
-  },
-  {
-    issuer: 'Chase',
-    cardName: 'Chase Ink Business Premier',
-    defaultAnnualFee: 0,
-    benefits: [
-      { name: '2x Points on Business Purchases', type: 'Rewards', stickerValue: 0, resetCadence: 'None' },
-      { name: '1x Points on All Other Purchases', type: 'Rewards', stickerValue: 0, resetCadence: 'None' },
-      { name: 'Business Tools & Resources', type: 'Service', stickerValue: 0, resetCadence: 'None' },
-    ],
-  },
-  {
-    issuer: 'Chase',
-    cardName: 'Chase Ink Unlimited Business',
-    defaultAnnualFee: 0,
-    benefits: [
-      { name: '1.5x Points on All Purchases', type: 'Rewards', stickerValue: 0, resetCadence: 'None' },
-      { name: 'Purchase Protection', type: 'Protection', stickerValue: 0, resetCadence: 'None' },
-    ],
-  },
-  {
-    issuer: 'Chase',
-    cardName: 'Chase Freedom Flex',
-    defaultAnnualFee: 0,
-    benefits: [
-      { name: '5% Cash Back on Rotating Categories', type: 'CashBack', stickerValue: 0, resetCadence: 'Quarterly' },
-      { name: '1% Cash Back on All Other Purchases', type: 'CashBack', stickerValue: 0, resetCadence: 'None' },
-    ],
-  },
-  {
-    issuer: 'Chase',
-    cardName: 'Chase Freedom Unlimited',
-    defaultAnnualFee: 0,
-    benefits: [
-      { name: '1.5x Cash Back on All Purchases', type: 'CashBack', stickerValue: 0, resetCadence: 'None' },
-      { name: 'Intro 0% APR for 15 months', type: 'Perk', stickerValue: 0, resetCadence: 'OneTime' },
-    ],
-  },
-  {
-    issuer: 'Chase',
-    cardName: 'Chase Southwest Rapid Rewards Premier',
-    defaultAnnualFee: 6999,
-    benefits: [
-      { name: 'Free Checked Bags', type: 'TravelPerk', stickerValue: 30000, resetCadence: 'CalendarYear' },
-      { name: '2x Points on Southwest Flights', type: 'Rewards', stickerValue: 0, resetCadence: 'None' },
-      { name: 'Complimentary Boarding', type: 'TravelPerk', stickerValue: 5000, resetCadence: 'CalendarYear' },
-    ],
-  },
-
-  // AIRLINE & HOTEL
-  {
-    issuer: 'United',
-    cardName: 'United Airlines Explorer Card',
-    defaultAnnualFee: 0,
-    benefits: [
-      { name: 'Free Checked Bag', type: 'TravelPerk', stickerValue: 30000, resetCadence: 'CalendarYear' },
-      { name: '2x Miles on United Flights', type: 'Rewards', stickerValue: 0, resetCadence: 'None' },
-      { name: 'Priority Boarding', type: 'TravelPerk', stickerValue: 5000, resetCadence: 'CalendarYear' },
-    ],
-  },
-  {
-    issuer: 'Chase',
-    cardName: 'Chase Hyatt Credit Card',
-    defaultAnnualFee: 9500,
-    benefits: [
-      { name: 'Free Night Award', type: 'TravelPerk', stickerValue: 30000, resetCadence: 'CardmemberYear' },
-      { name: '4x Points on Hyatt Hotels', type: 'Rewards', stickerValue: 0, resetCadence: 'None' },
-      { name: 'Elite Night Credits', type: 'TravelPerk', stickerValue: 10000, resetCadence: 'CalendarYear' },
-    ],
-  },
-
-  // WELLS FARGO
-  {
-    issuer: 'Wells Fargo',
-    cardName: 'Wells Fargo Propel American Express',
-    defaultAnnualFee: 0,
-    benefits: [
-      { name: '3x Points on Travel & Dining', type: 'Rewards', stickerValue: 0, resetCadence: 'None' },
-      { name: '3x Points on Streaming', type: 'Rewards', stickerValue: 0, resetCadence: 'None' },
-      { name: '1x Point on All Other Purchases', type: 'Rewards', stickerValue: 0, resetCadence: 'None' },
-    ],
-  },
-  {
-    issuer: 'Wells Fargo',
-    cardName: 'Wells Fargo Active Cash',
-    defaultAnnualFee: 0,
-    benefits: [
-      { name: '2% Unlimited Cash Back', type: 'CashBack', stickerValue: 0, resetCadence: 'None' },
-      { name: 'No Rotating Categories', type: 'Perk', stickerValue: 0, resetCadence: 'None' },
-    ],
-  },
-
-  // US BANK
-  {
-    issuer: 'US Bank',
-    cardName: 'US Bank Altitude Reserve Visa Infinite',
-    defaultAnnualFee: 39500,
-    benefits: [
-      { name: '$300 Quarterly Travel Credit', type: 'StatementCredit', stickerValue: 75000, resetCadence: 'CalendarYear' },
-      { name: '4.5x Points on Travel & Dining', type: 'Rewards', stickerValue: 0, resetCadence: 'None' },
-      { name: 'Priority Pass Select', type: 'TravelPerk', stickerValue: 40000, resetCadence: 'CalendarYear' },
-    ],
-  },
-  {
-    issuer: 'US Bank',
-    cardName: 'US Bank Altitude Go Visa Signature',
-    defaultAnnualFee: 0,
-    benefits: [
-      { name: '4x Points on Travel & Dining', type: 'Rewards', stickerValue: 0, resetCadence: 'None' },
-      { name: '2x Points on Other Purchases', type: 'Rewards', stickerValue: 0, resetCadence: 'None' },
-    ],
-  },
 
   // BARCLAYS
   {
@@ -279,31 +176,22 @@ const PREMIUM_CARDS = [
       { name: 'Concierge Services', type: 'Service', stickerValue: 5000, resetCadence: 'CalendarYear' },
     ],
   },
-  {
-    issuer: 'Citi',
-    cardName: 'Citi Custom Cash Card',
-    defaultAnnualFee: 0,
-    benefits: [
-      { name: '5% Cash Back on Your Top Spending Category', type: 'CashBack', stickerValue: 0, resetCadence: 'Monthly' },
-      { name: '1% Cash Back on All Other Purchases', type: 'CashBack', stickerValue: 0, resetCadence: 'None' },
-    ],
-  },
 
-  // DISCOVER
+  // US BANK
   {
-    issuer: 'Discover',
-    cardName: 'Discover it Card',
-    defaultAnnualFee: 0,
+    issuer: 'US Bank',
+    cardName: 'US Bank Altitude Reserve Visa Infinite',
+    defaultAnnualFee: 39500,
     benefits: [
-      { name: '5% Cash Back on Rotating Categories', type: 'CashBack', stickerValue: 0, resetCadence: 'Quarterly' },
-      { name: '1% Cash Back on All Other Purchases', type: 'CashBack', stickerValue: 0, resetCadence: 'None' },
-      { name: 'Cashback Match (First Year)', type: 'CashBack', stickerValue: 0, resetCadence: 'FirstYear' },
+      { name: '$300 Quarterly Travel Credit', type: 'StatementCredit', stickerValue: 75000, resetCadence: 'CalendarYear' },
+      { name: '4.5x Points on Travel & Dining', type: 'Rewards', stickerValue: 0, resetCadence: 'None' },
+      { name: 'Priority Pass Select', type: 'TravelPerk', stickerValue: 40000, resetCadence: 'CalendarYear' },
     ],
   },
 ];
 
 async function main() {
-  console.log('\n📊 PREMIUM CARDS SEED - 26+ Premium Points Credit Cards\n');
+  console.log('\n📊 PREMIUM CARDS SEED - 15 Premium Cards (Annual Fee Required)\n');
   
   let created = 0;
   let updated = 0;
@@ -365,15 +253,18 @@ async function main() {
   const totalBenefits = await prisma.masterBenefit.count();
 
   console.log(`
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✨ PREMIUM CARDS SEED COMPLETE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    Cards Created   : ${created}
    Cards Updated   : ${updated}
    Benefits Added  : ${benefitsCreated}
    Total Cards DB  : ${totalCards}
    Total Benefits  : ${totalBenefits}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   NOTE: Only cards with annual fees ($95+) included
+   No-fee cards removed per business requirements
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `);
 }
 

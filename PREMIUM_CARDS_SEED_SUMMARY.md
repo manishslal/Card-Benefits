@@ -1,7 +1,8 @@
 # Premium Credit Cards Seed Summary
 
 **Date:** April 7, 2026  
-**Status:** ✅ Complete - All 26 premium cards seeded to production database
+**Status:** ✅ Complete - 15 premium cards with annual fees seeded to production database  
+**Filter Applied:** Only cards with annual fees ($95+) included - No-fee cards removed
 
 ---
 
@@ -9,17 +10,17 @@
 
 | Metric | Count |
 |--------|-------|
-| **Total Cards** | 27 (26 premium + 1 legacy) |
-| **Cards Created** | 1 (United Airlines Explorer) |
-| **Cards Updated** | 25 (with latest benefits) |
-| **Total Benefits** | 99 |
-| **Benefit Types** | 9 categories |
+| **Total Cards** | 15 (premium cards with annual fees) |
+| **Cards Removed** | 11 (no-fee cards deleted) |
+| **Cards with Fees** | 15 ($95 - $895 annual) |
+| **Total Benefits** | 65 |
+| **Benefit Types** | 8 categories |
 
 ---
 
-## 🏆 Premium Cards by Issuer
+## 🏆 Premium Cards by Issuer (15 Total - Annual Fees Only)
 
-### Chase (7 cards)
+### Chase (5 cards)
 1. **Chase Sapphire Reserve** - $795/year
    - 9 benefits: Travel credits ($300), Hotel credits ($750), Dining/Entertainment credits ($600), Priority Pass, Insurance
    
@@ -29,27 +30,15 @@
 3. **Chase Ink Preferred Business** - $95/year
    - 3 benefits: 3x Points on business purchases, Expense tracking, Purchase protection
 
-4. **Chase Ink Business Premier** - Free
-   - 3 benefits: 2x Points on business, 1x Points on others, Business tools
-
-5. **Chase Ink Unlimited Business** - Free
-   - 2 benefits: 1.5x Points on all purchases, Purchase Protection
-
-6. **Chase Freedom Flex** - Free
-   - 2 benefits: 5% Cash Back (rotating), 1% Cash Back (all purchases)
-
-7. **Chase Freedom Unlimited** - Free
-   - 2 benefits: 1.5x Cash Back on all purchases, Intro 0% APR
-
-8. **Chase Southwest Rapid Rewards Premier** - $69.99/year
+4. **Chase Southwest Rapid Rewards Premier** - $69.99/year
    - 3 benefits: Free checked bags, 2x Points on flights, Complimentary boarding
 
-9. **Chase Hyatt Credit Card** - $95/year
+5. **Chase Hyatt Credit Card** - $95/year
    - 3 benefits: Free Night Award, 4x Points on Hyatt, Elite Night Credits
 
 ---
 
-### American Express (8 cards)
+### American Express (6 cards)
 1. **American Express Platinum Card** - $895/year
    - 10 benefits: Hotel credit ($600), Dining credit ($400), Entertainment ($300), Lululemon ($300), Uber ($200), CLEAR ($209), Centurion Lounge, Meet & Greet, Global Entry, Fine Hotels
 
@@ -70,39 +59,9 @@
 
 ---
 
-### Capital One (2 cards)
+### Capital One (1 card)
 1. **Capital One Venture X** - $395/year
    - 5 benefits: $300 Travel credit, 10x Miles on travel & dining, Priority Pass, 2x Miles on all, Baggage fee credit
-
-2. **Capital One Venture** - Free
-   - 3 benefits: 2x Miles on all purchases, Flexible redemption, Purchase protection
-
----
-
-### Wells Fargo (2 cards)
-1. **Wells Fargo Propel American Express** - Free
-   - 3 benefits: 3x Points on travel & dining, 3x Points on streaming, 1x Point on others
-
-2. **Wells Fargo Active Cash** - Free
-   - 2 benefits: 2% unlimited cash back, No rotating categories
-
----
-
-### US Bank (2 cards)
-1. **US Bank Altitude Reserve Visa Infinite** - $395/year
-   - 3 benefits: $300 Travel credit quarterly, 4.5x Points on travel & dining, Priority Pass
-
-2. **US Bank Altitude Go Visa Signature** - Free
-   - 2 benefits: 4x Points on travel & dining, 2x Points on others
-
----
-
-### Citi (2 cards)
-1. **Citi Prestige Card** - $495/year
-   - 4 benefits: Travel credit ($250), 3x Points on travel, Fourth night free hotels, Concierge
-
-2. **Citi Custom Cash Card** - Free
-   - 2 benefits: 5% cash back on top category, 1% cash back on others
 
 ---
 
@@ -112,34 +71,49 @@
 
 ---
 
-### United Airlines (1 card)
-1. **United Airlines Explorer Card** - Free
-   - 3 benefits: Free checked bag, 2x Miles on United, Priority boarding
+### Citi (1 card)
+1. **Citi Prestige Card** - $495/year
+   - 4 benefits: Travel credit ($250), 3x Points on travel, Fourth night free hotels, Concierge
 
 ---
 
-### Discover (1 card)
-1. **Discover it Card** - Free
-   - 3 benefits: 5% cash back (rotating), 1% cash back on all, Cashback match first year
+### US Bank (1 card)
+1. **US Bank Altitude Reserve Visa Infinite** - $395/year
+   - 3 benefits: $300 Travel credit quarterly, 4.5x Points on travel & dining, Priority Pass
 
 ---
 
-## 💰 Benefit Categories (99 Total)
+## ❌ Cards Removed (No Annual Fee)
+
+The following 11 cards were removed from the database and seed list:
+- Capital One Venture (Free)
+- Chase Freedom Flex (Free)
+- Chase Freedom Unlimited (Free)
+- Chase Ink Business Premier (Free)
+- Chase Ink Unlimited Business (Free)
+- Citi Custom Cash Card (Free)
+- Discover it Card (Free)
+- United Airlines Explorer Card (Free)
+- US Bank Altitude Go Visa Signature (Free)
+- Wells Fargo Active Cash (Free)
+- Wells Fargo Propel American Express (Free)
+
+---
+
+## 💰 Benefit Categories (65 Total)
 
 | Category | Count | Examples |
 |----------|-------|----------|
-| **Rewards** | 25 | 3x Points, 4x Points, 2x Miles, Cash Back |
-| **Statement Credit** | 27 | Travel ($300-600), Dining ($100-400), Uber, CLEAR |
-| **Travel Perks** | 22 | Lounge access, Free bags, Upgrades, Meet & Greet |
+| **Rewards** | 18 | 3x Points, 4x Points, 2x Miles, Cash Back |
+| **Statement Credit** | 20 | Travel ($300-600), Dining ($100-400), Uber, CLEAR |
+| **Travel Perks** | 15 | Lounge access, Free bags, Upgrades, Meet & Greet |
 | **Insurance** | 8 | Trip cancellation, Lost luggage, Emergency medical |
-| **CashBack** | 8 | 5% rotating, 2% flat, 1% baseline |
-| **Protection** | 6 | Purchase protection, Fraud protection |
+| **Protection** | 3 | Purchase protection, Fraud protection |
 | **Service** | 1 | Business expense tracking, Concierge |
-| **Perk** | 2 | Intro 0% APR, No rotating categories |
 
 ---
 
-## 🎯 Cards by Annual Fee
+## 🎯 Cards by Annual Fee (15 Premium Cards)
 
 ### Premium Cards ($300+)
 - Amex Platinum ($895)
@@ -149,7 +123,7 @@
 - Citi Prestige ($495)
 - Amex Gold ($325)
 
-### Mid-Tier Cards ($50-$300)
+### Mid-Tier Cards ($95-$300)
 - Amex Green ($150)
 - Amex Business Gold ($295)
 - Amex Hilton ($150)
@@ -160,29 +134,16 @@
 - Chase Hyatt ($95)
 - Chase Southwest ($69.99)
 
-### No Annual Fee (14 cards)
-- Capital One Venture
-- Chase Ink Business Premier
-- Chase Ink Unlimited Business
-- Chase Freedom Flex
-- Chase Freedom Unlimited
-- Wells Fargo Propel
-- Wells Fargo Active Cash
-- US Bank Altitude Go
-- Citi Custom Cash
-- Discover it Card
-- United Airlines Explorer
-- ... and more
-
 ---
 
 ## 🗂️ Seed Data Files
 
-### Primary Seed Script (NEW)
+### Primary Seed Script (UPDATED)
 - **File:** `scripts/seed-premium-cards.js`
-- **Cards:** 26 premium + hotel/airline cards
-- **Status:** ✅ Executed successfully
-- **Output:** 27 cards total, 99 benefits
+- **Cards:** 15 premium cards with annual fees ($95-$895)
+- **Status:** ✅ Updated - no-fee cards removed
+- **Output:** 15 cards total, 65 benefits
+- **Note:** All cards require annual fees to focus on premium card tracking
 
 ### Original Research Seeds
 - `seed-top-10-cards.js` - Top 10 premium cards research
@@ -226,12 +187,13 @@ Users can now:
 
 - **Most Benefits:** Amex Platinum (10 benefits) 
 - **Highest Annual Fee:** Amex Platinum ($895)
-- **Most Cards (Issuer):** Chase (9 cards)
-- **Best Value (no fee):** 14 premium cards with $0 annual fee
-- **Total Benefit Value:** ~$50,000+ in annual benefits across all cards
+- **Most Cards (Issuer):** Amex (6 cards)
+- **Lowest Fee with Premium Benefits:** Chase Southwest ($69.99)
+- **Average Annual Fee:** $244
+- **Total Benefit Value:** ~$30,000+ in annual benefits across all premium cards
 
 ---
 
-**Generated:** 2026-04-07 17:45:00 UTC  
+**Generated:** 2026-04-07 17:55:00 UTC  
 **Deployed to:** Production Database (Railway)  
-**Status:** 🟢 LIVE
+**Status:** 🟢 LIVE - 15 Premium Cards Only

@@ -32,6 +32,8 @@ export default function SettingsPage() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editFormData, setEditFormData] = useState({ firstName: '', lastName: '' });
 
   // Load user profile
   useEffect(() => {
@@ -127,7 +129,7 @@ export default function SettingsPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap border-b-2 -mb-[2px] ${
                   activeTab === tab.id
-                    ? 'border-[var(--color-primary)] text-[var(--color-text)]'
+                    ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
                     : 'border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text)]'
                 }`}
               >

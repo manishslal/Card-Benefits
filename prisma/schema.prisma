@@ -89,6 +89,9 @@ model User {
   sessions       Session[]
   importProfiles UserImportProfile[]
   auditLogs      AdminAuditLog[]     // Admin who performed actions
+  
+  // Phase 2: Onboarding relationships
+  onboardingStates UserOnboardingState[]
 
   @@index([email])
   @@index([role])
@@ -128,6 +131,12 @@ model Player {
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   userBenefits UserBenefit[]
   userCards    UserCard[]
+  
+  // Phase 2: Benefits tracking relationships
+  benefitUsageRecords   BenefitUsageRecord[]
+  benefitPeriods        BenefitPeriod[]
+  recommendations       BenefitRecommendation[]
+  onboardingState       UserOnboardingState?
 
   @@unique([userId, playerName])
   @@index([userId])
@@ -156,6 +165,9 @@ model UserCard {
   userBenefits        UserBenefit[]
   masterCard          MasterCard    @relation(fields: [masterCardId], references: [id])
   player              Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  
+  // Phase 2: Benefits tracking relationships
+  benefitUsageRecords BenefitUsageRecord[]
 
   @@unique([playerId, masterCardId])
   @@index([playerId])
@@ -334,3 +346,198 @@ enum ResourceType {
   USER_ROLE
   SYSTEM_SETTING
 }
+
+// ============================================================================
+// PHASE 2: ADVANCED BENEFITS FEATURES
+// ============================================================================
+
+// ============================================================================
+// BENEFIT USAGE TRACKING - Feature 1
+// ============================================================================
+
+model BenefitUsageRecord {
+  id              String    @id @default(cuid())
+  
+  // References
+  benefitId       String    // References UserBenefit.id (no FK to allow flexible queries)
+  periodId        String
+  userCardId      String
+  playerId        String
+  
+  // Usage data
+  amount          Int       // In cents for monetary, count for non-monetary
+  description     String    @db.Text
+  category        String?   // User-provided tag (e.g., "airline fee", "dining")
+  usageDate       DateTime  // When the benefit was actually used
+  
+  // Audit
+  isDeleted       Boolean   @default(false)
+  deletedAt       DateTime?
+  deletedBy       String?
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  period          BenefitPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  userCard        UserCard  @relation(fields: [userCardId], references: [id], onDelete: Cascade)
+  player          Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  
+  @@index([benefitId])
+  @@index([periodId])
+  @@index([playerId])
+  @@index([userCardId])
+  @@index([usageDate])
+  @@index([isDeleted])
+  @@index([playerId, usageDate])
+}
+
+// ============================================================================
+// BENEFIT PERIOD TRACKING - Feature 1 & 2
+// ============================================================================
+
+model BenefitPeriod {
+  id              String    @id @default(cuid())
+  
+  // Identity
+  benefitId       String    // References UserBenefit.id
+  playerId        String
+  
+  // Period boundaries
+  startDate       DateTime
+  endDate         DateTime
+  resetCadence    String    // MONTHLY, QUARTERLY, ANNUAL, ONETIME
+  
+  // Aggregated data (cached from BenefitUsageRecord)
+  totalAmount     Int       @default(0)  // In cents
+  totalCount      Int       @default(0)  // Number of usage events
+  lastUsedAt      DateTime?
+  
+  // Metadata
+  periodNumber    Int       // 1-based: which cycle is this? (useful for quarterly/annual)
+  isArchived      Boolean   @default(false)
+  archivedAt      DateTime?
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  usageRecords    BenefitUsageRecord[]
+  player          Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  
+  @@unique([benefitId, playerId, startDate])
+  @@index([benefitId])
+  @@index([playerId])
+  @@index([startDate])
+  @@index([resetCadence])
+  @@index([isArchived])
+}
+
+// ============================================================================
+// BENEFIT RECOMMENDATIONS - Feature 4
+// ============================================================================
+
+model BenefitRecommendation {
+  id              String    @id @default(cuid())
+  
+  // References
+  benefitId       String    // References UserBenefit.id
+  playerId        String
+  
+  // Recommendation content
+  title           String
+  description     String    @db.Text
+  reasoning       String?   @db.Text // Why this recommendation (for display)
+  
+  // Value & urgency
+  potentialValue  Int       // In cents: limit - used
+  urgency         String    @default("MEDIUM") // HIGH, MEDIUM, LOW
+  priority        Int       @default(0) // For sorting (higher = more important)
+  
+  // Context
+  spendingCategory String?  // Category of spending that triggered this (e.g., "dining")
+  spentThisMonth  Int?      // How much user spent in this category
+  usedThisMonth   Int?      // How much of benefit used
+  remainingLimit  Int?      // How much limit remains
+  
+  // Tracking
+  isDismissed     Boolean   @default(false)
+  dismissedAt     DateTime?
+  dismissedReason String?
+  
+  actionTakenAt   DateTime?
+  viewCount       Int       @default(0)
+  clickCount      Int       @default(0)
+  engagementScore Float     @default(0.0)
+  
+  expiresAt       DateTime? // When this recommendation should no longer show
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  player          Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  
+  @@index([benefitId])
+  @@index([playerId])
+  @@index([urgency])
+  @@index([priority])
+  @@index([isDismissed])
+  @@index([playerId, isDismissed])
+  @@index([playerId, createdAt])
+}
+
+// ============================================================================
+// ONBOARDING STATE - Feature 5
+// ============================================================================
+
+model UserOnboardingState {
+  id              String    @id @default(cuid())
+  
+  // References
+  playerId        String
+  userId          String
+  
+  // Progress tracking
+  step            Int       @default(0) // Current step (0-5 for 6 steps)
+  completedSteps  String    @default("") // Comma-separated: "0,2,4"
+  skippedStepCount Int      @default(0)
+  
+  // Reminders
+  setupReminders  Boolean   @default(false)
+  reminderEmail   String?
+  reminderFrequency String? // DAILY, WEEKLY, MONTHLY
+  
+  // Metadata
+  startedAt       DateTime  @default(now())
+  completedAt     DateTime?
+  totalTimeSpent  Int       @default(0) // Seconds
+  usedSampleBenefit Boolean @default(false)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  player          Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([playerId])
+  @@index([userId])
+  @@index([completedAt])
+}
+
+// ============================================================================
+// EXTEND EXISTING MODELS FOR PHASE 2 RELATIONSHIPS
+// ============================================================================
+
+// Add to Player model (in existing definition above):
+// benefitUsageRecords   BenefitUsageRecord[]
+// benefitPeriods        BenefitPeriod[]
+// recommendations       BenefitRecommendation[]
+// onboardingState       UserOnboardingState?
+
+// Add to UserCard model (in existing definition above):
+// benefitUsageRecords   BenefitUsageRecord[]
+
+// Add to User model (in existing definition above):
+// onboardingStates      UserOnboardingState[]

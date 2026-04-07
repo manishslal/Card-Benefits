@@ -261,7 +261,7 @@ export function validateUsageRecord(input: {
   
   if (input.category && typeof input.category !== 'string') {
     errors.push('Category must be a string');
-  } else if (input.category && input.category.length > 100) {
+  } else if (input.category && typeof input.category === 'string' && input.category.length > 100) {
     errors.push('Category must be 100 characters or less');
   }
   

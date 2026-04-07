@@ -71,12 +71,14 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
 
     // Enhancement 3: Display customName if set, otherwise fallback to issuer + last 4 digits
     const getCardLabel = (card: Card) => {
-      // If customName is set and not empty, use it
-      if (card.customName && card.customName.trim()) {
-        return card.customName;
+      // If customName is set and not empty after trimming, use it
+      const cleanName = card.customName?.trim();
+      if (cleanName && cleanName.length > 0) {
+        return cleanName;
       }
-      // Fallback to original format
-      return `${card.issuer} •••• ${card.lastFour}`;
+      // Fallback with null safety: default to 'Card' if issuer is missing
+      const issuer = card.issuer || 'Card';
+      return `${issuer} •••• ${card.lastFour}`;
     };
 
     return (

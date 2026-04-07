@@ -59,7 +59,7 @@ const SelectContent = React.forwardRef<
       position="popper"
       sideOffset={4}
       className={cn(
-        'relative z-50 max-h-60 min-w-[8rem] max-w-[calc(100%-2rem)] overflow-hidden rounded-md bg-[var(--color-bg)] text-[var(--color-text)] shadow-md border border-[var(--color-border)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-2 data-[state=open]:slide-in-from-left-2 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2',
+        'relative z-50 max-h-60 min-w-[8rem] overflow-hidden rounded-md bg-[var(--color-bg)] text-[var(--color-text)] shadow-md border border-[var(--color-border)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-2 data-[state=open]:slide-in-from-left-2 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2',
         className
       )}
       {...props}
@@ -181,7 +181,7 @@ const UnifiedSelect = React.forwardRef<HTMLButtonElement, UnifiedSelectProps>(
           </SelectPrimitive.Trigger>
 
           <SelectContent>
-            <SelectPrimitive.Viewport className="h-[var(--radix-select-trigger-height)] max-h-60 p-1">
+            <SelectPrimitive.Viewport className="h-[var(--radix-select-trigger-height)] max-h-60 max-w-[calc(100%-2rem)] p-1">
               {options.map((option) => (
                 <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
                   {option.label}

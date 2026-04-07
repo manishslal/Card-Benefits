@@ -39,7 +39,8 @@ interface AddCardModalProps {
 
 export function AddCardModal({ isOpen, onClose, onCardAdded }: AddCardModalProps) {
   const cardSelectRef = useRef<HTMLButtonElement>(null);
-  
+  const previousCardIdRef = useRef<string>('');
+
   const [formData, setFormData] = useState({
     masterCardId: '',
     customName: '',
@@ -117,14 +118,23 @@ export function AddCardModal({ isOpen, onClose, onCardAdded }: AddCardModalProps
   };
 
   // Enhancement 4: Auto-populate annual fee when card is selected
+  // This effect detects when a NEW card is selected (different from previous) and populates the fee
   useEffect(() => {
-    if (!formData.masterCardId) {
+    // Only proceed if masterCardId has changed from the previous value
+    const cardChanged = formData.masterCardId !== previousCardIdRef.current;
+
+    // Update the ref to the current card ID for next comparison
+    previousCardIdRef.current = formData.masterCardId;
+
+    // If no card selected, nothing to do
+    if (!formData.masterCardId || !cardChanged) {
       return;
     }
 
     // Find the selected card from availableCards
     const selectedCard = availableCards.find((card) => card.id === formData.masterCardId);
-    if (selectedCard && !formData.customAnnualFee) {
+    if (selectedCard) {
+      // Always populate fee when card changes, regardless of current fee value
       // Convert from cents to dollars and format as "150.00"
       const feeInDollars = (selectedCard.defaultAnnualFee / 100).toFixed(2);
       setFormData((prev) => ({

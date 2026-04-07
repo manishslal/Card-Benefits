@@ -34,6 +34,8 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editFormData, setEditFormData] = useState({ firstName: '', lastName: '' });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isClearingSessions, setIsClearingSessions] = useState(false);
 
   // Load user profile
   useEffect(() => {
@@ -64,6 +66,38 @@ export default function SettingsPage() {
   }, []);
 
   const isAdmin = user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN');
+
+  const handleChangePassword = () => {
+    setIsChangingPassword(true);
+    // TODO: Open change password modal or form
+    // This would typically open a modal with password fields
+    setTimeout(() => {
+      alert('Change password feature will be implemented');
+      setIsChangingPassword(false);
+    }, 500);
+  };
+
+  const handleClearSessions = async () => {
+    setIsClearingSessions(true);
+    try {
+      const response = await fetch('/api/auth/logout-all-sessions', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to clear sessions');
+      }
+
+      setError(null);
+      alert('All other sessions have been cleared');
+    } catch (err) {
+      console.error('Error clearing sessions:', err);
+      setError('Failed to clear sessions. Please try again.');
+    } finally {
+      setIsClearingSessions(false);
+    }
+  };
 
   const tabs: Array<{ id: ActiveTab; label: string }> = [
     { id: 'profile', label: 'Profile' },
@@ -144,27 +178,82 @@ export default function SettingsPage() {
             {activeTab === 'profile' && (
               <div className="space-y-6">
                 <section
-                  className="p-6 rounded-lg border"
+                  className="p-6 rounded-lg border relative"
                   style={{
                     backgroundColor: 'var(--color-bg)',
                     borderColor: 'var(--color-border)',
                   }}
                 >
-                  <h3
-                    className="font-semibold text-[var(--color-text)] mb-4"
-                    style={{ fontSize: 'var(--text-body-lg)' }}
-                  >
-                    Profile Information
-                  </h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3
+                      className="font-semibold text-[var(--color-text)]"
+                      style={{ fontSize: 'var(--text-body-lg)' }}
+                    >
+                      Profile Information
+                    </h3>
+                    <Button
+                      variant={isEditingProfile ? "primary" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        if (isEditingProfile && user) {
+                          // Handle save
+                          console.log('Save profile:', editFormData);
+                          setIsEditingProfile(false);
+                        } else if (user) {
+                          setEditFormData({ firstName: user.firstName, lastName: user.lastName });
+                          setIsEditingProfile(true);
+                        }
+                      }}
+                    >
+                      {isEditingProfile ? 'Save' : 'Edit'}
+                    </Button>
+                  </div>
 
                   <div className="space-y-4">
                     <div>
                       <label className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase">
-                        Full Name
+                        First Name
                       </label>
-                      <p className="text-sm text-[var(--color-text)] mt-1">
-                        {user ? `${user.firstName} ${user.lastName}` : 'Loading...'}
-                      </p>
+                      {isEditingProfile ? (
+                        <input
+                          type="text"
+                          value={editFormData.firstName}
+                          onChange={(e) => setEditFormData({ ...editFormData, firstName: e.target.value })}
+                          className="w-full mt-1 px-3 py-2 rounded border text-sm"
+                          style={{
+                            backgroundColor: 'var(--color-bg-secondary)',
+                            borderColor: 'var(--color-border)',
+                            color: 'var(--color-text)',
+                          }}
+                        />
+                      ) : (
+                        <p className="text-sm text-[var(--color-text)] mt-1">
+                          {user?.firstName || '—'}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase">
+                        Last Name
+                      </label>
+                      {isEditingProfile ? (
+                        <input
+                          type="text"
+                          value={editFormData.lastName}
+                          onChange={(e) => setEditFormData({ ...editFormData, lastName: e.target.value })}
+                          className="w-full mt-1 px-3 py-2 rounded border text-sm"
+                          style={{
+                            backgroundColor: 'var(--color-bg-secondary)',
+                            borderColor: 'var(--color-border)',
+                            color: 'var(--color-text)',
+                          }}
+                        />
+                      ) : (
+                        <p className="text-sm text-[var(--color-text)] mt-1">
+                          {user?.lastName || '—'}
+                        </p>
+                      )}
                     </div>
 
                     <div>
@@ -175,6 +264,7 @@ export default function SettingsPage() {
                       <p className="text-sm text-[var(--color-text)] mt-1">
                         {user?.email || 'Loading...'}
                       </p>
+                      <p className="text-xs text-[var(--color-text-secondary)] mt-1">Email cannot be changed</p>
                     </div>
 
                     {user && (
@@ -251,7 +341,13 @@ export default function SettingsPage() {
                       <p className="text-xs text-[var(--color-text-secondary)] mb-3">
                         Update your password regularly to keep your account secure
                       </p>
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleChangePassword}
+                        isLoading={isChangingPassword}
+                        disabled={isChangingPassword}
+                      >
                         Change Password
                       </Button>
                     </div>
@@ -263,7 +359,13 @@ export default function SettingsPage() {
                       <p className="text-xs text-[var(--color-text-secondary)] mb-3">
                         Sign out from all other devices
                       </p>
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleClearSessions}
+                        isLoading={isClearingSessions}
+                        disabled={isClearingSessions}
+                      >
                         Sign Out Other Sessions
                       </Button>
                     </div>

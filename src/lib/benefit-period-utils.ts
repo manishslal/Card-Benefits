@@ -395,3 +395,542 @@ export function periodsBoundariesOverlap(
 ): boolean {
   return period1.start <= period2.end && period1.end >= period2.start;
 }
+
+// ============================================================================
+// PHASE 6C: Claiming Cadence Functions
+// ============================================================================
+
+/**
+ * Claiming window boundary information
+ */
+export interface ClaimingWindowBoundaries {
+  periodStart: Date;
+  periodEnd: Date;
+  periodLabel: string;
+}
+
+/**
+ * Get the claiming window boundaries for a benefit on a specific date.
+ * 
+ * Handles special cases:
+ * - Amex Sept 18 split (quarterly and semi-annual) when claimingWindowEnd === "0918"
+ * - Leap year February (29 days in leap years)
+ * - Month-end boundaries
+ * 
+ * @param claimingCadence - The claiming cadence type
+ * @param referenceDate - Date to calculate period for (defaults to today UTC)
+ * @param claimingWindowEnd - Optional custom window marker (e.g., "0918" for Sept 18)
+ * @returns Object with period boundaries and label
+ * 
+ * @example
+ * // Amex quarterly on March 29, 2026 (before Sept 18)
+ * const window = getClaimingWindowBoundaries('QUARTERLY', new Date('2026-03-29'), '0918');
+ * // Q4 for Amex: Returns boundaries for Jan 1 - Sept 17, 2026
+ */
+export function getClaimingWindowBoundaries(
+  claimingCadence: ClaimingCadence | null | undefined,
+  referenceDate: Date = new Date(),
+  claimingWindowEnd?: string | null
+): ClaimingWindowBoundaries {
+  if (!claimingCadence) {
+    throw new Error('claimingCadence is required');
+  }
+
+  // Normalize to UTC date
+  const ref = new Date(Date.UTC(
+    referenceDate.getUTCFullYear(),
+    referenceDate.getUTCMonth(),
+    referenceDate.getUTCDate()
+  ));
+
+  switch (claimingCadence) {
+    case 'MONTHLY': {
+      // First day of month to last day of month at 23:59:59
+      const start = new Date(Date.UTC(ref.getUTCFullYear(), ref.getUTCMonth(), 1));
+      const end = new Date(Date.UTC(ref.getUTCFullYear(), ref.getUTCMonth() + 1, 0));
+      end.setUTCHours(23, 59, 59, 999);
+
+      const months = ['January', 'February', 'March', 'April', 'May', 'June',
+                       'July', 'August', 'September', 'October', 'November', 'December'];
+      const label = `${months[ref.getUTCMonth()]} ${ref.getUTCFullYear()}`;
+
+      return { periodStart: start, periodEnd: end, periodLabel: label };
+    }
+
+    case 'QUARTERLY': {
+      // Handle Amex Sept 18 split if claimingWindowEnd === "0918"
+      const useAmexSplit = claimingWindowEnd === '0918';
+
+      if (useAmexSplit) {
+        // Amex quarters: Q1 (Sept 18-30), Q2 (Oct 1-Dec 31), Q3 (Jan 1-Mar 31), Q4 (Apr 1-Sept 17)
+        const month = ref.getUTCMonth();
+        const date = ref.getUTCDate();
+        const year = ref.getUTCFullYear();
+
+        let start: Date, end: Date, periodLabel: string;
+
+        // Determine which Amex quarter we're in
+        if (month === 8 && date >= 18) {
+          // Sept 18 - Sept 30 (Q1)
+          start = new Date(Date.UTC(year, 8, 18));
+          end = new Date(Date.UTC(year, 8, 30));
+          periodLabel = `Q1 ${year} (Amex)`;
+        } else if (month >= 9 || month === 0 && date <= 0) {
+          // Oct 1 - Dec 31 (Q2)
+          if (month >= 9) {
+            start = new Date(Date.UTC(year, 9, 1));
+            end = new Date(Date.UTC(year + 1, 0, 0));
+          } else {
+            start = new Date(Date.UTC(year - 1, 9, 1));
+            end = new Date(Date.UTC(year, 0, 0));
+          }
+          periodLabel = `Q2 ${month >= 9 ? year : year - 1} (Amex)`;
+        } else if (month >= 0 && month < 3) {
+          // Jan 1 - Mar 31 (Q3)
+          start = new Date(Date.UTC(year, 0, 1));
+          end = new Date(Date.UTC(year, 3, 0));
+          periodLabel = `Q3 ${year} (Amex)`;
+        } else {
+          // Apr 1 - Sept 17 (Q4)
+          start = new Date(Date.UTC(year, 3, 1));
+          end = new Date(Date.UTC(year, 8, 17));
+          periodLabel = `Q4 ${year} (Amex)`;
+        }
+
+        end.setUTCHours(23, 59, 59, 999);
+        return { periodStart: start, periodEnd: end, periodLabel };
+      } else {
+        // Standard calendar quarters: Q1 (Jan-Mar), Q2 (Apr-Jun), Q3 (Jul-Sep), Q4 (Oct-Dec)
+        const quarter = Math.floor(ref.getUTCMonth() / 3);
+        const start = new Date(Date.UTC(ref.getUTCFullYear(), quarter * 3, 1));
+        const end = new Date(Date.UTC(ref.getUTCFullYear(), (quarter + 1) * 3, 0));
+        end.setUTCHours(23, 59, 59, 999);
+        const label = `Q${quarter + 1} ${ref.getUTCFullYear()}`;
+
+        return { periodStart: start, periodEnd: end, periodLabel: label };
+      }
+    }
+
+    case 'SEMI_ANNUAL': {
+      // Handle Amex Sept 18 split if claimingWindowEnd === "0918"
+      const useAmexSplit = claimingWindowEnd === '0918';
+
+      if (useAmexSplit) {
+        // Amex semi-annual: H1 (Jan 1-Sept 17), H2 (Sept 18-Dec 31)
+        const month = ref.getUTCMonth();
+        const date = ref.getUTCDate();
+        const year = ref.getUTCFullYear();
+
+        let start: Date, end: Date, periodLabel: string;
+
+        if (month < 8 || (month === 8 && date < 18)) {
+          // H1: Jan 1 - Sept 17
+          start = new Date(Date.UTC(year, 0, 1));
+          end = new Date(Date.UTC(year, 8, 17));
+          periodLabel = `H1 ${year} (Amex)`;
+        } else {
+          // H2: Sept 18 - Dec 31
+          start = new Date(Date.UTC(year, 8, 18));
+          end = new Date(Date.UTC(year, 11, 31));
+          periodLabel = `H2 ${year} (Amex)`;
+        }
+
+        end.setUTCHours(23, 59, 59, 999);
+        return { periodStart: start, periodEnd: end, periodLabel };
+      } else {
+        // Standard semi-annual: H1 (Jan 1-Jun 30), H2 (Jul 1-Dec 31)
+        const isFirstHalf = ref.getUTCMonth() < 6;
+        const start = new Date(Date.UTC(ref.getUTCFullYear(), isFirstHalf ? 0 : 6, 1));
+        const end = new Date(Date.UTC(ref.getUTCFullYear(), isFirstHalf ? 6 : 12, 0));
+        end.setUTCHours(23, 59, 59, 999);
+        const label = `H${isFirstHalf ? 1 : 2} ${ref.getUTCFullYear()}`;
+
+        return { periodStart: start, periodEnd: end, periodLabel: label };
+      }
+    }
+
+    case 'FLEXIBLE_ANNUAL': {
+      // Full calendar year: Jan 1 - Dec 31
+      const year = ref.getUTCFullYear();
+      const start = new Date(Date.UTC(year, 0, 1));
+      const end = new Date(Date.UTC(year, 11, 31));
+      end.setUTCHours(23, 59, 59, 999);
+
+      return {
+        periodStart: start,
+        periodEnd: end,
+        periodLabel: `Full Year ${year}`,
+      };
+    }
+
+    case 'ONE_TIME': {
+      // ONE_TIME benefits have no expiration period
+      // Return a very large window (1900-2100)
+      const start = new Date(Date.UTC(1900, 0, 1));
+      const end = new Date(Date.UTC(2100, 11, 31));
+      end.setUTCHours(23, 59, 59, 999);
+
+      return {
+        periodStart: start,
+        periodEnd: end,
+        periodLabel: 'One-Time (No Expiration)',
+      };
+    }
+
+    default: {
+      const _exhaust: never = claimingCadence;
+      throw new Error(`Unknown claiming cadence: ${_exhaust}`);
+    }
+  }
+}
+
+/**
+ * Calculate remaining claimable amount for a period.
+ * 
+ * Takes into account:
+ * - Max amount per period (from claimingAmount)
+ * - Already claimed amounts in this period (from usageRecords)
+ * - ONE_TIME enforcement (if already claimed once, remaining = 0)
+ * 
+ * @param claimingAmount - Max amount per period in cents
+ * @param claimingCadence - The claiming cadence type
+ * @param usageRecords - Array of usage records for this benefit
+ * @param referenceDate - Date to calculate remaining for
+ * @param claimingWindowEnd - Optional custom window marker
+ * @returns Remaining claimable amount in cents
+ * 
+ * @example
+ * // $15 monthly, $10 already claimed
+ * const remaining = getClaimingLimitForPeriod(1500, 'MONTHLY', usageRecords, date);
+ * // Returns 500 (cents) or $5.00
+ */
+export function getClaimingLimitForPeriod(
+  claimingAmount: number | null | undefined,
+  claimingCadence: ClaimingCadence | null | undefined,
+  usageRecords: any[] = [],
+  referenceDate: Date = new Date(),
+  claimingWindowEnd?: string | null
+): number {
+  // If not configured, no limit
+  if (!claimingCadence || claimingAmount === null || claimingAmount === undefined) {
+    return 0;
+  }
+
+  // claimingAmount is already the per-period amount (not annual)
+  const maxAmount = Math.max(0, claimingAmount);
+
+  // ONE_TIME benefits can only be claimed once
+  if (claimingCadence === 'ONE_TIME') {
+    return usageRecords.length > 0 ? 0 : maxAmount;
+  }
+
+  // Get period boundaries to determine which records apply to this period
+  const { periodStart, periodEnd } = getClaimingWindowBoundaries(
+    claimingCadence,
+    referenceDate,
+    claimingWindowEnd
+  );
+
+  // Sum all claims within this period
+  const alreadyClaimed = usageRecords
+    .filter((record) => {
+      const claimDate = new Date(record.usageDate || record.claimDate);
+      return claimDate >= periodStart && claimDate <= periodEnd;
+    })
+    .reduce((sum, record) => {
+      // Handle both number and Decimal types
+      const amount = typeof record.usageAmount === 'number'
+        ? record.usageAmount
+        : typeof record.usageAmount === 'object' && 'toNumber' in record.usageAmount
+        ? record.usageAmount.toNumber()
+        : 0;
+      return sum + amount;
+    }, 0);
+
+  return Math.max(0, maxAmount - alreadyClaimed);
+}
+
+/**
+ * Check if the claiming window is currently open.
+ * 
+ * For all cadences except FLEXIBLE_ANNUAL and ONE_TIME, the window stays open
+ * throughout the period. Once the period ends, it's closed.
+ * 
+ * @param claimingCadence - The claiming cadence type
+ * @param referenceDate - Date to check window for
+ * @param claimingWindowEnd - Optional custom window marker
+ * @returns true if the claiming window is currently open
+ * 
+ * @example
+ * // Check if Jan benefit can still be claimed on Feb 1
+ * const isOpen = isClaimingWindowOpen('MONTHLY', new Date('2026-02-01'));
+ * // Returns false (January period has ended)
+ */
+export function isClaimingWindowOpen(
+  claimingCadence: ClaimingCadence | null | undefined,
+  referenceDate: Date = new Date(),
+  claimingWindowEnd?: string | null
+): boolean {
+  if (!claimingCadence) {
+    return false;
+  }
+
+  // FLEXIBLE_ANNUAL is always open within the year
+  if (claimingCadence === 'FLEXIBLE_ANNUAL') {
+    return true;
+  }
+
+  // ONE_TIME is always "open" (checked separately via claiming limit)
+  if (claimingCadence === 'ONE_TIME') {
+    return true;
+  }
+
+  // For other cadences, check if we're within the current period
+  const { periodStart, periodEnd } = getClaimingWindowBoundaries(
+    claimingCadence,
+    referenceDate,
+    claimingWindowEnd
+  );
+
+  return referenceDate >= periodStart && referenceDate <= periodEnd;
+}
+
+/**
+ * Calculate days remaining until the period expires.
+ * 
+ * Returns the number of complete days remaining. Useful for displaying urgency.
+ * For FLEXIBLE_ANNUAL, calculates days until Dec 31.
+ * For ONE_TIME, returns 999 (no expiration).
+ * 
+ * @param claimingCadence - The claiming cadence type
+ * @param referenceDate - Current date
+ * @param claimingWindowEnd - Optional custom window marker
+ * @returns Number of days remaining (0 if already expired)
+ * 
+ * @example
+ * // How many days left in March?
+ * const days = daysUntilExpiration('MONTHLY', new Date('2026-03-29'));
+ * // Returns 2 (March 29-30)
+ */
+export function daysUntilExpiration(
+  claimingCadence: ClaimingCadence | null | undefined,
+  referenceDate: Date = new Date(),
+  claimingWindowEnd?: string | null
+): number {
+  if (!claimingCadence) {
+    return 0;
+  }
+
+  // ONE_TIME never expires
+  if (claimingCadence === 'ONE_TIME') {
+    return 999;
+  }
+
+  const { periodEnd } = getClaimingWindowBoundaries(
+    claimingCadence,
+    referenceDate,
+    claimingWindowEnd
+  );
+
+  // Normalize reference date to start of day
+  const ref = new Date(Date.UTC(
+    referenceDate.getUTCFullYear(),
+    referenceDate.getUTCMonth(),
+    referenceDate.getUTCDate()
+  ));
+
+  // Calculate days between ref and period end
+  const diffTime = periodEnd.getTime() - ref.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  return Math.max(0, diffDays);
+}
+
+/**
+ * Determine urgency level based on days remaining.
+ * 
+ * - CRITICAL (RED): < 7 days
+ * - HIGH (ORANGE): 7-14 days
+ * - MEDIUM (YELLOW): 14-30 days
+ * - LOW (GREEN): > 30 days OR FLEXIBLE_ANNUAL
+ * 
+ * @param claimingCadence - The claiming cadence type
+ * @param referenceDate - Current date
+ * @param claimingWindowEnd - Optional custom window marker
+ * @returns Urgency level
+ * 
+ * @example
+ * // March 30 (1 day left in March)
+ * const urgency = getUrgencyLevel('MONTHLY', new Date('2026-03-30'));
+ * // Returns 'CRITICAL'
+ */
+export function getUrgencyLevel(
+  claimingCadence: ClaimingCadence | null | undefined,
+  referenceDate: Date = new Date(),
+  claimingWindowEnd?: string | null
+): UrgencyLevel {
+  if (!claimingCadence) {
+    return 'LOW';
+  }
+
+  // FLEXIBLE_ANNUAL is never urgent
+  if (claimingCadence === 'FLEXIBLE_ANNUAL') {
+    return 'LOW';
+  }
+
+  // ONE_TIME is not urgent (no expiration)
+  if (claimingCadence === 'ONE_TIME') {
+    return 'LOW';
+  }
+
+  const days = daysUntilExpiration(claimingCadence, referenceDate, claimingWindowEnd);
+
+  if (days < 7) {
+    return 'CRITICAL';
+  } else if (days < 14) {
+    return 'HIGH';
+  } else if (days < 30) {
+    return 'MEDIUM';
+  } else {
+    return 'LOW';
+  }
+}
+
+/**
+ * Validate a claiming request amount.
+ * 
+ * Checks:
+ * - Amount is positive
+ * - Amount is integer (cents)
+ * - Amount doesn't exceed period limit
+ * - ONE_TIME not already claimed
+ * - Window is open
+ * 
+ * @param claimingAmount - Max amount per period in cents
+ * @param claimingCadence - The claiming cadence type
+ * @param requestedAmount - Amount trying to claim in cents
+ * @param usageRecords - Array of usage records
+ * @param referenceDate - Date of claim
+ * @param claimingWindowEnd - Optional custom window marker
+ * @returns Validation result with error details if invalid
+ * 
+ * @example
+ * // Try to claim $20 of $15 monthly benefit
+ * const result = validateClaimingAmount(1500, 'MONTHLY', 2000, [], date);
+ * // Returns { valid: false, error: 'CLAIMING_LIMIT_EXCEEDED', remainingAmount: 1500 }
+ */
+export function validateClaimingAmount(
+  claimingAmount: number | null | undefined,
+  claimingCadence: ClaimingCadence | null | undefined,
+  requestedAmount: number,
+  usageRecords: any[] = [],
+  referenceDate: Date = new Date(),
+  claimingWindowEnd?: string | null
+): {
+  valid: boolean;
+  error?: string;
+  errorCode?: string;
+  remainingAmount: number;
+  maxClaimable: number;
+  alreadyClaimed: number;
+} {
+  // If benefit not configured
+  if (!claimingCadence || claimingAmount === null || claimingAmount === undefined) {
+    return {
+      valid: false,
+      error: 'Benefit is not configured for claiming',
+      errorCode: 'BENEFIT_NOT_CONFIGURED',
+      remainingAmount: 0,
+      maxClaimable: 0,
+      alreadyClaimed: 0,
+    };
+  }
+
+  // Check amount is positive integer
+  if (!Number.isInteger(requestedAmount) || requestedAmount <= 0) {
+    return {
+      valid: false,
+      error: 'Claiming amount must be a positive integer (cents)',
+      errorCode: 'INVALID_CLAIMING_AMOUNT',
+      remainingAmount: 0,
+      maxClaimable: 0,
+      alreadyClaimed: 0,
+    };
+  }
+
+  // Check if window is open (except for ONE_TIME which is always "open")
+  if (claimingCadence !== 'ONE_TIME' && !isClaimingWindowOpen(claimingCadence, referenceDate, claimingWindowEnd)) {
+    return {
+      valid: false,
+      error: 'The claiming window for this period has closed',
+      errorCode: 'CLAIMING_WINDOW_CLOSED',
+      remainingAmount: 0,
+      maxClaimable: 0,
+      alreadyClaimed: 0,
+    };
+  }
+
+  // Check ONE_TIME already claimed
+  if (claimingCadence === 'ONE_TIME' && usageRecords.length > 0) {
+    return {
+      valid: false,
+      error: 'This one-time benefit has already been claimed',
+      errorCode: 'ALREADY_CLAIMED_ONE_TIME',
+      remainingAmount: 0,
+      maxClaimable: 0,
+      alreadyClaimed: usageRecords[0]?.usageAmount || 0,
+    };
+  }
+
+  // Calculate remaining limit
+  const remaining = getClaimingLimitForPeriod(
+    claimingAmount,
+    claimingCadence,
+    usageRecords,
+    referenceDate,
+    claimingWindowEnd
+  );
+
+  const maxClaimable = claimingAmount !== null && claimingAmount !== undefined ? Math.max(0, claimingAmount) : 0;
+
+  // Sum already claimed in this period
+  const { periodStart, periodEnd } = getClaimingWindowBoundaries(
+    claimingCadence,
+    referenceDate,
+    claimingWindowEnd
+  );
+
+  const alreadyClaimed = usageRecords
+    .filter((record) => {
+      const claimDate = new Date(record.usageDate || record.claimDate);
+      return claimDate >= periodStart && claimDate <= periodEnd;
+    })
+    .reduce((sum, record) => {
+      const amount = typeof record.usageAmount === 'number'
+        ? record.usageAmount
+        : typeof record.usageAmount === 'object' && 'toNumber' in record.usageAmount
+        ? record.usageAmount.toNumber()
+        : 0;
+      return sum + amount;
+    }, 0);
+
+  // Check if requested amount exceeds remaining
+  if (requestedAmount > remaining) {
+    return {
+      valid: false,
+      error: `Cannot claim ${requestedAmount} cents. Only ${remaining} cents available in this period.`,
+      errorCode: 'CLAIMING_LIMIT_EXCEEDED',
+      remainingAmount: remaining,
+      maxClaimable,
+      alreadyClaimed,
+    };
+  }
+
+  return {
+    valid: true,
+    remainingAmount: remaining - requestedAmount,
+    maxClaimable,
+    alreadyClaimed,
+  };
+}
+

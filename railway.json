@@ -2,26 +2,41 @@
   "$schema": "https://railway.app/schema.json",
   "build": {
     "builder": "nixpacks",
-    "buildCommand": "npm run build"
+    "buildCommand": "npm run build",
+    "watchPatterns": ["src/**/*", "prisma/**/*", "public/**/*"]
   },
   "deploy": {
     "startCommand": "npm start",
-    "releaseCommand": "prisma db push --skip-generate",
-    "numReplicas": 1,
-    "restartPolicyMaxRetries": 3,
+    "releaseCommand": "npx prisma migrate deploy && npx prisma db push --skip-generate",
+    "numReplicas": 2,
+    "restartPolicyMaxRetries": 5,
     "restartPolicyType": "always",
+    "restartPolicyDelay": 30,
     "healthCheck": {
       "enabled": true,
       "endpoint": "/api/health",
-      "initialDelaySeconds": 10,
+      "initialDelaySeconds": 15,
       "periodSeconds": 30,
-      "timeoutSeconds": 5,
-      "failureThreshold": 3
-    }
+      "timeoutSeconds": 10,
+      "failureThreshold": 5,
+      "successThreshold": 2
+    },
+    "ports": [3000],
+    "exposes": [
+      {
+        "path": "/",
+        "port": 3000
+      }
+    ]
   },
   "plugins": {
     "postgres": {
       "version": "15"
     }
+  },
+  "variables": {
+    "NODE_ENV": "production",
+    "LOG_LEVEL": "warn",
+    "FEATURE_FLAGS_ENABLED": "phase2b,recommendations,mobile_offline,usage_ui,api_pagination"
   }
 }

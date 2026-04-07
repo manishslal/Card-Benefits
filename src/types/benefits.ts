@@ -50,9 +50,9 @@ export interface FilterCriteria {
 export interface BenefitProgress {
   benefitId: string;
   used: number;
-  limit: number;
+  limit: number | null;
   percentage: number;
-  status: 'active' | 'warning' | 'critical' | 'exceeded' | 'unused';
+  status: 'active' | 'warning' | 'critical' | 'exceeded' | 'unused' | 'no_limit';
   periodId?: string;
   unit?: string;
 }

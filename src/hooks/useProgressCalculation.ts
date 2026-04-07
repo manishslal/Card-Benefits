@@ -30,7 +30,7 @@ export function useProgressCalculation(
     }
 
     // Calculate total used
-    const used = usageRecords.reduce((sum, record) => sum + record.amount, 0);
+    const used = usageRecords.reduce((sum, record) => sum + record.usageAmount, 0);
 
     // Calculate percentage (capped at 150% for visualization)
     let percentage = (used / benefit.limit) * 100;

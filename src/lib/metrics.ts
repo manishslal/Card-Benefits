@@ -28,7 +28,7 @@ class Counter {
     this.name = name;
   }
 
-  increment(tags?: MetricTags) {
+  increment(_tags?: MetricTags) {
     this.count++;
     if (process.env.NODE_ENV === 'development') {
       console.debug(`[METRIC] ${this.name}++`, this.count);
@@ -48,7 +48,7 @@ class Gauge {
     this.name = name;
   }
 
-  set(value: number, tags?: MetricTags) {
+  set(value: number, _tags?: MetricTags) {
     this.value = value;
     if (process.env.NODE_ENV === 'development') {
       console.debug(`[METRIC] ${this.name} = ${value}`);
@@ -68,7 +68,7 @@ class Histogram {
     this.name = name;
   }
 
-  record(value: number, tags?: MetricTags) {
+  record(value: number, _tags?: MetricTags) {
     this.measurements.push(value);
     
     // Keep only last 1000 measurements to prevent memory issues
@@ -200,4 +200,5 @@ export const metrics = {
 };
 
 // Export types
-export { Counter, Gauge, Histogram, MetricTags };
+export { Counter, Gauge, Histogram };
+export type { MetricTags };

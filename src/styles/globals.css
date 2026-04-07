@@ -433,6 +433,38 @@ label {
   outline-offset: 2px;
 }
 
+/* Prevent focus outline clipping */
+*:focus-visible {
+  position: relative;
+  z-index: 10;
+}
+
+/* Ensure tab containers don't clip focus outlines */
+[role="tablist"],
+.overflow-x-auto {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+[role="tab"]:focus-visible,
+[role="button"]:focus-visible,
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  /* Increase outline offset for better visibility */
+  outline-offset: 3px;
+}
+
+/* For nested interactive elements, ensure outline isn't clipped */
+nav:focus-within,
+form:focus-within,
+[role="region"]:focus-within {
+  /* Allow focus outlines to overflow visible bounds */
+  position: relative;
+}
+
 /* Reduce motion for accessibility */
 @media (prefers-reduced-motion: reduce) {
   *,

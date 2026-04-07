@@ -376,6 +376,8 @@ model BenefitUsageRecord {
   @@index([benefitId])
   @@index([usageDate])
   @@index([userId, benefitId])
+  // QA-007: Prevent duplicate usage records on same date
+  @@unique([benefitId, userId, usageDate])
 }
 
 // ============================================================================

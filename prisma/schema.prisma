@@ -128,6 +128,11 @@ model Player {
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   userBenefits UserBenefit[]
   userCards    UserCard[]
+  
+  // Phase 2B relations
+  usageRecords      BenefitUsage[]
+  recommendations   BenefitRecommendation[]
+  onboardingSession OnboardingSession?
 
   @@unique([userId, playerName])
   @@index([userId])
@@ -156,6 +161,9 @@ model UserCard {
   userBenefits        UserBenefit[]
   masterCard          MasterCard    @relation(fields: [masterCardId], references: [id])
   player              Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  
+  // Phase 2B relations
+  usageRecords        BenefitUsage[]
 
   @@unique([playerId, masterCardId])
   @@index([playerId])
@@ -188,6 +196,9 @@ model UserBenefit {
   claimedAt         DateTime?
   player            Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
   userCard          UserCard  @relation(fields: [userCardId], references: [id], onDelete: Cascade)
+  
+  // Phase 2B relations
+  usageRecords      BenefitUsage[]
 
   @@unique([userCardId, name])
   @@index([userCardId])
@@ -333,4 +344,125 @@ enum ResourceType {
   BENEFIT
   USER_ROLE
   SYSTEM_SETTING
+}
+
+// ============================================================================
+// PHASE 2B - USAGE TRACKING, RECOMMENDATIONS, ONBOARDING
+// ============================================================================
+
+model BenefitUsage {
+  id              String    @id @default(cuid())
+  benefitId       String
+  playerId        String
+  userCardId      String
+  
+  // Usage amount (in dollars or count)
+  amount          Decimal   @db.Decimal(10, 2)
+  
+  // Metadata
+  usageDate       DateTime  @default(now())
+  period          String    // e.g., "2024-01" for monthly
+  notes           String?
+  category        String?   // e.g., "dining", "travel", "shopping"
+  
+  // Tracking
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  userBenefit     UserBenefit @relation(fields: [benefitId], references: [id], onDelete: Cascade)
+  player          Player      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  userCard        UserCard    @relation(fields: [userCardId], references: [id], onDelete: Cascade)
+  
+  @@index([benefitId])
+  @@index([playerId])
+  @@index([userCardId])
+  @@index([usageDate])
+  @@index([period])
+  @@index([benefitId, period])
+}
+
+model BenefitRecommendation {
+  id              String    @id @default(cuid())
+  playerId        String
+  benefitId       String?   // null if recommendation is for entire card
+  masterBenefitId String?
+  
+  // Recommendation details
+  reason          String    // Why this benefit is recommended
+  score           Float     @default(0.0) // 0-100 recommendation score
+  category        String?   // Type of recommendation
+  
+  // Tracking
+  isDismissed     Boolean   @default(false)
+  dismissedAt     DateTime?
+  viewCount       Int       @default(0)
+  lastViewedAt    DateTime?
+  actionTaken     Boolean   @default(false)
+  actionType      String?   // e.g., "viewed", "added", "ignored"
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  player          Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  
+  @@index([playerId])
+  @@index([isDismissed])
+  @@index([score])
+  @@index([createdAt])
+  @@index([playerId, isDismissed])
+}
+
+model OnboardingSession {
+  id              String    @id @default(cuid())
+  playerId        String    @unique
+  userId          String
+  
+  // Progress tracking
+  currentStep     Int       @default(1) // 1-6
+  completedSteps  Int       @default(0)
+  isCompleted     Boolean   @default(false)
+  
+  // Session state (JSON blob for flexibility)
+  sessionData     String?   // JSON: { selections, preferences, etc }
+  
+  // Tracking
+  startedAt       DateTime  @default(now())
+  completedAt     DateTime?
+  lastStepAt      DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  player          Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  steps           OnboardingStep[]
+  
+  @@index([playerId])
+  @@index([isCompleted])
+  @@index([createdAt])
+}
+
+model OnboardingStep {
+  id              String    @id @default(cuid())
+  sessionId       String
+  stepNumber      Int       // 1-6
+  
+  // Step completion
+  isCompleted     Boolean   @default(false)
+  completedAt     DateTime?
+  duration        Int?      // seconds spent on this step
+  
+  // Step data (JSON for flexibility)
+  stepData        String?   // JSON: { selections, answers, preferences }
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  session         OnboardingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@unique([sessionId, stepNumber])
+  @@index([sessionId])
+  @@index([stepNumber])
 }

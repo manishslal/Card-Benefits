@@ -6,6 +6,9 @@
  * Issue 13: Ensures all error messages use getErrorMessage() helper
  * Issue 14: Standardized page title format
  * Issue 15: Enhanced pagination button UX feedback
+ * 
+ * Phase 5 Enhancement:
+ * - Fixed Name column to display "LastName, FirstName" format
  */
 
 'use client';
@@ -15,6 +18,28 @@ import useSWR from 'swr';
 import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import { AdminBreadcrumb } from '../_components/AdminBreadcrumb';
 import type { AdminUser, PaginationInfo } from '@/features/admin/types/admin';
+
+// ============================================================
+// Utility Function
+// ============================================================
+
+/**
+ * Format user name from firstName and lastName in "LastName, FirstName" format.
+ * Handles edge cases where firstName or lastName might be null or empty.
+ * 
+ * @param firstName User's first name (nullable)
+ * @param lastName User's last name (nullable)
+ * @returns Formatted name or 'N/A' if both are missing
+ */
+const formatUserName = (firstName: string | null, lastName: string | null): string => {
+  if (!firstName && !lastName) return 'N/A';
+  if (lastName && firstName) return `${lastName}, ${firstName}`;
+  return firstName || lastName || 'N/A';
+};
+
+// ============================================================
+// Component
+// ============================================================
 
 interface UsersListResponse {
   success: boolean;
@@ -285,7 +310,7 @@ export default function UsersPage() {
                   {users.map((user: AdminUser) => (
                     <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                       <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">
-                        {user.name}
+                        {formatUserName(user.firstName, user.lastName)}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
                         {user.email}
@@ -360,7 +385,7 @@ export default function UsersPage() {
             </h2>
 
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              Select a new role for {selectedUser.name}
+              Select a new role for {formatUserName(selectedUser.firstName, selectedUser.lastName)}
             </p>
 
             <div className="mb-6">

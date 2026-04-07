@@ -9,9 +9,11 @@
  * 
  * Phase 5 Enhancements:
  * - Card column display showing associated MasterCard
- * - Filter by card dropdown
- * - Edit benefit modal
+ * - Filter by card dropdown (fetches all unique cards, not paginated)
+ * - Edit benefit modal with type validation
  * - Currency formatting (cents to dollars display)
+ * - Search debounce (400ms) to reduce API calls
+ * - Search includes card names
  */
 
 'use client';
@@ -24,6 +26,38 @@ import { CardFilterDropdown } from '../_components/CardFilterDropdown';
 import { EditBenefitModal } from '../_components/EditBenefitModal';
 import { formatCurrency } from '@/shared/lib/format-currency';
 import type { Benefit, PaginationInfo } from '@/features/admin/types/admin';
+
+// ============================================================
+// Custom Hook: useDebounce
+// ============================================================
+
+/**
+ * Hook to debounce a value with configurable delay.
+ * Prevents excessive API calls when search input changes rapidly.
+ * 
+ * @param value The value to debounce
+ * @param delayMs Debounce delay in milliseconds (default: 400ms)
+ * @returns Debounced value
+ */
+function useDebounce<T>(value: T, delayMs: number = 400): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    // Set up a timeout to update the debounced value after the delay
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delayMs);
+
+    // Clear the timeout if the value changes before the delay expires
+    return () => clearTimeout(handler);
+  }, [value, delayMs]);
+
+  return debouncedValue;
+}
+
+// ============================================================
+// Component
+// ============================================================
 
 interface BenefitsListResponse {
   success: boolean;
@@ -42,10 +76,13 @@ type SortOrder = 'asc' | 'desc';
 
 export default function BenefitsPage() {
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState(''); // Raw search input for immediate UI update
   const [sortBy, setSortBy] = useState<SortableBenefitColumn | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   
+  // Debounce search input to reduce API calls
+  const debouncedSearch = useDebounce(searchInput, 400);
+
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -134,6 +171,16 @@ export default function BenefitsPage() {
     return sortOrder === 'asc' ? ' ↑' : ' ↓';
   };
 
+  /**
+   * NEW (Phase 5): Handle debounced search changes
+   * When debouncedSearch changes (after 400ms of user inactivity),
+   * reset to page 1 to show fresh results
+   */
+  useEffect(() => {
+    // Reset page to 1 whenever debounced search changes
+    setPage(1);
+  }, [debouncedSearch]);
+
   // Manage success message timeout with cleanup
   useEffect(() => {
     if (!success) return;
@@ -159,7 +206,8 @@ export default function BenefitsPage() {
   // Build fetch URL with sorting and card filter parameters
   const buildFetchUrl = (): string => {
     let url = `/admin/benefits?page=${page}&limit=20`;
-    if (search) url += `&search=${search}`;
+    // Use debouncedSearch instead of raw search state for API calls
+    if (debouncedSearch) url += `&search=${debouncedSearch}`;
     if (selectedCard) url += `&card=${selectedCard}`; // NEW: Add card filter
     if (sortBy) {
       url += `&sort=${sortBy}&order=${sortOrder}`;
@@ -175,7 +223,7 @@ export default function BenefitsPage() {
           params: { 
             page, 
             limit: 20, 
-            search: search || undefined,
+            search: debouncedSearch || undefined, // Use debounced search for API calls
             card: selectedCard || undefined, // NEW: Pass card filter
             sort: sortBy || undefined,
             order: sortBy ? sortOrder : undefined,
@@ -185,7 +233,7 @@ export default function BenefitsPage() {
         console.error('[BenefitsPage] Failed to fetch benefits', {
           error: err instanceof Error ? err.message : String(err),
           endpoint: '/api/admin/benefits',
-          params: { page, limit: 20, search, card: selectedCard, sort: sortBy, order: sortOrder },
+          params: { page, limit: 20, search: debouncedSearch, card: selectedCard, sort: sortBy, order: sortOrder },
         });
         throw err;
       }
@@ -193,19 +241,31 @@ export default function BenefitsPage() {
   );
 
   /**
-   * NEW: Extract unique cards from benefits data for filter dropdown
+   * NEW: Fetch all unique cards once on component mount
+   * Replaces the old approach of deriving cards from paginated benefits data.
+   * This ensures the dropdown shows ALL available cards regardless of current page.
    */
   useEffect(() => {
-    if (data?.data) {
-      const uniqueCards = new Map();
-      data.data.forEach((benefit: Benefit) => {
-        if (benefit.masterCard && !uniqueCards.has(benefit.masterCard.id)) {
-          uniqueCards.set(benefit.masterCard.id, benefit.masterCard);
+    const fetchAvailableCards = async () => {
+      try {
+        const response = await apiClient.get('/benefits/cards');
+        if (response.success && response.data) {
+          setAvailableCards(response.data);
         }
-      });
-      setAvailableCards(Array.from(uniqueCards.values()));
-    }
-  }, [data?.data]);
+      } catch (err) {
+        console.error('[BenefitsPage] Failed to fetch unique cards', {
+          error: err instanceof Error ? err.message : String(err),
+          endpoint: '/api/admin/benefits/cards',
+        });
+        // Don't block the page if card fetch fails - benefits still work
+      }
+    };
+    
+    fetchAvailableCards();
+  }, []); // Empty dependency array - only fetch once on mount
+
+  // REMOVED: Old useEffect that derived unique cards from paginated benefits data (lines 198-208)
+  // That approach caused dropdown to change when navigating pages
 
   const handleDeleteBenefit = async (benefitId: string) => {
     if (!confirm('Delete this benefit?')) return;
@@ -265,20 +325,21 @@ export default function BenefitsPage() {
             disabled={isLoading}
           />
         </div>
-        <div className="flex-1">
+         <div className="flex-1">
           <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
             Search
           </label>
           <input
             type="text"
             placeholder="Search benefits..."
-            value={search}
+            value={searchInput}
             onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
+              setSearchInput(e.target.value); // Update immediately for UI responsiveness
+              // debouncedSearch effect handles reset to page 1
             }}
             disabled={isLoading}
             className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            title="Type to search benefits by name, type, reset cadence, or card name. Search debounces to reduce API calls."
           />
         </div>
       </div>

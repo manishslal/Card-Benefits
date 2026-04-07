@@ -177,7 +177,8 @@ export interface BenefitToggleDefaultRequest {
 export interface AdminUser {
   id: string;
   email: string;
-  name: string;
+  firstName: string | null;
+  lastName: string | null;
   role: UserRole;
   isActive: boolean;
   lastLoginAt?: string;

@@ -9,9 +9,10 @@
  * Query Parameters:
  * - page?: number (default: 1) - Page number
  * - limit?: number (default: 20, max: 100) - Items per page
- * - search?: string (optional, max 255 chars) - Search by name or type
- * - sort?: 'name' | 'type' | 'stickerValue' (optional) - Sort field
+ * - search?: string (optional, max 255 chars) - Search by name, type, resetCadence, or card name (NEW: Phase 5)
+ * - sort?: 'name' | 'type' | 'stickerValue' | 'card' (optional) - Sort field
  * - order?: 'asc' | 'desc' (optional, requires sort) - Sort direction
+ * - card?: string (optional) - Filter by card ID
  *
  * Response 200: List of benefits with pagination metadata
  * Response 400: Invalid query parameters
@@ -135,7 +136,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // 3. Build filter conditions
     const where: any = {};
 
-    // Search in name and type
+    // NEW (Phase 5): Search in name, type, resetCadence, AND card name
+    // User can search for benefits by any of these criteria
     if (query.search) {
       where.OR = [
         {
@@ -148,6 +150,21 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           type: {
             contains: query.search,
             mode: 'insensitive',
+          },
+        },
+        {
+          resetCadence: {
+            contains: query.search,
+            mode: 'insensitive',
+          },
+        },
+        // NEW: Search card name via masterCard relationship
+        {
+          masterCard: {
+            cardName: {
+              contains: query.search,
+              mode: 'insensitive',
+            },
           },
         },
       ];

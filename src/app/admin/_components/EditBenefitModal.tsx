@@ -45,11 +45,18 @@ export function EditBenefitModal({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Pre-fill form when benefit data arrives
+  // VALID_TYPES defines all allowed benefit type values for validation
+  const VALID_TYPES = ['INSURANCE', 'CASHBACK', 'TRAVEL', 'BANKING', 'POINTS', 'OTHER'];
+  
   useEffect(() => {
     if (isOpen && benefit) {
+      // Validate that benefit.type is one of the valid enum values
+      // If type is invalid, default to empty string so user sees "Select a type"
+      const typeValue = benefit.type && VALID_TYPES.includes(benefit.type) ? benefit.type : '';
+      
       setFormData({
         name: benefit.name || '',
-        type: benefit.type || '',
+        type: typeValue,
         stickerValue: formatCurrency(benefit.stickerValue, false), // Display as "500.00"
         resetCadence: benefit.resetCadence || '',
       });
@@ -68,6 +75,7 @@ export function EditBenefitModal({
   };
 
   const validateForm = (): Record<string, string> => {
+    const VALID_TYPES = ['INSURANCE', 'CASHBACK', 'TRAVEL', 'BANKING', 'POINTS', 'OTHER'];
     const errors: Record<string, string> = {};
 
     if (!formData.name || formData.name.trim() === '') {
@@ -76,8 +84,11 @@ export function EditBenefitModal({
       errors.name = 'Name must be 200 characters or less';
     }
 
+    // Validate type: must be non-empty and match one of the valid enum values
     if (!formData.type) {
       errors.type = 'Type is required';
+    } else if (!VALID_TYPES.includes(formData.type)) {
+      errors.type = 'Invalid type selected';
     }
 
     if (!formData.stickerValue) {

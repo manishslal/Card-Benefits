@@ -150,6 +150,9 @@ export function MarkBenefitUsedModal({
         newErrors.claimAmount = 'Claim amount must be a positive number';
       } else if (amountNum > 99999.99) {
         newErrors.claimAmount = 'Claim amount is too large';
+      } else if (!Number.isInteger(amountNum * 100)) {
+        // Validate amount is in whole cents (e.g., 15.00, 15.25, NOT 15.333)
+        newErrors.claimAmount = 'Claim amount must be in whole cents (e.g., $15.00, $15.25)';
       }
 
       // Check against remaining limit
@@ -375,7 +378,12 @@ export function MarkBenefitUsedModal({
                       />
                     </div>
                     {errors.claimAmount && (
-                      <FormError>{errors.claimAmount}</FormError>
+                      <FormError 
+                        message={errors.claimAmount} 
+                        type="error" 
+                        category="validation"
+                        fieldName="claimAmount"
+                      />
                     )}
                     {claimingLimits && (
                       <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
@@ -398,7 +406,12 @@ export function MarkBenefitUsedModal({
                       disabled={isLoading}
                     />
                     {errors.claimDate && (
-                      <FormError>{errors.claimDate}</FormError>
+                      <FormError 
+                        message={errors.claimDate} 
+                        type="error" 
+                        category="validation"
+                        fieldName="claimDate"
+                      />
                     )}
                     <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                       Must be within 90 days

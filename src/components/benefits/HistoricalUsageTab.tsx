@@ -8,34 +8,18 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Trash2, Edit2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { MarkBenefitUsedModal } from './MarkBenefitUsedModal';
 
 export interface BenefitUsageRecord {
   id: string;
   masterBenefitName?: string;
-  periodStart: Date;
-  periodEnd: Date;
+  periodStart: Date | string;
+  periodEnd?: Date | string;
   amountAvailable: number;
   amountClaimed: number;
   notes?: string;
-  claimDate?: Date;
+  claimDate?: Date | string;
+  usageDate?: Date | string;
 }
 
 export interface HistoricalUsageTabProps {
@@ -62,8 +46,6 @@ type FilterType = 'all' | 'this-month' | 'last-3-months' | 'last-6-months';
 export function HistoricalUsageTab({
   userCard,
   benefit,
-  isLoading = false,
-  onRefresh,
 }: HistoricalUsageTabProps) {
   const [records, setRecords] = useState<BenefitUsageRecord[]>([]);
   const [filter, setFilter] = useState<FilterType>('all');
@@ -71,26 +53,28 @@ export function HistoricalUsageTab({
   const [selectedRecord, setSelectedRecord] = useState<BenefitUsageRecord | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isLoadingData, setIsLoadingData] = useState(false);
 
   // Fetch records
   const fetchRecords = async () => {
+    setIsLoadingData(true);
     try {
-      const response = await fetch(`/api/benefits/usage?userCardId=${userCard.id}&limit=100`);
+      const response = await fetch(`/api/benefits/usage?userBenefitId=${benefit.id}&limit=100`);
       const data = await response.json();
 
       if (data.success) {
-        // Filter for this benefit
-        const benefitRecords = data.data.filter((r: any) => r.masterBenefitId === benefit.id);
-        setRecords(benefitRecords);
+        setRecords(data.data);
       }
     } catch (err) {
       console.error('Error fetching records:', err);
+    } finally {
+      setIsLoadingData(false);
     }
   };
 
   useEffect(() => {
     fetchRecords();
-  }, [userCard.id, benefit.id]);
+  }, [benefit.id]);
 
   // Filter records
   const now = new Date();
@@ -98,20 +82,22 @@ export function HistoricalUsageTab({
 
   if (filter === 'this-month') {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    filteredRecords = filteredRecords.filter(r => new Date(r.periodStart) >= monthStart);
+    filteredRecords = filteredRecords.filter(r => new Date(r.usageDate || r.periodStart) >= monthStart);
   } else if (filter === 'last-3-months') {
-    const threeMonthsAgo = new Date(now.setMonth(now.getMonth() - 3));
-    filteredRecords = filteredRecords.filter(r => new Date(r.periodStart) >= threeMonthsAgo);
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    filteredRecords = filteredRecords.filter(r => new Date(r.usageDate || r.periodStart) >= threeMonthsAgo);
   } else if (filter === 'last-6-months') {
-    const sixMonthsAgo = new Date(now.setMonth(now.getMonth() - 6));
-    filteredRecords = filteredRecords.filter(r => new Date(r.periodStart) >= sixMonthsAgo);
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    filteredRecords = filteredRecords.filter(r => new Date(r.usageDate || r.periodStart) >= sixMonthsAgo);
   }
 
   // Sort
   if (sortOrder === 'newest') {
-    filteredRecords.sort((a, b) => new Date(b.periodStart).getTime() - new Date(a.periodStart).getTime());
+    filteredRecords.sort((a, b) => new Date(b.usageDate || b.periodStart).getTime() - new Date(a.usageDate || a.periodStart).getTime());
   } else {
-    filteredRecords.sort((a, b) => new Date(a.periodStart).getTime() - new Date(b.periodStart).getTime());
+    filteredRecords.sort((a, b) => new Date(a.usageDate || a.periodStart).getTime() - new Date(b.usageDate || b.periodStart).getTime());
   }
 
   const handleDelete = async (recordId: string) => {
@@ -135,12 +121,12 @@ export function HistoricalUsageTab({
     }
   };
 
-  const handleEdit = (record: BenefitUsageRecord) => {
+  const handleEdit = (record: any) => {
     setSelectedRecord(record);
     setShowEditModal(true);
   };
 
-  const getStatusIcon = (record: BenefitUsageRecord) => {
+  const getStatusIcon = (record: any) => {
     if (record.amountClaimed === 0) return '-';
     if (record.amountClaimed === record.amountAvailable) return '✓';
     return '⚠';
@@ -150,99 +136,98 @@ export function HistoricalUsageTab({
     <div className="space-y-4">
       {/* Filters */}
       <div className="flex gap-2 flex-wrap">
-        <Select value={filter} onValueChange={(value) => setFilter(value as FilterType)}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Time</SelectItem>
-            <SelectItem value="this-month">This Month</SelectItem>
-            <SelectItem value="last-3-months">Last 3 Months</SelectItem>
-            <SelectItem value="last-6-months">Last 6 Months</SelectItem>
-          </SelectContent>
-        </Select>
+        <select
+          value={filter}
+          onChange={(e) => setFilter(e.target.value as FilterType)}
+          className="px-3 py-2 border rounded-lg"
+        >
+          <option value="all">All Time</option>
+          <option value="this-month">This Month</option>
+          <option value="last-3-months">Last 3 Months</option>
+          <option value="last-6-months">Last 6 Months</option>
+        </select>
 
-        <Select value={sortOrder} onValueChange={(value) => setSortOrder(value as 'newest' | 'oldest')}>
-          <SelectTrigger className="w-[120px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="newest">Newest</SelectItem>
-            <SelectItem value="oldest">Oldest</SelectItem>
-          </SelectContent>
-        </Select>
+        <select
+          value={sortOrder}
+          onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}
+          className="px-3 py-2 border rounded-lg"
+        >
+          <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
+        </select>
 
-        <Button variant="outline" size="sm" onClick={fetchRecords}>
+        <button
+          onClick={fetchRecords}
+          className="px-3 py-2 border rounded-lg hover:bg-gray-50"
+        >
           Refresh
-        </Button>
+        </button>
       </div>
 
       {/* Table */}
-      {isLoading ? (
+      {isLoadingData ? (
         <div className="text-center py-8 text-gray-500">Loading...</div>
       ) : filteredRecords.length === 0 ? (
         <div className="text-center py-8 text-gray-500">No claims found</div>
       ) : (
         <div className="border rounded-lg overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Period</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Claimed</TableHead>
-                <TableHead>Available</TableHead>
-                <TableHead>Notes</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredRecords.map((record) => (
-                <TableRow key={record.id} className="hover:bg-gray-50">
-                  <TableCell className="font-medium">
-                    {new Date(record.periodStart).toLocaleDateString()}
-                    {' - '}
-                    {new Date(record.periodEnd).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell className="text-center font-semibold">
-                    <span className={
-                      getStatusIcon(record) === '✓' ? 'text-green-600' :
-                      getStatusIcon(record) === '⚠' ? 'text-blue-600' :
-                      'text-gray-400'
-                    }>
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="px-4 py-3 text-left text-sm font-semibold">Period</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold">Status</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold">Claimed</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold">Available</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold">Notes</th>
+                <th className="px-4 py-3 text-right text-sm font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRecords.map((record: any) => (
+                <tr key={record.id} className="border-b hover:bg-gray-50">
+                  <td className="px-4 py-3 font-medium text-sm">
+                    {new Date(record.periodStart || record.usageDate).toLocaleDateString()}
+                    {record.periodEnd && ' - ' + new Date(record.periodEnd).toLocaleDateString()}
+                  </td>
+                  <td className="px-4 py-3 text-center font-semibold text-sm">
+                    <span
+                      className={
+                        getStatusIcon(record) === '✓' ? 'text-green-600' :
+                        getStatusIcon(record) === '⚠' ? 'text-blue-600' :
+                        'text-gray-400'
+                      }
+                    >
                       {getStatusIcon(record)}
                     </span>
-                  </TableCell>
-                  <TableCell>
+                  </td>
+                  <td className="px-4 py-3 text-sm">
                     ${(record.amountClaimed / 100).toFixed(2)}
-                  </TableCell>
-                  <TableCell>
+                  </td>
+                  <td className="px-4 py-3 text-sm">
                     ${(record.amountAvailable / 100).toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-sm text-gray-600 max-w-[200px] truncate">
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600 max-w-[200px] truncate">
                     {record.notes || '-'}
-                  </TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                  </td>
+                  <td className="px-4 py-3 text-right space-x-2 flex justify-end">
+                    <button
                       onClick={() => handleEdit(record)}
+                      className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded"
                     >
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                      Edit
+                    </button>
+                    <button
                       onClick={() => handleDelete(record.id)}
                       disabled={isDeleting === record.id}
-                      className="text-red-600 hover:text-red-700"
+                      className="px-2 py-1 text-red-600 hover:bg-red-50 rounded disabled:opacity-50"
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
+                      Delete
+                    </button>
+                  </td>
+                </tr>
               ))}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         </div>
       )}
 

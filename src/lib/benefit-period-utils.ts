@@ -138,8 +138,7 @@ export function getPeriodBoundaries(
  */
 export function calculateAmountPerPeriod(
   annualAmountCents: number,
-  resetCadence: ResetCadence,
-  referenceDate: Date = new Date()
+  resetCadence: ResetCadence
 ): number {
   switch (resetCadence) {
     case 'MONTHLY': {

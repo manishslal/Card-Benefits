@@ -33,7 +33,7 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [editFormData, setEditFormData] = useState({ firstName: '', lastName: '' });
+  const [editFormData, setEditFormData] = useState({ firstName: '', lastName: '', email: '' });
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isClearingSessions, setIsClearingSessions] = useState(false);
 
@@ -198,9 +198,14 @@ export default function SettingsPage() {
                         if (isEditingProfile && user) {
                           // Handle save
                           console.log('Save profile:', editFormData);
+                          // TODO: Wire to /api/user/profile endpoint
                           setIsEditingProfile(false);
                         } else if (user) {
-                          setEditFormData({ firstName: user.firstName, lastName: user.lastName });
+                          setEditFormData({
+                            firstName: user.firstName,
+                            lastName: user.lastName,
+                            email: user.email
+                          });
                           setIsEditingProfile(true);
                         }
                       }}
@@ -261,10 +266,23 @@ export default function SettingsPage() {
                         <Mail size={14} />
                         Email
                       </label>
-                      <p className="text-sm text-[var(--color-text)] mt-1">
-                        {user?.email || 'Loading...'}
-                      </p>
-                      <p className="text-xs text-[var(--color-text-secondary)] mt-1">Email cannot be changed</p>
+                      {isEditingProfile ? (
+                        <input
+                          type="email"
+                          value={editFormData.email}
+                          onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                          className="w-full mt-1 px-3 py-2 rounded border text-sm"
+                          style={{
+                            backgroundColor: 'var(--color-bg-secondary)',
+                            borderColor: 'var(--color-border)',
+                            color: 'var(--color-text)',
+                          }}
+                        />
+                      ) : (
+                        <p className="text-sm text-[var(--color-text)] mt-1">
+                          {user?.email || 'Loading...'}
+                        </p>
+                      )}
                     </div>
 
                     {user && (

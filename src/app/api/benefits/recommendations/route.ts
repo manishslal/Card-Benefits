@@ -1,11 +1,14 @@
 /**
  * GET /api/benefits/recommendations - Generate recommendations based on user spending
  * Returns array of recommendations sorted by priority
+ * 
+ * QA-004: Fixed N+1 query by fetching all benefits and usage records upfront
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUserId } from '@/features/auth/context/auth-context';
 import { prisma } from '@/shared/lib/prisma';
+import { getCurrentPeriod } from '@/lib/period-utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,10 +31,15 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '5');
 
-    // Get user's benefits
-    const userBenefits = await prisma.userBenefit.findMany({
-      where: { playerId },
-    });
+    // QA-004: Fetch all benefits and usage records upfront (not in a loop)
+    const [userBenefits, allUsageRecords] = await Promise.all([
+      prisma.userBenefit.findMany({
+        where: { playerId },
+      }),
+      prisma.benefitUsageRecord.findMany({
+        where: { userId },
+      }),
+    ]);
 
     if (userBenefits.length === 0) {
       return NextResponse.json({
@@ -39,6 +47,14 @@ export async function GET(request: NextRequest) {
         data: [],
         message: 'No benefits found for this user',
       });
+    }
+
+    // QA-004: Build map for O(1) lookup instead of O(n²) with per-benefit queries
+    const usageByBenefit = new Map<string, typeof allUsageRecords>();
+    for (const record of allUsageRecords) {
+      const benefitUsage = usageByBenefit.get(record.benefitId) || [];
+      benefitUsage.push(record);
+      usageByBenefit.set(record.benefitId, benefitUsage);
     }
 
     const recommendations: Array<{
@@ -52,6 +68,8 @@ export async function GET(request: NextRequest) {
       potentialValue: number;
     }> = [];
 
+    const now = new Date();
+
     // For each benefit, generate recommendations based on usage patterns
     for (const benefit of userBenefits) {
       if (!benefit.stickerValue && !benefit.userDeclaredValue) {
@@ -64,33 +82,15 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
+      // QA-004: Use map lookup instead of database query
+      const usageRecords = usageByBenefit.get(benefit.id) || [];
+
       // Calculate current period usage
-      const now = new Date();
-      let periodStart = new Date(now);
+      const { start: periodStart } = getCurrentPeriod(benefit.resetCadence);
 
-      switch (benefit.resetCadence) {
-        case 'MONTHLY':
-          periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
-          break;
-        case 'QUARTERLY':
-          const quarter = Math.floor(now.getMonth() / 3);
-          periodStart = new Date(now.getFullYear(), quarter * 3, 1);
-          break;
-        case 'ANNUAL':
-        case 'CARDMEMBER_YEAR':
-          periodStart = new Date(now.getFullYear(), 0, 1);
-          break;
-      }
-
-      const usageRecords = await prisma.benefitUsageRecord.findMany({
-        where: {
-          benefitId: benefit.id,
-          userId,
-          usageDate: { gte: periodStart },
-        },
-      });
-
-      const used = usageRecords.reduce((sum, r) => sum + Number(r.usageAmount), 0);
+      // Filter usage records for current period
+      const currentPeriodUsage = usageRecords.filter((r) => r.usageDate >= periodStart);
+      const used = currentPeriodUsage.reduce((sum, r) => sum + Number(r.usageAmount), 0);
       const remaining = Math.max(0, limitValue - used);
 
       // Generate recommendation if benefit is underutilized
@@ -141,7 +141,8 @@ export async function GET(request: NextRequest) {
       total: sorted.length,
     });
   } catch (error) {
-    console.error('Error generating recommendations:', error);
+    // QA-008: Safe error logging without PII
+    console.error('Error generating recommendations:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

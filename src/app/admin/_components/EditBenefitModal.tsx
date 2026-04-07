@@ -46,7 +46,14 @@ export function EditBenefitModal({
 
   // Pre-fill form when benefit data arrives
   // VALID_TYPES defines all allowed benefit type values for validation
-  const VALID_TYPES = ['INSURANCE', 'CASHBACK', 'TRAVEL', 'BANKING', 'POINTS', 'OTHER'];
+  // These values match the actual database enum values for benefits
+  const VALID_TYPES = ['StatementCredit', 'UsagePerk'];
+  
+  // TYPE_OPTIONS provides human-readable labels for the dropdown UI
+  const TYPE_OPTIONS = [
+    { value: 'StatementCredit', label: 'Statement Credit' },
+    { value: 'UsagePerk', label: 'Usage Perk' },
+  ];
   
   useEffect(() => {
     if (isOpen && benefit) {
@@ -75,7 +82,7 @@ export function EditBenefitModal({
   };
 
   const validateForm = (): Record<string, string> => {
-    const VALID_TYPES = ['INSURANCE', 'CASHBACK', 'TRAVEL', 'BANKING', 'POINTS', 'OTHER'];
+    const VALID_TYPES = ['StatementCredit', 'UsagePerk'];
     const errors: Record<string, string> = {};
 
     if (!formData.name || formData.name.trim() === '') {
@@ -216,12 +223,11 @@ export function EditBenefitModal({
                 className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50"
               >
                 <option value="">Select a type</option>
-                <option value="INSURANCE">Insurance</option>
-                <option value="CASHBACK">Cashback</option>
-                <option value="TRAVEL">Travel</option>
-                <option value="BANKING">Banking</option>
-                <option value="POINTS">Points</option>
-                <option value="OTHER">Other</option>
+                {TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
               {fieldErrors.type && (
                 <p className="text-red-500 dark:text-red-400 text-sm mt-1">{fieldErrors.type}</p>

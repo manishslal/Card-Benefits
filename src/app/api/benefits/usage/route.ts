@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUserId } from '@/features/auth/context/auth-context';
 import { prisma } from '@/shared/lib/prisma';
+import { logSafeError } from '@/lib/error-logging';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,6 +24,28 @@ export async function POST(request: NextRequest) {
         { error: 'Missing or invalid fields: benefitId, usageAmount' },
         { status: 400 }
       );
+    }
+
+    // QA-005: Validate amount is within reasonable bounds
+    if (usageAmount < 0 || usageAmount > 999999.99) {
+      return NextResponse.json(
+        { error: 'Invalid amount: must be between 0 and 999999.99' },
+        { status: 400 }
+      );
+    }
+
+    // QA-006: Prevent recording usage for future dates
+    if (usageDate) {
+      const usageDateObj = new Date(usageDate);
+      const now = new Date();
+      // Allow usage date up to end of today (in case of timezone differences)
+      now.setHours(23, 59, 59, 999);
+      if (usageDateObj > now) {
+        return NextResponse.json(
+          { error: 'Cannot record usage for future dates' },
+          { status: 400 }
+        );
+      }
     }
 
     if (notes && notes.length > 500) {
@@ -44,28 +67,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Benefit not found' }, { status: 404 });
     }
 
-    // Create usage record
-    const usageRecord = await prisma.benefitUsageRecord.create({
-      data: {
-        benefitId,
-        userId,
-        usageAmount: Number(usageAmount),
-        notes: notes || null,
-        usageDate: usageDate ? new Date(usageDate) : new Date(),
-        category: category || null,
-      },
-    });
+    try {
+      // Create usage record
+      const usageRecord = await prisma.benefitUsageRecord.create({
+        data: {
+          benefitId,
+          userId,
+          usageAmount: Number(usageAmount),
+          notes: notes || null,
+          usageDate: usageDate ? new Date(usageDate) : new Date(),
+          category: category || null,
+        },
+      });
 
-    return NextResponse.json(
-      {
-        success: true,
-        data: usageRecord,
-        message: 'Usage record created successfully',
-      },
-      { status: 201 }
-    );
+      return NextResponse.json(
+        {
+          success: true,
+          data: usageRecord,
+          message: 'Usage record created successfully',
+        },
+        { status: 201 }
+      );
+    } catch (error: any) {
+      // QA-007: Handle duplicate usage record on same date
+      if (error.code === 'P2002') {
+        return NextResponse.json(
+          { error: 'Usage already recorded for this benefit on this date' },
+          { status: 409 }
+        );
+      }
+      throw error;
+    }
   } catch (error) {
-    console.error('Error creating usage record:', error);
+    // QA-008: Safe error logging without PII
+    logSafeError('Error creating usage record', error, { userId: undefined, benefitId: undefined });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -122,7 +157,8 @@ export async function GET(request: NextRequest) {
       hasMore,
     });
   } catch (error) {
-    console.error('Error fetching usage records:', error);
+    // QA-008: Safe error logging without PII
+    logSafeError('Error fetching usage records', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

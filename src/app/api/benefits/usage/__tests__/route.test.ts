@@ -252,7 +252,7 @@ describe('POST /api/benefits/usage', () => {
         method: 'POST',
         body: JSON.stringify({
           benefitId: mockBenefitId,
-          usageAmount: 999999,
+          usageAmount: 999999.99,
           notes: 'Large charge',
         }),
       });
@@ -265,7 +265,7 @@ describe('POST /api/benefits/usage', () => {
         id: 'usage-789',
         benefitId: mockBenefitId,
         userId: mockUserId,
-        usageAmount: 999999,
+        usageAmount: 999999.99,
         notes: 'Large charge',
         category: null,
         usageDate: new Date(),
@@ -275,6 +275,72 @@ describe('POST /api/benefits/usage', () => {
 
       const response = await POST(request);
       expect(response.status).toBe(201);
+    });
+
+    // QA-005: Test max amount validation
+    it('should reject amount over 999999.99 (QA-005)', async () => {
+      const request = new NextRequest('http://localhost/api/benefits/usage', {
+        method: 'POST',
+        body: JSON.stringify({
+          benefitId: mockBenefitId,
+          usageAmount: 1000000,
+          notes: 'Too large',
+        }),
+      });
+
+      const response = await POST(request);
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.error).toContain('Invalid amount');
+    });
+
+    // QA-006: Test future date validation
+    it('should reject future usage date (QA-006)', async () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const request = new NextRequest('http://localhost/api/benefits/usage', {
+        method: 'POST',
+        body: JSON.stringify({
+          benefitId: mockBenefitId,
+          usageAmount: 5000,
+          notes: 'Future usage',
+          usageDate: tomorrow.toISOString(),
+        }),
+      });
+
+      const response = await POST(request);
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.error).toContain('future dates');
+    });
+
+    // QA-007: Test duplicate prevention
+    it('should reject duplicate usage on same date (QA-007)', async () => {
+      const request = new NextRequest('http://localhost/api/benefits/usage', {
+        method: 'POST',
+        body: JSON.stringify({
+          benefitId: mockBenefitId,
+          usageAmount: 5000,
+          notes: 'Duplicate',
+          usageDate: '2025-04-15T00:00:00Z',
+        }),
+      });
+
+      (prisma.userBenefit.findFirst as any).mockResolvedValue({
+        id: mockBenefitId,
+      });
+
+      // Simulate unique constraint violation
+      (prisma.benefitUsageRecord.create as any).mockRejectedValue({
+        code: 'P2002',
+        message: 'Unique constraint failed',
+      });
+
+      const response = await POST(request);
+      expect(response.status).toBe(409);
+      const data = await response.json();
+      expect(data.error).toContain('already recorded');
     });
 
     it('should set usageDate to current time if not provided', async () => {

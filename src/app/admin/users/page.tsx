@@ -15,8 +15,9 @@
 
 import { useState, useEffect } from 'react';
 import useSWR from 'swr';
-import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
+import { apiClient } from '@/features/admin/lib/api-client';
 import { AdminBreadcrumb } from '../_components/AdminBreadcrumb';
+import { EditUserModal } from '../_components/EditUserModal';
 import type { AdminUser, PaginationInfo } from '@/features/admin/types/admin';
 
 // ============================================================
@@ -60,9 +61,10 @@ export default function UsersPage() {
   
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [roleModalOpen, setRoleModalOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
-  const [newRole, setNewRole] = useState<'USER' | 'ADMIN' | 'SUPER_ADMIN'>('USER');
+  
+  // Edit user modal state (replaces old role change modal)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedUserForEdit, setSelectedUserForEdit] = useState<AdminUser | null>(null);
 
   // Issue 14: Standardize page title to "Admin Dashboard - Users"
   // Issue 12: Initialize sort params from URL on mount
@@ -113,22 +115,6 @@ export default function UsersPage() {
     if (sortBy !== column) return '';
     return sortOrder === 'asc' ? ' ↑' : ' ↓';
   };
-
-  // Escape key handler for Role Change Modal
-  useEffect(() => {
-    if (!roleModalOpen) return;
-
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setRoleModalOpen(false);
-      }
-    };
-
-    window.addEventListener('keydown', handleEscape);
-    return () => {
-      window.removeEventListener('keydown', handleEscape);
-    };
-  }, [roleModalOpen]);
 
   // Manage success message timeout with cleanup
   useEffect(() => {
@@ -187,29 +173,6 @@ export default function UsersPage() {
     }
   );
 
-  const handleRoleChange = async () => {
-    if (!selectedUser) return;
-
-    try {
-      await apiClient.post(`/users/${selectedUser.id}/role`, {
-        role: newRole,
-      });
-
-      setSuccess(`Role updated successfully`);
-      setRoleModalOpen(false);
-      mutate();
-    } catch (err) {
-      // Issue 13: Use getErrorMessage() for consistent error formatting
-      const message = getErrorMessage(err);
-      setError(message);
-      console.error('[UsersPage] Failed to update user role', {
-        error: message,
-        endpoint: `/api/admin/users/${selectedUser?.id}/role`,
-        userId: selectedUser?.id,
-        newRole,
-      });
-    }
-  };
 
   const users = data?.data || [];
   const pagination = data?.pagination || { page: 1, limit: 20, total: 0, totalPages: 0, hasMore: false };
@@ -329,13 +292,12 @@ export default function UsersPage() {
                       <td className="px-6 py-4 text-right">
                         <button
                           onClick={() => {
-                            setSelectedUser(user);
-                            setNewRole('USER');
-                            setRoleModalOpen(true);
+                            setSelectedUserForEdit(user);
+                            setIsEditModalOpen(true);
                           }}
                           className="px-3 py-1 rounded text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100"
                         >
-                          Change Role
+                          Edit
                         </button>
                       </td>
                     </tr>
@@ -370,56 +332,16 @@ export default function UsersPage() {
         )}
       </div>
 
-      {roleModalOpen && selectedUser && (
-        <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setRoleModalOpen(false);
-            }
-          }}
-        >
-          <div className="bg-white dark:bg-slate-900 rounded-lg max-w-md w-full p-6 border border-slate-200 dark:border-slate-800">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
-              Change User Role
-            </h2>
-
-            <p className="text-slate-600 dark:text-slate-400 mb-4">
-              Select a new role for {formatUserName(selectedUser.firstName, selectedUser.lastName)}
-            </p>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Role
-              </label>
-              <select
-                value={newRole}
-                onChange={(e) => setNewRole(e.target.value as 'USER' | 'ADMIN' | 'SUPER_ADMIN')}
-                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="USER">User</option>
-                <option value="ADMIN">Admin</option>
-                <option value="SUPER_ADMIN">Super Admin</option>
-              </select>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setRoleModalOpen(false)}
-                className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleRoleChange}
-                className="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium"
-              >
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <EditUserModal
+        user={selectedUserForEdit}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSaved={() => {
+          setIsEditModalOpen(false);
+          setSuccess('User updated successfully');
+          mutate();
+        }}
+      />
     </div>
   );
 }

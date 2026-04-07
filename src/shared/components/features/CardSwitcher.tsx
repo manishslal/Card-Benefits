@@ -9,6 +9,7 @@ interface Card {
   type: 'visa' | 'mastercard' | 'amex' | 'discover' | 'other';
   lastFour: string;
   issuer: string;
+  customName?: string;  // Enhancement 3: User's custom nickname (optional)
 }
 
 interface CardSwitcherProps {
@@ -68,7 +69,13 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
       });
     };
 
+    // Enhancement 3: Display customName if set, otherwise fallback to issuer + last 4 digits
     const getCardLabel = (card: Card) => {
+      // If customName is set and not empty, use it
+      if (card.customName && card.customName.trim()) {
+        return card.customName;
+      }
+      // Fallback to original format
       return `${card.issuer} •••• ${card.lastFour}`;
     };
 

@@ -30,8 +30,9 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
     },
     ref
   ) => {
+    // Enhancement 2: Use responsive padding - p-4 on mobile, p-6 on tablet+
     const baseClasses = [
-      'rounded-lg p-6 flex flex-col gap-3',
+      'rounded-lg p-4 sm:p-6 flex flex-col gap-3',
       'bg-[var(--color-bg)] border border-[var(--color-border)]',
       'shadow-sm transition-all duration-200 hover:shadow-md',
       className,
@@ -47,15 +48,11 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
         className={`${baseClasses} ${gradientClass}`}
         {...props}
       >
+        {/* Enhancement 2: Remove redundant icon label, keep only text label */}
         <div className="flex items-start justify-between">
           <span className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
             {label}
           </span>
-          {icon && (
-            <span className="text-[var(--color-primary)]">
-              {icon}
-            </span>
-          )}
         </div>
 
         <div className="flex items-end justify-between">

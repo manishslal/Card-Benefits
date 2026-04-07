@@ -116,6 +116,24 @@ export function AddCardModal({ isOpen, onClose, onCardAdded }: AddCardModalProps
     }
   };
 
+  // Enhancement 4: Auto-populate annual fee when card is selected
+  useEffect(() => {
+    if (!formData.masterCardId) {
+      return;
+    }
+
+    // Find the selected card from availableCards
+    const selectedCard = availableCards.find((card) => card.id === formData.masterCardId);
+    if (selectedCard && !formData.customAnnualFee) {
+      // Convert from cents to dollars and format as "150.00"
+      const feeInDollars = (selectedCard.defaultAnnualFee / 100).toFixed(2);
+      setFormData((prev) => ({
+        ...prev,
+        customAnnualFee: feeInDollars,
+      }));
+    }
+  }, [formData.masterCardId, availableCards]);
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 

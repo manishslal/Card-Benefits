@@ -1,5 +1,5 @@
 /**
- * GET /api/benefits/[benefitId]/status
+ * GET /api/benefits/[id]/status
  * 
  * Get current period status for a specific benefit on a specific card.
  * Works with existing UserBenefit model structure.
@@ -20,7 +20,7 @@ import {
   ResetCadence,
 } from '@/lib/benefit-period-utils';
 
-type Params = Promise<{ benefitId: string }>;
+type Params = Promise<{ id: string }>;
 
 export async function GET(
   request: NextRequest,
@@ -35,7 +35,7 @@ export async function GET(
       );
     }
 
-    const { benefitId } = await params;
+    const { id: benefitId } = await params;
     const { searchParams } = new URL(request.url);
     const userCardId = searchParams.get('userCardId');
 

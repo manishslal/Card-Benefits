@@ -122,7 +122,6 @@ function calculateTotalMissed(history: PeriodHistory[]): number {
  */
 export function PeriodClaimingHistory({
   history,
-  claimingCadence,
   maxHeight = 'max-h-96',
   className,
 }: PeriodClaimingHistoryProps) {

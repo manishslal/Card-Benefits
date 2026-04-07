@@ -37,8 +37,11 @@ export const ResetIndicator = React.memo(function ResetIndicator({
     return null;
   }
 
+  // Convert string date to Date object if needed
+  const expDate = typeof expirationDate === 'string' ? new Date(expirationDate) : expirationDate;
+
   // Check if the benefit has expired
-  const hasExpired = expiredProp ?? isExpired(expirationDate);
+  const hasExpired = expiredProp ?? isExpired(expDate);
 
   // If already expired, render nothing (should be handled by status badge)
   if (hasExpired) {
@@ -46,7 +49,7 @@ export const ResetIndicator = React.memo(function ResetIndicator({
   }
 
   // Get days remaining
-  const daysRemaining = getDaysUntilExpiration(expirationDate);
+  const daysRemaining = getDaysUntilExpiration(expDate);
 
   // If perpetual (Infinity days), render nothing
   if (!isFinite(daysRemaining)) {
@@ -54,7 +57,7 @@ export const ResetIndicator = React.memo(function ResetIndicator({
   }
 
   // Format the reset date
-  const formattedDate = formatDateForUser(expirationDate);
+  const formattedDate = formatDateForUser(expDate);
 
   // Determine urgency level
   const urgent = isUrgent(daysRemaining);

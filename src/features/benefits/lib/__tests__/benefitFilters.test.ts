@@ -21,17 +21,21 @@ function createMockBenefit(overrides: Partial<UserBenefit> = {}): UserBenefit {
     userCardId: 'card123',
     playerId: 'player123',
     name: 'Test Benefit',
-    description: 'Test',
     type: 'StatementCredit',
     stickerValue: 10000,
-    userDeclaredValue: undefined,
     resetCadence: 'Monthly',
+    userDeclaredValue: null,
+    timesUsed: 0,
     expirationDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), // 10 days
     isUsed: false,
-    claimedAt: null,
     status: 'ACTIVE',
+    importedFrom: null,
+    importedAt: null,
+    version: 1,
+    valueHistory: null,
     createdAt: new Date(),
     updatedAt: new Date(),
+    claimedAt: null,
     ...overrides,
   };
 }
@@ -249,7 +253,7 @@ describe('formatResetDate', () => {
   });
 
   it('handles string dates', () => {
-    const benefit = createMockBenefit({ expirationDate: '2025-03-15' });
+    const benefit = createMockBenefit({ expirationDate: new Date('2025-03-15') });
     const formatted = formatResetDate(benefit);
     expect(formatted).toContain('March');
   });

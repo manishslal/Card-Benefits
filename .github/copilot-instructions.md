@@ -109,6 +109,57 @@ ops(ci): Configure GitHub Actions
 
 ---
 
+---
+
+## 🚨 CRITICAL: Post-Pipeline Implementation Verification
+
+**IMPORTANT LESSON FROM PHASE 6C**: Always verify actual CODE was generated, not just specifications.
+
+### What Went Wrong
+- Frontend agent generated 965-line technical SPECIFICATION
+- But NO actual React components (.tsx files) were created
+- Resulted in backend-only implementation, frontend not visible to users
+
+### How To Prevent
+After any multi-stage pipeline (Stages 3-4), verify:
+
+```
+❌ DO NOT ACCEPT:
+   - Markdown specs for code
+   - TypeScript interfaces without implementation
+   - Component "outlines" instead of working code
+   - Pseudo-code or examples
+
+✅ VERIFY CHECKLIST:
+   [ ] Actual .ts/.tsx/.js files exist (not .md)
+   [ ] npm run build → 0 errors
+   [ ] npm run test → all passing
+   [ ] npm run test:e2e → all passing
+   [ ] Files contain real implementations (not comments/stubs)
+   [ ] No TODO/FIXME in core logic
+   [ ] git diff shows actual code changes
+```
+
+### If Implementation Missing
+```
+1. Identify layer: frontend | backend | database
+2. Launch SPECIFIC agent for that layer:
+   - Frontend: Expert React Frontend Engineer
+   - Backend: SWE or full-stack-coder
+   - Database: PostgreSQL Database Administrator
+3. Explicit instruction: "IMPLEMENT working code (not specs)"
+4. Verify: npm run build/test passes
+```
+
+### Example Recovery (Phase 6C)
+```
+PROBLEM: Frontend was only specification documents
+SOLUTION: Ran Expert React Frontend Engineer with implementation focus
+RESULT: 6 actual React components (.tsx) + tests now exist and work
+```
+
+---
+
 ## Quality Gates (All Workflows)
 
 ### Code Quality

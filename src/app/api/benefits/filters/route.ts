@@ -1,11 +1,17 @@
 /**
  * POST /api/benefits/filters - Apply advanced filters to benefits
  * Supports: status, value, resetCadence, expiration, search
+ * 
+ * QA-001: Added pageSize validation (max 100)
+ * QA-002: Moved filtering to database queries instead of in-memory filtering
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUserId } from '@/features/auth/context/auth-context';
 import { prisma } from '@/shared/lib/prisma';
+import { buildBenefitWhereClause, filterByStatus, FilterCriteria } from '@/lib/filters';
+
+const MAX_PAGE_SIZE = 100;
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,7 +32,7 @@ export async function POST(request: NextRequest) {
     const playerId = player.id;
 
     const body = await request.json();
-    const {
+    let {
       status,
       minValue,
       maxValue,
@@ -37,65 +43,52 @@ export async function POST(request: NextRequest) {
       pageSize = 20,
     } = body;
 
-    // Get user's benefits
+    // QA-001: Validate pageSize to prevent SQL DoS
+    if (pageSize > MAX_PAGE_SIZE) {
+      return NextResponse.json(
+        { error: `pageSize cannot exceed ${MAX_PAGE_SIZE}` },
+        { status: 400 }
+      );
+    }
+    pageSize = Math.min(Math.max(1, pageSize), MAX_PAGE_SIZE);
+    page = Math.max(1, page);
+
+    // QA-002: Build database where clause from filter criteria
+    const criteria: FilterCriteria = {
+      status,
+      minValue,
+      maxValue,
+      resetCadence,
+      expirationBefore,
+      searchTerm,
+    };
+
+    const whereClause = buildBenefitWhereClause(criteria, playerId);
+
+    // Fetch filtered benefits from database (not all benefits)
+    const total = await prisma.userBenefit.count({ where: whereClause });
+    
+    const skip = (page - 1) * pageSize;
     const userBenefits = await prisma.userBenefit.findMany({
-      where: { playerId },
+      where: whereClause,
+      skip,
+      take: pageSize,
+      orderBy: { createdAt: 'desc' },
     });
 
+    // Apply status filter (post-database since status is calculated)
     const now = new Date();
     let filtered = userBenefits;
-
-    // Apply status filter
     if (status && status.length > 0) {
-      filtered = filtered.filter((benefit) => {
-        const benefitStatus = determineStatus(benefit, now);
-        return status.includes(benefitStatus);
-      });
+      filtered = filterByStatus(userBenefits, status, now);
     }
 
-    // Apply value range filter
-    if (minValue !== undefined || maxValue !== undefined) {
-      filtered = filtered.filter((benefit) => {
-        const value = benefit.stickerValue || 0;
-        const minCheck = minValue === undefined || value >= minValue;
-        const maxCheck = maxValue === undefined || value <= maxValue;
-        return minCheck && maxCheck;
-      });
-    }
-
-    // Apply reset cadence filter
-    if (resetCadence && resetCadence.length > 0) {
-      filtered = filtered.filter((benefit) =>
-        resetCadence.includes(benefit.resetCadence)
-      );
-    }
-
-    // Apply expiration filter
-    if (expirationBefore) {
-      const expirationDate = new Date(expirationBefore);
-      filtered = filtered.filter((benefit) => {
-        if (!benefit.expirationDate) return true;
-        return benefit.expirationDate <= expirationDate;
-      });
-    }
-
-    // Apply search filter
-    if (searchTerm && searchTerm.length > 0) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter((benefit) =>
-        benefit.name.toLowerCase().includes(term)
-      );
-    }
-
-    // Calculate pagination
-    const total = filtered.length;
-    const skip = (page - 1) * pageSize;
-    const paginatedBenefits = filtered.slice(skip, skip + pageSize);
-    const hasMore = skip + pageSize < total;
+    // Recalculate hasMore based on actual results after status filtering
+    const hasMore = skip + filtered.length < total;
 
     return NextResponse.json({
       success: true,
-      data: paginatedBenefits.map((b) => ({
+      data: filtered.map((b) => ({
         id: b.id,
         name: b.name,
         type: b.type,
@@ -117,7 +110,8 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error applying filters:', error);
+    // QA-008: Safe error logging without PII
+    console.error('Error applying filters:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

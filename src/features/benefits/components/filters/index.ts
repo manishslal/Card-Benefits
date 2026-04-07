@@ -1,2 +1,2 @@
 export { BenefitsFilterBar } from './BenefitsFilterBar';
-export type { BenefitsFilterBarProps, FilterStatus, StatusCounts } from '../types/filters';
+export type { BenefitsFilterBarProps, FilterStatus, StatusCounts } from '../../types/filters';

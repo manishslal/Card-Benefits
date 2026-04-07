@@ -181,7 +181,7 @@ const UnifiedSelect = React.forwardRef<HTMLButtonElement, UnifiedSelectProps>(
           </SelectPrimitive.Trigger>
 
           <SelectContent>
-            <SelectPrimitive.Viewport className="h-[var(--radix-select-trigger-height)] max-h-60 max-w-[calc(100%-2rem)] p-1">
+            <SelectPrimitive.Viewport className="h-[var(--radix-select-trigger-height)] max-h-60 w-full p-1">
               {options.map((option) => (
                 <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
                   {option.label}

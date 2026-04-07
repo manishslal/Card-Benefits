@@ -212,14 +212,17 @@ export default function SettingsPage() {
 
           {/* Tabs Navigation */}
           <div
-            className="flex border-b mb-8 overflow-x-auto"
+            className="flex border-b mb-8 overflow-x-auto overflow-y-visible"
             style={{ borderColor: 'var(--color-border)' }}
+            role="tablist"
           >
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap border-b-2 -mb-[2px] ${
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap border-b-2 ${
                   activeTab === tab.id
                     ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
                     : 'border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text)]'

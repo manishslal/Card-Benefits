@@ -1,84 +1,12 @@
 /**
  * GET /api/benefits/periods - List periods for a benefit
- * Automatically calculates periods based on resetCadence
+ * Automatically calculates periods based on resetCadence using UTC calculations
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUserId } from '@/features/auth/context/auth-context';
 import { prisma } from '@/shared/lib/prisma';
-
-/**
- * Calculate period boundaries based on reset cadence
- */
-function calculatePeriods(
-  cadence: string,
-  limitToMonths: number = 12
-): Array<{ start: Date; end: Date }> {
-  const periods: Array<{ start: Date; end: Date }> = [];
-  const now = new Date();
-  let currentDate = new Date(now);
-  currentDate.setHours(0, 0, 0, 0);
-
-  for (let i = 0; i < limitToMonths; i++) {
-    let periodStart: Date;
-    let periodEnd: Date;
-
-    switch (cadence) {
-      case 'MONTHLY':
-        periodStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-        periodEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-        periodEnd.setHours(23, 59, 59, 999);
-        currentDate = new Date(periodStart);
-        currentDate.setMonth(currentDate.getMonth() - 1);
-        break;
-
-      case 'QUARTERLY':
-        const quarter = Math.floor(currentDate.getMonth() / 3);
-        periodStart = new Date(currentDate.getFullYear(), quarter * 3, 1);
-        periodEnd = new Date(currentDate.getFullYear(), quarter * 3 + 3, 0);
-        periodEnd.setHours(23, 59, 59, 999);
-        currentDate = new Date(periodStart);
-        currentDate.setMonth(currentDate.getMonth() - 3);
-        break;
-
-      case 'ANNUAL':
-        periodStart = new Date(currentDate.getFullYear(), 0, 1);
-        periodEnd = new Date(currentDate.getFullYear(), 11, 31);
-        periodEnd.setHours(23, 59, 59, 999);
-        currentDate = new Date(periodStart);
-        currentDate.setFullYear(currentDate.getFullYear() - 1);
-        break;
-
-      case 'CARDMEMBER_YEAR':
-        // Assuming card member year starts in January
-        periodStart = new Date(currentDate.getFullYear(), 0, 1);
-        periodEnd = new Date(currentDate.getFullYear(), 11, 31);
-        periodEnd.setHours(23, 59, 59, 999);
-        currentDate = new Date(periodStart);
-        currentDate.setFullYear(currentDate.getFullYear() - 1);
-        break;
-
-      case 'ONE_TIME':
-        // One-time benefits have no reset, return a single period
-        periodStart = new Date(1970, 0, 1);
-        periodEnd = new Date(2099, 11, 31);
-        periodEnd.setHours(23, 59, 59, 999);
-        return [{ start: periodStart, end: periodEnd }];
-
-      default:
-        // Default to monthly
-        periodStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-        periodEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-        periodEnd.setHours(23, 59, 59, 999);
-        currentDate = new Date(periodStart);
-        currentDate.setMonth(currentDate.getMonth() - 1);
-    }
-
-    periods.push({ start: periodStart, end: periodEnd });
-  }
-
-  return periods;
-}
+import { calculatePeriods } from '@/lib/period-utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -121,7 +49,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Benefit not found' }, { status: 404 });
     }
 
-    // Calculate periods
+    // QA-003: Use UTC-aware period calculations
     const calculatedPeriods = calculatePeriods(cadence || userBenefit.resetCadence, 12);
 
     // Map to database format
@@ -141,7 +69,8 @@ export async function GET(request: NextRequest) {
       total: periods.length,
     });
   } catch (error) {
-    console.error('Error fetching periods:', error);
+    // QA-008: Safe error logging without PII
+    console.error('Error fetching periods:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

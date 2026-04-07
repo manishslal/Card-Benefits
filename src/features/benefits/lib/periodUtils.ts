@@ -5,7 +5,7 @@
  * Supports cardmember year resets.
  */
 
-import { addDays, addMonths, addQuarters, addYears, startOfDay, endOfDay } from 'date-fns';
+import { addMonths, addQuarters, addYears, startOfDay, endOfDay } from 'date-fns';
 
 export type ResetCadence = 'MONTHLY' | 'QUARTERLY' | 'ANNUAL' | 'ONETIME';
 

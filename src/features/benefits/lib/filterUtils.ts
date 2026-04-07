@@ -157,7 +157,6 @@ export function applyFilters(
  * Get filter summary statistics
  */
 export function getFilterSummary(
-  benefits: (UserBenefit & { currentUsage?: number; daysRemaining?: number })[],
   filtered: (UserBenefit & { currentUsage?: number; daysRemaining?: number })[]
 ) {
   const statusGroups: Record<string, number> = { ACTIVE: 0, USED: 0, EXPIRING: 0, EXPIRED: 0 };

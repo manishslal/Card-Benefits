@@ -28,6 +28,7 @@ import Input from '@/shared/components/ui/Input';
 import { FormError } from '@/shared/components/forms';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
+import FocusTrap from 'focus-trap-react';
 import { ClaimingLimitInfo } from './ClaimingLimitInfo';
 import { ClaimingLimitsInfo } from '@/lib/claiming-validation';
 
@@ -300,7 +301,8 @@ export function MarkBenefitUsedModal({
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-black/50 dark:bg-black/70" />
 
-        <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-50 w-full max-w-md translate-x-[-50%] translate-y-[-50%] rounded-lg bg-white dark:bg-gray-900 shadow-lg duration-200">
+        <FocusTrap>
+          <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-50 w-full max-w-md translate-x-[-50%] translate-y-[-50%] rounded-lg bg-white dark:bg-gray-900 shadow-lg duration-200">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4">
             <div>
@@ -468,6 +470,7 @@ export function MarkBenefitUsedModal({
             </Button>
           </div>
         </DialogPrimitive.Content>
+        </FocusTrap>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
   );

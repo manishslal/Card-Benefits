@@ -1,11 +1,14 @@
 /**
  * GET /api/benefits/progress - Calculate progress for a benefit
  * Returns { used, limit, percentage, status }
+ * 
+ * QA-003: Uses UTC-aware period calculations
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUserId } from '@/features/auth/context/auth-context';
 import { prisma } from '@/shared/lib/prisma';
+import { getCurrentPeriod } from '@/lib/period-utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -73,30 +76,8 @@ export async function GET(request: NextRequest) {
     if (periodId) {
       usageWhere.benefitPeriodId = periodId;
     } else {
-      // Get usage for current period based on resetCadence
-      const now = new Date();
-      let periodStart = new Date(now);
-      let periodEnd = new Date(now);
-
-      switch (userBenefit.resetCadence) {
-        case 'MONTHLY':
-          periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
-          periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-          break;
-        case 'QUARTERLY':
-          const quarter = Math.floor(now.getMonth() / 3);
-          periodStart = new Date(now.getFullYear(), quarter * 3, 1);
-          periodEnd = new Date(now.getFullYear(), quarter * 3 + 3, 0);
-          break;
-        case 'ANNUAL':
-        case 'CARDMEMBER_YEAR':
-          periodStart = new Date(now.getFullYear(), 0, 1);
-          periodEnd = new Date(now.getFullYear(), 11, 31);
-          break;
-        case 'ONE_TIME':
-          // No period filtering for one-time
-          break;
-      }
+      // QA-003: Get usage for current period based on resetCadence using UTC
+      const { start: periodStart, end: periodEnd } = getCurrentPeriod(userBenefit.resetCadence);
 
       if (userBenefit.resetCadence !== 'ONE_TIME') {
         usageWhere.usageDate = {
@@ -144,7 +125,8 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error calculating progress:', error);
+    // QA-008: Safe error logging without PII
+    console.error('Error calculating progress:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -3,36 +3,36 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 // Helper: calculate expirationDate inline to avoid import issues with ts-node
-// Updated to use new Phase 6 cadence format
 function calcExpirationDate(resetCadence: string, renewalDate: Date, now: Date = new Date()): Date | null {
   switch (resetCadence) {
-    case 'MONTHLY': {
+    case 'Monthly': {
       const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
       lastDay.setHours(23, 59, 59, 999);
       return lastDay;
     }
-    case 'ANNUAL': {
+    case 'CalendarYear': {
       const dec31 = new Date(now.getFullYear(), 11, 31);
       dec31.setHours(23, 59, 59, 999);
       return dec31;
     }
-    case 'CUSTOM': {
+    case 'CardmemberYear': {
       const dayBefore = new Date(renewalDate);
       dayBefore.setDate(dayBefore.getDate() - 1);
       dayBefore.setHours(23, 59, 59, 999);
       return dayBefore;
     }
+    case 'OneTime':
     default:
       return null;
   }
 }
 
-// Types (using Phase 6 cadence format)
+// Types
 type BenefitSeed = {
   name: string;
   type: 'StatementCredit' | 'UsagePerk';
   stickerValue: number;
-  resetCadence: 'MONTHLY' | 'ANNUAL' | 'CUSTOM';
+  resetCadence: 'Monthly' | 'CalendarYear' | 'CardmemberYear' | 'OneTime';
 };
 
 type CardSeed = {
@@ -57,32 +57,32 @@ const MASTER_CARDS: CardSeed[] = [
         name: '$10 Monthly Uber Cash',
         type: 'StatementCredit',
         stickerValue: 1000, // $10/mo → $120/yr
-        resetCadence: 'MONTHLY',
+        resetCadence: 'Monthly',
       },
       {
         name: '$10 Monthly Dining Credit',
         type: 'StatementCredit',
         stickerValue: 1000, // $10/mo → $120/yr
-        resetCadence: 'MONTHLY',
+        resetCadence: 'Monthly',
       },
       {
         name: "Dunkin' Credit",
         type: 'StatementCredit',
         stickerValue: 700, // $7/mo → $84/yr
-        resetCadence: 'MONTHLY',
+        resetCadence: 'Monthly',
       },
       // Resy $100/yr split into two half-year CalendarYear windows (no SemiAnnual cadence)
       {
         name: 'Resy Credit (Jan–Jun)',
         type: 'StatementCredit',
         stickerValue: 5000, // $50
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
       {
         name: 'Resy Credit (Jul–Dec)',
         type: 'StatementCredit',
         stickerValue: 5000, // $50
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
     ],
   },
@@ -99,40 +99,40 @@ const MASTER_CARDS: CardSeed[] = [
         name: '$200 Airline Fee Credit',
         type: 'StatementCredit',
         stickerValue: 20000, // $200/yr
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
       // $15×11 + $35 in Dec = $200/yr — modelled as a single CalendarYear benefit
       {
         name: '$200 Uber Cash',
         type: 'StatementCredit',
         stickerValue: 20000, // $200/yr
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
       // Saks $100/yr split into two half-year CalendarYear windows
       {
         name: '$50 Saks Credit (Jan–Jun)',
         type: 'StatementCredit',
         stickerValue: 5000, // $50
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
       {
         name: '$50 Saks Credit (Jul–Dec)',
         type: 'StatementCredit',
         stickerValue: 5000, // $50
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
       {
         name: '$240 Digital Entertainment Credit',
         type: 'StatementCredit',
         stickerValue: 2000, // $20/mo → $240/yr
-        resetCadence: 'MONTHLY',
+        resetCadence: 'Monthly',
       },
       // Continuous access perk — no monetary reset schedule
       {
         name: 'Global Lounge Collection Access',
         type: 'UsagePerk',
         stickerValue: 0,
-        resetCadence: 'CUSTOM',
+        resetCadence: 'OneTime',
       },
     ],
   },
@@ -148,25 +148,25 @@ const MASTER_CARDS: CardSeed[] = [
         name: '3x Points on Travel',
         type: 'UsagePerk',
         stickerValue: 0,
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
       {
         name: '3x Points on Dining',
         type: 'UsagePerk',
         stickerValue: 0,
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
       {
         name: '1x Points on All Other Purchases',
         type: 'UsagePerk',
         stickerValue: 0,
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
       {
         name: 'Trip Cancellation Insurance',
         type: 'UsagePerk',
         stickerValue: 0,
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
     ],
   },
@@ -182,19 +182,19 @@ const MASTER_CARDS: CardSeed[] = [
         name: 'Cashback on Rotating Categories',
         type: 'UsagePerk',
         stickerValue: 0,
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
       {
         name: '1% Cashback on All Other Purchases',
         type: 'UsagePerk',
         stickerValue: 0,
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
       {
         name: 'Cash Back Match',
         type: 'StatementCredit',
         stickerValue: 0,
-        resetCadence: 'CUSTOM',
+        resetCadence: 'OneTime',
       },
     ],
   },
@@ -210,25 +210,25 @@ const MASTER_CARDS: CardSeed[] = [
         name: '$300 Travel Credit',
         type: 'StatementCredit',
         stickerValue: 30000, // $300/yr
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
       {
         name: '10x Miles on Travel & Dining',
         type: 'UsagePerk',
         stickerValue: 0,
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
       {
         name: 'Complimentary Airport Lounge Access',
         type: 'UsagePerk',
         stickerValue: 0,
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
       {
         name: 'Trip Delay Reimbursement',
         type: 'UsagePerk',
         stickerValue: 0,
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
     ],
   },
@@ -244,25 +244,25 @@ const MASTER_CARDS: CardSeed[] = [
         name: '$250 Travel Credit',
         type: 'StatementCredit',
         stickerValue: 25000, // $250/yr
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
       {
         name: '5x Points on Travel & Dining',
         type: 'UsagePerk',
         stickerValue: 0,
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
       {
         name: 'Fine Hotels & Resorts Program',
         type: 'UsagePerk',
         stickerValue: 0,
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
       {
         name: 'Complimentary Airport Lounge Access',
         type: 'UsagePerk',
         stickerValue: 0,
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
     ],
   },
@@ -278,19 +278,19 @@ const MASTER_CARDS: CardSeed[] = [
         name: '2x Cashback on All Purchases',
         type: 'UsagePerk',
         stickerValue: 0,
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
       {
         name: 'Cell Phone Protection',
         type: 'UsagePerk',
         stickerValue: 0,
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
       {
         name: 'Travel & Fraud Protection',
         type: 'UsagePerk',
         stickerValue: 0,
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
     ],
   },
@@ -306,19 +306,19 @@ const MASTER_CARDS: CardSeed[] = [
         name: '3x Points on Travel & Dining',
         type: 'UsagePerk',
         stickerValue: 0,
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
       {
         name: '3x Points on Gas & Parking',
         type: 'UsagePerk',
         stickerValue: 0,
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
       {
         name: '1x Point on All Other Purchases',
         type: 'UsagePerk',
         stickerValue: 0,
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
     ],
   },
@@ -334,13 +334,13 @@ const MASTER_CARDS: CardSeed[] = [
         name: '1.5x Cash Back on All Purchases',
         type: 'UsagePerk',
         stickerValue: 0,
-        resetCadence: 'ANNUAL',
+        resetCadence: 'CalendarYear',
       },
       {
         name: 'Intro 0% APR for 15 months',
         type: 'UsagePerk',
         stickerValue: 0,
-        resetCadence: 'CUSTOM',
+        resetCadence: 'OneTime',
       },
     ],
   },
@@ -523,7 +523,7 @@ async function main(): Promise<void> {
     },
     update: {
       isUsed: false,
-      resetCadence: 'CUSTOM',
+      resetCadence: 'OneTime',
       expirationDate: signUpBonusExpiration,
     },
     create: {
@@ -532,7 +532,7 @@ async function main(): Promise<void> {
       name: 'Spend $4,000 for 35,000 Points',
       type: 'UsagePerk',
       stickerValue: 0, // Points value varies; user can set userDeclaredValue
-      resetCadence: 'CUSTOM',
+      resetCadence: 'OneTime',
       isUsed: false,
       expirationDate: signUpBonusExpiration,
     },

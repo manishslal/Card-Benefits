@@ -34,7 +34,8 @@ import { ClaimingLimitsInfo } from '@/lib/claiming-validation';
 interface MarkBenefitUsedModalProps {
   isOpen: boolean;
   onClose: () => void;
-  benefitId: string;
+  userBenefitId: string;  // Changed from benefitId to match API
+  userCardId: string;     // Added to match API requirements
   benefitName: string;
   cardName?: string;
   onBenefitMarked?: (result: any) => void;
@@ -59,7 +60,8 @@ interface ApiResponse {
 export function MarkBenefitUsedModal({
   isOpen,
   onClose,
-  benefitId,
+  userBenefitId,
+  userCardId,
   benefitName,
   cardName,
   onBenefitMarked,
@@ -85,14 +87,14 @@ export function MarkBenefitUsedModal({
    * Fetch claiming limits on mount
    */
   useEffect(() => {
-    if (!isOpen || !benefitId) return;
+    if (!isOpen || !userBenefitId) return;
 
     const fetchLimits = async () => {
       try {
         setLoadingLimits(true);
         setGeneralError('');
 
-        const response = await fetch(`/api/benefits/claiming-limits?benefitId=${benefitId}`);
+        const response = await fetch(`/api/benefits/claiming-limits?userBenefitId=${userBenefitId}`);
 
         if (!response.ok) {
           throw new Error('Failed to fetch claiming limits');
@@ -116,7 +118,7 @@ export function MarkBenefitUsedModal({
     };
 
     fetchLimits();
-  }, [isOpen, benefitId]);
+  }, [isOpen, userBenefitId]);
 
   /**
    * Handle form field changes
@@ -197,13 +199,14 @@ export function MarkBenefitUsedModal({
         setGeneralError('');
         setSuccessMessage('');
 
-        // Convert claim amount to cents
-        const claimAmountCents = Math.round(parseFloat(formData.claimAmount) * 100);
+        // Parse claim amount as dollars (API expects dollars, converts to cents internally)
+        const claimAmountDollars = parseFloat(formData.claimAmount);
 
-        // Prepare request payload
+        // Prepare request payload matching API expectations
         const payload = {
-          benefitId,
-          usageAmount: claimAmountCents,
+          userBenefitId,
+          userCardId,
+          usageAmount: claimAmountDollars,  // In dollars (API converts to cents)
           usageDate: new Date(formData.claimDate).toISOString(),
           notes: formData.notes || undefined,
         };
@@ -228,6 +231,7 @@ export function MarkBenefitUsedModal({
         }
 
         // Success
+        const claimAmountCents = Math.round(claimAmountDollars * 100);
         const remainingAfter = claimingLimits
           ? claimingLimits.remainingAmount - claimAmountCents
           : 0;
@@ -264,7 +268,7 @@ export function MarkBenefitUsedModal({
         setIsLoading(false);
       }
     },
-    [benefitId, formData, claimingLimits, onClose, onBenefitMarked, validateForm]
+    [userBenefitId, userCardId, formData, claimingLimits, onClose, onBenefitMarked, validateForm]
   );
 
   /**

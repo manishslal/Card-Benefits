@@ -57,3 +57,9 @@ Thumbs.db
 .tmp/
 .cache/
 .env
+
+# Database backups (large SQL files - keep locally only)
+backups/*.sql
+backups/*.sql.gz
+backups/*.dump
+backups/*.bak

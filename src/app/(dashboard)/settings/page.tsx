@@ -34,6 +34,12 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editFormData, setEditFormData] = useState({ firstName: '', lastName: '', email: '' });
+  const [passwordFormData, setPasswordFormData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isClearingSessions, setIsClearingSessions] = useState(false);
 
@@ -67,14 +73,66 @@ export default function SettingsPage() {
 
   const isAdmin = user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN');
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const newErrors: Record<string, string> = {};
+
+    // Validation
+    if (!passwordFormData.currentPassword) {
+      newErrors.currentPassword = 'Current password is required';
+    }
+
+    if (!passwordFormData.newPassword) {
+      newErrors.newPassword = 'New password is required';
+    } else if (passwordFormData.newPassword.length < 6) {
+      newErrors.newPassword = 'Password must be at least 6 characters';
+    }
+
+    if (!passwordFormData.confirmPassword) {
+      newErrors.confirmPassword = 'Confirm password is required';
+    } else if (passwordFormData.newPassword !== passwordFormData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setPasswordErrors(newErrors);
+      return;
+    }
+
     setIsChangingPassword(true);
-    // TODO: Open change password modal or form
-    // This would typically open a modal with password fields
-    setTimeout(() => {
-      alert('Change password feature will be implemented');
+    setPasswordErrors({});
+
+    try {
+      const response = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          currentPassword: passwordFormData.currentPassword,
+          newPassword: passwordFormData.newPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (data.fieldErrors) {
+          setPasswordErrors(data.fieldErrors);
+        } else {
+          setError(data.error || 'Failed to change password');
+        }
+        return;
+      }
+
+      setError(null);
+      setPasswordFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      alert('✓ Password changed successfully');
+    } catch (err) {
+      console.error('Error changing password:', err);
+      setError('An error occurred. Please try again.');
+    } finally {
       setIsChangingPassword(false);
-    }, 500);
+    }
   };
 
   const handleClearSessions = async () => {
@@ -344,50 +402,125 @@ export default function SettingsPage() {
                   }}
                 >
                   <h3
-                    className="font-semibold text-[var(--color-text)] mb-4 flex items-center gap-2"
+                    className="font-semibold text-[var(--color-text)] mb-6 flex items-center gap-2"
                     style={{ fontSize: 'var(--text-body-lg)' }}
                   >
                     <Lock size={18} />
-                    Security & Account
+                    Change Password
                   </h3>
 
-                  <div className="space-y-4">
-                    <div className="py-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
-                      <p className="text-sm font-medium text-[var(--color-text)] mb-2">
-                        Change Password
-                      </p>
-                      <p className="text-xs text-[var(--color-text-secondary)] mb-3">
-                        Update your password regularly to keep your account secure
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleChangePassword}
-                        isLoading={isChangingPassword}
-                        disabled={isChangingPassword}
-                      >
-                        Change Password
-                      </Button>
+                  <form onSubmit={handleChangePassword} className="space-y-4">
+                    <div>
+                      <label className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase block mb-2">
+                        Current Password
+                      </label>
+                      <input
+                        type="password"
+                        value={passwordFormData.currentPassword}
+                        onChange={(e) => {
+                          setPasswordFormData({ ...passwordFormData, currentPassword: e.target.value });
+                          if (passwordErrors.currentPassword) {
+                            setPasswordErrors({ ...passwordErrors, currentPassword: '' });
+                          }
+                        }}
+                        className="w-full px-3 py-2 rounded border text-sm"
+                        style={{
+                          backgroundColor: 'var(--color-bg-secondary)',
+                          borderColor: passwordErrors.currentPassword ? 'var(--color-error)' : 'var(--color-border)',
+                          color: 'var(--color-text)',
+                        }}
+                      />
+                      {passwordErrors.currentPassword && (
+                        <p className="text-xs text-[var(--color-error)] mt-1">{passwordErrors.currentPassword}</p>
+                      )}
                     </div>
 
-                    <div className="py-3">
-                      <p className="text-sm font-medium text-[var(--color-text)] mb-2">
-                        Sessions
-                      </p>
-                      <p className="text-xs text-[var(--color-text-secondary)] mb-3">
-                        Sign out from all other devices
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleClearSessions}
-                        isLoading={isClearingSessions}
-                        disabled={isClearingSessions}
-                      >
-                        Sign Out Other Sessions
-                      </Button>
+                    <div>
+                      <label className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase block mb-2">
+                        New Password
+                      </label>
+                      <input
+                        type="password"
+                        value={passwordFormData.newPassword}
+                        onChange={(e) => {
+                          setPasswordFormData({ ...passwordFormData, newPassword: e.target.value });
+                          if (passwordErrors.newPassword) {
+                            setPasswordErrors({ ...passwordErrors, newPassword: '' });
+                          }
+                        }}
+                        className="w-full px-3 py-2 rounded border text-sm"
+                        style={{
+                          backgroundColor: 'var(--color-bg-secondary)',
+                          borderColor: passwordErrors.newPassword ? 'var(--color-error)' : 'var(--color-border)',
+                          color: 'var(--color-text)',
+                        }}
+                      />
+                      {passwordErrors.newPassword && (
+                        <p className="text-xs text-[var(--color-error)] mt-1">{passwordErrors.newPassword}</p>
+                      )}
                     </div>
-                  </div>
+
+                    <div>
+                      <label className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase block mb-2">
+                        Confirm New Password
+                      </label>
+                      <input
+                        type="password"
+                        value={passwordFormData.confirmPassword}
+                        onChange={(e) => {
+                          setPasswordFormData({ ...passwordFormData, confirmPassword: e.target.value });
+                          if (passwordErrors.confirmPassword) {
+                            setPasswordErrors({ ...passwordErrors, confirmPassword: '' });
+                          }
+                        }}
+                        className="w-full px-3 py-2 rounded border text-sm"
+                        style={{
+                          backgroundColor: 'var(--color-bg-secondary)',
+                          borderColor: passwordErrors.confirmPassword ? 'var(--color-error)' : 'var(--color-border)',
+                          color: 'var(--color-text)',
+                        }}
+                      />
+                      {passwordErrors.confirmPassword && (
+                        <p className="text-xs text-[var(--color-error)] mt-1">{passwordErrors.confirmPassword}</p>
+                      )}
+                    </div>
+
+                    <Button
+                      variant="primary"
+                      type="submit"
+                      isLoading={isChangingPassword}
+                      disabled={isChangingPassword}
+                    >
+                      Change Password
+                    </Button>
+                  </form>
+                </section>
+
+                <section
+                  className="p-6 rounded-lg border"
+                  style={{
+                    backgroundColor: 'var(--color-bg)',
+                    borderColor: 'var(--color-border)',
+                  }}
+                >
+                  <h3
+                    className="font-semibold text-[var(--color-text)] mb-4"
+                    style={{ fontSize: 'var(--text-body-lg)' }}
+                  >
+                    Sessions
+                  </h3>
+                  <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+                    Sign out from all other devices
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleClearSessions}
+                    isLoading={isClearingSessions}
+                    disabled={isClearingSessions}
+                  >
+                    Sign Out Other Sessions
+                  </Button>
                 </section>
               </div>
             )}

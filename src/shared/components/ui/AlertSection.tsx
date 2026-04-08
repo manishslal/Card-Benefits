@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { deduplicateBenefits } from '@/lib/benefit-utils';
+import { featureFlags } from '@/lib/feature-flags';
 
 /**
  * AlertSection Component
@@ -15,6 +17,7 @@ import { useState, useMemo } from 'react';
  * - Dismissible alerts (user can hide via state)
  * - Empty state when no expirations in next 30 days
  * - Responsive layout (full-width mobile, flexible desktop)
+ * - Deduplicates period rows when benefit engine is enabled (fe-5)
  * 
  * Design:
  * - Left border: 4px solid color (red/orange/blue)
@@ -33,6 +36,10 @@ interface UserBenefit {
   expirationDate: Date | null;
   type: string; // Can be 'StatementCredit' | 'UsagePerk'
   resetCadence: string;
+  // Period dedup fields — required by deduplicateBenefits()
+  masterBenefitId?: string | null;
+  userCardId?: string | null;
+  periodStatus?: string | null;
 }
 
 interface UserCard {
@@ -70,15 +77,23 @@ function formatCurrency(cents: number): string {
 }
 
 /**
- * Find all expiring benefits organized by urgency
+ * Find all expiring benefits organized by urgency.
+ *
+ * When BENEFIT_ENGINE_ENABLED is true, deduplicates period rows so each
+ * unique benefit generates at most one alert (fe-5 fix).
  */
 function getExpiringBenefits(players: Player[]): ExpiringBenefit[] {
   const now = new Date();
+  const engineEnabled = featureFlags.BENEFIT_ENGINE_ENABLED;
   const expiringBenefits: ExpiringBenefit[] = [];
 
   for (const player of players) {
     for (const card of player.userCards) {
-      for (const benefit of card.userBenefits) {
+      // Deduplicate period rows — keeps only the ACTIVE period row per
+      // unique benefit when engine is enabled; no-op when engine is OFF.
+      const benefits = deduplicateBenefits(card.userBenefits, engineEnabled);
+
+      for (const benefit of benefits) {
         // Skip if no expiration date
         if (!benefit.expirationDate) continue;
         

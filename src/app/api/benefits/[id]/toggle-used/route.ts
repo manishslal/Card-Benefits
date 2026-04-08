@@ -1,11 +1,16 @@
 /**
  * PATCH /api/benefits/[id]/toggle-used
  *
- * Toggle "mark as used" for a benefit
+ * Toggle "mark as used" for a benefit.
+ *
+ * When the Benefit Engine is enabled, blocks toggling on non-ACTIVE periods
+ * (EXPIRED, UPCOMING, or any other future status).  Legacy rows with
+ * periodStatus = null are allowed through.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib';
+import { featureFlags } from '@/lib/feature-flags';
 
 interface ToggleUsedRequest {
   isUsed: boolean;
@@ -24,6 +29,7 @@ interface ToggleUsedResponse {
 interface ErrorResponse {
   success: false;
   error: string;
+  code?: string;
 }
 
 export async function PATCH(request: NextRequest): Promise<NextResponse> {
@@ -66,6 +72,53 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
         { success: false, error: 'You do not have permission to update this benefit' } as ErrorResponse,
         { status: 403 }
       );
+    }
+
+    // ── Period-status guard (api-4 + api-6) ─────────────────────────────────
+    // When the Benefit Engine is enabled, only ACTIVE periods (or legacy null)
+    // may be toggled.  This covers both used→unused and unused→used directions.
+    if (featureFlags.BENEFIT_ENGINE_ENABLED) {
+      const status = benefit.periodStatus;
+
+      if (status === 'EXPIRED') {
+        const endDate = benefit.periodEnd
+          ? ` (ended ${benefit.periodEnd.toISOString().slice(0, 10)})`
+          : '';
+        return NextResponse.json(
+          {
+            success: false,
+            error: `This benefit period has expired${endDate} and can no longer be marked as used.`,
+            code: 'PERIOD_EXPIRED',
+          } as ErrorResponse,
+          { status: 400 }
+        );
+      }
+
+      if (status === 'UPCOMING') {
+        const startDate = benefit.periodStart
+          ? ` (starts ${benefit.periodStart.toISOString().slice(0, 10)})`
+          : '';
+        return NextResponse.json(
+          {
+            success: false,
+            error: `This benefit period has not started yet${startDate}.`,
+            code: 'PERIOD_UPCOMING',
+          } as ErrorResponse,
+          { status: 400 }
+        );
+      }
+
+      // Catch-all for any future status values that aren't ACTIVE or null (legacy)
+      if (status && status !== 'ACTIVE') {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Cannot update benefit in '${status}' status.`,
+            code: 'INVALID_PERIOD_STATUS',
+          } as ErrorResponse,
+          { status: 400 }
+        );
+      }
     }
 
     const updatedBenefit = await prisma.userBenefit.update({

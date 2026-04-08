@@ -13,7 +13,8 @@ import { prisma } from '@/shared/lib';
 import { AppError } from '@/shared/lib';
 import { generateCSV } from './csv-formatter';
 import { generateXLSX, generateXLSXMultiSheet } from './xlsx-formatter';
-import { ExportRequest, CARD_EXPORT_FIELDS, BENEFIT_EXPORT_FIELDS } from './schema';
+import { ExportRequest, CARD_EXPORT_FIELDS, BENEFIT_EXPORT_FIELDS, PERIOD_FIELD_IDS } from './schema';
+import { featureFlags } from '@/lib/feature-flags';
 import crypto from 'crypto';
 
 // ============================================================================
@@ -67,9 +68,12 @@ async function getCardData(playerId: string): Promise<any[]> {
 /**
  * Retrieves benefit data for export
  *
- * Fetches all benefits with their associated card info
+ * Fetches all benefits with their associated card info.
+ * Includes period fields when benefit engine is enabled (api-5 / fe-7 fix).
+ * masterBenefitId is intentionally excluded — it's an internal ID that breaks
+ * across environments. The import path re-resolves it via hydratePeriodFields().
  */
-async function getBenefitData(playerId: string): Promise<any[]> {
+async function getBenefitData(playerId: string): Promise<Record<string, unknown>[]> {
   const benefits = await prisma.userBenefit.findMany({
     where: { playerId },
     include: {
@@ -87,18 +91,32 @@ async function getBenefitData(playerId: string): Promise<any[]> {
     orderBy: { createdAt: 'desc' },
   });
 
-  return benefits.map((benefit) => ({
-    cardName: benefit.userCard.masterCard.cardName,
-    issuer: benefit.userCard.masterCard.issuer,
-    benefitName: benefit.name,
-    benefitType: benefit.type,
-    stickerValue: benefit.stickerValue,
-    declaredValue: benefit.userDeclaredValue,
-    expirationDate: benefit.expirationDate,
-    usage: benefit.isUsed ? 'Claimed' : 'Unused',
-    createdAt: benefit.createdAt,
-    updatedAt: benefit.updatedAt,
-  }));
+  const engineEnabled = featureFlags.BENEFIT_ENGINE_ENABLED;
+
+  return benefits.map((benefit) => {
+    const base: Record<string, unknown> = {
+      cardName: benefit.userCard.masterCard.cardName,
+      issuer: benefit.userCard.masterCard.issuer,
+      benefitName: benefit.name,
+      benefitType: benefit.type,
+      stickerValue: benefit.stickerValue,
+      declaredValue: benefit.userDeclaredValue,
+      expirationDate: benefit.expirationDate,
+      usage: benefit.isUsed ? 'Claimed' : 'Unused',
+      createdAt: benefit.createdAt,
+      updatedAt: benefit.updatedAt,
+    };
+
+    // Include period fields only when engine is enabled for round-trip fidelity
+    if (engineEnabled) {
+      base.periodStart = benefit.periodStart ?? null;
+      base.periodEnd = benefit.periodEnd ?? null;
+      base.periodStatus = benefit.periodStatus ?? null;
+      base.resetCadence = benefit.resetCadence ?? null;
+    }
+
+    return base;
+  });
 }
 
 // ============================================================================
@@ -316,6 +334,28 @@ async function exportAll(
 // ============================================================================
 
 /**
+ * Returns the benefit export fields filtered by engine status.
+ * When engine is OFF, period-specific fields are excluded from defaults.
+ */
+function getEffectiveBenefitFields(selectedFields: string[]): string[] {
+  if (selectedFields.length > 0) {
+    // User explicitly selected fields — honour their selection but still strip
+    // period fields when engine is off (they'd be null anyway).
+    if (!featureFlags.BENEFIT_ENGINE_ENABLED) {
+      return selectedFields.filter((f) => !PERIOD_FIELD_IDS.includes(f));
+    }
+    return selectedFields;
+  }
+
+  // No explicit selection — use all fields, but exclude period fields when engine is off
+  const allFields = BENEFIT_EXPORT_FIELDS.map((f) => f.id);
+  if (!featureFlags.BENEFIT_ENGINE_ENABLED) {
+    return allFields.filter((f) => !PERIOD_FIELD_IDS.includes(f));
+  }
+  return allFields;
+}
+
+/**
  * Generates export and returns export metadata
  *
  * @param request Export request with options
@@ -332,12 +372,12 @@ export async function generateExport(request: ExportRequest): Promise<ExportData
       const cardFields = selectedFields.length > 0 ? selectedFields : CARD_EXPORT_FIELDS.map((f) => f.id);
       exportResult = await exportCards(playerId, cardFields, format);
     } else if (recordType === 'Benefit') {
-      const benefitFields = selectedFields.length > 0 ? selectedFields : BENEFIT_EXPORT_FIELDS.map((f) => f.id);
+      const benefitFields = getEffectiveBenefitFields(selectedFields);
       exportResult = await exportBenefits(playerId, benefitFields, format);
     } else {
       // All
       const cardFields = selectedFields.length > 0 ? selectedFields : CARD_EXPORT_FIELDS.map((f) => f.id);
-      const benefitFields = selectedFields.length > 0 ? selectedFields : BENEFIT_EXPORT_FIELDS.map((f) => f.id);
+      const benefitFields = getEffectiveBenefitFields(selectedFields);
       exportResult = await exportAll(playerId, cardFields, benefitFields, format);
     }
 

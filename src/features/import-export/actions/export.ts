@@ -10,9 +10,10 @@
 'use server';
 
 import { generateExport, getExportHistory } from '@/features/import-export/lib';
-import { CARD_EXPORT_FIELDS, BENEFIT_EXPORT_FIELDS, type ExportRequest } from '@/features/import-export/lib';
+import { CARD_EXPORT_FIELDS, BENEFIT_EXPORT_FIELDS, PERIOD_FIELD_IDS, type ExportRequest } from '@/features/import-export/lib';
 import { createErrorResponse, createSuccessResponse, AppError, ActionResponse } from '@/shared/lib';
 import { getAuthUserIdOrThrow, verifyPlayerOwnership } from '@/features/auth/lib/auth';
+import { featureFlags } from '@/lib/feature-flags';
 
 // ============================================================================
 // Type Definitions
@@ -20,7 +21,7 @@ import { getAuthUserIdOrThrow, verifyPlayerOwnership } from '@/features/auth/lib
 
 export interface ExportOptionsResponse {
   cardFields: typeof CARD_EXPORT_FIELDS;
-  benefitFields: typeof BENEFIT_EXPORT_FIELDS;
+  benefitFields: ReadonlyArray<{ readonly id: string; readonly label: string; readonly type: string }>;
   formats: Array<{ id: 'CSV' | 'XLSX'; label: string }>;
   recordTypes: Array<{ id: string; label: string }>;
   dateFormats: Array<{ id: string; label: string }>;
@@ -54,9 +55,15 @@ export async function getExportOptions(): Promise<ActionResponse<ExportOptionsRe
     // Verify authentication (will throw if not authenticated)
     getAuthUserIdOrThrow();
 
+    // Filter benefit fields based on engine flag — period fields are only
+    // relevant when the benefit engine is enabled (fe-7 / api-5)
+    const effectiveBenefitFields = featureFlags.BENEFIT_ENGINE_ENABLED
+      ? BENEFIT_EXPORT_FIELDS
+      : BENEFIT_EXPORT_FIELDS.filter((f) => !PERIOD_FIELD_IDS.includes(f.id));
+
     return createSuccessResponse({
       cardFields: CARD_EXPORT_FIELDS,
-      benefitFields: BENEFIT_EXPORT_FIELDS,
+      benefitFields: effectiveBenefitFields,
       formats: [
         { id: 'CSV', label: 'CSV (Comma-Separated Values)' },
         { id: 'XLSX', label: 'Excel Workbook (.xlsx)' },

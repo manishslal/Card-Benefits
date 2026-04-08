@@ -54,7 +54,7 @@ async function main() {
     {
       issuer: 'Chase',
       cardName: 'Chase Sapphire Preferred',
-      defaultAnnualFee: 95000, // $95
+      defaultAnnualFee: 9500, // $95
       cardImageUrl: 'https://creditcards.chaseonline.com/images/cardart/CSP_card_art.png',
       benefits: [
         {
@@ -538,7 +538,7 @@ async function main() {
     {
       issuer: 'Chase',
       cardName: 'Chase Southwest Rapid Rewards Premier',
-      defaultAnnualFee: 69000, // $69
+      defaultAnnualFee: 6900, // $69
       cardImageUrl: 'https://creditcards.chaseonline.com/images/cardart/southwest_rapid_rewards_premier.png',
       benefits: [
         {
@@ -642,7 +642,7 @@ async function main() {
     {
       issuer: 'Chase',
       cardName: 'Chase Hyatt Credit Card',
-      defaultAnnualFee: 95000, // $95
+      defaultAnnualFee: 9500, // $95
       cardImageUrl: 'https://creditcards.chaseonline.com/images/cardart/hyatt_card.png',
       benefits: [
         {

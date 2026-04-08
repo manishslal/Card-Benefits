@@ -13,7 +13,7 @@ export type {
   ExportHistoryEntry,
   ExportMetadata,
 } from '../lib/schema';
-export { CARD_EXPORT_FIELDS, BENEFIT_EXPORT_FIELDS } from '../lib/schema';
+export { CARD_EXPORT_FIELDS, BENEFIT_EXPORT_FIELDS, PERIOD_FIELD_IDS } from '../lib/schema';
 
 // Export all import-related types from schema-import
 export type {

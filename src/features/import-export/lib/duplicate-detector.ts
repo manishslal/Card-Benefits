@@ -13,6 +13,7 @@
  */
 
 import { prisma } from '@/shared/lib';
+import { featureFlags } from '@/lib/feature-flags';
 
 // ============================================================================
 // Type Definitions
@@ -139,7 +140,13 @@ export function findWithinBatchDuplicates(
         cardKeys.set(key, record);
       }
     } else if (record.recordType === 'Benefit') {
-      const key = `benefit::${record.data.cardName}::${record.data.issuer}::${record.data.benefitName}`;
+      // When engine is enabled, include periodStart in the dedup key to allow
+      // multiple period rows for the same benefit (fe-7 fix).
+      const periodSuffix =
+        featureFlags.BENEFIT_ENGINE_ENABLED && record.data.periodStart
+          ? `::${String(record.data.periodStart)}`
+          : '';
+      const key = `benefit::${record.data.cardName}::${record.data.issuer}::${record.data.benefitName}${periodSuffix}`;
 
       if (benefitKeys.has(key)) {
         const original = benefitKeys.get(key)!;
@@ -181,7 +188,7 @@ async function findExistingCard(
   playerId: string,
   cardName: string,
   issuer: string
-): Promise<any | null> {
+): Promise<Record<string, unknown> | null> {
   // First find the MasterCard
   const masterCard = await prisma.masterCard.findFirst({
     where: {
@@ -206,14 +213,18 @@ async function findExistingCard(
 /**
  * Checks if a benefit already exists on the card
  *
- * Lookup: userCardId + benefitName (unique constraint)
+ * When the benefit engine is enabled and a periodStart is provided,
+ * uses the compound key (userCardId, name, periodStart) to match the
+ * exact period row. Otherwise falls back to (userCardId, name) lookup.
+ * (fe-7 fix: prevents false-positive matches across period rows)
  */
 async function findExistingBenefit(
   playerId: string,
   cardName: string,
   issuer: string,
-  benefitName: string
-): Promise<any | null> {
+  benefitName: string,
+  periodStart?: Date | string | null
+): Promise<Record<string, unknown> | null> {
   // First find the card
   const masterCard = await prisma.masterCard.findFirst({
     where: { cardName, issuer },
@@ -227,7 +238,23 @@ async function findExistingBenefit(
 
   if (!userCard) return null;
 
-  // Then find the benefit
+  // Period-aware lookup when engine is enabled and periodStart is available
+  if (featureFlags.BENEFIT_ENGINE_ENABLED && periodStart) {
+    const parsedDate =
+      periodStart instanceof Date ? periodStart : new Date(periodStart);
+
+    const benefit = await prisma.userBenefit.findFirst({
+      where: {
+        userCardId: userCard.id,
+        name: benefitName,
+        periodStart: parsedDate,
+      },
+    });
+
+    return benefit || null;
+  }
+
+  // Legacy lookup — match by name only
   const benefit = await prisma.userBenefit.findFirst({
     where: {
       userCardId: userCard.id,
@@ -294,36 +321,58 @@ export async function findDatabaseDuplicates(
     } else if (record.recordType === 'Benefit') {
       const existing = await findExistingBenefit(
         playerId,
-        record.data.cardName,
-        record.data.issuer,
-        record.data.benefitName
+        record.data.cardName as string,
+        record.data.issuer as string,
+        record.data.benefitName as string,
+        // Pass periodStart for period-aware matching (fe-7 fix)
+        record.data.periodStart as Date | string | undefined,
       );
 
       if (existing) {
+        // Build existingRecord, including period fields when engine is enabled
+        const existingRecord: Record<string, unknown> = {
+          id: existing.id,
+          benefitName: existing.name,
+          stickerValue: existing.stickerValue,
+          declaredValue: existing.userDeclaredValue,
+          usage: existing.isUsed ? 'Claimed' : 'Unused',
+          expirationDate: existing.expirationDate,
+          createdAt: existing.createdAt,
+        };
+
+        const diffFields = ['stickerValue', 'declaredValue', 'usage', 'expirationDate'];
+
+        // Include period fields in diff when engine is enabled (fe-7)
+        if (featureFlags.BENEFIT_ENGINE_ENABLED) {
+          existingRecord.periodStart = existing.periodStart ?? null;
+          existingRecord.periodEnd = existing.periodEnd ?? null;
+          existingRecord.periodStatus = existing.periodStatus ?? null;
+          existingRecord.resetCadence = existing.resetCadence ?? null;
+          diffFields.push('periodStart', 'periodEnd', 'periodStatus', 'resetCadence');
+        }
+
         duplicates.push({
           id: record.id,
           rowNumber: record.rowNumber,
           recordType: 'Benefit',
           status: 'Duplicate',
           newRecord: record.data,
-          existingRecord: {
-            id: existing.id,
-            benefitName: existing.name,
-            stickerValue: existing.stickerValue,
-            declaredValue: existing.userDeclaredValue,
-            usage: existing.isUsed ? 'Claimed' : 'Unused',
-            expirationDate: existing.expirationDate,
-            createdAt: existing.createdAt,
-          },
+          existingRecord,
           differences: findDifferences(
             {
               stickerValue: existing.stickerValue,
               declaredValue: existing.userDeclaredValue,
               usage: existing.isUsed ? 'Claimed' : 'Unused',
               expirationDate: existing.expirationDate,
+              ...(featureFlags.BENEFIT_ENGINE_ENABLED && {
+                periodStart: existing.periodStart ?? null,
+                periodEnd: existing.periodEnd ?? null,
+                periodStatus: existing.periodStatus ?? null,
+                resetCadence: existing.resetCadence ?? null,
+              }),
             },
             record.data,
-            ['stickerValue', 'declaredValue', 'usage', 'expirationDate']
+            diffFields,
           ),
           suggestedActions: ['Skip', 'Update'],
           userDecision: null,

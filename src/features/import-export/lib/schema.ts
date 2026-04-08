@@ -49,7 +49,25 @@ export const BENEFIT_EXPORT_FIELDS = [
   { id: 'usage', label: 'Usage', type: 'enum' },
   { id: 'createdAt', label: 'Created Date', type: 'date' },
   { id: 'updatedAt', label: 'Updated Date', type: 'date' },
+  // Period fields (api-5): included for round-trip export/import when engine is enabled
+  { id: 'periodStart', label: 'Period Start', type: 'date' },
+  { id: 'periodEnd', label: 'Period End', type: 'date' },
+  { id: 'periodStatus', label: 'Period Status', type: 'enum' },
+  { id: 'resetCadence', label: 'Reset Cadence', type: 'string' },
+  { id: 'masterBenefitId', label: 'Master Benefit ID', type: 'string' },
 ] as const;
+
+/**
+ * Period-specific field IDs — used to conditionally include/exclude period
+ * columns from exports when the benefit engine is disabled.
+ */
+export const PERIOD_FIELD_IDS: readonly string[] = [
+  'periodStart',
+  'periodEnd',
+  'periodStatus',
+  'resetCadence',
+  'masterBenefitId',
+];
 
 // ============================================================================
 // Export Request/Response

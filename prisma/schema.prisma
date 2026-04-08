@@ -48,6 +48,10 @@ model MasterBenefit {
   resetCadence    String
   
   // Default behavior (NEW)
+  /// When true, this benefit is automatically created for new UserCards via
+  /// generateBenefitsForCard().  When false, the benefit exists in the catalog
+  /// but users must manually opt in to track it (e.g., welcome bonuses that
+  /// depend on meeting a minimum-spend requirement).
   isDefault       Boolean         @default(true)
   isActive        Boolean         @default(true)
   

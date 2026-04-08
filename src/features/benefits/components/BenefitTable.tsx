@@ -42,6 +42,10 @@ interface UserBenefit {
   type: string; // Can be 'StatementCredit' | 'UsagePerk'
   resetCadence: string;
   timesUsed: number;
+  // Period dedup fields — required by deduplicateBenefits() (fe-6 fix)
+  masterBenefitId?: string | null;
+  userCardId?: string | null;
+  periodStatus?: string | null;
 }
 
 interface BenefitTableProps {

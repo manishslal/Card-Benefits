@@ -393,6 +393,61 @@ describe('generateBenefitsForCard', () => {
   });
 
   // ──────────────────────────────────────────────────────────────────────────
+  // isDefault filtering (cat-8): verifies that the query-level filter works
+  // as documented — isDefault=false benefits (e.g., welcome bonuses) are
+  // excluded from auto-generation because the Prisma where clause uses
+  // `isDefault: true`.
+  // ──────────────────────────────────────────────────────────────────────────
+
+  it('excludes isDefault=false benefits from auto-generation (welcome bonuses)', async () => {
+    // Simulate a catalog with 3 benefits: 2 default, 1 non-default (welcome bonus).
+    // The DB query filters at the Prisma level, so mockFindMany only returns
+    // the isDefault=true ones.  We verify that only 2 are created.
+    const defaultBenefits = [
+      makeMasterBenefit({ id: 'mb-1', name: 'Monthly Dining Credit', isDefault: true }),
+      makeMasterBenefit({ id: 'mb-2', name: 'Annual Travel Credit', isDefault: true }),
+    ];
+    // The query filter isDefault: true means the welcome bonus never reaches
+    // this function — so only 2 benefits are returned by findMany.
+    mockFindMany.mockResolvedValue(defaultBenefits);
+    mockCreateMany.mockResolvedValue({ count: 2 });
+
+    const result = await generateBenefitsForCard(
+      mockTx as any,
+      defaultUserCard,
+      defaultPlayerId,
+      defaultRefDate
+    );
+
+    expect(result.count).toBe(2);
+    expect(result.benefits).toHaveLength(2);
+    expect(result.benefits.map((b) => b.name)).toEqual([
+      'Monthly Dining Credit',
+      'Annual Travel Credit',
+    ]);
+  });
+
+  it('generates all benefits when every catalog entry has isDefault=true', async () => {
+    const allDefault = [
+      makeMasterBenefit({ id: 'mb-1', name: 'Credit A', isDefault: true }),
+      makeMasterBenefit({ id: 'mb-2', name: 'Credit B', isDefault: true }),
+      makeMasterBenefit({ id: 'mb-3', name: 'Credit C', isDefault: true }),
+    ];
+    mockFindMany.mockResolvedValue(allDefault);
+    mockCreateMany.mockResolvedValue({ count: 3 });
+
+    const result = await generateBenefitsForCard(
+      mockTx as any,
+      defaultUserCard,
+      defaultPlayerId,
+      defaultRefDate
+    );
+
+    expect(result.count).toBe(3);
+    expect(result.benefits).toHaveLength(3);
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
   // Default referenceDate
   // ──────────────────────────────────────────────────────────────────────────
 

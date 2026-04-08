@@ -21,6 +21,7 @@ import { AppError } from '@/shared/lib';
 import { ImportRecordData } from '../types';
 import type { Prisma } from '@prisma/client';
 import { hydratePeriodFields } from '@/lib/benefit-engine/hydrate-period';
+import { featureFlags } from '@/lib/feature-flags';
 
 // ============================================================================
 // Type Definitions
@@ -153,7 +154,7 @@ async function commitBenefit(
       tx,
       userCardId,
       benefitName,
-      'OneTime' // default for imported benefits
+      normalizedData.resetCadence ?? 'OneTime' // use imported cadence or default
     );
 
     // Create new UserBenefit
@@ -178,23 +179,54 @@ async function commitBenefit(
         // Period fields (null when engine is off)
         periodStart: periodFields.periodStart,
         periodEnd: periodFields.periodEnd,
+        // periodStatus is required (non-nullable) in the DB schema with
+        // @default("ACTIVE").  When the engine is OFF the null from
+        // hydratePeriodFields() falls back to the default here.
+        // This is safe because legacy-mode code paths never evaluate
+        // periodStatus (the feature flag guard skips it).
         periodStatus: periodFields.periodStatus ?? 'ACTIVE',
         masterBenefitId: periodFields.masterBenefitId,
       },
     });
     return { id: benefit.id, action: 'Create' };
   } else {
-    // Update existing UserBenefit — find by (userCardId, name) for legacy rows
-    // that have periodStart=NULL. Can't use compound unique key lookup because
-    // PostgreSQL doesn't match NULLs in unique constraint lookups.
-    const existing = await tx.userBenefit.findFirst({
-      where: {
-        userCardId,
-        name: benefitName,
-        periodStart: null,
-      },
-      select: { id: true },
-    });
+    // Update existing UserBenefit
+    // When engine is enabled and periodStart is available from the import,
+    // use the compound key (userCardId, name, periodStart) to match the
+    // exact period row. Otherwise fall back to legacy (name + periodStart=null).
+    // (fe-7 fix: prevents updating the wrong period row)
+    let existing: { id: string } | null = null;
+
+    if (
+      featureFlags.BENEFIT_ENGINE_ENABLED &&
+      normalizedData.periodStart
+    ) {
+      const parsedPeriodStart =
+        normalizedData.periodStart instanceof Date
+          ? normalizedData.periodStart
+          : new Date(normalizedData.periodStart);
+
+      existing = await tx.userBenefit.findFirst({
+        where: {
+          userCardId,
+          name: benefitName,
+          periodStart: parsedPeriodStart,
+        },
+        select: { id: true },
+      });
+    }
+
+    // Fallback: legacy row (periodStart=NULL) or engine off
+    if (!existing) {
+      existing = await tx.userBenefit.findFirst({
+        where: {
+          userCardId,
+          name: benefitName,
+          periodStart: null,
+        },
+        select: { id: true },
+      });
+    }
 
     if (!existing) {
       throw new Error(

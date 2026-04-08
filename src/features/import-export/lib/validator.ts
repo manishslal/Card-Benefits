@@ -784,6 +784,69 @@ export async function validateBenefitRecord(
   );
   const usageRes = validateUsage(row.Usage, rowNumber, result);
 
+  // ──────────────────────────────────────────────────────────────────────────
+  // Validate optional period fields (fe-7 fix)
+  // These are non-blocking — invalid values produce warnings, not errors,
+  // because hydratePeriodFields() will recalculate them on import anyway.
+  // ──────────────────────────────────────────────────────────────────────────
+  let periodStart: Date | undefined;
+  let periodEnd: Date | undefined;
+  let periodStatus: string | undefined;
+  let resetCadence: string | undefined;
+
+  if (row.PeriodStart && typeof row.PeriodStart === 'string' && row.PeriodStart.trim()) {
+    const parsed = parseISODate(row.PeriodStart);
+    if (!parsed) {
+      result.warnings.push(
+        createError(
+          'PeriodStart',
+          'Period start date is invalid — will be recalculated on import',
+          'Use ISO format YYYY-MM-DD',
+          'warning'
+        )
+      );
+    } else {
+      periodStart = parsed;
+    }
+  }
+
+  if (row.PeriodEnd && typeof row.PeriodEnd === 'string' && row.PeriodEnd.trim()) {
+    const parsed = parseISODate(row.PeriodEnd);
+    if (!parsed) {
+      result.warnings.push(
+        createError(
+          'PeriodEnd',
+          'Period end date is invalid — will be recalculated on import',
+          'Use ISO format YYYY-MM-DD',
+          'warning'
+        )
+      );
+    } else {
+      periodEnd = parsed;
+    }
+  }
+
+  if (row.PeriodStatus && typeof row.PeriodStatus === 'string' && row.PeriodStatus.trim()) {
+    const validStatuses = ['ACTIVE', 'EXPIRED', 'UPCOMING'];
+    const trimmed = row.PeriodStatus.trim().toUpperCase();
+    if (validStatuses.includes(trimmed)) {
+      periodStatus = trimmed;
+    } else {
+      result.warnings.push(
+        createError(
+          'PeriodStatus',
+          `Period status '${row.PeriodStatus}' is not recognized — will be recalculated`,
+          "Valid values: 'ACTIVE', 'EXPIRED', 'UPCOMING'",
+          'warning'
+        )
+      );
+    }
+  }
+
+  if (row.ResetCadence && typeof row.ResetCadence === 'string' && row.ResetCadence.trim()) {
+    resetCadence = row.ResetCadence.trim();
+  }
+
   // Build normalized data with safe field access
   result.normalizedData = {
     recordType: 'Benefit',
@@ -795,6 +858,11 @@ export async function validateBenefitRecord(
     declaredValue: declaredValueRes.value,
     expirationDate: expirationDateRes.value,
     usage: usageRes.value,
+    // Period fields — included when present in the import file (fe-7)
+    ...(periodStart !== undefined && { periodStart }),
+    ...(periodEnd !== undefined && { periodEnd }),
+    ...(periodStatus !== undefined && { periodStatus }),
+    ...(resetCadence !== undefined && { resetCadence }),
   };
 
   result.valid = result.errors.length === 0;

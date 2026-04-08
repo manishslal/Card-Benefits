@@ -75,7 +75,7 @@ async function main() {
       {
         issuer: 'Citi',
         cardName: 'Citi Prestige',
-        defaultAnnualFee: 45000,
+        defaultAnnualFee: 49500,
         cardImageUrl: 'https://www.citi.com/images/prestige.png',
         benefits: [
           { name: '$250 Travel Credit', type: 'StatementCredit', stickerValue: 25000, resetCadence: 'CalendarYear' },
@@ -88,7 +88,7 @@ async function main() {
       {
         issuer: 'Bank of America',
         cardName: 'Bank of America Premium Rewards',
-        defaultAnnualFee: 0,
+        defaultAnnualFee: 9500,
         cardImageUrl: 'https://www.bankofamerica.com/images/premium-rewards.png',
         benefits: [
           { name: '2.625% Cash Back on All Purchases', type: 'CashBack', stickerValue: 26250, resetCadence: 'None' },

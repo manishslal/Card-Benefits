@@ -39,6 +39,8 @@ type BenefitSeed = {
   claimingWindowEnd?: string; // e.g. "0918" for Amex Sept 18 split
   // Sprint 1: Variable per-period amounts (e.g., Uber December $35)
   variableAmounts?: Record<string, number>;
+  // Sprint 2 (cat-6 / cat-8): opt-out of auto-generation for conditional benefits
+  isDefault?: boolean;
 };
 
 type CardSeed = {
@@ -99,6 +101,16 @@ const MASTER_CARDS: CardSeed[] = [
         resetCadence: 'ANNUAL',
         claimingCadence: 'SEMI_ANNUAL',
         claimingAmount: 5000,
+      },
+      // Welcome bonus — isDefault:false so it is NOT auto-generated (user opts in)
+      {
+        name: 'Welcome Bonus: 90,000 MR Points',
+        type: 'UsagePerk',
+        stickerValue: 135000, // ~$1,350 estimated points value
+        resetCadence: 'CUSTOM',
+        claimingCadence: 'ONE_TIME',
+        claimingAmount: 0,
+        isDefault: false,
       },
     ],
   },
@@ -165,6 +177,16 @@ const MASTER_CARDS: CardSeed[] = [
         claimingCadence: 'FLEXIBLE_ANNUAL',
         claimingAmount: 0,
       },
+      // Welcome bonus — isDefault:false so it is NOT auto-generated (user opts in)
+      {
+        name: 'Welcome Bonus: 150,000 MR Points',
+        type: 'UsagePerk',
+        stickerValue: 225000, // ~$2,250 estimated points value
+        resetCadence: 'CUSTOM',
+        claimingCadence: 'ONE_TIME',
+        claimingAmount: 0,
+        isDefault: false,
+      },
     ],
   },
 
@@ -206,6 +228,16 @@ const MASTER_CARDS: CardSeed[] = [
         resetCadence: 'ANNUAL',
         claimingCadence: 'ONE_TIME',
         claimingAmount: 0,
+      },
+      // Welcome bonus — isDefault:false so it is NOT auto-generated (user opts in)
+      {
+        name: 'Welcome Bonus: 60,000 Points',
+        type: 'UsagePerk',
+        stickerValue: 90000, // ~$900 estimated points value
+        resetCadence: 'CUSTOM',
+        claimingCadence: 'ONE_TIME',
+        claimingAmount: 0,
+        isDefault: false,
       },
     ],
   },
@@ -281,6 +313,25 @@ const MASTER_CARDS: CardSeed[] = [
         stickerValue: 0,
         resetCadence: 'ANNUAL',
         claimingCadence: 'ONE_TIME',
+        claimingAmount: 0,
+      },
+      // Welcome bonus — isDefault:false so it is NOT auto-generated (user opts in)
+      {
+        name: 'Welcome Bonus: 75,000 Miles',
+        type: 'UsagePerk',
+        stickerValue: 112500, // ~$1,125 estimated points value
+        resetCadence: 'CUSTOM',
+        claimingCadence: 'ONE_TIME',
+        claimingAmount: 0,
+        isDefault: false,
+      },
+      // Anniversary certificate — auto-generated on card anniversary
+      {
+        name: 'Anniversary 10,000 Miles Bonus',
+        type: 'UsagePerk',
+        stickerValue: 15000, // ~$150 estimated value
+        resetCadence: 'ANNUAL',
+        claimingCadence: 'FLEXIBLE_ANNUAL',
         claimingAmount: 0,
       },
     ],
@@ -454,6 +505,8 @@ async function main(): Promise<void> {
         stickerValue: b.stickerValue,
         resetCadence: b.resetCadence,
         isActive: true,
+        // Sprint 2 (cat-8): explicit isDefault — defaults to true if omitted
+        isDefault: b.isDefault ?? true,
         // Phase 6C cadence fields
         claimingCadence: b.claimingCadence ?? null,
         claimingAmount: b.claimingAmount ?? null,

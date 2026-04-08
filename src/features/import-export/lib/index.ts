@@ -17,7 +17,7 @@ export * from './duplicate-detector';
 export * from './committer';
 
 // Export schemas (these contain type definitions and constants)
-export { CARD_EXPORT_FIELDS, BENEFIT_EXPORT_FIELDS, type ExportRequest, type ExportResult } from './schema';
+export { CARD_EXPORT_FIELDS, BENEFIT_EXPORT_FIELDS, PERIOD_FIELD_IDS, type ExportRequest, type ExportResult } from './schema';
 export type {
   ImportRecordData,
   ColumnMapping,

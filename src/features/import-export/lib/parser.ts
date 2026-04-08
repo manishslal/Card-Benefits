@@ -411,6 +411,12 @@ export function detectColumnMapping(
     'ExpirationDate': ['Expiration Date', 'Expires', 'expirationdate'],
     'Usage': ['Usage', 'Claimed', 'Status'],
     'RecordType': ['Type', 'Record Type', 'recordtype'],
+
+    // Period fields (fe-7): recognized for round-trip import of engine exports
+    'PeriodStart': ['Period Start', 'periodstart', 'periodStart'],
+    'PeriodEnd': ['Period End', 'periodend', 'periodEnd'],
+    'PeriodStatus': ['Period Status', 'periodstatus', 'periodStatus'],
+    'ResetCadence': ['Reset Cadence', 'resetcadence', 'resetCadence'],
   };
 
   const mapping: Record<

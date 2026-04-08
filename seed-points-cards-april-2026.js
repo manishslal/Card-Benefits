@@ -1,3 +1,8 @@
+/**
+ * IMPORTANT: This seed file uses HYPOTHETICAL April 2026 fees that may
+ * differ from current real-world fees. Used for testing period tracking
+ * with future-dated data. Do NOT use as source of truth for actual fees.
+ */
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 

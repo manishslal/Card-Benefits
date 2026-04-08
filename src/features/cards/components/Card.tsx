@@ -5,6 +5,8 @@ import { BenefitTable } from '@/features/benefits';
 import { CreditCard, Calendar, TrendingUp, TrendingDown, ChevronDown } from 'lucide-react';
 import { getEffectiveROI, getUncapturedValue } from '@/features/cards/lib/calculations';
 import { formatDateForUser } from '@/features/benefits/lib';
+import { deduplicateBenefits } from '@/lib/benefit-utils';
+import { featureFlags } from '@/lib/feature-flags';
 import type { UserCard } from '@/features/cards/lib/calculations';
 
 /**
@@ -41,10 +43,18 @@ function formatDate(date: Date): string {
 
 export default function Card({ card, playerName }: CardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Deduplicate period rows so each unique benefit appears once (fe-6 fix).
+  // When engine is OFF this is a no-op passthrough.
+  const dedupedBenefits = deduplicateBenefits(
+    card.userBenefits,
+    featureFlags.BENEFIT_ENGINE_ENABLED,
+  );
+
   const roi = getEffectiveROI(card, card.userBenefits);
   const isPositiveROI = roi >= 0;
   const annualFee = card.actualAnnualFee ?? card.masterCard.defaultAnnualFee;
-  const usedBenefitsCount = card.userBenefits.filter((b) => b.isUsed).length;
+  const usedBenefitsCount = dedupedBenefits.filter((b) => b.isUsed).length;
   const cardName = card.customName || card.masterCard.cardName;
 
   return (
@@ -202,7 +212,7 @@ export default function Card({ card, playerName }: CardProps) {
               className="font-semibold text-text-primary text-lg"
               style={{ fontSize: '20px' }}
             >
-              {card.userBenefits.length}
+              {dedupedBenefits.length}
             </p>
           </div>
         </div>
@@ -222,7 +232,7 @@ export default function Card({ card, playerName }: CardProps) {
               color: 'var(--color-alert-600)',
             }}
           >
-            {formatCurrency(getUncapturedValue(card.userBenefits))}
+            {formatCurrency(getUncapturedValue(dedupedBenefits))}
           </p>
         </div>
       </div>
@@ -252,7 +262,7 @@ export default function Card({ card, playerName }: CardProps) {
           className="text-text-secondary"
           style={{ fontSize: 'var(--font-body-sm)' }}
         >
-          {card.userBenefits.length} benefit{card.userBenefits.length !== 1 ? 's' : ''}
+          {dedupedBenefits.length} benefit{dedupedBenefits.length !== 1 ? 's' : ''}
         </p>
       </div>
 
@@ -262,7 +272,7 @@ export default function Card({ card, playerName }: CardProps) {
           className="px-lg pb-lg border-t"
           style={{ borderColor: 'var(--color-border)' }}
         >
-          <BenefitTable benefits={card.userBenefits} />
+          <BenefitTable benefits={dedupedBenefits} />
         </div>
       )}
     </div>

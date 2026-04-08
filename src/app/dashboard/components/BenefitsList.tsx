@@ -110,12 +110,16 @@ export function BenefitsList({
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 animate-pulse"
+            className="rounded-lg border p-4 animate-pulse"
+            style={{
+              backgroundColor: 'var(--color-bg)',
+              borderColor: 'var(--color-border)',
+            }}
           >
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
+            <div className="h-4 rounded w-1/4 mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)' }}></div>
             <div className="space-y-3">
               {[1, 2].map((j) => (
-                <div key={j} className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                <div key={j} className="h-3 rounded w-full" style={{ backgroundColor: 'var(--color-bg-secondary)' }}></div>
               ))}
             </div>
           </div>
@@ -133,11 +137,17 @@ export function BenefitsList({
   // Empty state
   if (totalBenefitsInView === 0 && pastPeriods.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center">
-        <p className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+      <div 
+        className="rounded-lg border p-12 text-center"
+        style={{
+          backgroundColor: 'var(--color-bg)',
+          borderColor: 'var(--color-border)',
+        }}
+      >
+        <p className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
           No benefits found
         </p>
-        <p className="text-gray-600 dark:text-gray-400">
+        <p style={{ color: 'var(--color-text-secondary)' }}>
           Try adjusting your filters or selecting a different period
         </p>
       </div>

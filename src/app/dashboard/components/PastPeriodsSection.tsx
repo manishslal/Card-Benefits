@@ -70,7 +70,7 @@ export function PastPeriodsSection({
 
   return (
     <section className="mt-8">
-      <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+      <h2 className="text-lg font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
         📜 PAST PERIODS
       </h2>
 
@@ -78,30 +78,45 @@ export function PastPeriodsSection({
         {periods.map((period) => (
           <div
             key={period.id}
-            className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-900/30"
+            className="border rounded-lg overflow-hidden"
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-bg-secondary)',
+            }}
           >
             {/* Period Header - Expandable */}
             <button
               onClick={() => handleTogglePeriod(period.id)}
-              className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="w-full px-4 py-3 flex items-center justify-between transition-colors"
+              style={{
+                color: 'var(--color-text)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--color-bg)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
               aria-expanded={expandedPeriodId === period.id}
               aria-controls={`past-period-${period.id}`}
             >
               <div className="flex items-center gap-3 flex-1">
                 <span className="text-xl">📅</span>
                 <div className="text-left">
-                  <p className="font-semibold text-gray-900 dark:text-white">
+                  <p className="font-semibold" style={{ color: 'var(--color-text)' }}>
                     {formatPeriodLabel(period.startDate, period.endDate)}
                   </p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                  <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
                     {period.benefits.length} benefit{period.benefits.length !== 1 ? 's' : ''}
                   </p>
                 </div>
               </div>
               <svg
-                className={`w-5 h-5 text-gray-600 dark:text-gray-400 transform transition-transform ${
-                  expandedPeriodId === period.id ? 'rotate-180' : ''
-                }`}
+                className="w-5 h-5 transform transition-transform"
+                style={{
+                  color: 'var(--color-text-secondary)',
+                  transform: expandedPeriodId === period.id ? 'rotate(180deg)' : 'rotate(0deg)',
+                }}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -119,25 +134,27 @@ export function PastPeriodsSection({
             {expandedPeriodId === period.id && (
               <div
                 id={`past-period-${period.id}`}
-                className="px-4 py-4 bg-white dark:bg-gray-800 border-t border-gray-300 dark:border-gray-600"
+                className="px-4 py-4 border-t space-y-2"
+                style={{
+                  backgroundColor: 'var(--color-bg)',
+                  borderColor: 'var(--color-border)',
+                }}
               >
-                <div className="space-y-2">
-                  {period.benefits.length > 0 ? (
-                    period.benefits.map((benefit) => (
-                      <BenefitRow
-                        key={benefit.id}
-                        {...benefit}
-                        onMarkUsed={onMarkUsed}
-                        onEdit={onEdit}
-                        onDelete={onDelete}
-                      />
-                    ))
-                  ) : (
-                    <p className="text-sm text-gray-600 dark:text-gray-400 py-4 text-center">
-                      No benefits in this period
-                    </p>
-                  )}
-                </div>
+                {period.benefits.length > 0 ? (
+                  period.benefits.map((benefit) => (
+                    <BenefitRow
+                      key={benefit.id}
+                      {...benefit}
+                      onMarkUsed={onMarkUsed}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                    />
+                  ))
+                ) : (
+                  <p className="text-sm py-4 text-center" style={{ color: 'var(--color-text-secondary)' }}>
+                    No benefits in this period
+                  </p>
+                )}
               </div>
             )}
           </div>

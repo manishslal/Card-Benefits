@@ -4,6 +4,8 @@ Track credit card rewards, benefits, and ROI all in one place.
 
 **Card Benefits Tracker** is a modern web application that helps you maximize the value of your credit cards. Easily manage multiple cards, track annual fees and benefits, calculate return on investment, and never miss a benefit again.
 
+<!-- Benefit Engine v1.0 enabled - Period-based benefit tracking with auto-generation -->
+
 ## ✨ Key Features
 
 - **Card Management** — Add cards manually or import via CSV. Organize, edit, and archive cards effortlessly.

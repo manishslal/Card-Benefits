@@ -69,33 +69,29 @@ export function SummaryBox({
       label: 'Total Benefits',
       value: totalBenefits,
       icon: <TrendingUp size={20} />,
-      bgColor: 'rgba(59, 130, 246, 0.1)',
-      textColor: '#1e40af',
-      darkTextColor: '#93c5fd',
+      bgColorVar: '--color-primary-light',
+      textColorVar: '--color-primary-dark',
     },
     {
       label: 'Expiring Soon',
       value: expiringCount,
       icon: <AlertCircle size={20} />,
-      bgColor: 'rgba(234, 88, 12, 0.1)',
-      textColor: '#7c2d12',
-      darkTextColor: '#fed7aa',
+      bgColorVar: '--color-warning-light',
+      textColorVar: '--color-warning-dark',
     },
     {
       label: 'Already Used',
       value: usedCount,
       icon: <CheckCircle size={20} />,
-      bgColor: 'rgba(34, 197, 94, 0.1)',
-      textColor: '#15803d',
-      darkTextColor: '#86efac',
+      bgColorVar: '--color-success-light',
+      textColorVar: '--color-success-dark',
     },
     {
       label: 'Max Value',
       value: `$${totalValue}`,
       icon: <DollarSign size={20} />,
-      bgColor: 'rgba(5, 150, 105, 0.1)',
-      textColor: '#0d5e3f',
-      darkTextColor: '#6ee7b7',
+      bgColorVar: '--color-success-light',
+      textColorVar: '--color-success-dark',
     },
   ];
 
@@ -118,21 +114,21 @@ export function SummaryBox({
           <div
             key={item.label}
             className="rounded-lg p-4 flex flex-col items-start gap-2"
-            style={{ backgroundColor: item.bgColor }}
+            style={{ 
+              backgroundColor: `var(${item.bgColorVar})`,
+            }}
           >
             <div className="flex items-center justify-between w-full">
               <span 
                 className="text-xs font-medium"
                 style={{ 
-                  color: item.textColor,
-                  colorScheme: 'light'
+                  color: `var(${item.textColorVar})`,
                 }}
               >
                 {item.label}
               </span>
               <div style={{ 
-                color: item.textColor,
-                colorScheme: 'light'
+                color: `var(${item.textColorVar})`,
               }}>
                 {item.icon}
               </div>
@@ -140,8 +136,7 @@ export function SummaryBox({
             <span 
               className="text-2xl font-bold"
               style={{ 
-                color: item.textColor,
-                colorScheme: 'light'
+                color: `var(${item.textColorVar})`,
               }}
             >
               {typeof item.value === 'number' ? item.value.toLocaleString() : item.value}

@@ -15,7 +15,7 @@ import useSWR from 'swr';
 import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import { formatCurrency } from '@/shared/lib/format-currency';
 import type { Card, Benefit } from '@/features/admin/types/admin';
-import { EditBenefitModal } from '../_components/EditBenefitModal';
+import { EditBenefitModal } from '../../_components/EditBenefitModal';
 
 interface CardDetailResponse {
   success: boolean;

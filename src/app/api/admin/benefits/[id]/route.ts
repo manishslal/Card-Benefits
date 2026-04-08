@@ -21,6 +21,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/shared/lib';
 import { verifyAdminRole, extractRequestContext, createAuthErrorResponse } from '@/features/admin/middleware/auth';
 import {
@@ -192,9 +193,15 @@ export async function PATCH(
     };
 
     // 7. Update benefit
+    // Transform null variableAmounts to Prisma.JsonNull for nullable JSON fields
+    const { variableAmounts: rawVA, ...restInput } = input;
+    const prismaData: Record<string, unknown> = { ...restInput };
+    if (rawVA !== undefined) {
+      prismaData.variableAmounts = rawVA === null ? Prisma.JsonNull : rawVA;
+    }
     const updated = await prisma.masterBenefit.update({
       where: { id: params.id },
-      data: input,
+      data: prismaData as any,
       select: {
         id: true,
         masterCardId: true,

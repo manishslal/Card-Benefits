@@ -33,9 +33,30 @@ export async function POST(request: Request) {
 
     console.log('[Dashboard Benefits API] Authorization successful for user:', userId);
 
-    // Fetch user's card(s) first
+    // Get the user's primary player profile
+    const player = await prisma.player.findFirst({
+      where: {
+        userId,
+        isActive: true,
+      },
+      orderBy: {
+        createdAt: 'asc', // Get first/primary player
+      },
+    });
+
+    if (!player) {
+      console.error('[Dashboard Benefits API] No active player found for user:', userId);
+      return NextResponse.json({
+        success: true,
+        data: [], // No player profile, return empty benefits
+      });
+    }
+
+    console.log('[Dashboard Benefits API] Found player:', player.id);
+
+    // Fetch user's card(s) for this player
     const userCards = await prisma.userCard.findMany({
-      where: { playerId: userId },
+      where: { playerId: player.id },
     });
 
     if (!userCards.length) {

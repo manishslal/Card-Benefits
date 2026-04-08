@@ -212,7 +212,6 @@ export function CardEditModal({
                 className="p-2 rounded-md transition-colors focus:outline-none focus:ring-2"
                 style={{
                   color: 'var(--color-text-secondary)',
-                  hoverColor: 'var(--color-text)',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.color = 'var(--color-text)';

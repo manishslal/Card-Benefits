@@ -1,257 +1,241 @@
-# Authentication Token Audit - Complete Documentation
+# Technical Specifications Directory
 
-**Issue**: Session token verification passes JWT signature and expiration checks, but fails at database lookup.
+This directory contains comprehensive technical specifications for Card Benefits features.
 
-**Severity**: 🚨 CRITICAL (P0) - Users cannot authenticate
+## 📋 Specifications
 
-**Root Cause**: Race condition between session token creation and client verification
+### Dashboard Filters Refinement & Settings Cards Section
+**File**: `dashboard-filters-and-settings-cards-spec.md`  
+**Status**: ✅ READY FOR IMPLEMENTATION  
+**Version**: 1.0  
+**Updated**: 2025-01-20
 
----
+#### Overview
+Comprehensive technical specification for two interconnected features:
 
-## 📋 Documentation Overview
+1. **Dashboard Filter UI Refinement**
+   - Reduce status filters from 5 to 3 options (Active, Expiring, Used)
+   - Implement horizontal scrolling for period and status filters
+   - Match CardSwitcher pattern with smooth scrolling and keyboard navigation
+   - Ensure zero line wrapping across all breakpoints
 
-### 1. **AUTH-TOKEN-AUDIT-QA3.md** (Main Report)
-Comprehensive QA review of the JWT and session token system.
+2. **My Cards Section in Settings**
+   - New card management interface in settings profile tab
+   - View, edit, and delete assigned cards
+   - Edit modal matching EditBenefitModal pattern
+   - Full dark mode support and WCAG AA accessibility
 
-**Contains**:
-- Executive summary of the critical issue
-- Complete token structure analysis
-- Session ID vs JWT token distinction
-- Token verification flow trace
-- Root cause identification (race condition)
-- 4 critical bugs identified
-- Cookie handling verification
-- Secret management review
-- Complete token lifecycle diagram
-- Test coverage recommendations
-- Implementation priorities
+#### Key Numbers
+- **Document Length**: ~609 lines / 20KB
+- **Implementation Tasks**: 17 specific tasks
+- **Estimated Effort**: 8-12 engineering days
+- **Team Size**: 1 senior + 1 mid-level engineer
+- **Expected Timeline**: 2-3 weeks
+- **Test Coverage Target**: 80%+
+- **Performance Target**: Lighthouse >90
 
-**Read this first** to understand the problem completely.
+#### Quick Start
+1. Read the Executive Summary & Goals (page 1)
+2. Review Functional Requirements (pages 2-3)
+3. Check Implementation Phases (pages 3-4)
+4. Review the 17 Implementation Tasks (pages 14-28)
+5. Use the Quality Control Checklist (page 30) for QA sign-off
 
-**Key Finding**: Session is created with temp token, then JWT is signed, then DB is updated. This creates a race condition where the client's first request might query the database before the token update completes.
+#### Major Sections
+- ✅ Executive Summary & Goals
+- ✅ Functional Requirements (detailed feature specs)
+- ✅ Implementation Phases (5 phases with dependencies)
+- ✅ Data Schema & State Management (types, APIs)
+- ✅ User Flows & Workflows (5 complete flows)
+- ✅ API Routes & Contracts (with examples)
+- ✅ Responsive Design Approach (3 breakpoints)
+- ✅ Styling with Design Tokens
+- ✅ Accessibility Requirements (WCAG AA)
+- ✅ Error Handling Strategy
+- ✅ Component Architecture (tree + dependencies)
+- ✅ 17 Implementation Tasks (breakdown by feature)
+- ✅ Security & Compliance
+- ✅ Performance & Scalability
+- ✅ Quality Control Checklist
+- ✅ Rollout Strategy
 
----
+#### Who Should Read This
 
-### 2. **AUTH-TOKEN-AUDIT-QUICK-FIX.md** (Implementation Guide)
-Step-by-step fix implementation with code examples.
+**Tech Lead**
+- Architecture decisions (Component Architecture section)
+- Phase breakdown and dependencies (Implementation Phases)
+- API design (API Routes & Contracts)
+- Security & compliance (Security section)
 
-**Contains**:
-- Visual diagrams showing the race condition
-- Before/after code for the fix
-- Changes needed for login endpoint
-- Changes needed for signup endpoint
-- Optional Prisma schema change
-- Verification checklist
-- Load testing procedures
-- Monitoring and alerts setup
-- Rollback plan
+**Senior Engineer**
+- Complete specification from top to bottom
+- Focus on: API design, database queries, performance optimization
+- Security implementation details
+- Code review standards
 
-**Use this when implementing the fix** - it has ready-to-copy code.
+**Mid-Level Engineer**
+- Functional Requirements (pages 2-3)
+- Component Architecture (pages 13-14)
+- Implementation Tasks assigned to you (pages 14-28)
+- User Flows relevant to your task (pages 5-7)
+- Accessibility Requirements (pages 11-12)
 
-**Time to implement**: 30 minutes
+**Product Manager**
+- Executive Summary & Goals (page 1)
+- Functional Requirements (pages 2-3)
+- User Flows & Workflows (pages 5-7)
+- Rollout Strategy (page 31)
 
-**Key Fix**: Atomic transaction to create session with real JWT token immediately, eliminating the race condition window.
+**QA Lead**
+- Functional Requirements (pages 2-3)
+- User Flows & Workflows (pages 5-7)
+- API Routes & Contracts (pages 7-9)
+- Quality Control Checklist (page 30)
 
----
-
-### 3. **AUTH-TOKEN-TEST-SUITE.md** (Comprehensive Tests)
-Production-grade test cases to validate the fix.
-
-**Contains**:
-- Unit tests for JWT creation and verification
-- Integration tests for session lifecycle
-- API tests for login/signup endpoints
-- Critical race condition tests
-- Middleware verification tests
-- Stress tests for high concurrency
-- Load testing procedures
-
-**Use this after implementing the fix** to verify correctness.
-
-**Coverage**: Token lifecycle from creation through verification to logout.
-
----
-
-## 🚀 Quick Start
-
-### For Managers/Leads:
-1. Read **AUTH-TOKEN-AUDIT-QA3.md** (5 min executive summary)
-2. Understand the race condition from the diagrams
-3. Approve the fix in **AUTH-TOKEN-AUDIT-QUICK-FIX.md**
-4. Timeline: 30 minutes implementation + 1 hour testing
-
-### For Developers Implementing the Fix:
-1. Read **AUTH-TOKEN-AUDIT-QUICK-FIX.md** completely
-2. Apply the atomic transaction changes to:
-   - `src/app/api/auth/login/route.ts`
-   - `src/app/api/auth/signup/route.ts`
-3. Test with concurrency tests from **AUTH-TOKEN-TEST-SUITE.md**
-4. Deploy and monitor for race conditions
-
-### For QA/Testing:
-1. Review test cases in **AUTH-TOKEN-TEST-SUITE.md**
-2. Run all unit tests
-3. Run critical race condition tests (Test 7)
-4. Run stress test (Test 10) with 50 concurrent logins
-5. Verify no temporary tokens exist in DB
-6. Monitor token lookup latency
-
----
-
-## 🔴 Critical Issues Found
-
-### Issue 1: Session Created with Temporary Token
-**File**: `src/app/api/auth/login/route.ts` (line 180)
-**Severity**: CRITICAL
-**Impact**: Race condition window between token update and client request
-
-### Issue 2: Async Update After Response
-**File**: `src/app/api/auth/login/route.ts` (lines 187-203)
-**Severity**: CRITICAL
-**Impact**: Client requests might arrive before DB update completes
-
-### Issue 3: Unique Constraint on Temporary Token
-**File**: `prisma/schema.prisma` (line 94)
-**Severity**: HIGH
-**Impact**: Database constraint can cause issues under high load
-
-### Issue 4: Double Expiration Claims in JWT
-**File**: `src/lib/auth-utils.ts` (lines 264-267)
-**Severity**: MEDIUM
-**Impact**: Potential clock skew between JWT expiration timestamps
+**Accessibility Lead**
+- Accessibility Requirements (WCAG AA) (pages 11-12)
+- Component Architecture (pages 13-14)
+- Keyboard navigation requirements
+- Screen reader testing approach
 
 ---
 
-## ✅ What's Working Correctly
+## 📚 Supporting Documents
 
-- JWT signature verification (HS256)
-- Token expiration checking
-- HttpOnly cookie configuration
-- CSRF protection (SameSite=Strict)
-- XSS protection (HttpOnly flag)
-- Timing-safe password comparison
-- Session revocation mechanism
-
----
-
-## 🛠️ Implementation Checklist
-
-- [ ] Read complete audit (AUTH-TOKEN-AUDIT-QA3.md)
-- [ ] Understand the race condition diagram
-- [ ] Review quick fix guide (AUTH-TOKEN-AUDIT-QUICK-FIX.md)
-- [ ] Implement atomic transaction in login endpoint
-- [ ] Implement atomic transaction in signup endpoint
-- [ ] Remove temporary token creation
-- [ ] Run unit tests (JWT creation/verification)
-- [ ] Run integration tests (session lifecycle)
-- [ ] Run race condition tests (immediate request)
-- [ ] Run stress test (50 concurrent logins)
-- [ ] Verify database has no temp tokens
-- [ ] Deploy to production
-- [ ] Monitor for race condition timing gaps
-- [ ] Verify no 401 errors from valid tokens
+### SPEC-SUMMARY.md
+Quick reference guide with:
+- Document structure overview
+- Key metrics and timeline
+- Files to create/modify
+- Success indicators
+- Next steps
 
 ---
 
-## 📊 Test Coverage
+## 🚀 Implementation Timeline
 
-### Unit Tests
-- ✅ JWT signing and verification
-- ✅ Payload claim validation
-- ✅ Signature tampering detection
-- ✅ Token expiration logic
+### Week 1
+- **Days 1-2**: Phase 1 (Status filter reduction)
+- **Days 3-5**: Phase 2 (Horizontal scrolling)
 
-### Integration Tests
-- ✅ Session creation with real token
-- ✅ Token lookup in database
-- ✅ Session invalidation
-- ✅ Token lifecycle
+### Week 2
+- **Days 1-2**: Phase 3 (My Cards UI)
+- **Days 3-5**: Phase 4 (Edit/Delete modals)
 
-### Critical Tests
-- ✅ Immediate protected request after login (no delay)
-- ✅ Concurrent login race condition detection
-- ✅ Token mutations detection
-
-### Load Tests
-- ✅ 50 concurrent logins
-- ✅ High concurrency scenario
-- ✅ Database stress testing
+### Week 3
+- **Days 1-2**: Phase 5 (Accessibility & testing)
+- **Days 3+**: Buffer for bug fixes and refinements
 
 ---
 
-## 🔍 Debugging Guide
+## ✅ Quality Assurance Checklist
 
-### Check for Temporary Tokens (Find the Bug)
-```sql
-SELECT COUNT(*) FROM "Session" WHERE "sessionToken" LIKE 'temp_%';
-```
-If count > 0, the bug still exists.
+Use this when the implementation is complete:
 
-### Monitor Token Update Latency
-```sql
-SELECT 
-  AVG(EXTRACT(EPOCH FROM ("updatedAt" - "createdAt"))) as latency_ms
-FROM "Session"
-WHERE "createdAt" > NOW() - INTERVAL '1 hour';
-```
-If latency > 1000ms, database is slow.
-
-### Test Session Lookup
-```bash
-curl -X POST http://localhost:3000/api/auth/test-session-lookup \
-  -H "Content-Type: application/json" \
-  -d '{"sessionToken": "<token-here>"}'
-```
-Should return `{ "found": true, "session": {...} }`
-
----
-
-## 📈 Monitoring Alerts
-
-### Set Up These Alerts:
-1. **Temporary Token Detection**: Alert if any temp tokens created in last 5 minutes
-2. **Token Update Latency**: Alert if avg latency > 1000ms
-3. **Session Lookup Failures**: Alert on middleware database lookup failures
-4. **Concurrent Login Spike**: Alert if > 10 concurrent logins from same user
+- [ ] Status filters reduced from 5 to 3
+- [ ] Zero line wrapping on filters (375px, 768px, 1440px+)
+- [ ] Period and status filters scrollable horizontally
+- [ ] Keyboard navigation working (Tab, Arrows, Enter, Escape)
+- [ ] My Cards section displays in settings
+- [ ] Edit button opens modal with proper form
+- [ ] Delete button opens confirmation dialog
+- [ ] Empty state shows when no cards
+- [ ] All CRUD operations working via API
+- [ ] Dark mode fully supported
+- [ ] WCAG AA accessibility verified
+- [ ] Screen reader tested (NVDA, VoiceOver)
+- [ ] Color contrast verified (4.5:1 minimum)
+- [ ] Focus management working
+- [ ] Motion respects prefers-reduced-motion
+- [ ] 80%+ test coverage achieved
+- [ ] Lighthouse score >90
+- [ ] All API errors handled gracefully
+- [ ] Rate limiting implemented
+- [ ] Authorization checks passing
+- [ ] QA sign-off obtained
 
 ---
 
-## 🚨 Emergency Procedure
+## 🔐 Security & Compliance
 
-If production is down:
-
-1. **Check database**: Are sessions being created with temp tokens?
-2. **Check latency**: Is database slow?
-3. **Temporary fix**: Disable JWT verification, use session ID only
-4. **Root cause**: Implement atomic transaction fix immediately
-
----
-
-## 📞 Questions & Escalation
-
-**Question**: Why does JWT verify but database lookup fails?  
-**Answer**: Token in cookie might not match token in DB due to race condition.
-
-**Question**: How is this a production issue?  
-**Answer**: Users successfully authenticate but middleware rejects them.
-
-**Question**: Will the fix break anything?  
-**Answer**: No, it's purely internal refactoring of session creation process.
-
-**Question**: How long to implement?  
-**Answer**: 30 minutes to implement + 1 hour to test thoroughly.
+Key security measures implemented:
+- ✅ User authentication required for all card operations
+- ✅ Authorization checks (users can only modify their own cards)
+- ✅ Soft delete implementation (data retention for audit trail)
+- ✅ Input validation on all forms
+- ✅ Rate limiting (60 edits/hour, 20 deletes/hour)
+- ✅ Audit logging for all modifications
+- ✅ HTTPS enforced in transit
+- ✅ No sensitive data in logs
 
 ---
 
-## 📚 Related Documentation
+## 📊 Key Metrics
 
-- JWT Specification: https://tools.ietf.org/html/rfc7519
-- Next.js Middleware: https://nextjs.org/docs/advanced-features/middleware
-- Prisma Transactions: https://www.prisma.io/docs/concepts/components/prisma-client/transactions
-- OWASP Authentication: https://owasp.org/www-community/attacks/Session_fixation
+| Aspect | Target |
+|--------|--------|
+| Test Coverage | 80%+ |
+| Performance (Lighthouse) | >90 |
+| Accessibility (WCAG) | AA |
+| API Response Time (p95) | <500ms |
+| Page Load Time | <1s |
+| Filter Scroll Smoothness | 60 FPS |
 
 ---
 
-**Last Updated**: QA3 Audit  
-**Status**: 🚨 CRITICAL - Ready for Implementation  
-**Estimated Fix Time**: 30 minutes development + 1 hour testing
+## 🔗 Related Files in Codebase
+
+### Pattern References
+- `src/shared/components/features/CardSwitcher.tsx` - Scrolling pattern
+- `src/app/admin/_components/EditBenefitModal.tsx` - Modal pattern
+- `src/app/dashboard/components/StatusFilters.tsx` - Current filter impl
+
+### Integration Points
+- `src/app/dashboard/page.tsx` - Where filters are used
+- `src/app/dashboard/settings/page.tsx` - Where My Cards section goes
+- `src/app/api/cards/my-cards/route.ts` - Card fetching API
+- `src/app/api/cards/[id]/route.ts` - Edit/delete endpoints
+
+### Design System
+- `src/styles/design-tokens.css` - Design tokens
+- `src/shared/components/ui/` - UI component library
+- `tailwind.config.js` - Tailwind configuration
+
+---
+
+## 📞 Questions?
+
+### For Architectural Questions
+Contact: Tech Lead  
+Reference: Component Architecture section (page 13)
+
+### For UI/UX Questions
+Contact: Product Manager  
+Reference: Functional Requirements section (page 2)
+
+### For Accessibility Questions
+Contact: Accessibility Lead  
+Reference: Accessibility Requirements section (page 11)
+
+### For Security Questions
+Contact: Security Engineer  
+Reference: Security & Compliance section (page 28)
+
+### For Timeline Questions
+Contact: Project Manager  
+Reference: Implementation Timeline (page 31)
+
+---
+
+## 📝 Version Control
+
+| Version | Date | Status | Notes |
+|---------|------|--------|-------|
+| 1.0 | 2025-01-20 | READY | Initial release, ready for implementation |
+
+---
+
+**Last Updated**: 2025-01-20  
+**Status**: ✅ READY FOR IMPLEMENTATION  
+**Approval**: Pending tech lead and product owner review
+

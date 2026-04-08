@@ -9,8 +9,7 @@ import EmptyState from '@/shared/components/ui/EmptyState';
 import { SkeletonCard } from '@/shared/components/loaders';
 
 interface MyCardsSectionProps {
-  userId?: string;
-  onCardAdded?: () => void;
+  // Currently no props needed - userId is fetched from API context
 }
 
 /**
@@ -28,7 +27,7 @@ interface MyCardsSectionProps {
  * - Dark mode support
  * - Accessibility: ARIA labels, keyboard navigation
  */
-export function MyCardsSection({ userId, onCardAdded }: MyCardsSectionProps) {
+export function MyCardsSection({}: MyCardsSectionProps) {
   const [cards, setCards] = useState<Card[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

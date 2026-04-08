@@ -9,7 +9,7 @@
  * - Daily cron job rolls expired periods and creates next period
  * - Composite key dedup (userCardId:masterBenefitId) for multi-period view
  * - Variable claiming amounts (e.g., Amex Uber Dec $35 vs monthly $15)
- * - Migration issues resolved: duplicate removed, clean deploy ready
+ * - Migration resolved via `prisma migrate resolve --applied`
  *
  * @module benefit-engine
  *

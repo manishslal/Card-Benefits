@@ -106,6 +106,19 @@ export async function POST(request: NextRequest) {
         const { id, type, resource, data } = item;
 
         if (resource === 'usage' && type === 'create') {
+          // Verify the benefit belongs to the authenticated user
+          const benefit = await prisma.userBenefit.findUnique({
+            where: { id: data.benefitId },
+            select: { playerId: true, userCard: { select: { status: true } } },
+          });
+          if (!benefit || benefit.playerId !== player.id) {
+            errors.push({ id, error: 'Benefit not found or not owned by user' });
+            continue;
+          }
+          if (benefit.userCard?.status === 'DELETED') {
+            errors.push({ id, error: 'Cannot record usage on a deleted card' });
+            continue;
+          }
           const created = await prisma.benefitUsageRecord.create({
             data: {
               benefitId: data.benefitId,

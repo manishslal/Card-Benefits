@@ -74,6 +74,14 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
       );
     }
 
+    // Guard: prevent toggling benefits on a deleted card
+    if (benefit.userCard.status === 'DELETED') {
+      return NextResponse.json(
+        { success: false, error: 'Cannot update benefits on a deleted card', code: 'CARD_DELETED' } as ErrorResponse,
+        { status: 400 }
+      );
+    }
+
     // ── Period-status guard (api-4 + api-6) ─────────────────────────────────
     // When the Benefit Engine is enabled, only ACTIVE periods (or legacy null)
     // may be toggled.  This covers both used→unused and unused→used directions.

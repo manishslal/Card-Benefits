@@ -104,7 +104,13 @@ export async function POST(request: NextRequest) {
     // ========== Fetch and Validate UserBenefit ==========
     const userBenefit = await prisma.userBenefit.findUnique({
       where: { id: userBenefitId },
-      include: { userCard: true },
+      include: {
+        userCard: {
+          include: {
+            player: { select: { userId: true } },
+          },
+        },
+      },
     });
 
     if (!userBenefit || userBenefit.userCardId !== userCardId) {
@@ -116,6 +122,32 @@ export async function POST(request: NextRequest) {
           statusCode: 404,
         },
         { status: 404 }
+      );
+    }
+
+    // Verify the authenticated user owns this benefit's card
+    if (userBenefit.userCard.player.userId !== userId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'FORBIDDEN',
+          message: 'Not authorized to record usage on this benefit',
+          statusCode: 403,
+        },
+        { status: 403 }
+      );
+    }
+
+    // Prevent usage recording on deleted cards
+    if (userBenefit.userCard.status === 'DELETED') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'CARD_DELETED',
+          message: 'Cannot record usage on a deleted card',
+          statusCode: 400,
+        },
+        { status: 400 }
       );
     }
 

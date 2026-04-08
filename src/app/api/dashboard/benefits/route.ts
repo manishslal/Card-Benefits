@@ -56,9 +56,12 @@ export async function POST(request: Request) {
 
     console.log('[Dashboard Benefits API] Found player:', player.id);
 
-    // Fetch user's card(s) for this player
+    // Fetch user's card(s) for this player (exclude DELETED cards)
     const userCards = await prisma.userCard.findMany({
-      where: { playerId: player.id },
+      where: {
+        playerId: player.id,
+        status: { not: 'DELETED' },
+      },
     });
 
     if (!userCards.length) {

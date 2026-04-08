@@ -150,6 +150,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
+    // Guard: prevent adding benefits to a deleted card
+    if (card.status === 'DELETED') {
+      return NextResponse.json(
+        { success: false, error: 'Cannot add benefits to a deleted card' } as ErrorResponse,
+        { status: 400 }
+      );
+    }
+
     // Check for duplicate benefit name per card
     // When engine is enabled, include periodStart in uniqueness check
     // to allow legitimate multi-period creation

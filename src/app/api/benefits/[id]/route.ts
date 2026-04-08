@@ -137,7 +137,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
 
     // Engine-managed benefit edit guard: reject changes to catalog-managed fields
     if (featureFlags.BENEFIT_ENGINE_ENABLED && benefit.masterBenefitId) {
-      const blockedFields = ['name', 'resetCadence', 'type', 'stickerValue'] as const;
+      const blockedFields = ['name', 'resetCadence', 'type', 'stickerValue', 'expirationDate'] as const;
       const attempted = blockedFields.filter((f) => (body as Record<string, unknown>)[f] !== undefined);
       if (attempted.length > 0) {
         return NextResponse.json(

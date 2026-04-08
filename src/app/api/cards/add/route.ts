@@ -200,13 +200,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       where: { id: masterCardId },
     });
 
-    if (!masterCard) {
+    if (!masterCard || !masterCard.isActive) {
       return NextResponse.json(
         {
           success: false,
           error: 'Card not found',
           code: 'CARD_NOT_FOUND',
-          fieldErrors: { masterCardId: 'This card no longer exists in our database' },
+          fieldErrors: { masterCardId: 'This card is no longer available' },
         } as ErrorResponse,
         { status: 404 }
       );
@@ -235,21 +235,51 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Create the UserCard and UserBenefits in a transaction for ACID compliance
-    const { card: userCard, benefitCount, generatedBenefits } = await prisma.$transaction(async (tx) => {
-      // Create the UserCard record
-      const card = await tx.userCard.create({
-        data: {
-          playerId: player.id,
-          masterCardId,
-          customName: customName && customName.trim() ? customName.trim() : null,
-          actualAnnualFee: actualAnnualFee !== undefined ? Math.round(actualAnnualFee) : null,
-          renewalDate,
-          isOpen: true,
-          status: 'ACTIVE',
-        },
-      });
+    const isReactivation = existingCard?.status === 'DELETED';
 
+    // Create or reactivate the UserCard and UserBenefits in a transaction
+    const { card: userCard, benefitCount, generatedBenefits } = await prisma.$transaction(async (tx) => {
+      let card;
+
+      if (isReactivation) {
+        // ── REACTIVATION PATH ──────────────────────────────────────────────
+        // Step 1: Hard-delete all old UserBenefits (stale data from prior era)
+        // Cascade will also clean up BenefitUsageRecord, BenefitPeriod,
+        // and BenefitRecommendation rows.
+        await tx.userBenefit.deleteMany({
+          where: { userCardId: existingCard.id },
+        });
+
+        // Step 2: Reactivate the UserCard
+        card = await tx.userCard.update({
+          where: { id: existingCard.id },
+          data: {
+            isOpen: true,
+            status: 'ACTIVE',
+            statusChangedAt: new Date(),
+            statusChangedReason: 'Reactivated by user',
+            customName: customName && customName.trim() ? customName.trim() : null,
+            actualAnnualFee: actualAnnualFee !== undefined ? Math.round(actualAnnualFee) : null,
+            renewalDate,
+            version: { increment: 1 },
+          },
+        });
+      } else {
+        // ── NEW CARD PATH (existing logic, unchanged) ──────────────────────
+        card = await tx.userCard.create({
+          data: {
+            playerId: player.id,
+            masterCardId,
+            customName: customName && customName.trim() ? customName.trim() : null,
+            actualAnnualFee: actualAnnualFee !== undefined ? Math.round(actualAnnualFee) : null,
+            renewalDate,
+            isOpen: true,
+            status: 'ACTIVE',
+          },
+        });
+      }
+
+      // Step 3: Generate benefits (same for both paths)
       if (featureFlags.BENEFIT_ENGINE_ENABLED) {
         // New path: auto-generate benefits with period tracking via the benefit engine
         const generated = await generateBenefitsForCard(
@@ -313,9 +343,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         updatedAt: userCard.updatedAt.toISOString(),
       },
       benefitsCreated: benefitCount,
-      message: generatedBenefits
-        ? `Card added with ${benefitCount} benefits for the current period`
-        : 'Card added to your collection',
+      message: isReactivation
+        ? `Card reactivated with ${benefitCount} benefits`
+        : generatedBenefits
+          ? `Card added with ${benefitCount} benefits for the current period`
+          : 'Card added to your collection',
     };
 
     // Include period details when benefit engine is active

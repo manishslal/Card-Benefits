@@ -369,10 +369,16 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
       where: { id: cardId },
       data: {
         status: 'DELETED',
+        isOpen: false,
+        statusChangedAt: new Date(),
+        statusChangedReason: 'Deleted by user',
         userBenefits: {
           updateMany: {
             where: { userCardId: cardId },
-            data: { status: 'ARCHIVED' },
+            data: {
+              status: 'ARCHIVED',
+              periodStatus: 'ARCHIVED',
+            },
           },
         },
       },

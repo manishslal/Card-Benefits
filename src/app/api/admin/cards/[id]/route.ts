@@ -90,6 +90,7 @@ interface CardDetailData {
   isActive: boolean;
   isArchived: boolean;
   benefitCount: number;
+  benefits?: any[];
   createdAt: string;
   updatedAt: string;
 }
@@ -143,13 +144,28 @@ function formatCardResponse(card: any): CardDetailData {
     isActive: card.isActive,
     isArchived: card.isArchived,
     benefitCount: card._count?.masterBenefits || 0,
+    benefits: card.masterBenefits?.map((b: any) => ({
+      id: b.id,
+      masterCardId: b.masterCardId,
+      name: b.name,
+      type: b.type,
+      stickerValue: b.stickerValue,
+      resetCadence: b.resetCadence,
+      isDefault: b.isDefault,
+      isActive: b.isActive,
+      claimingCadence: b.claimingCadence ?? null,
+      claimingAmount: b.claimingAmount ?? null,
+      variableAmounts: b.variableAmounts ?? null,
+      createdAt: b.createdAt instanceof Date ? b.createdAt.toISOString() : b.createdAt,
+      updatedAt: b.updatedAt instanceof Date ? b.updatedAt.toISOString() : b.updatedAt,
+    })),
     createdAt: card.createdAt.toISOString(),
     updatedAt: card.updatedAt.toISOString(),
   };
 }
 
 /**
- * Fetches a single card with benefit count
+ * Fetches a single card with benefit count and full benefits list
  */
 async function fetchCardWithCount(cardId: string) {
   return prisma.masterCard.findUnique({
@@ -169,6 +185,24 @@ async function fetchCardWithCount(cardId: string) {
         select: {
           masterBenefits: true,
         },
+      },
+      masterBenefits: {
+        select: {
+          id: true,
+          masterCardId: true,
+          name: true,
+          type: true,
+          stickerValue: true,
+          resetCadence: true,
+          isDefault: true,
+          isActive: true,
+          claimingCadence: true,
+          claimingAmount: true,
+          variableAmounts: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
       },
     },
   });

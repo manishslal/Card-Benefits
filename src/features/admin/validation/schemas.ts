@@ -182,6 +182,17 @@ export const CreateBenefitSchema = z.object({
 export type CreateBenefitInput = z.infer<typeof CreateBenefitSchema>;
 
 /**
+ * Claiming cadence enum validation
+ */
+export const ClaimingCadenceEnum = z.enum([
+  'MONTHLY',
+  'QUARTERLY',
+  'SEMI_ANNUAL',
+  'FLEXIBLE_ANNUAL',
+  'ONE_TIME',
+]);
+
+/**
  * Validation for benefit updates
  */
 export const UpdateBenefitSchema = z.object({
@@ -202,6 +213,19 @@ export const UpdateBenefitSchema = z.object({
     .string()
     .max(1000, 'Description must be 1000 characters or less')
     .optional(),
+  // Phase 6C: Claiming cadence fields
+  claimingCadence: ClaimingCadenceEnum.nullable().optional(),
+  claimingAmount: z
+    .number()
+    .int('Claiming amount must be an integer (cents)')
+    .min(0, 'Claiming amount must be non-negative')
+    .nullable()
+    .optional(),
+  variableAmounts: z
+    .record(z.string(), z.number().int().min(0))
+    .nullable()
+    .optional(),
+  isActive: z.boolean().optional(),
 });
 
 export type UpdateBenefitInput = z.infer<typeof UpdateBenefitSchema>;

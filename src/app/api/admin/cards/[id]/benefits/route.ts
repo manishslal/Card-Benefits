@@ -72,6 +72,9 @@ interface BenefitItem {
   resetCadence: string;
   isDefault: boolean;
   isActive: boolean;
+  claimingCadence: string | null;
+  claimingAmount: number | null;
+  variableAmounts: Record<string, number> | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -175,6 +178,9 @@ export async function GET(
           resetCadence: true,
           isDefault: true,
           isActive: true,
+          claimingCadence: true,
+          claimingAmount: true,
+          variableAmounts: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -195,6 +201,9 @@ export async function GET(
       resetCadence: benefit.resetCadence,
       isDefault: benefit.isDefault,
       isActive: benefit.isActive,
+      claimingCadence: benefit.claimingCadence ?? null,
+      claimingAmount: benefit.claimingAmount ?? null,
+      variableAmounts: (benefit.variableAmounts as Record<string, number>) ?? null,
       createdAt: benefit.createdAt.toISOString(),
       updatedAt: benefit.updatedAt.toISOString(),
     }));
@@ -355,6 +364,9 @@ export async function POST(
       resetCadence: benefit.resetCadence,
       isDefault: benefit.isDefault,
       isActive: benefit.isActive,
+      claimingCadence: null,
+      claimingAmount: null,
+      variableAmounts: null,
       createdAt: benefit.createdAt.toISOString(),
       updatedAt: benefit.updatedAt.toISOString(),
     };

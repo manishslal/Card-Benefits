@@ -133,6 +133,10 @@ export interface Benefit {
   isDefault: boolean;
   isActive: boolean;
   description?: string;
+  // Phase 6C: Claiming Cadence Fields
+  claimingCadence?: string | null;
+  claimingAmount?: number | null;
+  variableAmounts?: Record<string, number> | null;
   createdAt: string;
   updatedAt: string;
   // NEW: Include card information for display

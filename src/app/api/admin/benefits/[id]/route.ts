@@ -44,6 +44,9 @@ interface BenefitItem {
   resetCadence: string;
   isDefault: boolean;
   isActive: boolean;
+  claimingCadence: string | null;
+  claimingAmount: number | null;
+  variableAmounts: Record<string, number> | null;
   createdAt: string;
   updatedAt: string;
   masterCard?: {
@@ -111,6 +114,9 @@ export async function PATCH(
         resetCadence: true,
         isDefault: true,
         isActive: true,
+        claimingCadence: true,
+        claimingAmount: true,
+        variableAmounts: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -180,6 +186,9 @@ export async function PATCH(
       resetCadence: benefit.resetCadence,
       isDefault: benefit.isDefault,
       isActive: benefit.isActive,
+      claimingCadence: benefit.claimingCadence,
+      claimingAmount: benefit.claimingAmount,
+      variableAmounts: benefit.variableAmounts,
     };
 
     // 7. Update benefit
@@ -195,6 +204,9 @@ export async function PATCH(
         resetCadence: true,
         isDefault: true,
         isActive: true,
+        claimingCadence: true,
+        claimingAmount: true,
+        variableAmounts: true,
         createdAt: true,
         updatedAt: true,
         // NEW: Include masterCard relationship
@@ -216,6 +228,9 @@ export async function PATCH(
       resetCadence: updated.resetCadence,
       isDefault: updated.isDefault,
       isActive: updated.isActive,
+      claimingCadence: updated.claimingCadence,
+      claimingAmount: updated.claimingAmount,
+      variableAmounts: updated.variableAmounts,
     };
 
     await logResourceUpdate(
@@ -238,6 +253,9 @@ export async function PATCH(
       resetCadence: updated.resetCadence,
       isDefault: updated.isDefault,
       isActive: updated.isActive,
+      claimingCadence: updated.claimingCadence ?? null,
+      claimingAmount: updated.claimingAmount ?? null,
+      variableAmounts: (updated.variableAmounts as Record<string, number>) ?? null,
       createdAt: updated.createdAt.toISOString(),
       updatedAt: updated.updatedAt.toISOString(),
       // NEW: Include masterCard data

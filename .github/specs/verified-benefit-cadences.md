@@ -352,4 +352,39 @@
 
 ---
 
-*Last verified: July 2025. Card terms change frequently — verify against issuer websites before production updates.*
+## 🔵 USER REVIEW CORRECTIONS (April 8, 2026)
+
+The following corrections were provided by the product owner based on actual 2026 card terms:
+
+### Annual Fee Updates
+| Card | Research Said | Correct (2026) |
+|------|-------------|-----------------|
+| **Amex Platinum** | $695 | **$895** |
+| **Chase Sapphire Reserve** | $795 | $795 ✅ (confirmed) |
+
+### Benefit Amount/Detail Corrections
+| # | Card | Benefit | Research Said | Correct (2026) |
+|---|------|---------|--------------|-----------------|
+| 1 | **Amex Platinum** | CLEAR+ Credit | $209 (some sections say $189/$179) | **$209** — make consistent everywhere |
+| 2 | **Chase Sapphire Reserve** | Points multipliers | 3x/5x generic | **8x Chase Travel bookings, 4x direct flights/hotels** |
+| 3 | **Chase Sapphire Reserve** | Apple TV+/Music | $250/yr | **$288/yr ($24/mo)** |
+| 4 | **Chase Sapphire Reserve** | The Edit Hotel Credit | Strict SEMI_ANNUAL | **Two $250 credits, flexible** (no semi-annual window required) → use FLEXIBLE_ANNUAL |
+| 5 | **Amex Green** | CLEAR+ Credit | $189 | **$209** |
+| 6 | **Barclays JetBlue Plus** | Inflight benefit | 50% points back | **50% statement credit on food & cocktails** |
+| 7 | **Citi Prestige** | Travel Credit | General travel | **$250 Airline Travel Credit only** (pandemic expansion expired) |
+
+### Benefits to NOT Add (Discontinued)
+| Card | Benefit | Status |
+|------|---------|--------|
+| **Amex Business Gold** | 25% Points Rebate on Flights | **DISCONTINUED late 2023** — do NOT add |
+| **Amex Hilton Surpass** | Priority Pass (10 visits) | **DISCONTINUED early 2024** — remove from DB |
+
+### NEW Benefits to Add (2026)
+| Card | Benefit | Cadence | Amount | Notes |
+|------|---------|---------|--------|-------|
+| **Amex Business Gold** | $240 Flexible Business Credit | MONTHLY | $20/mo | FedEx, Grubhub, Office Supply stores |
+| **Amex Business Gold** | $150 Squarespace Credit | FLEXIBLE_ANNUAL | $150 | Standard benefit in 2026 |
+
+---
+
+*Last verified: April 8, 2026. Corrections provided by product owner with verified 2026 card terms.*

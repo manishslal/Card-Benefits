@@ -13,17 +13,37 @@ import { useParams } from 'next/navigation';
 import { useState, useCallback, useEffect } from 'react';
 import useSWR from 'swr';
 import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
+import { formatCurrency } from '@/shared/lib/format-currency';
 import type { Card, Benefit } from '@/features/admin/types/admin';
+import { EditBenefitModal } from '../_components/EditBenefitModal';
 
 interface CardDetailResponse {
   success: boolean;
   data: Card & { benefits?: Benefit[] };
 }
 
+// ── Cadence badge color mapping ──────────────────────────────
+const CADENCE_COLORS: Record<string, string> = {
+  MONTHLY: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  QUARTERLY: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+  SEMI_ANNUAL: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300',
+  FLEXIBLE_ANNUAL: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  ONE_TIME: 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300',
+};
+
+const CADENCE_LABELS: Record<string, string> = {
+  MONTHLY: 'Monthly',
+  QUARTERLY: 'Quarterly',
+  SEMI_ANNUAL: 'Semi-Annual',
+  FLEXIBLE_ANNUAL: 'Flex Annual',
+  ONE_TIME: 'One Time',
+};
+
 export default function CardDetailPage() {
   const params = useParams();
   const cardId = params?.id as string;
   const [showBenefitModal, setShowBenefitModal] = useState(false);
+  const [editingBenefit, setEditingBenefit] = useState<Benefit | null>(null);
   const [benefitFormData, setBenefitFormData] = useState({
     name: '',
     type: 'INSURANCE',
@@ -322,32 +342,99 @@ export default function CardDetailPage() {
             No benefits added yet
           </p>
         ) : (
-          <div className="space-y-3">
-            {benefits.map((benefit: Benefit) => (
-              <div
-                key={benefit.id}
-                className={`flex items-center justify-between p-4 rounded-lg transition-colors ${
-                  benefit.id.startsWith('temp-')
-                    ? 'bg-blue-100 dark:bg-blue-900/30'
-                    : 'bg-slate-50 dark:bg-slate-800/50'
-                }`}
-              >
-                <div className="flex-1">
-                  <p className="font-medium text-slate-900 dark:text-white">{benefit.name}</p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    {benefit.type} • ${benefit.stickerValue} • {benefit.resetCadence}
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleDeleteBenefit(benefit.id)}
-                  disabled={isDeleting === benefit.id}
-                  className="px-3 py-1 rounded text-sm bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 disabled:opacity-50 flex items-center gap-1"
-                >
-                  {isDeleting === benefit.id && <span className="animate-spin text-xs">⏳</span>}
-                  Delete
-                </button>
-              </div>
-            ))}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-800">
+                  <th className="text-left py-2 px-3 text-slate-600 dark:text-slate-400 font-medium">Name</th>
+                  <th className="text-left py-2 px-3 text-slate-600 dark:text-slate-400 font-medium">Type</th>
+                  <th className="text-right py-2 px-3 text-slate-600 dark:text-slate-400 font-medium">Value</th>
+                  <th className="text-left py-2 px-3 text-slate-600 dark:text-slate-400 font-medium">Reset</th>
+                  <th className="text-left py-2 px-3 text-slate-600 dark:text-slate-400 font-medium">Cadence</th>
+                  <th className="text-right py-2 px-3 text-slate-600 dark:text-slate-400 font-medium">Per Period</th>
+                  <th className="text-right py-2 px-3 text-slate-600 dark:text-slate-400 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {benefits.map((benefit: Benefit) => {
+                  const needsCadenceWarning =
+                    !benefit.claimingCadence && benefit.stickerValue > 0;
+                  return (
+                    <tr
+                      key={benefit.id}
+                      className={`border-b border-slate-100 dark:border-slate-800/50 transition-colors ${
+                        benefit.id.startsWith('temp-')
+                          ? 'bg-blue-50 dark:bg-blue-900/20'
+                          : !benefit.isActive
+                            ? 'opacity-60'
+                            : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                      }`}
+                    >
+                      <td className="py-3 px-3">
+                        <span className="font-medium text-slate-900 dark:text-white">
+                          {benefit.name}
+                        </span>
+                        {!benefit.isActive && (
+                          <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400">
+                            Inactive
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-3 text-slate-600 dark:text-slate-400">
+                        {benefit.type}
+                      </td>
+                      <td className="py-3 px-3 text-right text-slate-900 dark:text-white">
+                        {formatCurrency(benefit.stickerValue)}
+                      </td>
+                      <td className="py-3 px-3 text-slate-600 dark:text-slate-400">
+                        {benefit.resetCadence}
+                      </td>
+                      <td className="py-3 px-3">
+                        {benefit.claimingCadence ? (
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                              CADENCE_COLORS[benefit.claimingCadence] ||
+                              'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300'
+                            }`}
+                          >
+                            {CADENCE_LABELS[benefit.claimingCadence] || benefit.claimingCadence}
+                          </span>
+                        ) : needsCadenceWarning ? (
+                          <span className="text-amber-500 dark:text-amber-400" title="Claiming cadence not set">
+                            ⚠️ Not set
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 dark:text-slate-600">—</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-3 text-right text-slate-900 dark:text-white">
+                        {benefit.claimingAmount != null
+                          ? formatCurrency(benefit.claimingAmount)
+                          : <span className="text-slate-400 dark:text-slate-600">—</span>}
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => setEditingBenefit(benefit)}
+                            className="px-3 py-1 rounded text-sm bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteBenefit(benefit.id)}
+                            disabled={isDeleting === benefit.id}
+                            className="px-3 py-1 rounded text-sm bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 disabled:opacity-50 flex items-center gap-1 transition-colors"
+                          >
+                            {isDeleting === benefit.id && <span className="animate-spin text-xs">⏳</span>}
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
@@ -460,6 +547,20 @@ export default function CardDetailPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Edit Benefit Modal */}
+      {editingBenefit && (
+        <EditBenefitModal
+          benefit={editingBenefit}
+          isOpen={!!editingBenefit}
+          onClose={() => setEditingBenefit(null)}
+          onSaved={() => {
+            setEditingBenefit(null);
+            setSuccess('Benefit updated successfully');
+            mutate();
+          }}
+        />
       )}
     </div>
   );

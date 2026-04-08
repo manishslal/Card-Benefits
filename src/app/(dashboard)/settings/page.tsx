@@ -362,7 +362,7 @@ export default function SettingsPage() {
                 </section>
 
                 {/* My Cards Section */}
-                <MyCardsSection userId={user?.id} />
+                <MyCardsSection />
               </div>
             )}
 

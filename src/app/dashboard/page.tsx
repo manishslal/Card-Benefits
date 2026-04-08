@@ -125,6 +125,11 @@ function transformBenefitForGrid(benefit: BenefitData): {
   periodStart?: string | null;
   periodEnd?: string | null;
   periodStatus?: string | null;
+  // Enhanced period UI fields
+  resetCadence?: string;
+  claimingCadence?: string | null;
+  isUsed?: boolean;
+  masterBenefitId?: string | null;
 } {
   return {
     id: benefit.id,
@@ -139,6 +144,11 @@ function transformBenefitForGrid(benefit: BenefitData): {
     periodStart: benefit.periodStart,
     periodEnd: benefit.periodEnd,
     periodStatus: benefit.periodStatus,
+    // Enhanced period UI fields for banner, stripe, and period-aware actions
+    resetCadence: benefit.resetCadence,
+    claimingCadence: benefit.claimingCadence ?? null,
+    isUsed: benefit.isUsed ?? false,
+    masterBenefitId: benefit.masterBenefitId ?? null,
   };
 }
 
@@ -457,6 +467,7 @@ export default function DashboardPage() {
             description: b.description || '',
             value: (b.userDeclaredValue || b.stickerValue) / 100,
             usage: b.isUsed ? 100 : 0,
+            isUsed: b.isUsed ?? false,
             // Carry period fields through when present
             periodStart: b.periodStart ?? null,
             periodEnd: b.periodEnd ?? null,
@@ -644,6 +655,7 @@ export default function DashboardPage() {
               description: b.description || '',
               value: (b.userDeclaredValue || b.stickerValue) / 100,
               usage: b.isUsed ? 100 : 0,
+              isUsed: b.isUsed ?? false,
               periodStart: b.periodStart ?? null,
               periodEnd: b.periodEnd ?? null,
               periodStatus: b.periodStatus ?? null,
@@ -701,8 +713,9 @@ export default function DashboardPage() {
   const handleMarkUsed = async (benefitId: string) => {
     try {
       // Optimistic UI update - mark the benefit as used immediately
-      setBenefits(
-        benefits.map((b) =>
+      // Use functional updater to avoid stale closure over `benefits`
+      setBenefits(prev =>
+        prev.map((b) =>
           b.id === benefitId
             ? { ...b, isUsed: true }
             : b
@@ -719,8 +732,8 @@ export default function DashboardPage() {
 
       if (!response.ok) {
         // Revert optimistic update on error
-        setBenefits(
-          benefits.map((b) =>
+        setBenefits(prev =>
+          prev.map((b) =>
             b.id === benefitId
               ? { ...b, isUsed: false }
               : b
@@ -737,8 +750,8 @@ export default function DashboardPage() {
       const data = await response.json();
       if (data.success) {
         // Update benefit with response data (includes updated timesUsed)
-        setBenefits(
-          benefits.map((b) =>
+        setBenefits(prev =>
+          prev.map((b) =>
             b.id === benefitId
               ? {
                   ...b,
@@ -754,8 +767,8 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error marking benefit as used:', error);
       // Revert optimistic update
-      setBenefits(
-        benefits.map((b) =>
+      setBenefits(prev =>
+        prev.map((b) =>
           b.id === benefitId
             ? { ...b, isUsed: false }
             : b

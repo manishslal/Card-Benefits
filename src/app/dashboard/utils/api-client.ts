@@ -46,18 +46,15 @@ export interface PeriodResponse {
 }
 
 /**
- * Fetch all user benefits using /api/benefits/filters
+ * Fetch all user benefits using /api/dashboard/benefits
+ * Uses server-side wrapper to handle authentication
  */
 export async function fetchUserBenefits(): Promise<BenefitApiResponse[]> {
   try {
-    const response = await fetch('/api/benefits/filters', {
+    const response = await fetch('/api/dashboard/benefits', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({
-        pageSize: 100, // Get all benefits in one fetch
-        page: 1,
-      }),
     });
 
     if (!response.ok) {

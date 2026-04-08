@@ -17,12 +17,21 @@ export async function POST(request: Request) {
     // Get authenticated user ID from middleware-set header
     const userId = request.headers.get('x-user-id');
 
+    // DEBUG: Log header presence for troubleshooting
+    console.log('[Dashboard Benefits API] Request received', {
+      userId: userId || 'MISSING',
+      headerKeys: Array.from(request.headers.keys()),
+    });
+
     if (!userId) {
+      console.error('[Dashboard Benefits API] Authorization failed - x-user-id header missing');
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       );
     }
+
+    console.log('[Dashboard Benefits API] Authorization successful for user:', userId);
 
     // Fetch user's card(s) first
     const userCards = await prisma.userCard.findMany({

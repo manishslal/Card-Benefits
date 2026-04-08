@@ -76,6 +76,7 @@ const PROTECTED_API_PREFIXES = [
   '/api/cards',      // POST /api/cards/add, PATCH/DELETE /api/cards/[id], GET /api/cards/my-cards
   '/api/user',       // POST /api/user/profile, GET /api/user/profile
   '/api/admin',      // Admin endpoints (Phase 1)
+  '/api/dashboard',  // Dashboard API endpoints (Phase 3+)
 ];
 
 /** Check if route is public API (matches prefix) */

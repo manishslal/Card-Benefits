@@ -152,7 +152,7 @@ export function getClaimingLimitsInfo(
     claimingWindowEnd
   );
 
-  const maxClaimable = claimingAmount && claimingCadence ? Math.max(0, claimingAmount) : 0;
+  const maxClaimable = claimingAmount != null && claimingCadence ? Math.max(0, claimingAmount) : 0;
 
   // Sum already claimed in this period
   const alreadyClaimed = usageRecords

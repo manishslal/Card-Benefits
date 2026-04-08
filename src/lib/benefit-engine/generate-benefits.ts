@@ -97,7 +97,7 @@ export async function generateBenefitsForCard(
     // Resolve per-period amount: use variableAmounts override if present
     // (e.g., Amex Uber December $35 instead of default $15)
     const periodMonth = period.periodStart.getUTCMonth() + 1; // 1-indexed
-    const effectiveAmount = mb.claimingAmount
+    const effectiveAmount = mb.claimingAmount != null
       ? resolveClaimingAmount(
           mb.claimingAmount,
           mb.variableAmounts as Record<string, number> | null,

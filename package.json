@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
-    "start": "prisma migrate resolve --applied 20260410000000_sprint1_variable_amounts 2>/dev/null; prisma migrate deploy && next start",
+    "start": "prisma migrate resolve --applied 20260410000000_sprint1_variable_amounts 2>/dev/null; prisma migrate deploy && node scripts/migrate-master-benefits.js && next start",
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",

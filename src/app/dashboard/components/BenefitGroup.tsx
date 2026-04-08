@@ -21,7 +21,7 @@ interface BenefitGroupProps {
 }
 
 /**
- * Get color classes for a benefit group
+ * Get color classes for a benefit group using CSS variables
  */
 function getGroupColorClasses(color: 'green' | 'orange' | 'red' | 'gray' | 'blue') {
   switch (color) {
@@ -46,9 +46,13 @@ function getGroupColorClasses(color: 'green' | 'orange' | 'red' | 'gray' | 'blue
  *
  * Features:
  * - Expandable/collapsible sections
- * - Visual status indicators with colors and icons
+ * - Visual status indicators with colors and icons using CSS variables
  * - Shows count of benefits in group
  * - Smooth animations
+ * - Uses semantic colors from design system
+ *
+ * React 19 patterns:
+ * - Semantic color tokens via CSS variables
  */
 export function BenefitGroup({
   status,
@@ -98,7 +102,10 @@ export function BenefitGroup({
       >
         <div className="flex items-center gap-3">
           <span className="text-xl">{icon}</span>
-          <h2 className={`font-bold text-lg ${headerTextClass}`}>
+          <h2 
+            className={`font-bold text-lg ${headerTextClass}`}
+            style={{ fontFamily: 'var(--font-heading)' }}
+          >
             {title}
             <span className="ml-2 text-sm font-normal opacity-75">
               ({benefits.length})
@@ -119,7 +126,11 @@ export function BenefitGroup({
 
       {/* Content */}
       {isExpanded && (
-        <div id={`benefit-group-${status}`} className="px-4 py-4 bg-white dark:bg-gray-800">
+        <div 
+          id={`benefit-group-${status}`} 
+          className="px-4 py-4"
+          style={{ backgroundColor: 'var(--color-bg)' }}
+        >
           <div className="space-y-2">
             {benefits.map((benefit) => (
               <BenefitRow 

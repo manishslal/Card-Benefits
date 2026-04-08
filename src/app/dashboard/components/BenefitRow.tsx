@@ -3,6 +3,8 @@
 import React, { useCallback, useState } from 'react';
 import { Edit2, Trash2, CheckCircle2 } from 'lucide-react';
 import { BenefitStatus } from './StatusFilters';
+import { DashboardButton } from './DashboardButton';
+import { getStatusColor } from '../utils/status-colors';
 
 /**
  * Props for BenefitRow component
@@ -21,26 +23,6 @@ export interface BenefitRowProps {
   onMarkUsed?: (benefitId: string) => Promise<void>;
   onEdit?: (benefitId: string) => void;
   onDelete?: (benefitId: string) => void;
-}
-
-/**
- * Get the appropriate status color and icon for a benefit
- */
-function getStatusDisplay(status: BenefitStatus) {
-  switch (status) {
-    case 'active':
-      return { color: 'text-green-600 dark:text-green-400', icon: '🟢', label: 'Active' };
-    case 'expiring_soon':
-      return { color: 'text-orange-600 dark:text-orange-400', icon: '🟠', label: 'Expiring Soon' };
-    case 'used':
-      return { color: 'text-gray-600 dark:text-gray-400', icon: '✓', label: 'Used' };
-    case 'expired':
-      return { color: 'text-red-600 dark:text-red-400', icon: '🔴', label: 'Expired' };
-    case 'pending':
-      return { color: 'text-blue-600 dark:text-blue-400', icon: '⏳', label: 'Pending' };
-    default:
-      return { color: 'text-gray-600 dark:text-gray-400', icon: '○', label: 'Unknown' };
-  }
 }
 
 /**
@@ -65,13 +47,15 @@ function formatDateRange(start: Date, end: Date): string {
  * - Name, issuer, card name
  * - Period dates
  * - Available/used amount
- * - Status indicator
+ * - Status indicator using semantic colors
  * - Action buttons (Mark Used, Edit, Delete)
+ * - Progress bar with status-appropriate colors
  *
  * Uses React 19 patterns:
  * - useCallback for memoized handlers
  * - useState for loading state
- * - Ref not needed for simple DOM elements
+ * - Status colors from centralized utility
+ * - CSS variables for consistent styling
  */
 export function BenefitRow({
   id,
@@ -89,7 +73,7 @@ export function BenefitRow({
   onDelete,
 }: BenefitRowProps) {
   const [isMarkingUsed, setIsMarkingUsed] = useState(false);
-  const statusDisplay = getStatusDisplay(status);
+  const statusDisplay = getStatusColor(status);
   const dateRange = formatDateRange(periodStart, periodEnd);
   const percentage = available > 0 ? (used / available) * 100 : 0;
 
@@ -112,23 +96,44 @@ export function BenefitRow({
   }, [id, onDelete]);
 
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-3 hover:shadow-md transition-shadow">
+    <div 
+      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-3 hover:shadow-md transition-shadow"
+      style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }}
+    >
       {/* Header: Name, Issuer, Status */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
-          <h3 className="font-semibold text-gray-900 dark:text-white text-base mb-1">
+          <h3 
+            className="font-semibold text-gray-900 dark:text-white text-base mb-1"
+            style={{ fontFamily: 'var(--font-heading)' }}
+          >
             {name}
           </h3>
-          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-            <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+          <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            <span 
+              className="text-xs px-2 py-1 rounded"
+              style={{ 
+                backgroundColor: 'var(--color-bg-tertiary)',
+                color: 'var(--color-text-secondary)' 
+              }}
+            >
               {issuer}
             </span>
             {cardName && (
-              <span className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">
+              <span 
+                className="text-xs px-2 py-1 rounded"
+                style={{ 
+                  backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                  color: 'var(--color-primary)' 
+                }}
+              >
                 {cardName}
               </span>
             )}
-            <span className={`text-xs font-medium ${statusDisplay.color}`}>
+            <span 
+              className="text-xs font-medium flex items-center gap-1"
+              style={statusDisplay.style}
+            >
               {statusDisplay.icon} {statusDisplay.label}
             </span>
           </div>
@@ -138,38 +143,69 @@ export function BenefitRow({
       {/* Period and Amount Info */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 text-sm">
         <div>
-          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Period</span>
-          <p className="text-gray-900 dark:text-white">{dateRange}</p>
+          <span 
+            className="text-xs font-medium block"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Period
+          </span>
+          <p style={{ color: 'var(--color-text)' }}>{dateRange}</p>
         </div>
         <div>
-          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Reset Cadence</span>
-          <p className="text-gray-900 dark:text-white capitalize text-sm">
+          <span 
+            className="text-xs font-medium block"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Reset Cadence
+          </span>
+          <p style={{ color: 'var(--color-text)' }} className="text-sm">
             {resetCadence.toLowerCase().replace(/_/g, ' ')}
           </p>
         </div>
         <div>
-          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Available</span>
-          <p className="text-green-600 dark:text-green-400 font-semibold">${available}</p>
+          <span 
+            className="text-xs font-medium block"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Available
+          </span>
+          <p 
+            className="font-semibold"
+            style={{ color: 'var(--color-success)' }}
+          >
+            ${available}
+          </p>
         </div>
         <div>
-          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Used</span>
-          <p className="text-gray-900 dark:text-white">${used}</p>
+          <span 
+            className="text-xs font-medium block"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Used
+          </span>
+          <p style={{ color: 'var(--color-text)' }}>${used}</p>
         </div>
       </div>
 
       {/* Progress Bar */}
       {available > 0 && (
         <div className="mb-4">
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+          <div 
+            className="w-full rounded-full h-2 overflow-hidden"
+            style={{ backgroundColor: 'var(--color-bg-tertiary)' }}
+          >
             <div
-              className={`h-full transition-all ${
-                percentage < 50
-                  ? 'bg-green-500'
-                  : percentage < 80
-                  ? 'bg-yellow-500'
-                  : 'bg-red-500'
-              }`}
-              style={{ width: `${Math.min(percentage, 100)}%` }}
+              className="h-full transition-all"
+              style={{ 
+                width: `${Math.min(percentage, 100)}%`,
+                backgroundColor: statusDisplay.progressClass.includes('bg-green') 
+                  ? 'var(--color-success)'
+                  : statusDisplay.progressClass.includes('bg-orange')
+                  ? 'var(--color-warning)'
+                  : statusDisplay.progressClass.includes('bg-red')
+                  ? 'var(--color-error)'
+                  : 'var(--color-text-secondary)'
+              }}
               role="progressbar"
               aria-valuenow={Math.round(percentage)}
               aria-valuemin={0}
@@ -182,35 +218,39 @@ export function BenefitRow({
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-2">
         {status !== 'used' && status !== 'expired' && onMarkUsed && (
-          <button
+          <DashboardButton
+            variant="primary"
+            size="md"
             onClick={handleMarkUsed}
             disabled={isMarkingUsed || status === 'pending'}
-            className="px-4 py-2 bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+            isLoading={isMarkingUsed}
+            icon={<CheckCircle2 size={16} />}
             aria-busy={isMarkingUsed}
           >
-            <CheckCircle2 size={16} />
             {isMarkingUsed ? 'Marking...' : 'Mark Used'}
-          </button>
+          </DashboardButton>
         )}
 
         {onEdit && (
-          <button
+          <DashboardButton
+            variant="secondary"
+            size="md"
             onClick={handleEdit}
-            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+            icon={<Edit2 size={16} />}
           >
-            <Edit2 size={16} />
             Edit
-          </button>
+          </DashboardButton>
         )}
 
         {onDelete && (
-          <button
+          <DashboardButton
+            variant="danger"
+            size="md"
             onClick={handleDelete}
-            className="px-4 py-2 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+            icon={<Trash2 size={16} />}
           >
-            <Trash2 size={16} />
             Delete
-          </button>
+          </DashboardButton>
         )}
       </div>
     </div>

@@ -28,10 +28,17 @@ interface PeriodSelectorProps {
  * Allows users to select the time period for viewing benefits.
  * Options include: This Month, This Quarter, This Half, Full Year, All Time
  *
+ * Features:
+ * - Custom styled select with semantic colors
+ * - Dark mode support
+ * - Accessible ARIA labels
+ * - Responsive design
+ *
  * Uses React 19 patterns:
  * - Ref as prop (no forwardRef needed)
  * - Controlled input with onChange
  * - useMemo for performance (period range calculation)
+ * - CSS variables for styling
  */
 export function PeriodSelector({
   selectedPeriodId,
@@ -46,7 +53,11 @@ export function PeriodSelector({
 
   return (
     <div className="flex items-center gap-2">
-      <label htmlFor="period-select" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+      <label 
+        htmlFor="period-select" 
+        className="text-sm font-medium"
+        style={{ color: 'var(--color-text)' }}
+      >
         Period:
       </label>
       <div className="relative inline-block">
@@ -54,7 +65,12 @@ export function PeriodSelector({
           id="period-select"
           value={selectedPeriodId}
           onChange={(e) => onPeriodChange(e.target.value)}
-          className="appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 pr-10 text-sm font-medium text-gray-900 dark:text-white cursor-pointer hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors"
+          className="appearance-none border rounded-lg px-4 py-2 pr-10 text-sm font-medium cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
+          style={{
+            backgroundColor: 'var(--color-bg)',
+            borderColor: 'var(--color-border)',
+            color: 'var(--color-text)',
+          }}
           aria-label="Select time period"
         >
           {periods.map((period) => (
@@ -64,11 +80,17 @@ export function PeriodSelector({
           ))}
         </select>
         <ChevronDown
-          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none"
+          className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none"
           size={16}
+          style={{ color: 'var(--color-text-secondary)' }}
         />
       </div>
-      <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">{periodDisplay}</span>
+      <span 
+        className="text-sm ml-2"
+        style={{ color: 'var(--color-text-secondary)' }}
+      >
+        {periodDisplay}
+      </span>
     </div>
   );
 }

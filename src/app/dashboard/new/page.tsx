@@ -18,7 +18,7 @@ import { fetchDashboardData, toggleBenefitUsed } from '../utils/api-client';
  * - Summary statistics box
  * - Benefits grouped by status with expandable sections
  * - Past periods section with expandable groups
- * - Responsive design with dark mode support
+ * - Responsive design with dark mode support via CSS design tokens
  * - Accessibility features (ARIA labels, keyboard navigation)
  *
  * Uses React 19 patterns:
@@ -26,6 +26,7 @@ import { fetchDashboardData, toggleBenefitUsed } from '../utils/api-client';
  * - useMemo for calculated values
  * - useState for local state
  * - No React import needed (new JSX transform)
+ * - CSS variables for all colors and typography
  */
 export default function EnhancedDashboardPage() {
   // ============================================================
@@ -207,11 +208,23 @@ export default function EnhancedDashboardPage() {
   // Render
   // ============================================================
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div 
+      className="min-h-screen"
+      style={{ backgroundColor: 'var(--color-bg-secondary)' }}
+    >
       {/* Page Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
+      <div 
+        className="border-b sticky top-0 z-50"
+        style={{ 
+          backgroundColor: 'var(--color-bg)',
+          borderColor: 'var(--color-border)'
+        }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+          <h1 
+            className="text-3xl font-bold mb-4"
+            style={{ fontFamily: 'var(--font-heading)', color: 'var(--color-text)' }}
+          >
             💳 My Benefits
           </h1>
 
@@ -235,9 +248,16 @@ export default function EnhancedDashboardPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Error State */}
         {error && (
-          <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-            <p className="text-red-800 dark:text-red-200">{error}</p>
-            <p className="text-sm text-red-700 dark:text-red-300 mt-2">
+          <div 
+            className="mb-6 border rounded-lg p-4"
+            style={{
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              borderColor: 'rgba(239, 68, 68, 0.3)',
+              color: 'var(--color-error)'
+            }}
+          >
+            <p className="font-medium">{error}</p>
+            <p className="text-sm mt-2" style={{ opacity: 0.8 }}>
               Using mock data for demonstration
             </p>
           </div>

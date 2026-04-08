@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Button from '@/shared/components/ui/button';
 import { AppHeader } from '@/shared/components/layout';
 import { DarkModeToggle } from '@/shared/components/ui/DarkModeToggle';
+import { MyCardsSection } from '@/features/cards/components/MyCardsSection';
 import { Mail, Lock, Shield } from 'lucide-react';
 
 /**
@@ -359,6 +360,9 @@ export default function SettingsPage() {
                     )}
                   </div>
                 </section>
+
+                {/* My Cards Section */}
+                <MyCardsSection userId={user?.id} />
               </div>
             )}
 

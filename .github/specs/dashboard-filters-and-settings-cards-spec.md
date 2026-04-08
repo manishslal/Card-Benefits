@@ -510,22 +510,6 @@ Authorization: Bearer <token>
 }
 ```
 
-#### Error Response: 400 Bad Request
-```json
-{
-  "success": false,
-  "error": "Card name must be 1-50 characters"
-}
-```
-
-#### Error Response: 404 Not Found
-```json
-{
-  "success": false,
-  "error": "Card not found"
-}
-```
-
 ---
 
 ## 5. Acceptance Criteria
@@ -650,255 +634,8 @@ Authorization: Bearer <token>
 | **React Testing Library** | Component testing | Queries: `getByRole`, `getByLabelText` |
 | **Playwright** | E2E testing | `playwright.config.ts` - uses chromium, firefox, webkit |
 | **axe-core** | Accessibility testing | Via Playwright with `@axe-core/playwright` |
-| **MSTest** (if .NET backend) | API contract testing | Verify responses match spec |
 
-### 6.3 Test Data Management
-
-#### Unit/Integration Tests
-```typescript
-// Mock card data
-const mockCard: Card = {
-  id: 'test-card-1',
-  userId: 'user-1',
-  name: 'Test Card',
-  lastFourDigits: '4242',
-  cardNetwork: 'Visa',
-  cardType: 'Credit',
-  isActive: true,
-  createdAt: '2024-11-01T00:00:00Z',
-};
-
-// Mock API responses
-jest.mock('fetch', () => ({
-  __esModule: true,
-  default: jest.fn(),
-}));
-
-mockFetch.mockResolvedValue({
-  ok: true,
-  json: async () => ({
-    success: true,
-    cards: [mockCard],
-  }),
-});
-```
-
-#### E2E Tests
-- Use Playwright `page.goto('http://localhost:3000/settings')`
-- Create test users via seed script before each test suite
-- Use test database isolated from production
-- Clean up test data after suite completion
-
-### 6.4 Test Cases
-
-#### Filter Refinement Tests
-
-```typescript
-// Unit: StatusFilters Component
-describe('StatusFilters', () => {
-  it('should render exactly 3 status options', () => {
-    // Arrange: mount with 3 status options
-    // Act: render
-    // Assert: screen.getAllByRole('button').length === 3
-  });
-
-  it('should toggle status when clicked', () => {
-    // Arrange: mount, status not selected
-    // Act: click status button
-    // Assert: onStatusChange called with updated array
-  });
-
-  it('should support keyboard navigation with arrow keys', () => {
-    // Arrange: mount, focus on filter button
-    // Act: press ArrowRight
-    // Assert: scroll container scrolled right
-  });
-
-  it('should hide scrollbar using CSS class', () => {
-    // Arrange: mount with overflow content
-    // Act: render
-    // Assert: className includes 'scrollbar-hide'
-  });
-
-  it('should match CardSwitcher scrolling behavior', () => {
-    // Arrange: render both StatusFilters and CardSwitcher
-    // Act: scroll each
-    // Assert: scroll animations identical (smooth duration)
-  });
-});
-
-// Accessibility: StatusFilters
-describe('StatusFilters Accessibility', () => {
-  it('should have sufficient color contrast (4.5:1)', async () => {
-    // Arrange: render component
-    // Act: run axe-core
-    // Assert: no color contrast violations
-  });
-
-  it('should be keyboard navigable', async () => {
-    // Arrange: render, focus on first button
-    // Act: press Tab through all buttons
-    // Assert: all buttons receive focus
-  });
-
-  it('should have proper ARIA attributes', () => {
-    // Arrange: render
-    // Assert: buttons have aria-pressed, aria-label attributes
-  });
-});
-
-// E2E: Filter Workflow
-describe('Dashboard Filters E2E', () => {
-  it('should filter benefits when status changes', async () => {
-    // Arrange: navigate to dashboard, 10 benefits visible
-    // Act: click "Active" filter only
-    // Assert: only active benefits displayed
-  });
-
-  it('should maintain filter state during period change', async () => {
-    // Arrange: select "Used" status filter
-    // Act: change period from Monthly to Quarterly
-    // Assert: "Used" filter still selected
-  });
-});
-```
-
-#### My Cards Section Tests
-
-```typescript
-// Unit: CardItem Component
-describe('CardItem', () => {
-  it('should display card information correctly', () => {
-    // Assert: name, last 4 digits, type, network all visible
-  });
-
-  it('should call onEdit when Edit button clicked', () => {
-    // Arrange: mock onEdit callback
-    // Act: click Edit
-    // Assert: onEdit(card) called
-  });
-
-  it('should call onDelete when Delete button clicked', () => {
-    // Arrange: mock onDelete callback
-    // Act: click Delete
-    // Assert: onDelete(card) called
-  });
-
-  it('should show loading state when isLoading prop true', () => {
-    // Arrange: render with isLoading={true}
-    // Assert: buttons disabled, spinner visible
-  });
-});
-
-// Integration: CardEditModal
-describe('CardEditModal', () => {
-  it('should pre-fill form with card data when opened', () => {
-    // Arrange: render with card prop, isOpen={true}
-    // Assert: input values match card data
-  });
-
-  it('should validate required fields', async () => {
-    // Arrange: modal open, name field
-    // Act: clear name and click Save
-    // Assert: validation error shown
-  });
-
-  it('should call API and close on success', async () => {
-    // Arrange: modal open with valid data
-    // Act: click Save
-    // Assert: fetch called, modal closes on 200 response
-  });
-
-  it('should show error message on API failure', async () => {
-    // Arrange: mock API to return error
-    // Act: submit form
-    // Assert: error message displayed
-  });
-});
-
-// Integration: CardDeleteConfirmation
-describe('CardDeleteConfirmation', () => {
-  it('should show card name in confirmation text', () => {
-    // Arrange: render with card "My Amex"
-    // Assert: dialog text includes "My Amex"
-  });
-
-  it('should delete card when confirmed', async () => {
-    // Arrange: dialog open
-    // Act: click Delete button
-    // Assert: DELETE API called with correct id
-  });
-
-  it('should show loading state during deletion', async () => {
-    // Arrange: click Delete, mock slow API
-    // Assert: button shows loading spinner
-  });
-});
-
-// E2E: My Cards Workflow
-describe('My Cards Section E2E', () => {
-  it('should display all user cards on load', async () => {
-    // Arrange: user has 3 cards
-    // Act: navigate to settings
-    // Assert: 3 cards visible in My Cards section
-  });
-
-  it('should edit card successfully', async () => {
-    // Arrange: on settings page
-    // Act: click Edit on first card
-    // Assert: modal opens
-    // Act: change name and click Save
-    // Assert: API called, card name updated in list
-  });
-
-  it('should delete card successfully', async () => {
-    // Arrange: on settings page, 3 cards visible
-    // Act: click Delete on second card
-    // Assert: confirmation dialog shown
-    // Act: click Delete in confirmation
-    // Assert: card removed from list, success message shown
-  });
-
-  it('should show empty state when no cards', async () => {
-    // Arrange: user has no cards
-    // Act: navigate to settings
-    // Assert: empty state message displayed
-  });
-});
-```
-
-### 6.5 CI/CD Integration
-
-#### GitHub Actions Workflow
-```yaml
-# .github/workflows/test.yml
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      
-      # Unit tests
-      - run: npm run test:unit -- --coverage
-        env:
-          COVERAGE_THRESHOLD: 80
-      
-      # E2E tests
-      - run: npm run test:e2e
-      
-      # Accessibility tests
-      - run: npm run test:a11y
-      
-      # Upload coverage
-      - uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage/lcov.info
-```
-
-### 6.6 Coverage Requirements
+### 6.3 Coverage Requirements
 
 | Category | Minimum Coverage |
 |----------|-----------------|
@@ -906,18 +643,7 @@ jobs:
 | Branches | 75% |
 | Functions | 80% |
 | Lines | 80% |
-| Critical Paths | 100% (filters, API calls, delete) |
-
-### 6.7 Performance Testing
-
-```typescript
-// Measure filter scroll performance
-performance.mark('scroll-start');
-container.scrollBy({ left: 300, behavior: 'smooth' });
-performance.mark('scroll-end');
-performance.measure('filter-scroll', 'scroll-start', 'scroll-end');
-// Assert: < 60ms for smooth 60fps
-```
+| Critical Paths | 100% |
 
 ---
 
@@ -925,201 +651,53 @@ performance.measure('filter-scroll', 'scroll-start', 'scroll-end');
 
 ### 7.1 Filter Reduction to 3 Options
 
-**Rationale**: The original 5 status options (Active, Expiring Soon, Used, Expired, Pending) created cognitive load and UI clutter, particularly on mobile devices. Research shows users most commonly care about:
+**Rationale**: The original 5 status options created cognitive load and UI clutter, particularly on mobile devices. Users most commonly care about:
 - **Active**: Benefits they can currently use
 - **Expiring**: Time-sensitive benefits requiring attention
 - **Used**: Historical record of claimed benefits
 
-**Rationale for removal**:
-- **Expired**: Rarely relevant after expiration date passes; data can be archived
-- **Pending**: Represents edge case (benefits not yet approved); can be handled via modal details
-
-**Business Impact**: 
-- Reduces filter noise by 40%
-- Improves mobile UX (fewer wrapped filter lines)
-- Maintains core functionality (filters show most-used statuses)
+**Removed statuses**:
+- **Expired**: Rarely relevant after expiration date passes
+- **Pending**: Represents edge case (not yet approved)
 
 ### 7.2 Horizontal Scrolling for Filters
 
-**Rationale**: Fixed-height single-row scrollable container prevents layout shifting and provides consistent visual pattern across dashboard (matches CardSwitcher tabs).
+**Rationale**: Single-row scrollable container prevents layout shifting and provides consistent interaction pattern across dashboard (matches CardSwitcher tabs).
 
 **Alternative Considered**: Multi-row wrapping with flex-wrap
 - ❌ Causes layout instability
 - ❌ Less predictable on different screen sizes
-- ❌ Breaks accessibility focus flow
-
-**Selected Approach**: Single-row scroll with snap points
-- ✅ Consistent interaction pattern (users expect scroll behavior)
-- ✅ Predictable layout across all devices
-- ✅ Improved keyboard navigation
-- ✅ Better visual hierarchy
+- ✅ Selected: Single-row scroll with snap points
 
 ### 7.3 My Cards in Settings (Not Dashboard)
 
-**Rationale**: Card management is account/profile-scoped, not benefit-scoped. Placing in Settings > Profile tab:
-- Aligns with mental model (account settings vs. benefit tracking)
-- Reduces dashboard complexity
-- Provides dedicated space for card admin features
-- Follows common app patterns (e.g., payment settings in account section)
-
-### 7.4 Reduced Status Set Performance Impact
-
-**Data Model**: Backend will maintain all 5 statuses in database but frontend filters only show 3.
-
-**Filtering Logic**:
-```javascript
-// Dashboard benefits filter
-benefits.filter(b => {
-  // Map backend status to user-visible status
-  const displayStatus = {
-    'active': 'active',
-    'expiring_soon': 'expiring',
-    'used': 'used',
-    'expired': null,  // hidden
-    'pending': null,  // hidden
-  }[b.status];
-  
-  return displayStatus && selectedStatuses.includes(displayStatus);
-});
-```
-
-### 7.5 Modal Reuse for Card Editing
-
-**Rationale**: CardEditModal mirrors EditBenefitModal structure for:
-- Consistency in UX patterns
-- Reduced learning curve (users see familiar interface)
-- Easier maintenance (similar code patterns)
-- Accessibility compliance (uses same Radix patterns)
-
-### 7.6 API Design Decisions
-
-**Single Card Edit Endpoint** (`PATCH /api/cards/[id]`):
-- ✅ Follows REST conventions
-- ✅ Supports partial updates (only changed fields)
-- ✅ Atomic operation (all or nothing)
-
-**Separate Delete Endpoint** (`DELETE /api/cards/[id]`):
-- ✅ Follows HTTP semantics
-- ✅ Clear intent
-- ✅ Easier to log/audit (separate endpoint = separate log entries)
+**Rationale**: Card management is account/profile-scoped. Placing in Settings > Profile aligns with mental model (account settings vs. benefit tracking).
 
 ---
 
 ## 8. Dependencies & External Integrations
 
 ### External Systems
-
-**EXT-001**: Authentication Service
-- **Type**: Session-based or token-based (bearer token)
-- **Purpose**: Verify user identity for API calls
-- **Integration**: Already implemented; API calls include credentials
-
-**EXT-002**: User Service
-- **Type**: REST API endpoint `/api/user/profile`
-- **Purpose**: Load user profile data (firstName, lastName, email)
-- **Integration**: Existing; called on dashboard/settings load
-
-### Third-Party Services
-
-**SVC-001**: Card Issuer Data (Future)
-- **Service**: Optional integration with card networks API
-- **Purpose**: Validate card type/network during creation
-- **SLA**: Not critical for MVP
-- **Note**: Currently card type/network are user-selected dropdowns
-
-### Infrastructure Dependencies
-
-**INF-001**: Database with Card Table
-- **Type**: Relational database (PostgreSQL, MySQL, etc.)
-- **Schema**: Requires `cards` table with fields: id, userId, name, lastFourDigits, cardNetwork, cardType, isActive, createdAt
-- **Indexing**: Index on (userId, id) for fast user card lookups
-- **Constraint**: Foreign key on userId → users table
-
-**INF-002**: API Server with Express/Next.js Router
-- **Type**: Web server handling REST endpoints
-- **Endpoints**: GET/PATCH/DELETE `/api/cards/*`
-- **Response Format**: JSON with error handling
-
-**INF-003**: CSS Custom Properties System
-- **Type**: CSS variables defined globally
-- **Location**: `src/styles/design-tokens.css`
-- **Required Variables**: `--color-primary`, `--color-bg`, `--color-text`, `--color-border`, etc.
-- **Dark Mode**: Automatically updated by theme provider
-
-### Data Dependencies
-
-**DAT-001**: User Authentication State
-- **Source**: Session cookie or bearer token (from auth middleware)
-- **Format**: User ID included in request context
-- **Frequency**: Per-request validation
-- **Access**: Automatically included by fetch/axios interceptors
-
-**DAT-002**: User's Card List
-- **Source**: Database query filtered by userId
-- **Format**: Array of Card objects
-- **Frequency**: On-demand (when settings page loads or after add/edit/delete)
-- **Cache**: Optional client-side cache with 5-minute TTL
+- **EXT-001**: Authentication Service - Verify user identity for API calls
 
 ### Technology Platform Dependencies
-
-**PLT-001**: React 18+
-- **Requirement**: Function components with hooks
-- **Usage**: useState, useEffect, useCallback, useRef
-- **Rationale**: Required for component implementation
-
-**PLT-002**: Next.js 14+ with App Router
-- **Requirement**: Dynamic page export, API routes
-- **Usage**: Route handlers for `/api/cards/*` endpoints
-- **Rationale**: App framework and routing
-
-**PLT-003**: TypeScript 5+
-- **Requirement**: Strict mode (`"strict": true`)
-- **Usage**: Type all component props and API responses
-- **Rationale**: Type safety and IDE support
-
-**PLT-004**: Tailwind CSS 3.4+
-- **Requirement**: Utility classes for styling
-- **Usage**: `flex`, `overflow-x-auto`, `gap-3`, etc.
-- **Rationale**: Rapid styling with design tokens integration
-
-**PLT-005**: Radix UI Primitives (Dialog)
-- **Requirement**: `@radix-ui/react-dialog` package
-- **Usage**: Modal and confirmation dialog components
-- **Rationale**: Accessible primitives with keyboard/focus management
-
-**PLT-006**: Lucide React Icons
-- **Requirement**: Icon library (lucide-react package)
-- **Usage**: ChevronLeft, ChevronRight, Edit, Trash, CreditCard icons
-- **Rationale**: Consistent icon set across app
-
-**PLT-007**: HTTP Client
-- **Requirement**: Fetch API or Axios
-- **Usage**: API calls to `/api/cards/*` endpoints
-- **Rationale**: Essential for data communication
+- **PLT-001**: React 18+ - Function components with hooks
+- **PLT-002**: Next.js 14+ - Dynamic pages and API routes
+- **PLT-003**: TypeScript 5+ - Strict mode required
+- **PLT-004**: Tailwind CSS 3.4+ - Utility classes
+- **PLT-005**: Radix UI Primitives - Dialog component
+- **PLT-006**: Lucide React Icons - ChevronLeft, ChevronRight, Edit, Trash icons
 
 ### Compliance Dependencies
-
-**COM-001**: WCAG 2.1 Level AA Accessibility Standard
-- **Requirement**: 4.5:1 contrast ratio for text, keyboard navigation, screen reader support
-- **Impact**: All components must have aria-labels, focus management, semantic HTML
-- **Validation**: axe-core testing in CI/CD
-
-**COM-002**: GDPR Compliance (if EU users)
-- **Requirement**: User data privacy and right to deletion
-- **Impact**: User must be able to delete cards; no unnecessary data retention
-- **Validation**: Privacy policy updated with card management details
+- **COM-001**: WCAG 2.1 Level AA - 4.5:1 contrast ratio, keyboard navigation
+- **COM-002**: GDPR Compliance - User data privacy and right to deletion
 
 ---
 
 ## 9. Examples & Edge Cases
 
-### 9.1 Filter Scrolling Example
-
+### Filter Scrolling Example
 ```typescript
-// Scenario: User on mobile (375px) viewport with many filters
-// Expected: Filters scroll smoothly with keyboard and mouse
-
-// Implementation:
 <div className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-2">
   {filters.map(f => (
     <button 
@@ -1131,195 +709,22 @@ benefits.filter(b => {
     </button>
   ))}
 </div>
-
-// Keyboard handling:
-const handleKeyDown = (e: React.KeyboardEvent) => {
-  if (e.key === 'ArrowRight') {
-    containerRef.current?.scrollBy({ left: 100, behavior: 'smooth' });
-  } else if (e.key === 'ArrowLeft') {
-    containerRef.current?.scrollBy({ left: -100, behavior: 'smooth' });
-  }
-};
 ```
 
-### 9.2 Card Edit Modal - Dark Mode Example
-
+### Dark Mode Example
 ```typescript
-// Light mode (default)
---color-bg: #ffffff;
---color-text: #111827;
---color-border: #e5e7eb;
-
-// Dark mode (@media (prefers-color-scheme: dark))
---color-bg: #1f2937;
---color-text: #f9fafb;
---color-border: #374151;
-
-// Component uses tokens automatically:
-<DialogPrimitive.Content
-  className="rounded-lg border"
-  style={{ 
-    backgroundColor: 'var(--color-bg)',      // Adapts to theme
-    borderColor: 'var(--color-border)',      // Adapts to theme
-    color: 'var(--color-text)'                // Adapts to theme
-  }}
-/>
+// Automatic via CSS variables
+--color-bg: #ffffff;      // Light mode
+--color-bg: #1f2937;      // Dark mode
 ```
 
-### 9.3 Card Delete - Error Handling
-
+### Card Delete Error Handling
 ```typescript
-// Scenario: User tries to delete card that still has active benefits
-
-// API Response:
+// Scenario: API returns conflict error
 {
   "success": false,
-  "error": "Cannot delete card with active benefits. Please deactivate benefits first."
+  "error": "Cannot delete card with active benefits"
 }
-
-// Frontend handling:
-catch (error) {
-  if (error.status === 409) { // Conflict
-    showError(error.message); // User sees actionable message
-  } else if (error.status === 404) {
-    showError('Card not found - it may have been deleted');
-  } else {
-    showError('An unexpected error occurred');
-  }
-}
-```
-
-### 9.4 Edge Case: Empty Card Name
-
-```typescript
-// Client-side validation:
-if (!formData.name.trim()) {
-  setErrors({ name: 'Card name is required' });
-  return; // Prevent submission
-}
-
-// Server-side validation:
-if (!req.body.name || req.body.name.trim().length === 0) {
-  return res.status(400).json({
-    success: false,
-    error: 'Card name is required'
-  });
-}
-
-// Result: Consistent validation across stack
-```
-
-### 9.5 Concurrent Filter Changes
-
-```typescript
-// Scenario: User changes both status filter AND period simultaneously
-
-// React batching handles automatically:
-setSelectedStatuses([...newStatuses]);    // Batched
-setSelectedPeriod(newPeriod);             // Batched
-// → Single re-render instead of two
-
-// Filtering logic:
-filteredBenefits = benefits
-  .filter(b => selectedStatuses.includes(getDisplayStatus(b.status)))
-  .filter(b => isWithinPeriod(b.expirationDate, selectedPeriod));
-```
-
-### 9.6 Loading State During Card Deletion
-
-```typescript
-// User Experience:
-// 1. User clicks Delete
-// 2. Confirmation dialog appears
-// 3. User clicks "Delete" in confirmation
-// 4. Button becomes disabled with spinner: "Deleting..."
-// 5. After 500ms-2s: Success toast appears, dialog closes
-// 6. Card list refreshed, card removed
-// 7. Toast auto-dismisses after 5s
-
-// Code:
-const [isDeleting, setIsDeleting] = useState(false);
-
-const handleDelete = async () => {
-  setIsDeleting(true);
-  try {
-    const response = await fetch(`/api/cards/${card.id}`, {
-      method: 'DELETE',
-    });
-    if (response.ok) {
-      showSuccessToast('Card deleted');
-      refreshCardList();
-      onClose();
-    }
-  } finally {
-    setIsDeleting(false);
-  }
-};
-
-// Button:
-<button disabled={isDeleting}>
-  {isDeleting ? <Spinner /> : null}
-  {isDeleting ? 'Deleting...' : 'Delete'}
-</button>
-```
-
-### 9.7 Form Validation - Multiple Errors
-
-```typescript
-// User leaves multiple fields invalid:
-const validateForm = () => {
-  const newErrors: Record<string, string> = {};
-  
-  if (!formData.name.trim()) {
-    newErrors.name = 'Card name is required';
-  } else if (formData.name.length > 50) {
-    newErrors.name = 'Card name must be 50 characters or less';
-  }
-  
-  if (!formData.cardType) {
-    newErrors.cardType = 'Please select a card type';
-  }
-  
-  if (!formData.cardNetwork) {
-    newErrors.cardNetwork = 'Please select a card network';
-  }
-  
-  setErrors(newErrors);
-  return Object.keys(newErrors).length === 0;
-};
-
-// UI displays:
-// [X] Card name is required
-// [X] Please select a card type
-// [X] Please select a card network
-```
-
-### 9.8 Network Error with Retry
-
-```typescript
-// API call fails due to network timeout:
-const fetchUserCards = async () => {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
-    
-    const response = await fetch('/api/cards/user-cards', {
-      signal: controller.signal,
-    });
-    
-    clearTimeout(timeoutId);
-    
-    if (!response.ok) throw new Error('API error');
-    return response.json();
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      showError('Request timed out. Please check your connection.');
-    } else {
-      showError('Failed to load cards. Please try again.');
-    }
-    // Show retry button
-  }
-};
 ```
 
 ---
@@ -1328,35 +733,33 @@ const fetchUserCards = async () => {
 
 | Criterion | How to Validate | Pass Condition |
 |-----------|-----------------|---|
-| **VC-001**: Status filters reduced to 3 | Count visible filter buttons | Exactly 3 buttons displayed |
-| **VC-002**: No line wrapping on mobile | Screenshot at 375px | Single row, horizontal scroll present |
-| **VC-003**: Keyboard navigation works | Tab through and arrow key test | Focus moves smoothly, scroll works |
-| **VC-004**: Dark mode colors correct | Enable dark mode, check contrast | 4.5:1 contrast ratio met |
-| **VC-005**: Cards display correctly | Load settings page | All card fields visible (name, last 4, type, network) |
-| **VC-006**: Edit modal opens | Click Edit button | Modal appears with pre-filled form |
-| **VC-007**: Delete confirmation shows | Click Delete button | Confirmation dialog appears with card name |
-| **VC-008**: Card deletion works | Confirm deletion | Card removed from list, API called |
-| **VC-009**: Error handling | Trigger network error | Error message displayed with retry option |
-| **VC-010**: Loading states visible | Monitor during async operations | Skeleton/spinner shown for appropriate duration |
-| **VC-011**: API responses match spec | Check network tab | Responses match exact schema (fields, types) |
-| **VC-012**: Form validation works | Submit empty form | Validation errors displayed for required fields |
-| **VC-013**: Responsive grid works | Resize viewport | 1 col mobile, 2+ cols tablet/desktop |
-| **VC-014**: Empty state displays | Create test user with no cards | Empty state message shown |
-| **VC-015**: Toast notifications | Complete action | Toast appears and auto-dismisses |
+| **VC-001** | Status filters reduced | Exactly 3 buttons displayed |
+| **VC-002** | No line wrapping on mobile | Screenshot at 375px shows single row |
+| **VC-003** | Keyboard navigation | Arrow keys scroll filters |
+| **VC-004** | Dark mode colors | 4.5:1 contrast ratio met |
+| **VC-005** | Cards display | All fields visible (name, last 4, type, network) |
+| **VC-006** | Edit modal opens | Modal appears with pre-filled form |
+| **VC-007** | Delete confirmation | Dialog shows with card name |
+| **VC-008** | Card deletion works | Card removed from list |
+| **VC-009** | Error handling | Error message with retry displayed |
+| **VC-010** | Loading states | Skeleton/spinner shown appropriately |
+| **VC-011** | API responses | Match exact schema |
+| **VC-012** | Form validation | Errors shown for required fields |
+| **VC-013** | Responsive grid | 1 col mobile, 2+ cols tablet/desktop |
+| **VC-014** | Empty state | Message shown when no cards |
+| **VC-015** | Toast notifications | Appear and auto-dismiss |
 
 ---
 
 ## 11. Related Specifications & Further Reading
 
-- **[Existing Dashboard Filter Implementation](/src/app/dashboard/new/components/StatusFilters.tsx)** - Reference component structure
-- **[CardSwitcher Component](/src/shared/components/features/CardSwitcher.tsx)** - Scrolling behavior template
-- **[EditBenefitModal](/src/features/benefits/components/modals/EditBenefitModal.tsx)** - Modal pattern reference
-- **[Design Tokens Documentation](/src/styles/design-tokens.css)** - Color and spacing tokens
-- **[WCAG 2.1 Level AA Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)** - Accessibility standards
-- **[Radix UI Dialog Documentation](https://www.radix-ui.com/docs/primitives/components/dialog)** - Modal component docs
+- **[StatusFilters Component](/src/app/dashboard/new/components/StatusFilters.tsx)** - Reference implementation
+- **[CardSwitcher Component](/src/shared/components/features/CardSwitcher.tsx)** - Scrolling pattern
+- **[EditBenefitModal](/src/features/benefits/components/modals/EditBenefitModal.tsx)** - Modal pattern
+- **[Design Tokens](/src/styles/design-tokens.css)** - Color and spacing tokens
+- **[WCAG 2.1 Level AA](https://www.w3.org/WAI/WCAG21/quickref/)** - Accessibility standards
+- **[Radix UI Dialog](https://www.radix-ui.com/docs/primitives/components/dialog)** - Modal docs
 - **[Lucide React Icons](https://lucide.dev/)** - Icon reference
-- **[Tailwind CSS Documentation](https://tailwindcss.com/docs)** - Utility classes
-- **[React Accessibility Patterns](https://react.dev/reference/react-dom/components#form-components)** - Form accessibility
 
 ---
 

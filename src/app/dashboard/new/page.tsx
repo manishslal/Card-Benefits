@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { PeriodSelector, PeriodOption } from './components/PeriodSelector';
-import { StatusFilters, BenefitStatus, StatusOption } from './components/StatusFilters';
-import { SummaryBox } from './components/SummaryBox';
-import { BenefitsList } from './components/BenefitsList';
-import { BenefitRowProps } from './components/BenefitRow';
-import { calculatePeriodDateRange, getPeriodDisplayLabel } from './utils/period-helpers';
-import { fetchDashboardData, toggleBenefitUsed } from './utils/api-client';
+import { PeriodSelector, PeriodOption } from '../components/PeriodSelector';
+import { StatusFilters, BenefitStatus, StatusOption } from '../components/StatusFilters';
+import { SummaryBox } from '../components/SummaryBox';
+import { BenefitsList } from '../components/BenefitsList';
+import { BenefitRowProps } from '../components/BenefitRow';
+import { calculatePeriodDateRange, getPeriodDisplayLabel } from '../utils/period-helpers';
+import { fetchDashboardData, toggleBenefitUsed } from '../utils/api-client';
 
 /**
  * Enhanced Dashboard Page - Period-First Benefits Tracker

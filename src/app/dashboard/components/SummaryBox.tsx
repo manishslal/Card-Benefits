@@ -40,22 +40,34 @@ export function SummaryBox({
   if (isLoading) {
     return (
       <div 
-        className="rounded-lg border p-6 shadow-sm"
+        className="rounded-lg border shadow-sm"
         style={{
           backgroundColor: 'var(--color-bg)',
-          borderColor: 'var(--color-border)'
+          borderColor: 'var(--color-border)',
+          borderWidth: '1px',
+          borderStyle: 'solid',
+          padding: 'var(--space-lg)',
+          borderRadius: 'var(--radius-lg)',
+          boxShadow: 'var(--shadow-sm)',
         }}
       >
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4" style={{ gap: 'var(--space-md)' }}>
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="animate-pulse">
               <div 
                 className="h-4 rounded w-3/4 mb-2"
-                style={{ backgroundColor: 'var(--color-bg-tertiary)' }}
+                style={{ 
+                  backgroundColor: 'var(--color-bg-secondary)',
+                  marginBottom: 'var(--space-sm)',
+                  borderRadius: 'var(--radius-md)',
+                }}
               />
               <div 
                 className="h-6 rounded w-1/2"
-                style={{ backgroundColor: 'var(--color-bg-tertiary)' }}
+                style={{ 
+                  backgroundColor: 'var(--color-bg-secondary)',
+                  borderRadius: 'var(--radius-md)',
+                }}
               />
             </div>
           ))}
@@ -97,32 +109,46 @@ export function SummaryBox({
 
   return (
     <div 
-      className="rounded-lg border p-6 shadow-sm"
+      className="rounded-lg border shadow-sm"
       style={{
         backgroundColor: 'var(--color-bg)',
-        borderColor: 'var(--color-border)'
+        borderColor: 'var(--color-border)',
+        borderWidth: '1px',
+        borderStyle: 'solid',
+        padding: 'var(--space-lg)',
+        borderRadius: 'var(--radius-lg)',
+        boxShadow: 'var(--shadow-sm)',
       }}
     >
       <h2 
         className="text-sm font-semibold mb-4 flex items-center gap-2"
-        style={{ color: 'var(--color-text-secondary)' }}
+        style={{ 
+          color: 'var(--color-text-secondary)',
+          fontSize: 'var(--text-body-sm)',
+          marginBottom: 'var(--space-md)',
+          gap: 'var(--space-sm)',
+        }}
       >
         📊 SUMMARY
       </h2>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4" style={{ gap: 'var(--space-md)' }}>
         {summaryItems.map((item) => (
           <div
             key={item.label}
-            className="rounded-lg p-4 flex flex-col items-start gap-2"
+            className="rounded-lg flex flex-col items-start gap-2"
             style={{ 
               backgroundColor: `var(${item.bgColorVar})`,
+              padding: 'var(--space-md)',
+              borderRadius: 'var(--radius-md)',
+              gap: 'var(--space-sm)',
             }}
           >
-            <div className="flex items-center justify-between w-full">
+            <div className="flex items-center justify-between w-full" style={{ gap: 'var(--space-sm)' }}>
               <span 
                 className="text-xs font-medium"
                 style={{ 
                   color: `var(${item.textColorVar})`,
+                  fontSize: 'var(--text-caption)',
                 }}
               >
                 {item.label}
@@ -134,9 +160,10 @@ export function SummaryBox({
               </div>
             </div>
             <span 
-              className="text-2xl font-bold"
+              className="font-bold"
               style={{ 
                 color: `var(${item.textColorVar})`,
+                fontSize: 'var(--text-h4)',
               }}
             >
               {typeof item.value === 'number' ? item.value.toLocaleString() : item.value}

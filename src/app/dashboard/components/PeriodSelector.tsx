@@ -52,11 +52,11 @@ export function PeriodSelector({
   }, [selectedPeriodId, periods]);
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2" style={{ gap: 'var(--space-sm)' }}>
       <label 
         htmlFor="period-select" 
         className="text-sm font-medium"
-        style={{ color: 'var(--color-text)' }}
+        style={{ color: 'var(--color-text)', fontSize: 'var(--text-body-sm)' }}
       >
         Period:
       </label>
@@ -65,13 +65,25 @@ export function PeriodSelector({
           id="period-select"
           value={selectedPeriodId}
           onChange={(e) => onPeriodChange(e.target.value)}
-          className="appearance-none border rounded-lg px-4 py-2 pr-10 text-sm font-medium cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
+          className="appearance-none border rounded-lg text-sm font-medium cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 px-3 py-2 pr-10"
           style={{
             backgroundColor: 'var(--color-bg)',
             borderColor: 'var(--color-border)',
             color: 'var(--color-text)',
+            fontSize: 'var(--text-body-sm)',
+            borderWidth: '1px',
+            borderStyle: 'solid',
+            borderRadius: 'var(--radius-md)',
           }}
           aria-label="Select time period"
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = 'var(--color-primary)';
+            e.currentTarget.style.boxShadow = '0 0 0 3px var(--color-primary-light)';
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = 'var(--color-border)';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
         >
           {periods.map((period) => (
             <option key={period.id} value={period.id}>
@@ -80,14 +92,23 @@ export function PeriodSelector({
           ))}
         </select>
         <ChevronDown
-          className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none"
+          className="absolute pointer-events-none"
           size={16}
-          style={{ color: 'var(--color-text-secondary)' }}
+          style={{ 
+            color: 'var(--color-text-secondary)',
+            right: '12px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+          }}
         />
       </div>
       <span 
         className="text-sm ml-2"
-        style={{ color: 'var(--color-text-secondary)' }}
+        style={{ 
+          color: 'var(--color-text-secondary)',
+          fontSize: 'var(--text-body-sm)',
+          marginLeft: 'var(--space-sm)',
+        }}
       >
         {periodDisplay}
       </span>

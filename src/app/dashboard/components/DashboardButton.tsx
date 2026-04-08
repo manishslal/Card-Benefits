@@ -90,7 +90,7 @@ function getVariantStyles(variant: DashboardButtonVariant): React.CSSProperties 
 /**
  * Get variant classes for button - combine with inline styles
  */
-function getVariantClasses(variant: DashboardButtonVariant): string {
+function getVariantClasses(): string {
   return `
     disabled:opacity-50 disabled:cursor-not-allowed
     transition-colors duration-200
@@ -148,7 +148,7 @@ export const DashboardButton = React.forwardRef<
     ref
   ) => {
     const sizeClasses = getSizeClasses(size);
-    const variantClasses = getVariantClasses(variant);
+    const variantClasses = getVariantClasses();
     const variantStyles = getVariantStyles(variant);
 
     const combinedClassName = `

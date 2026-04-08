@@ -125,7 +125,6 @@ export function BenefitRow({
               style={{ 
                 backgroundColor: 'var(--color-bg-secondary)',
                 color: 'var(--color-text-secondary)',
-                padding: `${getComputedStyle(document.documentElement).getPropertyValue('--space-xs')} var(--space-sm)`,
                 fontSize: 'var(--text-caption)',
               }}
             >
@@ -137,7 +136,6 @@ export function BenefitRow({
                 style={{ 
                   backgroundColor: 'var(--color-primary-light)',
                   color: 'var(--color-primary)',
-                  padding: `${getComputedStyle(document.documentElement).getPropertyValue('--space-xs')} var(--space-sm)`,
                   fontSize: 'var(--text-caption)',
                 }}
               >

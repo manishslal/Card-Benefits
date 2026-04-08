@@ -61,13 +61,13 @@ export function StatusFilters({
   }, [availableStatuses, onStatusChange]);
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+    <div className="flex flex-wrap items-center gap-3" style={{ gap: 'var(--space-md)' }}>
+      <span className="text-sm font-medium" style={{ color: 'var(--color-text)', fontSize: 'var(--text-body-sm)' }}>
         Filters:
       </span>
 
       {/* Status Filter Buttons - Using DashboardButton for consistency */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2" style={{ gap: 'var(--space-sm)' }}>
         {availableStatuses.map((status) => (
           <DashboardButton
             key={status.id}
@@ -85,17 +85,29 @@ export function StatusFilters({
 
       {/* Clear/Select All Buttons */}
       {selectedStatuses.length > 0 && (
-        <div className="flex gap-2 text-xs">
+        <div className="flex gap-2 text-xs" style={{ gap: 'var(--space-sm)' }}>
           <button
             onClick={handleClearAll}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 underline"
+            className="underline transition-colors"
+            style={{
+              color: 'var(--color-text-secondary)',
+              fontSize: 'var(--text-caption)',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-text)'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-secondary)'}
           >
             Clear
           </button>
-          <span className="text-gray-400 dark:text-gray-600">|</span>
+          <span style={{ color: 'var(--color-border)' }}>|</span>
           <button
             onClick={handleSelectAll}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 underline"
+            className="underline transition-colors"
+            style={{
+              color: 'var(--color-text-secondary)',
+              fontSize: 'var(--text-caption)',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-text)'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-secondary)'}
           >
             Select All
           </button>
@@ -105,7 +117,13 @@ export function StatusFilters({
       {selectedStatuses.length === 0 && (
         <button
           onClick={handleSelectAll}
-          className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 underline"
+          className="text-xs underline transition-colors"
+          style={{
+            color: 'var(--color-text-secondary)',
+            fontSize: 'var(--text-caption)',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-text)'}
+          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-secondary)'}
         >
           Select filters
         </button>

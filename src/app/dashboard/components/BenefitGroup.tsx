@@ -21,21 +21,63 @@ interface BenefitGroupProps {
 }
 
 /**
- * Get color classes for a benefit group using CSS variables
+ * Get color style object for a benefit group using CSS variables
  */
-function getGroupColorClasses(color: 'green' | 'orange' | 'red' | 'gray' | 'blue') {
-  switch (color) {
-    case 'green':
-      return 'border-green-200 dark:border-green-900 bg-green-50 dark:bg-green-900/10';
-    case 'orange':
-      return 'border-orange-200 dark:border-orange-900 bg-orange-50 dark:bg-orange-900/10';
-    case 'red':
-      return 'border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-900/10';
-    case 'blue':
-      return 'border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/10';
-    default:
-      return 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/10';
-  }
+function getGroupColorStyles(color: 'green' | 'orange' | 'red' | 'gray' | 'blue'): React.CSSProperties {
+  const colorMap = {
+    green: {
+      borderColor: 'var(--color-success-light)',
+      backgroundColor: 'rgba(10, 125, 87, 0.05)',
+    },
+    orange: {
+      borderColor: 'var(--color-warning)',
+      backgroundColor: 'rgba(217, 119, 6, 0.05)',
+    },
+    red: {
+      borderColor: 'var(--color-error)',
+      backgroundColor: 'rgba(239, 68, 68, 0.05)',
+    },
+    blue: {
+      borderColor: 'var(--color-primary)',
+      backgroundColor: 'rgba(51, 86, 208, 0.05)',
+    },
+    gray: {
+      borderColor: 'var(--color-border)',
+      backgroundColor: 'var(--color-bg-secondary)',
+    },
+  };
+
+  return colorMap[color] || colorMap.gray;
+}
+
+/**
+ * Get header background style for a benefit group
+ */
+function getHeaderBackgroundStyle(color: 'green' | 'orange' | 'red' | 'gray' | 'blue'): React.CSSProperties {
+  const colorMap = {
+    green: { backgroundColor: 'rgba(10, 125, 87, 0.1)' },
+    orange: { backgroundColor: 'rgba(217, 119, 6, 0.1)' },
+    red: { backgroundColor: 'rgba(239, 68, 68, 0.1)' },
+    blue: { backgroundColor: 'rgba(51, 86, 208, 0.1)' },
+    gray: { backgroundColor: 'var(--color-bg-secondary)' },
+  };
+
+  return colorMap[color] || colorMap.gray;
+}
+
+/**
+ * Get header text color style
+ */
+function getHeaderTextStyle(color: 'green' | 'orange' | 'red' | 'gray' | 'blue'): React.CSSProperties {
+  const colorMap = {
+    green: { color: 'var(--color-success)' },
+    orange: { color: 'var(--color-warning)' },
+    red: { color: 'var(--color-error)' },
+    blue: { color: 'var(--color-primary)' },
+    gray: { color: 'var(--color-text)' },
+  };
+
+  return colorMap[color] || colorMap.gray;
 }
 
 /**
@@ -70,52 +112,55 @@ export function BenefitGroup({
     return null;
   }
 
-  const colorClasses = getGroupColorClasses(color);
-  const headerBackgroundClass = color === 'green' 
-    ? 'bg-green-100 dark:bg-green-900/30'
-    : color === 'orange'
-    ? 'bg-orange-100 dark:bg-orange-900/30'
-    : color === 'red'
-    ? 'bg-red-100 dark:bg-red-900/30'
-    : color === 'blue'
-    ? 'bg-blue-100 dark:bg-blue-900/30'
-    : 'bg-gray-100 dark:bg-gray-900/30';
-
-  const headerTextClass = color === 'green'
-    ? 'text-green-900 dark:text-green-100'
-    : color === 'orange'
-    ? 'text-orange-900 dark:text-orange-100'
-    : color === 'red'
-    ? 'text-red-900 dark:text-red-100'
-    : color === 'blue'
-    ? 'text-blue-900 dark:text-blue-100'
-    : 'text-gray-900 dark:text-gray-100';
+  const groupColorStyles = getGroupColorStyles(color);
+  const headerBackgroundStyle = getHeaderBackgroundStyle(color);
+  const headerTextStyle = getHeaderTextStyle(color);
 
   return (
-    <section className={`border rounded-lg mb-6 ${colorClasses} overflow-hidden`}>
+    <section 
+      className="border rounded-lg mb-6 overflow-hidden"
+      style={{
+        ...groupColorStyles,
+        marginBottom: 'var(--space-lg)',
+        borderRadius: 'var(--radius-lg)',
+        borderWidth: '1px',
+        borderStyle: 'solid',
+      }}
+    >
       {/* Header */}
       <button
         onClick={() => onToggleExpand?.(status)}
-        className={`w-full ${headerBackgroundClass} px-4 py-3 flex items-center justify-between hover:opacity-80 transition-opacity`}
+        className="w-full px-4 py-3 flex items-center justify-between hover:opacity-80 transition-opacity"
+        style={{
+          ...headerBackgroundStyle,
+          padding: 'var(--space-md)',
+        }}
         aria-expanded={isExpanded}
         aria-controls={`benefit-group-${status}`}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3" style={{ gap: 'var(--space-md)' }}>
           <span className="text-xl">{icon}</span>
           <h2 
-            className={`font-bold text-lg ${headerTextClass}`}
-            style={{ fontFamily: 'var(--font-heading)' }}
+            className="font-bold text-lg"
+            style={{ 
+              fontFamily: 'var(--font-heading)',
+              ...headerTextStyle,
+              fontSize: 'var(--text-h5)',
+            }}
           >
             {title}
-            <span className="ml-2 text-sm font-normal opacity-75">
+            <span className="ml-2 text-sm font-normal opacity-75" style={{ marginLeft: 'var(--space-sm)' }}>
               ({benefits.length})
             </span>
           </h2>
         </div>
         <svg
-          className={`w-5 h-5 ${headerTextClass} transform transition-transform ${
-            isExpanded ? 'rotate-180' : ''
-          }`}
+          className="w-5 h-5 transform transition-transform"
+          style={{
+            ...headerTextStyle,
+            transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+            transitionDuration: 'var(--duration-base)',
+          }}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -129,9 +174,12 @@ export function BenefitGroup({
         <div 
           id={`benefit-group-${status}`} 
           className="px-4 py-4"
-          style={{ backgroundColor: 'var(--color-bg)' }}
+          style={{ 
+            backgroundColor: 'var(--color-bg)',
+            padding: 'var(--space-md)',
+          }}
         >
-          <div className="space-y-2">
+          <div className="space-y-2" style={{ gap: 'var(--space-sm)' }}>
             {benefits.map((benefit) => (
               <BenefitRow 
                 key={benefit.id} 

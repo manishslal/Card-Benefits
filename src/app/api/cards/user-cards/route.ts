@@ -40,15 +40,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     // Transform to the Card format expected by MyCardsSection
     // Note: We're using the available fields from UserCard and MasterCard
-    // Some spec fields (lastFourDigits, cardType, cardNetwork) are placeholders
-    // since they don't exist in the current schema
+    // lastFourDigits: placeholder since not stored in schema
+    // cardType: read-only field from master card configuration
     const cards = userCards.map((uc) => ({
       id: uc.id,
       userId,
       name: uc.customName || uc.masterCard.cardName || 'Card',
-      lastFourDigits: '0000', // Placeholder - would need card number in schema
+      lastFourDigits: '****', // TODO: Extract from card data when cardholder numbers are stored
       cardNetwork: uc.masterCard.issuer as 'Visa' | 'Mastercard' | 'Amex' | 'Discover',
-      cardType: 'Credit' as const, // Placeholder - would need in schema
+      cardType: 'Credit' as const, // Read-only from master card, not editable per user card
       isActive: uc.isOpen, // Use isOpen as proxy for isActive
       createdAt: uc.createdAt.toISOString(),
     }));

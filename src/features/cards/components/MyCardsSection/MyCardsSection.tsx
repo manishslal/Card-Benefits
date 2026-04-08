@@ -49,7 +49,7 @@ export function MyCardsSection({}: MyCardsSectionProps) {
     setError(null);
 
     try {
-      const response = await fetch('/api/cards/my-cards', {
+      const response = await fetch('/api/cards/user-cards', {
         method: 'GET',
         credentials: 'include',
       });

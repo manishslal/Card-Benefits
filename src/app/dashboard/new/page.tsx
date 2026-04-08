@@ -1,42 +1,83 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { PeriodSelector, PeriodOption } from '../components/PeriodSelector';
-import { StatusFilters, BenefitStatus, StatusOption } from '../components/StatusFilters';
-import { SummaryBox } from '../components/SummaryBox';
-import { BenefitsList } from '../components/BenefitsList';
-import { BenefitRowProps } from '../components/BenefitRow';
+import { PeriodSelector, PeriodOption } from './components/PeriodSelector';
+import { StatusFilters, BenefitStatus, StatusOption } from './components/StatusFilters';
+import { SummaryBox } from './components/SummaryBox';
+import { BenefitsList } from './components/BenefitsList';
+import { BenefitRowProps } from './components/BenefitRow';
 import { calculatePeriodDateRange, getPeriodDisplayLabel } from '../utils/period-helpers';
 import { fetchDashboardData, toggleBenefitUsed } from '../utils/api-client';
+import CardSwitcher from '@/shared/components/features/CardSwitcher';
+import { EditBenefitModal } from '@/features/benefits/components/modals/EditBenefitModal';
+import { DeleteBenefitConfirmationDialog } from '@/features/benefits/components/modals/DeleteBenefitConfirmationDialog';
+import { AddBenefitModal } from '@/features/benefits/components/modals/AddBenefitModal';
+import { CheckCircle, AlertCircle, CheckCircle2, XCircle, Clock } from 'lucide-react';
+
+/**
+ * Type definitions for card and benefit
+ */
+interface CardData {
+  id: string;
+  name: string;
+  type: 'visa' | 'amex' | 'mastercard' | 'discover' | 'other';
+  lastFour: string;
+  issuer: string;
+  customName?: string | null;
+}
+
+interface BenefitData {
+  id: string;
+  name: string;
+  type: string;
+  stickerValue: number;
+  userDeclaredValue: number | null;
+  resetCadence: string;
+  status?: string;
+  expirationDate?: string | null;
+  description?: string;
+  value?: number;
+  usage?: number;
+  isUsed?: boolean;
+}
 
 /**
  * Enhanced Dashboard Page - Period-First Benefits Tracker
  *
  * Features:
+ * - Card switcher for selecting individual card or all cards
  * - Period selector (This Month, Quarter, Half Year, Full Year, All Time)
- * - Multi-select status filters (Active, Expiring, Used, Expired, Pending)
- * - Summary statistics box
+ * - Multi-select status filters with Lucide icons
+ * - Summary statistics box with minimal styling
  * - Benefits grouped by status with expandable sections
- * - Past periods section with expandable groups
- * - Responsive design with dark mode support via CSS design tokens
- * - Accessibility features (ARIA labels, keyboard navigation)
- *
- * Uses React 19 patterns:
- * - useCallback for memoized handlers
- * - useMemo for calculated values
- * - useState for local state
- * - No React import needed (new JSX transform)
- * - CSS variables for all colors and typography
+ * - Edit, Delete, Mark Used modals fully wired
+ * - Progress bars with percentage display
+ * - Responsive design with dark mode support
  */
 export default function EnhancedDashboardPage() {
   // ============================================================
-  // State Management
+  // State Management - Card Selection
+  // ============================================================
+  const [cards, setCards] = useState<CardData[]>([]);
+  const [selectedCardId, setSelectedCardId] = useState<string>('all');
+  const [isLoadingCards, setIsLoadingCards] = useState(true);
+
+  // ============================================================
+  // State Management - Filters and Benefits
   // ============================================================
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>('this-month');
   const [selectedStatuses, setSelectedStatuses] = useState<BenefitStatus[]>([]);
-  const [benefits, setBenefits] = useState<BenefitRowProps[]>([]);
+  const [allBenefits, setAllBenefits] = useState<BenefitRowProps[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // ============================================================
+  // State Management - Modals
+  // ============================================================
+  const [selectedBenefit, setSelectedBenefit] = useState<BenefitData | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isAddBenefitOpen, setIsAddBenefitOpen] = useState(false);
 
   // ============================================================
   // Period Configuration
@@ -78,54 +119,87 @@ export default function EnhancedDashboardPage() {
   );
 
   // ============================================================
-  // Status Filter Configuration
+  // Status Filter Configuration with Lucide Icons
   // ============================================================
   const statusOptions: StatusOption[] = useMemo(
     () => [
       {
         id: 'active',
         label: 'Active',
-        icon: '🟢',
+        icon: <CheckCircle size={16} />,
         description: 'Benefits with balance remaining',
+        color: '--color-success',
       },
       {
         id: 'expiring_soon',
         label: 'Expiring Soon',
-        icon: '🟠',
+        icon: <AlertCircle size={16} />,
         description: '7-30 days left to use',
+        color: '--color-warning',
       },
       {
         id: 'used',
         label: 'Used',
-        icon: '✓',
+        icon: <CheckCircle2 size={16} />,
         description: 'Already claimed this period',
+        color: '--color-info',
       },
       {
         id: 'expired',
         label: 'Expired',
-        icon: '🔴',
+        icon: <XCircle size={16} />,
         description: 'Period ended',
+        color: '--color-text-secondary',
       },
       {
         id: 'pending',
         label: 'Pending',
-        icon: '⏳',
+        icon: <Clock size={16} />,
         description: 'Future periods',
+        color: '--color-text-secondary',
       },
     ],
     []
   );
 
   // ============================================================
-  // Load Dashboard Data
+  // Load Dashboard Data and Cards
   // ============================================================
   useEffect(() => {
     const loadDashboard = async () => {
       try {
         setIsLoading(true);
+        setIsLoadingCards(true);
         setError(null);
+
+        // Load dashboard data
         const data = await fetchDashboardData();
-        setBenefits(data.benefits);
+        setAllBenefits(data.benefits);
+
+        // Load cards from API
+        const cardsResponse = await fetch('/api/cards/my-cards', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        });
+
+        if (cardsResponse.ok) {
+          const cardsData = await cardsResponse.json();
+          if (cardsData.success && cardsData.cards) {
+            const transformedCards: CardData[] = cardsData.cards.map((card: any) => ({
+              id: card.id,
+              name: card.customName || card.cardName,
+              type: (card.type || 'visa') as CardData['type'],
+              lastFour: card.lastFour || '0000',
+              issuer: card.issuer,
+              customName: card.customName,
+            }));
+            setCards(transformedCards);
+            if (transformedCards.length > 0) {
+              setSelectedCardId(transformedCards[0].id);
+            }
+          }
+        }
       } catch (err) {
         console.error('Error loading dashboard:', err);
         setError(
@@ -134,14 +208,34 @@ export default function EnhancedDashboardPage() {
             : 'Failed to load dashboard. Please try again.'
         );
         // Use mock data for development
-        setBenefits(generateMockBenefits());
+        setAllBenefits(generateMockBenefits());
       } finally {
         setIsLoading(false);
+        setIsLoadingCards(false);
       }
     };
 
     loadDashboard();
   }, []);
+
+  // ============================================================
+  // Filter Benefits by Selected Card and Status
+  // ============================================================
+  const benefits = useMemo(() => {
+    let filtered = allBenefits;
+
+    // Filter by selected card
+    if (selectedCardId !== 'all') {
+      filtered = filtered.filter((b) => b.cardName === selectedCardId);
+    }
+
+    // Filter by selected statuses
+    if (selectedStatuses.length > 0) {
+      filtered = filtered.filter((b) => selectedStatuses.includes(b.status));
+    }
+
+    return filtered;
+  }, [allBenefits, selectedCardId, selectedStatuses]);
 
   // ============================================================
   // Calculate Summary Statistics
@@ -167,11 +261,14 @@ export default function EnhancedDashboardPage() {
   // ============================================================
   const handlePeriodChange = useCallback((periodId: string) => {
     setSelectedPeriodId(periodId);
-    // In a real app, this would re-fetch data for the new period
   }, []);
 
   const handleStatusChange = useCallback((statuses: BenefitStatus[]) => {
     setSelectedStatuses(statuses);
+  }, []);
+
+  const handleCardSelect = useCallback((cardId: string) => {
+    setSelectedCardId(cardId);
   }, []);
 
   const handleMarkUsed = useCallback(
@@ -179,8 +276,7 @@ export default function EnhancedDashboardPage() {
       try {
         const result = await toggleBenefitUsed(benefitId);
         if (result.success) {
-          // Update local state
-          setBenefits((prev) =>
+          setAllBenefits((prev) =>
             prev.map((b) =>
               b.id === benefitId ? { ...b, status: 'used' as const } : b
             )
@@ -195,14 +291,58 @@ export default function EnhancedDashboardPage() {
   );
 
   const handleEdit = useCallback((benefitId: string) => {
-    console.log('Edit benefit:', benefitId);
-    // Open edit modal
-  }, []);
+    const benefit = allBenefits.find((b) => b.id === benefitId);
+    if (benefit) {
+      setSelectedBenefit({
+        id: benefit.id,
+        name: benefit.name,
+        type: '',
+        stickerValue: benefit.available,
+        userDeclaredValue: benefit.available,
+        resetCadence: benefit.resetCadence,
+      } as BenefitData);
+      setIsEditModalOpen(true);
+    }
+  }, [allBenefits]);
 
   const handleDelete = useCallback((benefitId: string) => {
-    console.log('Delete benefit:', benefitId);
-    // Open delete confirmation
-  }, []);
+    const benefit = allBenefits.find((b) => b.id === benefitId);
+    if (benefit) {
+      setSelectedBenefit({
+        id: benefit.id,
+        name: benefit.name,
+        type: '',
+        stickerValue: benefit.available,
+        userDeclaredValue: benefit.available,
+        resetCadence: benefit.resetCadence,
+      } as BenefitData);
+      setIsDeleteDialogOpen(true);
+    }
+  }, [allBenefits]);
+
+  const handleBenefitUpdated = (updatedBenefit: BenefitData) => {
+    setAllBenefits((prev) =>
+      prev.map((b) =>
+        b.id === updatedBenefit.id
+          ? {
+              ...b,
+              name: updatedBenefit.name,
+              available: updatedBenefit.userDeclaredValue || updatedBenefit.stickerValue,
+            }
+          : b
+      )
+    );
+    setIsEditModalOpen(false);
+    setSelectedBenefit(null);
+  };
+
+  const handleBenefitDeleted = () => {
+    if (selectedBenefit) {
+      setAllBenefits((prev) => prev.filter((b) => b.id !== selectedBenefit.id));
+    }
+    setIsDeleteDialogOpen(false);
+    setSelectedBenefit(null);
+  };
 
   // ============================================================
   // Render
@@ -222,11 +362,20 @@ export default function EnhancedDashboardPage() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <h1 
-            className="text-3xl font-bold mb-4"
+            className="text-3xl font-bold mb-6"
             style={{ fontFamily: 'var(--font-heading)', color: 'var(--color-text)' }}
           >
             💳 My Benefits
           </h1>
+
+          {/* Card Switcher */}
+          {!isLoadingCards && cards.length > 0 && (
+            <CardSwitcher
+              cards={cards}
+              selectedCardId={selectedCardId === 'all' ? cards[0].id : selectedCardId}
+              onSelectCard={handleCardSelect}
+            />
+          )}
 
           {/* Controls Row */}
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6">
@@ -266,6 +415,7 @@ export default function EnhancedDashboardPage() {
         {/* Summary Box */}
         <SummaryBox
           totalBenefits={summary.total}
+          activeCount={summary.active}
           expiringCount={summary.expiring}
           usedCount={summary.used}
           totalValue={summary.totalValue}
@@ -276,7 +426,6 @@ export default function EnhancedDashboardPage() {
         <div className="mt-8">
           <BenefitsList
             benefits={benefits}
-            pastPeriods={[]}
             selectedStatuses={
               selectedStatuses.length > 0 ? selectedStatuses : statusOptions.map((s) => s.id)
             }
@@ -287,6 +436,41 @@ export default function EnhancedDashboardPage() {
           />
         </div>
       </main>
+
+      {/* Modals */}
+      {selectedBenefit && isEditModalOpen && (
+        <EditBenefitModal
+          benefit={selectedBenefit}
+          cardId={selectedCardId === 'all' ? cards[0]?.id : selectedCardId}
+          onBenefitUpdated={handleBenefitUpdated}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedBenefit(null);
+          }}
+        />
+      )}
+
+      {selectedBenefit && isDeleteDialogOpen && (
+        <DeleteBenefitConfirmationDialog
+          benefit={selectedBenefit}
+          onConfirm={handleBenefitDeleted}
+          onCancel={() => {
+            setIsDeleteDialogOpen(false);
+            setSelectedBenefit(null);
+          }}
+        />
+      )}
+
+      {isAddBenefitOpen && (
+        <AddBenefitModal
+          cardId={selectedCardId === 'all' ? cards[0]?.id : selectedCardId}
+          onClose={() => setIsAddBenefitOpen(false)}
+          onBenefitAdded={(newBenefit) => {
+            // Handle newly added benefit
+            setIsAddBenefitOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

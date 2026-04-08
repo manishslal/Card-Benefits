@@ -91,7 +91,6 @@ export function BenefitRow({
   const [isMarkingUsed, setIsMarkingUsed] = useState(false);
   const statusDisplay = getStatusDisplay(status);
   const dateRange = formatDateRange(periodStart, periodEnd);
-  const remaining = available - used;
   const percentage = available > 0 ? (used / available) * 100 : 0;
 
   const handleMarkUsed = useCallback(async () => {

@@ -13,8 +13,8 @@ export type { BenefitRowProps } from './BenefitRow';
 
 export { BenefitGroup } from './BenefitGroup';
 
-export { BenefitsList, PastPeriodEntry } from './BenefitsList';
-export type { BenefitsListProps } from './BenefitsList';
+export { BenefitsList } from './BenefitsList';
+export type { BenefitsListProps, PastPeriodEntry } from './BenefitsList';
 
 export { PastPeriodsSection } from './PastPeriodsSection';
 export type { PastPeriodEntry as PastPeriod } from './PastPeriodsSection';

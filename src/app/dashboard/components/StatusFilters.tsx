@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback } from 'react';
-import { ChevronDown } from 'lucide-react';
 
 /**
  * Status filter options available in the dashboard

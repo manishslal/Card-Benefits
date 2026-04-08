@@ -78,7 +78,6 @@ export function calculatePeriodDateRange(
  * Get display label for period
  */
 export function getPeriodDisplayLabel(periodType: PeriodType): string {
-  const { start, end } = calculatePeriodDateRange(periodType);
   const now = new Date();
 
   switch (periodType) {

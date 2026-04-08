@@ -4,9 +4,9 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { PeriodSelector, PeriodOption } from './components/PeriodSelector';
 import { StatusFilters, BenefitStatus, StatusOption } from './components/StatusFilters';
 import { SummaryBox } from './components/SummaryBox';
-import { BenefitsList, BenefitsListProps } from './components/BenefitsList';
+import { BenefitsList } from './components/BenefitsList';
 import { BenefitRowProps } from './components/BenefitRow';
-import { PeriodType, calculatePeriodDateRange, getPeriodDisplayLabel } from './utils/period-helpers';
+import { calculatePeriodDateRange, getPeriodDisplayLabel } from './utils/period-helpers';
 import { fetchDashboardData, toggleBenefitUsed } from './utils/api-client';
 
 /**

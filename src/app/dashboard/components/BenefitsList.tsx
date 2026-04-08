@@ -239,5 +239,4 @@ export function BenefitsList({
   );
 }
 
-export type { BenefitsListProps };
-export { PastPeriodEntry };
+export type { BenefitsListProps, PastPeriodEntry };

@@ -17,11 +17,11 @@
 | 5 | $200 Uber Annual Credit | ✅ Existing | MONTHLY | $15 (+$35 Dec) | $200 | Correct ✓ |
 | 6 | $209 CLEAR Annual Credit | ✅ Existing | FLEXIBLE_ANNUAL | $209 | $209 | Correct ✓ |
 | 7 | Centurion Lounge Access | ✅ Existing | FLEXIBLE_ANNUAL | $0 | $0 | Correct ✓ |
-| 8 | Complimentary Airport Meet & Greet | ✅ Existing | FLEXIBLE_ANNUAL | $0 | $0 | Correct ✓ |
-| 9 | Global Entry or TSA PreCheck | ✅ Existing | ONE_TIME | $105 | $105 | Correct ✓ |
+| 8 | ~~Complimentary Airport Meet & Greet~~ | 🗑️ **REMOVE** | — | — | — | **Not a standard benefit — discounted service only** |
+| 9 | Global Entry or TSA PreCheck | ✅ Existing | ONE_TIME | **$120** | **$120** | **Fix: updated fee is $120** |
 | 10 | Fine Hotels & Resorts Partner Program | ✅ Existing | FLEXIBLE_ANNUAL | $0 | $0 | Correct ✓ |
 | 11 | $120 Uber One Membership Credit | 🆕 New | FLEXIBLE_ANNUAL | $120 | $120 | Add? ☐ |
-| 12 | $300 Equinox Credit | 🆕 New | MONTHLY | $25 | $300 | Add? ☐ |
+| 12 | $300 Equinox Credit | 🆕 New | **FLEXIBLE_ANNUAL** | **$300** | $300 | Add? ☐ |
 | 13 | $100 Saks Fifth Avenue Credit | 🆕 New | SEMI_ANNUAL | $50 | $100 | Add? ☐ |
 | 14 | $200 Airline Fee Credit | 🆕 New | FLEXIBLE_ANNUAL | $200 | $200 | Add? ☐ |
 | 15 | $200 Oura Ring Credit | 🆕 New | FLEXIBLE_ANNUAL | $200 | $200 | Add? ☐ |
@@ -36,7 +36,7 @@
 | 1 | $120 Annual Dining Credit | ✅ Existing | MONTHLY | $10 | $120 | Correct ✓ |
 | 2 | $100 Annual Uber Credit | ✅ Existing | MONTHLY | **$10** | **$120** | **Fix: was $8.33/$100yr** |
 | 3 | 4x Points on Dining & Restaurants | ✅ Existing | FLEXIBLE_ANNUAL | $0 | $0 | Correct ✓ |
-| 4 | 4x Points on Flights | ✅ Existing | FLEXIBLE_ANNUAL | $0 | $0 | ⚠️ May be 3x in 2026 — confirm? |
+| 4 | **3x Points on Flights** | ✅ Existing | FLEXIBLE_ANNUAL | $0 | $0 | **Fix: 3x (not 4x) booked direct/Amex Travel** |
 | 5 | Purchase Protection | ✅ Existing | FLEXIBLE_ANNUAL | $0 | $0 | Correct ✓ |
 | 6 | $100 Resy Credit | 🆕 New | SEMI_ANNUAL | $50 | $100 | Add? ☐ |
 | 7 | $84 Dunkin' Credit | 🆕 New | MONTHLY | $7 | $84 | Add? ☐ |
@@ -50,7 +50,7 @@
 |---|---------|--------|---------|------------|-------------|---------------|
 | 1 | $300 Annual Travel Credit | ✅ Existing | FLEXIBLE_ANNUAL | $300 | $300 | Correct ✓ |
 | 2 | $500 The Edit Hotel Credit | ✅ Existing | **FLEXIBLE_ANNUAL** | $250 (×2) | $500 | **Fix: flexible, not semi-annual** |
-| 3 | $250 Hotel Chain Credit | ✅ Existing | SEMI_ANNUAL | $125 | $250 | ⚠️ Overlaps with The Edit? Keep or remove? |
+| 3 | $250 Hotel Chain Credit | ✅ Existing | **FLEXIBLE_ANNUAL** | **$250** | $250 | **Fix: FLEXIBLE_ANNUAL for IHG/Virgin/Pan Pacific via Chase Travel** |
 | 4 | $300 Dining Credit | ✅ Existing | **SEMI_ANNUAL** | **$150** | $300 | **Fix: was FLEXIBLE_ANNUAL $300** |
 | 5 | $300 Entertainment Credit | ✅ Existing | **SEMI_ANNUAL** | **$150** | $300 | **Fix: was FLEXIBLE_ANNUAL $300** |
 | 6 | Priority Pass Select Lounge Access | ✅ Existing | FLEXIBLE_ANNUAL | $0 | $0 | Correct ✓ |
@@ -120,7 +120,7 @@
 |---|---------|--------|---------|------------|-------------|---------------|
 | 1 | 3x Membership Rewards on Travel | ✅ Existing | FLEXIBLE_ANNUAL | $0 | $0 | Correct ✓ |
 | 2 | 1x on All Other Purchases | ✅ Existing | FLEXIBLE_ANNUAL | $0 | $0 | Correct ✓ |
-| 3 | Statement Credits for Travel | ✅ Existing | FLEXIBLE_ANNUAL | $100 | $100 | ⚠️ Should this be "$209 CLEAR+ Credit" instead? |
+| 3 | **$209 CLEAR+ Credit** | ✅ Existing | FLEXIBLE_ANNUAL | **$209** | **$209** | **Fix: rename from "Statement Credits for Travel", update to $209** |
 
 ---
 
@@ -141,7 +141,7 @@
 | # | Benefit | Status | Cadence | Per Period | Annual Total | Action Needed |
 |---|---------|--------|---------|------------|-------------|---------------|
 | 1 | Free Night Award Certificate | ✅ Existing | FLEXIBLE_ANNUAL | $0 | $0 | Correct ✓ |
-| 2 | 10x Points on Hilton Hotels | ✅ Existing | FLEXIBLE_ANNUAL | $0 | $0 | ⚠️ Should be 12x — rename? |
+| 2 | **12x Points on Hilton Hotels** | ✅ Existing | FLEXIBLE_ANNUAL | $0 | $0 | **Fix: rename from 10x to 12x** |
 | 3 | Complimentary Room Upgrades | ✅ Existing | FLEXIBLE_ANNUAL | $0 | $0 | ⚠️ Part of Hilton Gold status, not a standalone benefit |
 | 4 | Airline Fee Credit | 🗑️ **REMOVE** | — | — | — | **Does NOT exist on Surpass card** |
 | 5 | ~~Priority Pass (10 visits)~~ | 🗑️ **REMOVE** | — | — | — | **Discontinued early 2024** |
@@ -155,7 +155,7 @@
 | 1 | Free Night Award Certificate | ✅ Existing | FLEXIBLE_ANNUAL | $0 | $0 | Correct ✓ |
 | 2 | 6x Points on Marriott Hotels | ✅ Existing | FLEXIBLE_ANNUAL | $0 | $0 | Correct ✓ |
 | 3 | Elite Night Credits | ✅ Existing | FLEXIBLE_ANNUAL | $0 | $0 | Correct ✓ |
-| 4 | Airline Fee Credit | ✅ Existing | FLEXIBLE_ANNUAL | $300 | $300 | ⚠️ Verify still active in 2026 |
+| 4 | ~~Airline Fee Credit~~ → **$300 Dining Credit** | 🔧 **REPLACE** | **MONTHLY** | **$25** | **$300** | **Airline Fee discontinued, replaced by $300 Dining Credit ($25/mo)** |
 | 5 | $100 Luxury Property Credit | 🆕 New | FLEXIBLE_ANNUAL | $100/stay | — | Add? ☐ |
 | 6 | Priority Pass Select | 🆕 New | FLEXIBLE_ANNUAL | $0 | $0 | Add? ☐ |
 
@@ -166,7 +166,7 @@
 | # | Benefit | Status | Cadence | Per Period | Annual Total | Action Needed |
 |---|---------|--------|---------|------------|-------------|---------------|
 | 1 | $300 Annual Travel Credit | ✅ Existing | FLEXIBLE_ANNUAL | $300 | $300 | Correct ✓ |
-| 2 | 10x Miles on Travel & Dining | ✅ Existing | FLEXIBLE_ANNUAL | $0 | $0 | ⚠️ Fix name: "10x hotels/cars portal, 5x flights, 2x all else" |
+| 2 | **10x Hotels/Cars via Portal, 5x Flights, 2x All Else** | ✅ Existing | FLEXIBLE_ANNUAL | $0 | $0 | **Fix: rename to reflect actual earn structure** |
 | 3 | Priority Pass Lounge | ✅ Existing | FLEXIBLE_ANNUAL | $0 | $0 | Correct ✓ |
 | 4 | 2x Miles on All Purchases | ✅ Existing | FLEXIBLE_ANNUAL | $0 | $0 | Correct ✓ |
 | 5 | Baggage Fee Credit | 🗑️ **REMOVE** | — | — | — | **Does NOT exist on Venture X** |
@@ -214,18 +214,27 @@
 
 # Summary of Confirmed Changes
 
-## 🗑️ Benefits to REMOVE (3)
+## 🗑️ Benefits to REMOVE (4)
+- Amex Platinum: Complimentary Airport Meet & Greet (discounted service, not a benefit)
 - Hilton Surpass: Airline Fee Credit
 - Hilton Surpass: Priority Pass (discontinued 2024)
 - Capital One Venture X: Baggage Fee Credit
 
 ## 🔧 Cadence/Amount Fixes (confirmed)
+- Amex Platinum Global Entry/TSA → **$120** (updated fee)
 - Amex Platinum Resy → QUARTERLY $100
+- Amex Platinum Equinox → FLEXIBLE_ANNUAL $300 (not monthly)
 - Amex Gold Uber → MONTHLY $10 ($120/yr)
-- US Bank Travel → FLEXIBLE_ANNUAL $325
+- Amex Gold Flights → **3x** (not 4x)
+- Amex Green "Statement Credits" → rename to "$209 CLEAR+ Credit"
+- Hilton Surpass → **12x** (not 10x)
+- Marriott Brilliant Airline Fee → **REPLACED by $300 Dining Credit** ($25/mo)
+- Venture X Miles → rename to "10x Hotels/Cars, 5x Flights, 2x All"
+- CSR Hotel Chain → FLEXIBLE_ANNUAL $250 (not semi-annual)
 - CSR Dining → SEMI_ANNUAL $150
 - CSR Entertainment → SEMI_ANNUAL $150
 - CSR The Edit Hotel → FLEXIBLE_ANNUAL $250 (flexible)
+- US Bank Travel → FLEXIBLE_ANNUAL $325
 - Amex Platinum annual fee → $895
 - CSR annual fee → $795
 
@@ -233,15 +242,10 @@
 Mark ✅ or ❌ next to each ☐ above and share your decisions.
 
 ## ⚠️ Items Needing Your Input
-- Amex Gold "4x Points on Flights" — still 4x or now 3x?
-- Amex Green "Statement Credits for Travel" — should this be "$209 CLEAR+ Credit"?
-- CSR "$250 Hotel Chain Credit" — keep or overlaps with The Edit?
-- Hilton Surpass "10x" → rename to "12x"?
+- CSR "$250 Hotel Chain Credit" — now marked FLEXIBLE_ANNUAL, confirm correct?
 - Hilton Surpass "Complimentary Room Upgrades" — keep as separate benefit or part of Gold status?
 - Amex Business Gold "4x on Business Purchases" — rename to "4x on TOP 2 categories"?
-- Venture X "10x Miles" — rename to reflect actual structure?
 - JetBlue "Inflight Free Drinks & Snacks" — rename to "50% statement credit on food & cocktails"?
 - Citi Prestige "Travel Credit" — rename to "$250 Airline Travel Credit"?
 - Citi Prestige points — rename to "5x airlines/dining, 3x hotels/cruise"?
 - SW Premier "Free Checked Bags" — misleading since SW gives free bags to all?
-- Marriott Brilliant "Airline Fee Credit" — still active in 2026?

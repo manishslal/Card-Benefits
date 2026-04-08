@@ -12,7 +12,7 @@ import { getCurrentPeriod } from '@/lib/period-utils';
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = getAuthUserId();
+    const userId = request.headers.get('x-user-id') || getAuthUserId();
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

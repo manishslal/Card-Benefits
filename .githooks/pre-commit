@@ -4,8 +4,8 @@
 
 echo "🔐 Pre-commit check: Validating files..."
 
-# Check if .env is being staged
-if git diff --cached --name-only | grep -q "^\.env"; then
+# Check if .env is being staged (but allow .env.example)
+if git diff --cached --name-only | grep -q "^\.env$\|^\.env\.local$\|^\.env\.production$"; then
     echo "⚠️  WARNING: You're about to commit .env file!"
     echo ""
     echo "DANGER: .env contains DATABASE_URL and other secrets"

@@ -11,6 +11,8 @@
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib/prisma';
+import { featureFlags } from '@/lib/feature-flags';
+import type { Prisma } from '@prisma/client';
 
 export async function POST(request: Request) {
   try {
@@ -68,13 +70,18 @@ export async function POST(request: Request) {
 
     const cardIds = userCards.map((c) => c.id);
 
+    // Build where clause with period filtering when engine is enabled
+    const whereClause: Prisma.UserBenefitWhereInput = {
+      userCardId: { in: cardIds },
+    };
+
+    if (featureFlags.BENEFIT_ENGINE_ENABLED) {
+      whereClause.periodStatus = 'ACTIVE';
+    }
+
     // Fetch all benefits for user's cards
     const userBenefits = await prisma.userBenefit.findMany({
-      where: {
-        userCardId: {
-          in: cardIds,
-        },
-      },
+      where: whereClause,
       take: 100,
     });
 

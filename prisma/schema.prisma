@@ -58,6 +58,7 @@ model MasterBenefit {
   claimingCadence String?
   claimingAmount  Int?
   claimingWindowEnd String?
+  variableAmounts Json?    // e.g., { "12": 3500 } → December = $35.00 in cents
   
   // Audit fields (NEW)
   createdByAdminId String?
@@ -66,6 +67,9 @@ model MasterBenefit {
   updatedAt       DateTime        @updatedAt
   
   masterCard      MasterCard      @relation(fields: [masterCardId], references: [id], onDelete: Cascade)
+
+  // ─── NEW: Reverse relation to UserBenefit (Benefit Engine) ────────
+  userBenefits    UserBenefit[]
 
   @@index([masterCardId])
   @@index([type])
@@ -185,14 +189,36 @@ model UserBenefit {
   id                String    @id @default(cuid())
   userCardId        String
   playerId          String
+
+  // ─── NEW: Foreign key to MasterBenefit catalog ───────────────────
+  // Nullable to support custom user-created benefits (no master template)
+  masterBenefitId   String?
+
+  // ─── PRESERVED: Denormalized display fields (kept for custom benefits & perf) ───
   name              String
   type              String
   stickerValue      Int
   resetCadence      String
+
+  // ─── NEW: Period tracking fields ──────────────────────────────────
+  // Each UserBenefit row represents ONE period. periodStart + periodEnd
+  // define the window this benefit instance covers.
+  periodStart       DateTime?   // Start of this benefit period (UTC)
+  periodEnd         DateTime?   // End of this benefit period (UTC)
+  periodStatus      String      @default("ACTIVE")
+  // Enum-like values: "ACTIVE" | "EXPIRED" | "UPCOMING"
+
+  // ─── PRESERVED: Usage tracking ────────────────────────────────────
   userDeclaredValue Int?
   isUsed            Boolean   @default(false)
   timesUsed         Int       @default(0)
+  claimedAt         DateTime?
+
+  // ─── DEPRECATED but PRESERVED for backward compat ─────────────────
+  // expirationDate is superseded by periodEnd but kept during migration
   expirationDate    DateTime?
+
+  // ─── PRESERVED: Metadata ──────────────────────────────────────────
   status            String    @default("ACTIVE")
   importedFrom      String?
   importedAt        DateTime?
@@ -200,22 +226,35 @@ model UserBenefit {
   valueHistory      String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
-  claimedAt         DateTime?
+
+  // ─── Relations ────────────────────────────────────────────────────
+  masterBenefit     MasterBenefit? @relation(fields: [masterBenefitId], references: [id], onDelete: SetNull)
   player            Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
   userCard          UserCard  @relation(fields: [userCardId], references: [id], onDelete: Cascade)
-  
-  // Phase 2A relations
+
+  // Phase 2A relations (preserved)
   usagePeriods      BenefitPeriod[]
   recommendations   BenefitRecommendation[]
   usageRecords      BenefitUsageRecord[]
 
-  @@unique([userCardId, name])
+  // ─── Unique constraints ───────────────────────────────────────────
+  // Includes periodStart so multiple period rows can coexist for the same benefit
+  // (e.g., April + May rows for "$10 Dining Credit"). Legacy rows with
+  // periodStart=NULL are naturally unique under PostgreSQL NULL semantics.
+  @@unique([userCardId, name, periodStart])
+
+  // ─── Indexes ──────────────────────────────────────────────────────
   @@index([userCardId])
   @@index([playerId])
   @@index([userCardId, name])
   @@index([type])
   @@index([isUsed])
   @@index([expirationDate])
+  // NEW: Benefit engine performance indexes
+  @@index([masterBenefitId])
+  @@index([periodStatus])
+  @@index([periodEnd, periodStatus])
+  @@index([userCardId, masterBenefitId, periodStart])
 }
 
 model ImportJob {

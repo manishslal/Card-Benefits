@@ -11,6 +11,7 @@
 
 import type { UserBenefit as PrismaUserBenefit, Player as PrismaPlayer } from '@prisma/client';
 import { CardDisplayModel, RenewalStatus, RENEWAL_THRESHOLDS } from '@/features/cards/types';
+import { featureFlags } from '@/lib/feature-flags';
 
 // Re-export Prisma types for use throughout the application
 export type { PrismaUserBenefit as UserBenefit };
@@ -89,6 +90,26 @@ export function resolveUnitValue(benefit: UserBenefit): number {
   return benefit.userDeclaredValue ?? benefit.stickerValue;
 }
 
+/**
+ * When the benefit engine is enabled, filters a benefit array to only
+ * ACTIVE-period rows for engine-managed benefits.  Legacy benefits
+ * (no masterBenefitId) pass through unchanged.
+ *
+ * When the engine is OFF the array is returned as-is.
+ */
+function filterToActivePeriod(benefits: PrismaUserBenefit[]): PrismaUserBenefit[] {
+  if (!featureFlags.BENEFIT_ENGINE_ENABLED) return benefits;
+
+  return benefits.filter((b) => {
+    if (b.masterBenefitId) {
+      // Engine-managed: only keep ACTIVE period rows
+      return b.periodStatus === 'ACTIVE';
+    }
+    // Legacy benefit: always include
+    return true;
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Benefit Value Calculations (from calculations.ts)
 // ---------------------------------------------------------------------------
@@ -101,7 +122,10 @@ export function resolveUnitValue(benefit: UserBenefit): number {
  * @returns Total extracted value in cents.
  */
 export function getTotalValueExtracted(userBenefits: PrismaUserBenefit[]): number {
-  return userBenefits.reduce((total, benefit) => {
+  // When engine is enabled, only sum values from ACTIVE period rows
+  const activeBenefits = filterToActivePeriod(userBenefits);
+
+  return activeBenefits.reduce((total, benefit) => {
     // Only count benefits the user has actually used.
     if (!benefit.isUsed) return total;
 
@@ -129,8 +153,10 @@ export function getTotalValueExtracted(userBenefits: PrismaUserBenefit[]): numbe
  */
 export function getUncapturedValue(userBenefits: PrismaUserBenefit[]): number {
   const now = new Date();
+  // When engine is enabled, only consider ACTIVE period rows
+  const activeBenefits = filterToActivePeriod(userBenefits);
 
-  return userBenefits.reduce((total, benefit) => {
+  return activeBenefits.reduce((total, benefit) => {
     // Skip benefits already used.
     if (benefit.isUsed) return total;
 
@@ -166,7 +192,10 @@ export function getNetAnnualFee(
   // $300 travel credit). We use stickerValue — not the user override — because
   // we're measuring the card's advertised offset against the advertised fee.
   // isUsed is intentionally ignored: the offset represents potential value.
-  const feeOffsets = userBenefits.reduce((sum, benefit) => {
+  // When engine is enabled, only consider ACTIVE period rows to avoid
+  // double-counting offsets across multiple period rows.
+  const activeBenefits = filterToActivePeriod(userBenefits);
+  const feeOffsets = activeBenefits.reduce((sum, benefit) => {
     const isFeeOffsetCredit =
       benefit.type === 'StatementCredit' &&
       benefit.resetCadence === 'CardmemberYear';
@@ -216,9 +245,12 @@ export function getExpirationWarnings(
   const WARN_THRESHOLD_DAYS = 30;
   const CRITICAL_THRESHOLD_DAYS = 14;
 
+  // When engine is enabled, only warn about ACTIVE period rows
+  const activeBenefits = filterToActivePeriod(userBenefits);
+
   const warnings: ExpirationWarning[] = [];
 
-  for (const benefit of userBenefits) {
+  for (const benefit of activeBenefits) {
     // Only warn about benefits the user hasn't acted on yet.
     if (benefit.isUsed) continue;
 
@@ -359,7 +391,7 @@ export function getHouseholdTotalCaptured(players: Player[]): number {
  * ]) => 2 unique active benefits
  */
 export function getHouseholdActiveCount(players: Player[]): number {
-  // Use a Set to track unique benefit IDs (in case multiple players have same benefits)
+  // Use a Set to track unique benefit identifiers
   const activeBenefits = new Set<string>();
   const now = new Date();
 
@@ -367,6 +399,8 @@ export function getHouseholdActiveCount(players: Player[]): number {
   if (!players || players.length === 0) {
     return 0;
   }
+
+  const engineEnabled = featureFlags.BENEFIT_ENGINE_ENABLED;
 
   players.forEach((player) => {
     // Handle null player references safely
@@ -391,14 +425,23 @@ export function getHouseholdActiveCount(players: Player[]): number {
           return;
         }
 
-        // Include benefit if perpetual (null expirationDate) OR not yet expired
-        const isPerpetual = benefit.expirationDate === null;
-        const isNotExpired =
-          benefit.expirationDate !== null &&
-          benefit.expirationDate > now;
+        if (engineEnabled && benefit.masterBenefitId) {
+          // ENGINE PATH: Only count ACTIVE period rows, dedup by
+          // composite key cardId:masterBenefitId to avoid cross-card dedup
+          // (two cards with the same MasterBenefit are independent benefits)
+          if (benefit.periodStatus === 'ACTIVE') {
+            activeBenefits.add(`${card.id}:${benefit.masterBenefitId}`);
+          }
+        } else {
+          // LEGACY PATH: Original behavior — dedup by benefit id
+          const isPerpetual = benefit.expirationDate === null;
+          const isNotExpired =
+            benefit.expirationDate !== null &&
+            benefit.expirationDate > now;
 
-        if (isPerpetual || isNotExpired) {
-          activeBenefits.add(benefit.id);
+          if (isPerpetual || isNotExpired) {
+            activeBenefits.add(benefit.id);
+          }
         }
       });
     });

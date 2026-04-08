@@ -6,6 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUserId } from '@/features/auth/context/auth-context';
 import { prisma } from '@/shared/lib/prisma';
+import { featureFlags } from '@/lib/feature-flags';
+import type { Prisma } from '@prisma/client';
 
 export async function GET(_request: NextRequest) {
   try {
@@ -22,8 +24,17 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: 'No active player found' }, { status: 404 });
     }
 
+    // Build where clause with period filtering when engine is enabled
+    const benefitWhere: Prisma.UserBenefitWhereInput = {
+      playerId: player.id,
+    };
+
+    if (featureFlags.BENEFIT_ENGINE_ENABLED) {
+      benefitWhere.periodStatus = 'ACTIVE';
+    }
+
     const userBenefits = await prisma.userBenefit.findMany({
-      where: { playerId: player.id },
+      where: benefitWhere,
     });
 
     const usageRecords = await prisma.benefitUsageRecord.findMany({

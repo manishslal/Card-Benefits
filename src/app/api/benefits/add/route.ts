@@ -41,6 +41,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib';
+import { featureFlags } from '@/lib/feature-flags';
+import { hydratePeriodFields } from '@/lib/benefit-engine/hydrate-period';
 
 // ============================================================
 // Type Definitions
@@ -56,7 +58,7 @@ interface AddBenefitRequest {
   expirationDate?: string;
 }
 
-interface AddBenefitResponse {
+export interface AddBenefitResponse {
   success: true;
   benefit: {
     id: string;
@@ -67,9 +69,13 @@ interface AddBenefitResponse {
     resetCadence: string;
     userDeclaredValue: number | null;
     isUsed: boolean;
-    timesUsed: number;  // 🔑 Wave 2: Always included
+    timesUsed: number;
     expirationDate: string | null;
     createdAt: string;
+    periodStart: string | null;
+    periodEnd: string | null;
+    periodStatus: string | null;
+    masterBenefitId: string | null;
   };
 }
 
@@ -145,6 +151,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // Check for duplicate benefit name per card
+    // When engine is enabled, include periodStart in uniqueness check
+    // to allow legitimate multi-period creation
     const existingBenefit = await prisma.userBenefit.findFirst({
       where: {
         userCardId,
@@ -156,31 +164,69 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       },
     });
 
+    // Hydrate period fields when engine is enabled
+    const periodFields = await hydratePeriodFields(
+      prisma,
+      userCardId,
+      name,
+      resetCadence
+    );
+
+    // For engine-enabled, refine duplicate check to include periodStart
     if (existingBenefit) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Validation failed',
-          fieldErrors: {
-            name: `Benefit "${name}" already exists for this card`,
+      if (featureFlags.BENEFIT_ENGINE_ENABLED && periodFields.periodStart) {
+        // Check if a row with this exact periodStart already exists
+        const exactDuplicate = await prisma.userBenefit.findFirst({
+          where: {
+            userCardId,
+            name: { equals: name, mode: 'insensitive' },
+            periodStart: periodFields.periodStart,
+            status: 'ACTIVE',
           },
-        } as ErrorResponse,
-        { status: 400 }
-      );
+        });
+        if (exactDuplicate) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'Validation failed',
+              fieldErrors: {
+                name: `Benefit "${name}" already exists for this card and period`,
+              },
+            } as ErrorResponse,
+            { status: 400 }
+          );
+        }
+      } else {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Validation failed',
+            fieldErrors: {
+              name: `Benefit "${name}" already exists for this card`,
+            },
+          } as ErrorResponse,
+          { status: 400 }
+        );
+      }
     }
 
-    // Create the benefit
+    // Create the benefit with period fields
     const benefit = await prisma.userBenefit.create({
       data: {
         userCardId,
         playerId: card.player.id,
         name,
         type,
-        stickerValue,
-        resetCadence,
+        stickerValue: periodFields.effectiveStickerValue ?? stickerValue,
+        resetCadence: periodFields.resolvedResetCadence,
         userDeclaredValue,
-        expirationDate,
+        expirationDate: periodFields.periodEnd ?? expirationDate,
         status: 'ACTIVE',
+        // Period fields (null when engine is off)
+        periodStart: periodFields.periodStart,
+        periodEnd: periodFields.periodEnd,
+        periodStatus: periodFields.periodStatus ?? 'ACTIVE',
+        masterBenefitId: periodFields.masterBenefitId,
       },
     });
 
@@ -196,11 +242,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           resetCadence: benefit.resetCadence,
           userDeclaredValue: benefit.userDeclaredValue,
           isUsed: benefit.isUsed,
-          timesUsed: benefit.timesUsed,  // 🔑 Wave 2: Include timesUsed
+          timesUsed: benefit.timesUsed,
           expirationDate: benefit.expirationDate?.toISOString() || null,
           createdAt: benefit.createdAt.toISOString(),
+          periodStart: benefit.periodStart?.toISOString() || null,
+          periodEnd: benefit.periodEnd?.toISOString() || null,
+          periodStatus: benefit.periodStatus || null,
+          masterBenefitId: benefit.masterBenefitId || null,
         },
-      } as AddBenefitResponse,
+      },
       { status: 201 }
     );
   } catch (error) {

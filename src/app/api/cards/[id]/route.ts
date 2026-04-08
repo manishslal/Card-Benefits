@@ -6,6 +6,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib';
+import type { Card } from '@/features/cards/components/MyCardsSection/types';
+import { featureFlags } from '@/lib/feature-flags';
 
 interface PatchCardRequest {
   customName?: string;
@@ -34,7 +36,12 @@ interface GetCardResponse {
       expirationDate: string | null;
       isUsed: boolean;
       status: string;
+      periodStart?: string | null;
+      periodEnd?: string | null;
+      periodStatus?: string | null;
+      masterBenefitId?: string | null;
     }[];
+    benefitEngineEnabled?: boolean;
   };
 }
 
@@ -45,14 +52,7 @@ interface GetCardErrorResponse {
 
 interface PatchCardResponse {
   success: true;
-  card: {
-    id: string;
-    customName: string | null;
-    actualAnnualFee: number | null;
-    renewalDate: string;
-    status: string;
-    updatedAt: string;
-  };
+  card: Card;
 }
 
 interface ErrorResponse {
@@ -148,6 +148,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             isUsed: true,
             timesUsed: true,
             status: true,
+            // Period-based fields for benefit engine
+            periodStart: true,
+            periodEnd: true,
+            periodStatus: true,
+            masterBenefitId: true,
           },
         },
       },
@@ -191,7 +196,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             expirationDate: benefit.expirationDate?.toISOString() || null,
             isUsed: benefit.isUsed,
             status: benefit.status,
+            periodStart: benefit.periodStart?.toISOString() || null,
+            periodEnd: benefit.periodEnd?.toISOString() || null,
+            periodStatus: benefit.periodStatus || null,
+            masterBenefitId: benefit.masterBenefitId || null,
           })),
+          benefitEngineEnabled: featureFlags.BENEFIT_ENGINE_ENABLED,
         },
       } as GetCardResponse,
       { status: 200 }
@@ -265,21 +275,47 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
       updateData.renewalDate = new Date(body.renewalDate);
     }
 
-    const updatedCard = await prisma.userCard.update({
+    // Update the card
+    await prisma.userCard.update({
       where: { id: cardId },
       data: updateData,
     });
 
+    // Fetch the complete updated card with all necessary relations
+    const completeCard = await prisma.userCard.findUnique({
+      where: { id: cardId },
+      include: {
+        masterCard: {
+          select: {
+            issuer: true,
+            cardName: true,
+            defaultAnnualFee: true,
+            cardImageUrl: true,
+          },
+        },
+      },
+    });
+
+    if (!completeCard) {
+      return NextResponse.json(
+        { success: false, error: 'Failed to fetch updated card' } as ErrorResponse,
+        { status: 500 }
+      );
+    }
+
+    // Build response matching Card interface (8 fields)
     return NextResponse.json(
       {
         success: true,
         card: {
-          id: updatedCard.id,
-          customName: updatedCard.customName,
-          actualAnnualFee: updatedCard.actualAnnualFee,
-          renewalDate: updatedCard.renewalDate.toISOString(),
-          status: updatedCard.status,
-          updatedAt: updatedCard.updatedAt.toISOString(),
+          id: completeCard.id,
+          userId: userId,
+          name: completeCard.customName || completeCard.masterCard.cardName,
+          lastFourDigits: '****', // Placeholder until card numbers stored in DB
+          cardNetwork: completeCard.masterCard.issuer as 'Visa' | 'Mastercard' | 'Amex' | 'Discover',
+          cardType: 'Credit' as const, // From masterCard.type or default to 'Credit'
+          isActive: completeCard.isOpen,
+          createdAt: completeCard.createdAt.toISOString(),
         },
       } as PatchCardResponse,
       { status: 200 }

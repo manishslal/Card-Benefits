@@ -20,6 +20,7 @@ import { prisma } from '@/shared/lib';
 import { AppError } from '@/shared/lib';
 import { ImportRecordData } from '../types';
 import type { Prisma } from '@prisma/client';
+import { hydratePeriodFields } from '@/lib/benefit-engine/hydrate-period';
 
 // ============================================================================
 // Type Definitions
@@ -147,6 +148,14 @@ async function commitBenefit(
   importJobId: string
 ): Promise<{ id: string; action: 'Create' | 'Update' }> {
   if (action === 'Create') {
+    // Hydrate period fields from benefit engine when enabled
+    const periodFields = await hydratePeriodFields(
+      tx,
+      userCardId,
+      benefitName,
+      'OneTime' // default for imported benefits
+    );
+
     // Create new UserBenefit
     const benefit = await tx.userBenefit.create({
       data: {
@@ -154,28 +163,47 @@ async function commitBenefit(
         playerId,
         name: benefitName,
         type: normalizedData.benefitType,
-        stickerValue: normalizedData.stickerValue,
+        stickerValue: periodFields.effectiveStickerValue ?? normalizedData.stickerValue,
         userDeclaredValue: normalizedData.declaredValue,
-        expirationDate: normalizedData.expirationDate
-          ? new Date(normalizedData.expirationDate)
-          : null,
+        expirationDate: periodFields.periodEnd
+          ? periodFields.periodEnd
+          : normalizedData.expirationDate
+            ? new Date(normalizedData.expirationDate)
+            : null,
         isUsed: normalizedData.usage === 'Claimed',
-        resetCadence: 'OneTime', // Default for imported benefits
+        resetCadence: periodFields.resolvedResetCadence,
         importedFrom: importJobId,
         importedAt: new Date(),
         version: 1,
+        // Period fields (null when engine is off)
+        periodStart: periodFields.periodStart,
+        periodEnd: periodFields.periodEnd,
+        periodStatus: periodFields.periodStatus ?? 'ACTIVE',
+        masterBenefitId: periodFields.masterBenefitId,
       },
     });
     return { id: benefit.id, action: 'Create' };
   } else {
-    // Update existing UserBenefit
-    const benefit = await tx.userBenefit.update({
+    // Update existing UserBenefit — find by (userCardId, name) for legacy rows
+    // that have periodStart=NULL. Can't use compound unique key lookup because
+    // PostgreSQL doesn't match NULLs in unique constraint lookups.
+    const existing = await tx.userBenefit.findFirst({
       where: {
-        userCardId_name: {
-          userCardId,
-          name: benefitName,
-        },
+        userCardId,
+        name: benefitName,
+        periodStart: null,
       },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      throw new Error(
+        `UserBenefit not found for update: userCardId=${userCardId}, name=${benefitName}`
+      );
+    }
+
+    const benefit = await tx.userBenefit.update({
+      where: { id: existing.id },
       data: {
         // Only allow updating these fields
         stickerValue: normalizedData.stickerValue,

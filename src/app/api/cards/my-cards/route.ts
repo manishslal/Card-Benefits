@@ -1,7 +1,12 @@
 /**
  * GET /api/cards/my-cards
  *
- * Returns all credit cards owned by the authenticated user with their benefits and pagination
+ * Returns all credit cards owned by the authenticated user with their benefits and pagination.
+ *
+ * When BENEFIT_ENGINE_ENABLED=true, includes period data (periodStart, periodEnd,
+ * periodStatus) and masterBenefit info (claimingCadence). Only ACTIVE-period benefits
+ * are returned by default; EXPIRED/UPCOMING benefits are available via the
+ * /api/benefits/history endpoint.
  *
  * Query Parameters:
  * - page?: number - Page number starting from 1 (default: 1)
@@ -12,13 +17,8 @@
  *   "success": true,
  *   "cards": [...],
  *   "summary": {...},
- *   "pagination": {
- *     "total": 25,
- *     "page": 1,
- *     "limit": 20,
- *     "totalPages": 2,
- *     "hasMore": true
- *   }
+ *   "pagination": { ... },
+ *   "benefitEngineEnabled": boolean
  * }
  *
  * Errors:
@@ -29,6 +29,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib';
+import { featureFlags } from '@/lib/feature-flags';
 
 // ============================================================
 // Type Definitions
@@ -44,6 +45,12 @@ interface BenefitDisplay {
   isUsed: boolean;
   expirationDate: string | null;
   status: string;
+  // Period-based fields (only present when benefit engine is enabled)
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  periodStatus?: string | null;
+  masterBenefitId?: string | null;
+  claimingCadence?: string | null;
 }
 
 interface CardDisplay {
@@ -84,6 +91,7 @@ interface UserCardsResponse {
   cards: CardDisplay[];
   summary: CardWalletSummary;
   pagination: PaginationMeta;
+  benefitEngineEnabled: boolean;
 }
 
 interface ErrorResponse {
@@ -148,6 +156,22 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     const offset = (page - 1) * limit;
 
+    // Determine if benefit engine is enabled for period-based filtering
+    const engineEnabled = featureFlags.BENEFIT_ENGINE_ENABLED;
+
+    // Build the userBenefits where clause:
+    // When engine is enabled, only show ACTIVE period benefits
+    // When disabled, still exclude EXPIRED rows to prevent stale period data
+    // from leaking into the dashboard if the flag is toggled off after being on
+    const benefitWhereClause = engineEnabled
+      ? {
+          status: { not: 'ARCHIVED' },
+          periodStatus: 'ACTIVE',
+        }
+      : {
+          status: 'ACTIVE',
+        };
+
     // Fetch user's primary player and their cards
     const player = await prisma.player.findFirst({
       where: {
@@ -183,11 +207,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
               },
             },
             userBenefits: {
-              where: {
-                status: {
-                  not: 'ARCHIVED',
-                },
-              },
+              where: benefitWhereClause,
               select: {
                 id: true,
                 name: true,
@@ -199,6 +219,18 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
                 timesUsed: true,
                 expirationDate: true,
                 status: true,
+                // Period-based fields (always selected; null when engine is off)
+                periodStart: true,
+                periodEnd: true,
+                periodStatus: true,
+                masterBenefitId: true,
+                // JOIN masterBenefit for claimingCadence
+                masterBenefit: {
+                  select: {
+                    id: true,
+                    claimingCadence: true,
+                  },
+                },
               },
               orderBy: {
                 name: 'asc',
@@ -233,6 +265,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             activeBenefits: 0,
           },
           pagination: emptyPagination,
+          benefitEngineEnabled: engineEnabled,
         } as UserCardsResponse,
         { status: 200 }
       );
@@ -256,6 +289,22 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         isUsed: benefit.isUsed,
         expirationDate: benefit.expirationDate?.toISOString() || null,
         status: benefit.status,
+        // Period-based fields — only populated when benefit engine creates them
+        ...(benefit.periodStart != null && {
+          periodStart: benefit.periodStart.toISOString(),
+        }),
+        ...(benefit.periodEnd != null && {
+          periodEnd: benefit.periodEnd.toISOString(),
+        }),
+        ...(benefit.periodStatus != null && {
+          periodStatus: benefit.periodStatus,
+        }),
+        ...(benefit.masterBenefitId != null && {
+          masterBenefitId: benefit.masterBenefitId,
+        }),
+        ...(benefit.masterBenefit?.claimingCadence != null && {
+          claimingCadence: benefit.masterBenefit.claimingCadence,
+        }),
       }));
 
       return {
@@ -277,6 +326,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     });
 
     // Calculate summary from ALL cards
+    // When benefit engine is enabled, the Prisma query already filtered to
+    // ACTIVE-period benefits only, so the counts here are correct.
     const summary: CardWalletSummary = {
       totalCards: allUserCards.length,
       totalAnnualFees: allUserCards.reduce(
@@ -314,6 +365,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         cards,
         summary,
         pagination,
+        benefitEngineEnabled: engineEnabled,
       } as UserCardsResponse,
       { status: 200 }
     );

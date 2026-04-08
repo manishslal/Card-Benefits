@@ -3,7 +3,8 @@
 import React from 'react';
 import Badge from '@/shared/components/ui/Badge';
 import Button from '@/shared/components/ui/button';
-import { Plane, Tag, Utensils, DollarSign, Zap } from 'lucide-react';
+import { Plane, Tag, Utensils, DollarSign, Zap, Calendar } from 'lucide-react';
+import { formatPeriodRange } from '@/lib/format-period-range';
 
 interface Benefit {
   id: string;
@@ -14,6 +15,10 @@ interface Benefit {
   value?: number;
   usage?: number; // 0-100 percentage
   type?: string; // travel, shopping, dining, cashback, other
+  // Period-based fields (present when benefit engine is enabled)
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  periodStatus?: string | null;
 }
 
 interface BenefitsGridProps {
@@ -181,6 +186,23 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                 >
                   {benefit.description}
                 </p>
+              )}
+
+              {/* Period Range Badge — only shown when period data exists */}
+              {benefit.periodStart && (
+                <div
+                  className="flex items-center gap-1.5 text-xs rounded-md px-2 py-1"
+                  style={{
+                    backgroundColor: 'var(--color-bg-secondary)',
+                    color: 'var(--color-text-secondary)',
+                  }}
+                  title={`Benefit period: ${formatPeriodRange(benefit.periodStart, benefit.periodEnd)}`}
+                >
+                  <Calendar size={12} className="flex-shrink-0" aria-hidden="true" />
+                  <span className="truncate">
+                    {formatPeriodRange(benefit.periodStart, benefit.periodEnd)}
+                  </span>
+                </div>
               )}
 
               {/* Value and Expiration */}

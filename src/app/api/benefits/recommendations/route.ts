@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUserId } from '@/features/auth/context/auth-context';
 import { prisma } from '@/shared/lib/prisma';
 import { getCurrentPeriod } from '@/lib/period-utils';
+import { featureFlags } from '@/lib/feature-flags';
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,7 +35,12 @@ export async function GET(request: NextRequest) {
     // QA-004: Fetch all benefits and usage records upfront (not in a loop)
     const [userBenefits, allUsageRecords] = await Promise.all([
       prisma.userBenefit.findMany({
-        where: { playerId },
+        where: {
+          playerId,
+          ...(featureFlags.BENEFIT_ENGINE_ENABLED
+            ? { periodStatus: 'ACTIVE' }
+            : {}),
+        },
       }),
       prisma.benefitUsageRecord.findMany({
         where: { userId },

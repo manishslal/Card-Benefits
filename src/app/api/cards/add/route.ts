@@ -44,6 +44,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib/prisma';
 import { verifyToken } from '@/features/auth/lib/jwt';
+import { featureFlags } from '@/lib/feature-flags';
+import { generateBenefitsForCard } from '@/lib/benefit-engine';
 
 // ============================================================
 // Type Definitions
@@ -71,6 +73,12 @@ interface AddCardResponse {
     updatedAt: string;
   };
   benefitsCreated: number;
+  benefitsGenerated?: Array<{
+    name: string;
+    masterBenefitId: string;
+    periodStart: string;
+    periodEnd: string | null;
+  }>;
   message: string;
 }
 
@@ -228,7 +236,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // Create the UserCard and UserBenefits in a transaction for ACID compliance
-    const { card: userCard, benefitCount } = await prisma.$transaction(async (tx) => {
+    const { card: userCard, benefitCount, generatedBenefits } = await prisma.$transaction(async (tx) => {
       // Create the UserCard record
       const card = await tx.userCard.create({
         data: {
@@ -242,56 +250,85 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         },
       });
 
-      // Fetch MasterBenefits for this card and clone them to UserBenefits
-      const masterBenefits = await tx.masterBenefit.findMany({
-        where: {
-          masterCardId,
-          isActive: true,
-        },
-        orderBy: {
-          createdAt: 'asc',
-        },
-      });
+      if (featureFlags.BENEFIT_ENGINE_ENABLED) {
+        // New path: auto-generate benefits with period tracking via the benefit engine
+        const generated = await generateBenefitsForCard(
+          tx,
+          { id: card.id, masterCardId, renewalDate },
+          player.id,
+          new Date()
+        );
+        return {
+          card,
+          benefitCount: generated.count,
+          generatedBenefits: generated.benefits,
+        };
+      } else {
+        // Legacy path: flat copy of MasterBenefits without period tracking
+        const masterBenefits = await tx.masterBenefit.findMany({
+          where: {
+            masterCardId,
+            isActive: true,
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        });
 
-      // Create UserBenefit records by cloning from MasterBenefits
-      const benefitsCreated = await tx.userBenefit.createMany({
-        data: masterBenefits.map((masterBenefit) => ({
-          userCardId: card.id,
-          playerId: player.id,
-          name: masterBenefit.name,
-          type: masterBenefit.type,
-          stickerValue: masterBenefit.stickerValue,
-          resetCadence: masterBenefit.resetCadence,
-          isUsed: false,
-          timesUsed: 0,
-          expirationDate: null,
-          status: 'ACTIVE',
-        })),
-      });
+        const benefitsCreated = await tx.userBenefit.createMany({
+          data: masterBenefits.map((masterBenefit) => ({
+            userCardId: card.id,
+            playerId: player.id,
+            name: masterBenefit.name,
+            type: masterBenefit.type,
+            stickerValue: masterBenefit.stickerValue,
+            resetCadence: masterBenefit.resetCadence,
+            isUsed: false,
+            timesUsed: 0,
+            expirationDate: null,
+            status: 'ACTIVE',
+          })),
+        });
 
-      return { card, benefitCount: benefitsCreated.count };
+        return {
+          card,
+          benefitCount: benefitsCreated.count,
+          generatedBenefits: undefined,
+        };
+      }
     });
 
-    return NextResponse.json(
-      {
-        success: true,
-        userCard: {
-          id: userCard.id,
-          playerId: userCard.playerId,
-          masterCardId: userCard.masterCardId,
-          customName: userCard.customName,
-          actualAnnualFee: userCard.actualAnnualFee,
-          renewalDate: userCard.renewalDate.toISOString(),
-          isOpen: userCard.isOpen,
-          status: userCard.status,
-          createdAt: userCard.createdAt.toISOString(),
-          updatedAt: userCard.updatedAt.toISOString(),
-        },
-        benefitsCreated: benefitCount,
-        message: 'Card added to your collection',
-      } as AddCardResponse,
-      { status: 201 }
-    );
+    const responseBody: AddCardResponse = {
+      success: true,
+      userCard: {
+        id: userCard.id,
+        playerId: userCard.playerId,
+        masterCardId: userCard.masterCardId,
+        customName: userCard.customName,
+        actualAnnualFee: userCard.actualAnnualFee,
+        renewalDate: userCard.renewalDate.toISOString(),
+        isOpen: userCard.isOpen,
+        status: userCard.status,
+        createdAt: userCard.createdAt.toISOString(),
+        updatedAt: userCard.updatedAt.toISOString(),
+      },
+      benefitsCreated: benefitCount,
+      message: generatedBenefits
+        ? `Card added with ${benefitCount} benefits for the current period`
+        : 'Card added to your collection',
+    };
+
+    // Include period details when benefit engine is active
+    if (generatedBenefits) {
+      responseBody.benefitsGenerated = generatedBenefits.map((b) => ({
+        name: b.name,
+        masterBenefitId: b.masterBenefitId,
+        periodStart: b.periodStart.toISOString(),
+        periodEnd: b.periodEnd?.toISOString() ?? null,
+      }));
+    }
+
+    return NextResponse.json(responseBody, { status: 201 });
   } catch (error) {
     console.error('[POST /api/cards/add Error]', error);
     return NextResponse.json(

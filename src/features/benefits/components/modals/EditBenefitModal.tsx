@@ -6,22 +6,20 @@ import Input from '@/shared/components/ui/Input';
 import { UnifiedSelect } from '@/shared/components/ui/select-unified';
 import { FormError } from '@/shared/components/forms';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { X } from 'lucide-react';
+import { X, Lock, Info } from 'lucide-react';
 
 /**
  * EditBenefitModal Component
  * 
  * Allows users to edit benefit details
  * 
- * Editable fields:
- * - name
- * - userDeclaredValue
- * - expirationDate
- * - resetCadence
+ * When a benefit is engine-managed (has `masterBenefitId`):
+ * - name, resetCadence, and expirationDate are read-only
+ * - Only userDeclaredValue (personal valuation) remains editable
+ * - An informational message explains why fields are locked
  * 
- * Read-only fields:
- * - stickerValue
- * - type
+ * When a benefit is legacy (no `masterBenefitId`):
+ * - All fields remain editable as before
  * 
  * Props:
  * - benefit: UserBenefit object with current values
@@ -38,12 +36,14 @@ interface UserBenefit {
   userDeclaredValue: number | null;
   resetCadence: string;
   expirationDate: Date | string | null;
+  masterBenefitId?: string | null;
 }
 
 interface EditBenefitModalProps {
   benefit: UserBenefit | null;
   isOpen: boolean;
   onClose: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Callback receives raw API response data
   onBenefitUpdated?: (benefit: any) => void;
 }
 
@@ -106,11 +106,15 @@ export function EditBenefitModal({
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
+    const isEngineManaged = !!benefit?.masterBenefitId;
 
-    if (!formData.name || formData.name.trim().length === 0) {
-      newErrors.name = 'Benefit name is required';
-    } else if (formData.name.length > 100) {
-      newErrors.name = 'Benefit name must be 100 characters or less';
+    // Name validation — skip for engine-managed benefits (read-only)
+    if (!isEngineManaged) {
+      if (!formData.name || formData.name.trim().length === 0) {
+        newErrors.name = 'Benefit name is required';
+      } else if (formData.name.length > 100) {
+        newErrors.name = 'Benefit name must be 100 characters or less';
+      }
     }
 
     if (formData.userDeclaredValue) {
@@ -122,7 +126,8 @@ export function EditBenefitModal({
       }
     }
 
-    if (formData.expirationDate) {
+    // Expiration date validation — skip for engine-managed benefits (read-only)
+    if (!isEngineManaged && formData.expirationDate) {
       const date = new Date(formData.expirationDate);
       if (isNaN(date.getTime())) {
         newErrors.expirationDate = 'Invalid date format';
@@ -131,7 +136,8 @@ export function EditBenefitModal({
       }
     }
 
-    if (!formData.resetCadence) {
+    // Reset cadence validation — skip for engine-managed benefits (read-only)
+    if (!isEngineManaged && !formData.resetCadence) {
       newErrors.resetCadence = 'Reset cadence is required';
     }
 
@@ -147,22 +153,29 @@ export function EditBenefitModal({
     setIsLoading(true);
     setMessage('');
 
+    const isEngineManaged = !!benefit.masterBenefitId;
+
     try {
       // Convert values to cents
       const userDeclaredValue = formData.userDeclaredValue
         ? Math.round(parseFloat(formData.userDeclaredValue) * 100)
         : undefined;
 
+      // When engine-managed, only send editable fields (userDeclaredValue)
+      const patchBody = isEngineManaged
+        ? { userDeclaredValue }
+        : {
+            name: formData.name.trim(),
+            userDeclaredValue,
+            expirationDate: formData.expirationDate || undefined,
+            resetCadence: formData.resetCadence,
+          };
+
       const response = await fetch(`/api/benefits/${benefit.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          userDeclaredValue,
-          expirationDate: formData.expirationDate || undefined,
-          resetCadence: formData.resetCadence,
-        }),
+        body: JSON.stringify(patchBody),
       });
 
       const data = await response.json();
@@ -194,6 +207,8 @@ export function EditBenefitModal({
   };
 
   if (!isOpen || !benefit) return null;
+
+  const isEngineManaged = !!benefit.masterBenefitId;
 
   const cadenceOptions = [
     { value: 'Monthly', label: 'Monthly' },
@@ -245,20 +260,67 @@ export function EditBenefitModal({
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Benefit Name */}
-            <Input
-        id="edit-benefit-field-3"
-        
-              label="Benefit Name"
-              type="text"
-              name="name"
-              placeholder="e.g., 'Uber Cash'"
-              value={formData.name}
-              onChange={handleChange}
-              error={errors.name}
-              disabled={isLoading}
-              required
-            />
+            {/* Engine-managed info banner */}
+            {isEngineManaged && (
+              <div
+                className="flex items-start gap-3 p-3 rounded-md border"
+                style={{
+                  backgroundColor: 'var(--color-bg-secondary)',
+                  borderColor: 'var(--color-border)',
+                }}
+                role="note"
+                aria-label="Catalog-managed benefit notice"
+              >
+                <Info
+                  size={18}
+                  className="flex-shrink-0 mt-0.5"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                  aria-hidden="true"
+                />
+                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                  This benefit is managed by the card catalog. Only your personal value estimate can be edited.
+                </p>
+              </div>
+            )}
+
+            {/* Benefit Name — conditionally read-only for engine-managed benefits */}
+            {isEngineManaged ? (
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
+                  <span className="flex items-center gap-1.5">
+                    Benefit Name
+                    <Lock size={14} className="opacity-60" aria-hidden="true" />
+                    <span className="text-xs font-normal" style={{ color: 'var(--color-text-secondary)' }}>
+                      (managed by catalog)
+                    </span>
+                  </span>
+                </label>
+                <div
+                  className="p-3 rounded-md opacity-60 cursor-not-allowed"
+                  style={{
+                    backgroundColor: 'var(--color-bg-secondary)',
+                    color: 'var(--color-text)',
+                  }}
+                  aria-disabled="true"
+                  aria-label={`Benefit name: ${benefit.name}`}
+                >
+                  {benefit.name}
+                </div>
+              </div>
+            ) : (
+              <Input
+                id="edit-benefit-field-3"
+                label="Benefit Name"
+                type="text"
+                name="name"
+                placeholder="e.g., 'Uber Cash'"
+                value={formData.name}
+                onChange={handleChange}
+                error={errors.name}
+                disabled={isLoading}
+                required
+              />
+            )}
 
             {/* Read-Only: Benefit Type */}
             <div>
@@ -280,10 +342,9 @@ export function EditBenefitModal({
               </div>
             </div>
 
-            {/* User Declared Value */}
+            {/* User Declared Value — always editable */}
             <Input
-        id="edit-benefit-field-2"
-        
+              id="edit-benefit-field-2"
               label="Your Estimated Value (Optional, in dollars)"
               type="number"
               name="userDeclaredValue"
@@ -295,30 +356,78 @@ export function EditBenefitModal({
               disabled={isLoading}
             />
 
-            {/* Reset Cadence */}
-            <UnifiedSelect
-              options={cadenceOptions}
-              value={formData.resetCadence}
-              onChange={(value) => handleSelectChange('resetCadence', value)}
-              placeholder="Choose a cadence..."
-              label="Reset Cadence"
-              error={errors.resetCadence}
-              required
-              disabled={isLoading}
-            />
+            {/* Reset Cadence — conditionally read-only for engine-managed benefits */}
+            {isEngineManaged ? (
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
+                  <span className="flex items-center gap-1.5">
+                    Reset Cadence
+                    <Lock size={14} className="opacity-60" aria-hidden="true" />
+                    <span className="text-xs font-normal" style={{ color: 'var(--color-text-secondary)' }}>
+                      (managed by catalog)
+                    </span>
+                  </span>
+                </label>
+                <div
+                  className="p-3 rounded-md opacity-60 cursor-not-allowed"
+                  style={{
+                    backgroundColor: 'var(--color-bg-secondary)',
+                    color: 'var(--color-text)',
+                  }}
+                  aria-disabled="true"
+                  aria-label={`Reset cadence: ${cadenceOptions.find((o) => o.value === benefit.resetCadence)?.label || benefit.resetCadence}`}
+                >
+                  {cadenceOptions.find((o) => o.value === benefit.resetCadence)?.label || benefit.resetCadence}
+                </div>
+              </div>
+            ) : (
+              <UnifiedSelect
+                options={cadenceOptions}
+                value={formData.resetCadence}
+                onChange={(value) => handleSelectChange('resetCadence', value)}
+                placeholder="Choose a cadence..."
+                label="Reset Cadence"
+                error={errors.resetCadence}
+                required
+                disabled={isLoading}
+              />
+            )}
 
-            {/* Expiration Date */}
-            <Input
-        id="edit-benefit-field-1"
-        
-              label="Expiration Date (Optional)"
-              type="date"
-              name="expirationDate"
-              value={formData.expirationDate}
-              onChange={handleChange}
-              error={errors.expirationDate}
-              disabled={isLoading}
-            />
+            {/* Expiration Date — conditionally read-only for engine-managed benefits */}
+            {isEngineManaged ? (
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
+                  <span className="flex items-center gap-1.5">
+                    Period End
+                    <Lock size={14} className="opacity-60" aria-hidden="true" />
+                  </span>
+                </label>
+                <div
+                  className="p-3 rounded-md opacity-60 cursor-not-allowed"
+                  style={{
+                    backgroundColor: 'var(--color-bg-secondary)',
+                    color: 'var(--color-text)',
+                  }}
+                  aria-disabled="true"
+                  aria-label={`Period end: ${benefit.expirationDate ? new Date(benefit.expirationDate).toLocaleDateString() : 'No expiration'}`}
+                >
+                  {benefit.expirationDate
+                    ? new Date(benefit.expirationDate).toLocaleDateString()
+                    : 'No expiration'}
+                </div>
+              </div>
+            ) : (
+              <Input
+                id="edit-benefit-field-1"
+                label="Expiration Date (Optional)"
+                type="date"
+                name="expirationDate"
+                value={formData.expirationDate}
+                onChange={handleChange}
+                error={errors.expirationDate}
+                disabled={isLoading}
+              />
+            )}
 
             {/* Action Buttons */}
             <div className="flex gap-3 pt-4">

@@ -8,6 +8,7 @@ import { AppHeader } from '@/shared/components/layout';
 import { CardSwitcher, DashboardSummary } from '@/shared/components/features';
 import { BenefitsGrid, AddBenefitModal, EditBenefitModal, DeleteBenefitConfirmationDialog } from '@/features/benefits';
 import { AddCardModal } from '@/features/cards/components/modals/AddCardModal';
+import { deduplicateBenefits } from '@/lib/benefit-utils';
 import { Plus, CreditCard, CheckCircle, AlertCircle, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { SkeletonCard } from '@/shared/components/loaders';
 import { PeriodSelector, type PeriodOption } from './new/components/PeriodSelector';
@@ -61,6 +62,12 @@ interface BenefitData {
   usage?: number;
   isUsed?: boolean;
   createdDate?: Date | string;
+  // Period-based fields (benefit engine)
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  periodStatus?: string | null;
+  masterBenefitId?: string | null;
+  claimingCadence?: string | null;
 }
 
 /**
@@ -87,12 +94,19 @@ interface ApiBenefit {
   expirationDate?: string | null;
   description?: string;
   isUsed?: boolean;
+  // Period-based fields (benefit engine)
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  periodStatus?: string | null;
+  masterBenefitId?: string | null;
+  claimingCadence?: string | null;
 }
 
 interface ApiCardsResponse {
   success: boolean;
   cards: ApiCard[];
   error?: string;
+  benefitEngineEnabled?: boolean;
 }
 
 /**
@@ -108,6 +122,9 @@ function transformBenefitForGrid(benefit: BenefitData): {
   value?: number;
   usage?: number;
   type?: string;
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  periodStatus?: string | null;
 } {
   return {
     id: benefit.id,
@@ -118,6 +135,10 @@ function transformBenefitForGrid(benefit: BenefitData): {
     value: benefit.value,
     usage: benefit.usage,
     type: benefit.type,
+    // Pass period data through for display in BenefitsGrid
+    periodStart: benefit.periodStart,
+    periodEnd: benefit.periodEnd,
+    periodStatus: benefit.periodStatus,
   };
 }
 
@@ -132,6 +153,7 @@ function transformBenefitForModal(benefit: BenefitData | null): {
   userDeclaredValue: number | null;
   resetCadence: string;
   expirationDate: Date | string | null;
+  masterBenefitId?: string | null;
 } | null {
   if (!benefit) return null;
   return {
@@ -142,6 +164,7 @@ function transformBenefitForModal(benefit: BenefitData | null): {
     userDeclaredValue: benefit.userDeclaredValue,
     resetCadence: benefit.resetCadence,
     expirationDate: benefit.expirationDate || null,
+    masterBenefitId: benefit.masterBenefitId ?? null,
   };
 }
 
@@ -158,6 +181,13 @@ export default function DashboardPage() {
   const [selectedCardId, setSelectedCardId] = useState<string>('');
   const [isAddCardModalOpen, setIsAddCardModalOpen] = useState(false);
   const [userName, setUserName] = useState('User');
+  // Benefit engine awareness — toggled by API response
+  const [benefitEngineEnabled, setBenefitEngineEnabled] = useState(false);
+  // "current" = ACTIVE period benefits, "history" = EXPIRED period benefits
+  const [viewMode, setViewMode] = useState<'current' | 'history'>('current');
+  // History data loaded from /api/benefits/history
+  const [historyBenefits, setHistoryBenefits] = useState<BenefitData[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   // ============================================================
   // State Management - Benefit Modals
@@ -364,6 +394,14 @@ export default function DashboardPage() {
     });
   }, [benefits, selectedPeriodId, selectedStatuses, periodOptions]);
 
+  // ============================================================
+  // Deduplication — collapse multi-period rows when engine is ON
+  // ============================================================
+
+  const deduplicatedBenefits = useMemo(() => {
+    return deduplicateBenefits(filteredBenefits, benefitEngineEnabled);
+  }, [filteredBenefits, benefitEngineEnabled]);
+
   const handleRetry = () => {
     if (retryCount < MAX_RETRIES) {
       setRetryCount(retryCount + 1);
@@ -393,6 +431,10 @@ export default function DashboardPage() {
 
         // Transform API response to card display format (including benefits)
         const apiResponse = data as ApiCardsResponse;
+
+        // Track whether the benefit engine is active for this response
+        setBenefitEngineEnabled(apiResponse.benefitEngineEnabled === true);
+
         const transformedCards: CardData[] = (apiResponse.cards || []).map((apiCard: ApiCard) => ({
           id: apiCard.id,
           name: apiCard.customName || apiCard.cardName,
@@ -415,6 +457,12 @@ export default function DashboardPage() {
             description: b.description || '',
             value: (b.userDeclaredValue || b.stickerValue) / 100,
             usage: b.isUsed ? 100 : 0,
+            // Carry period fields through when present
+            periodStart: b.periodStart ?? null,
+            periodEnd: b.periodEnd ?? null,
+            periodStatus: b.periodStatus ?? null,
+            masterBenefitId: b.masterBenefitId ?? null,
+            claimingCadence: b.claimingCadence ?? null,
           })),
         }));
 
@@ -492,6 +540,70 @@ export default function DashboardPage() {
   }, [selectedCardId, cards]);
 
   // ============================================================
+  // Effect: Load history benefits when viewMode switches to "history"
+  // ============================================================
+
+  useEffect(() => {
+    if (viewMode !== 'history' || !benefitEngineEnabled) return;
+
+    const loadHistory = async () => {
+      setIsLoadingHistory(true);
+      try {
+        const params = new URLSearchParams({ limit: '50' });
+        if (selectedCardId) {
+          params.set('cardId', selectedCardId);
+        }
+        const response = await fetch(`/api/benefits/history?${params.toString()}`, {
+          method: 'GET',
+          credentials: 'include',
+        });
+        if (!response.ok) throw new Error('Failed to load history');
+        const data = await response.json();
+        if (data.success && Array.isArray(data.benefits)) {
+          const mapped: BenefitData[] = data.benefits.map((b: {
+            id: string;
+            name: string;
+            type: string;
+            stickerValue: number;
+            userDeclaredValue: number | null;
+            resetCadence: string;
+            isUsed: boolean;
+            periodStart: string | null;
+            periodEnd: string | null;
+            periodStatus: string;
+            masterBenefitId: string | null;
+            claimingCadence: string | null;
+          }) => ({
+            id: b.id,
+            name: b.name,
+            type: b.type,
+            stickerValue: b.stickerValue,
+            userDeclaredValue: b.userDeclaredValue,
+            resetCadence: b.resetCadence,
+            status: 'expired' as const,
+            isUsed: b.isUsed,
+            value: (b.userDeclaredValue || b.stickerValue) / 100,
+            usage: b.isUsed ? 100 : 0,
+            periodStart: b.periodStart,
+            periodEnd: b.periodEnd,
+            periodStatus: b.periodStatus,
+            masterBenefitId: b.masterBenefitId,
+            claimingCadence: b.claimingCadence,
+          }));
+          setHistoryBenefits(mapped);
+        }
+      } catch (error) {
+        console.error('Error loading benefit history:', error);
+        setHistoryBenefits([]);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+
+    loadHistory();
+  }, [viewMode, benefitEngineEnabled, selectedCardId]);
+
+  // ============================================================
   // Handler: Refresh cards after adding new card
   // ============================================================
 
@@ -508,6 +620,8 @@ export default function DashboardPage() {
         const data = await response.json();
         if (data.success && data.cards) {
           const apiResponse = data as ApiCardsResponse;
+          setBenefitEngineEnabled(apiResponse.benefitEngineEnabled === true);
+
           const transformedCards: CardData[] = (apiResponse.cards || []).map((apiCard: ApiCard) => ({
             id: apiCard.id,
             name: apiCard.customName || apiCard.cardName,
@@ -530,6 +644,11 @@ export default function DashboardPage() {
               description: b.description || '',
               value: (b.userDeclaredValue || b.stickerValue) / 100,
               usage: b.isUsed ? 100 : 0,
+              periodStart: b.periodStart ?? null,
+              periodEnd: b.periodEnd ?? null,
+              periodStatus: b.periodStatus ?? null,
+              masterBenefitId: b.masterBenefitId ?? null,
+              claimingCadence: b.claimingCadence ?? null,
             })),
           }));
 
@@ -681,19 +800,27 @@ export default function DashboardPage() {
   };
 
   // ============================================================
+  // Determine which benefits to display based on viewMode
+  // ============================================================
+
+  const displayBenefits = viewMode === 'history' ? historyBenefits : deduplicatedBenefits;
+
+  // ============================================================
   // Summary Statistics - Computed from filtered benefit data
+  // When benefit engine is on and viewMode is "current", these
+  // already only include ACTIVE-period benefits (filtered at API level).
   // ============================================================
 
   const summaryStats = [
     {
-      label: 'Total Benefits',
-      value: filteredBenefits.length,
+      label: viewMode === 'history' ? 'Past Benefits' : 'Total Benefits',
+      value: displayBenefits.length,
       icon: 'CreditCard',
       variant: 'default' as const,
     },
     {
-      label: 'Total Value',
-      value: `$${filteredBenefits.reduce((sum, b) => sum + (b.value || 0), 0).toLocaleString()}`,
+      label: viewMode === 'history' ? 'Past Value' : 'Total Value',
+      value: `$${displayBenefits.reduce((sum, b) => sum + (b.value || 0), 0).toLocaleString()}`,
       icon: 'DollarSign',
       variant: 'default' as const,
     },
@@ -704,8 +831,10 @@ export default function DashboardPage() {
       variant: 'default' as const,
     },
     {
-      label: 'Expiring Soon',
-      value: filteredBenefits.filter((b) => b.status === 'expiring').length,
+      label: viewMode === 'history' ? 'Used' : 'Expiring Soon',
+      value: viewMode === 'history'
+        ? displayBenefits.filter((b) => b.isUsed).length
+        : displayBenefits.filter((b) => b.status === 'expiring').length,
       icon: 'Clock',
       variant: 'default' as const,
     },
@@ -831,7 +960,7 @@ export default function DashboardPage() {
                 Welcome, {userName}! 👋
               </h2>
               <p className="text-sm mt-1 text-[var(--color-text-secondary)]">
-                You have {cards.length} card{cards.length !== 1 ? 's' : ''} and {benefits.length} benefits tracked
+                You have {cards.length} card{cards.length !== 1 ? 's' : ''} and {deduplicatedBenefits.length} benefits tracked
               </p>
             </div>
 
@@ -877,6 +1006,48 @@ export default function DashboardPage() {
                 />
               </div>
 
+              {/* View Mode Toggle — Current vs Previous Periods (benefit engine only) */}
+              {benefitEngineEnabled && (
+                <div className="mt-2 mb-4 flex items-center gap-2">
+                  <span
+                    className="text-sm font-medium"
+                    style={{ color: 'var(--color-text)', fontSize: 'var(--text-body-sm)' }}
+                  >
+                    View:
+                  </span>
+                  <div
+                    className="inline-flex rounded-lg border overflow-hidden"
+                    style={{ borderColor: 'var(--color-border)' }}
+                    role="group"
+                    aria-label="Benefit period view mode"
+                  >
+                    <button
+                      onClick={() => setViewMode('current')}
+                      className="px-3 py-1.5 text-sm font-medium transition-colors"
+                      style={{
+                        backgroundColor: viewMode === 'current' ? 'var(--color-primary)' : 'var(--color-bg)',
+                        color: viewMode === 'current' ? '#fff' : 'var(--color-text-secondary)',
+                      }}
+                      aria-pressed={viewMode === 'current'}
+                    >
+                      Current Period
+                    </button>
+                    <button
+                      onClick={() => setViewMode('history')}
+                      className="px-3 py-1.5 text-sm font-medium transition-colors border-l"
+                      style={{
+                        backgroundColor: viewMode === 'history' ? 'var(--color-primary)' : 'var(--color-bg)',
+                        color: viewMode === 'history' ? '#fff' : 'var(--color-text-secondary)',
+                        borderColor: 'var(--color-border)',
+                      }}
+                      aria-pressed={viewMode === 'history'}
+                    >
+                      Previous Periods
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Status Filters - New Filter */}
               <div className="mt-4 mb-6">
                 <StatusFilters
@@ -896,27 +1067,47 @@ export default function DashboardPage() {
                     className="text-lg font-semibold text-[var(--color-text)]"
                     style={{ fontSize: 'var(--text-h4)' }}
                   >
-                    Benefits on {cards.find((c) => c.id === selectedCardId)?.name || 'Selected Card'}
-                    {filteredBenefits.length !== benefits.length && (
+                    {viewMode === 'history' ? 'Past ' : ''}Benefits on {cards.find((c) => c.id === selectedCardId)?.name || 'Selected Card'}
+                    {viewMode === 'current' && deduplicatedBenefits.length !== benefits.length && (
                       <span
                         className="ml-2 text-sm font-normal"
                         style={{ color: 'var(--color-text-secondary)' }}
                       >
-                        ({filteredBenefits.length} of {benefits.length})
+                        ({deduplicatedBenefits.length} of {deduplicateBenefits(benefits, benefitEngineEnabled).length})
+                      </span>
+                    )}
+                    {viewMode === 'history' && (
+                      <span
+                        className="ml-2 text-sm font-normal"
+                        style={{ color: 'var(--color-text-secondary)' }}
+                      >
+                        ({displayBenefits.length})
                       </span>
                     )}
                   </h3>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setIsAddBenefitOpen(true)}
-                  >
-                    + Add Benefit
-                  </Button>
+                  {viewMode === 'current' && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setIsAddBenefitOpen(true)}
+                    >
+                      + Add Benefit
+                    </Button>
+                  )}
                 </div>
 
-                {/* Empty State for Filtered Results */}
-                {filteredBenefits.length === 0 && benefits.length > 0 && (
+                {/* Loading state for history */}
+                {viewMode === 'history' && isLoadingHistory && (
+                  <div className="flex justify-center py-12">
+                    <div
+                      className="h-8 w-8 animate-spin rounded-full border-4 border-t-transparent"
+                      style={{ borderColor: 'var(--color-border)', borderTopColor: 'transparent' }}
+                    />
+                  </div>
+                )}
+
+                {/* Empty State for Current Filtered Results */}
+                {viewMode === 'current' && deduplicatedBenefits.length === 0 && benefits.length > 0 && (
                   <div
                     className="text-center py-12 rounded-lg"
                     style={{
@@ -948,13 +1139,28 @@ export default function DashboardPage() {
                   </div>
                 )}
 
-                {/* Benefits Grid */}
-                {filteredBenefits.length > 0 && (
+                {/* Empty State for History */}
+                {viewMode === 'history' && !isLoadingHistory && historyBenefits.length === 0 && (
+                  <div
+                    className="text-center py-12 rounded-lg"
+                    style={{
+                      backgroundColor: 'var(--color-bg-secondary)',
+                      color: 'var(--color-text-secondary)',
+                    }}
+                  >
+                    <p className="text-sm">
+                      No previous period benefits found for this card.
+                    </p>
+                  </div>
+                )}
+
+                {/* Benefits Grid — uses displayBenefits (current or history) */}
+                {displayBenefits.length > 0 && !(viewMode === 'history' && isLoadingHistory) && (
                   <BenefitsGrid
-                    benefits={filteredBenefits.map(transformBenefitForGrid)}
-                    onEdit={handleEditBenefitClick}
-                    onDelete={handleDeleteBenefitClick}
-                    onMarkUsed={handleMarkUsed}
+                    benefits={displayBenefits.map(transformBenefitForGrid)}
+                    onEdit={viewMode === 'current' ? handleEditBenefitClick : undefined}
+                    onDelete={viewMode === 'current' ? handleDeleteBenefitClick : undefined}
+                    onMarkUsed={viewMode === 'current' ? handleMarkUsed : undefined}
                     gridColumns={3}
                   />
                 )}

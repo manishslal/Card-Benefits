@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib';
+import { featureFlags } from '@/lib/feature-flags';
 
 interface PatchBenefitRequest {
   name?: string;
@@ -134,6 +135,21 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
       );
     }
 
+    // Engine-managed benefit edit guard: reject changes to catalog-managed fields
+    if (featureFlags.BENEFIT_ENGINE_ENABLED && benefit.masterBenefitId) {
+      const blockedFields = ['name', 'resetCadence', 'type', 'stickerValue'] as const;
+      const attempted = blockedFields.filter((f) => (body as Record<string, unknown>)[f] !== undefined);
+      if (attempted.length > 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Cannot modify catalog-managed fields: ${attempted.join(', ')}`,
+          } as ErrorResponse,
+          { status: 403 }
+        );
+      }
+    }
+
     const updateData: any = {};
     if (body.name !== undefined) {
       updateData.name = (body.name as string).trim();
@@ -213,6 +229,14 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
     if (benefit.userCard.player.userId !== userId) {
       return NextResponse.json(
         { success: false, error: 'You do not have permission to delete this benefit' } as ErrorResponse,
+        { status: 403 }
+      );
+    }
+
+    // Engine-managed benefit delete guard: prevent deleting catalog-managed benefits
+    if (featureFlags.BENEFIT_ENGINE_ENABLED && benefit.masterBenefitId) {
+      return NextResponse.json(
+        { success: false, error: 'Cannot delete a catalog-managed benefit. It will be automatically managed by the benefit engine.' } as ErrorResponse,
         { status: 403 }
       );
     }

@@ -41,12 +41,12 @@ export const MASTER_CATALOG_CADENCES: { [cardName: string]: BenefitCadenceMappin
     },
     {
       name: 'Resy Credit (Jan–Jun)',
-      claimingCadence: 'FLEXIBLE_ANNUAL',
+      claimingCadence: 'SEMI_ANNUAL',
       claimingAmount: 5000, // $50
     },
     {
       name: 'Resy Credit (Jul–Dec)',
-      claimingCadence: 'FLEXIBLE_ANNUAL',
+      claimingCadence: 'SEMI_ANNUAL',
       claimingAmount: 5000, // $50
     },
   ],
@@ -59,8 +59,9 @@ export const MASTER_CATALOG_CADENCES: { [cardName: string]: BenefitCadenceMappin
     {
       name: '$200 Uber Cash',
       claimingCadence: 'MONTHLY',
-      claimingAmount: 1500, // $15/month average
-      claimingWindowEnd: undefined, // Some months have $15, Dec has $35 - tracked in app
+      claimingAmount: 1500, // $15/month default
+      claimingWindowEnd: undefined,
+      variableAmounts: { '12': 3500 }, // December override: $35
     },
     {
       name: '$50 Saks Credit (Jan–Jun)',

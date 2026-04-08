@@ -44,6 +44,22 @@ function isEnabled(flag: string): boolean {
  */
 export const featureFlags = {
   // ─────────────────────────────────────────────────────────────────
+  // BENEFIT ENGINE
+  // ─────────────────────────────────────────────────────────────────
+
+  /**
+   * Enable the Benefit Engine auto-generation service.
+   * When enabled:
+   * - POST /api/cards/add uses generateBenefitsForCard() with period tracking
+   * - Cron job creates new period rows instead of resetting in-place
+   * When disabled:
+   * - Existing benefit creation logic is used (flat copy without periods)
+   *
+   * Controlled via env var: BENEFIT_ENGINE_ENABLED=true
+   */
+  BENEFIT_ENGINE_ENABLED: process.env.BENEFIT_ENGINE_ENABLED === 'true',
+
+  // ─────────────────────────────────────────────────────────────────
   // CORE PHASE 2B FEATURES
   // ─────────────────────────────────────────────────────────────────
 

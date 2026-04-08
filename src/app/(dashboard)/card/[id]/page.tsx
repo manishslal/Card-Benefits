@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { SafeDarkModeToggle } from '@/shared/components/ui';
 import Button from '@/shared/components/ui/button';
@@ -9,6 +9,7 @@ import { BenefitsList, BenefitsGrid, AddBenefitModal, EditBenefitModal, DeleteBe
 import { CreditCard, ArrowLeft, Plus } from 'lucide-react';
 import { EditCardModal } from '@/features/cards/components/modals/EditCardModal';
 import { DeleteCardConfirmationDialog } from '@/features/cards/components/modals/DeleteCardConfirmationDialog';
+import { deduplicateBenefits, getUniqueBenefitCount } from '@/lib/benefit-utils';
 
 /**
  * Card Detail Page - Individual Card View
@@ -50,6 +51,11 @@ interface BenefitData {
   resetCadence: string;
   expirationDate: Date | string | null;
   isUsed?: boolean;
+  // Period-based fields (benefit engine)
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  periodStatus?: string | null;
+  masterBenefitId?: string | null;
 }
 
 export default function CardDetailPage() {
@@ -74,6 +80,9 @@ export default function CardDetailPage() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'expiring' | 'expired'>('all');
 
+  // Benefit engine awareness — loaded from API response
+  const [benefitEngineEnabled, setBenefitEngineEnabled] = useState(false);
+
   /**
    * Fetch card data from API
    * Passes userId via x-user-id header for authentication
@@ -89,6 +98,10 @@ export default function CardDetailPage() {
           const data = await response.json();
           // Extract card from response object - API returns { success: true, card: {...} }
           setCard(data.card);
+          // Track benefit engine state from API response
+          if (data.card?.benefitEngineEnabled !== undefined) {
+            setBenefitEngineEnabled(data.card.benefitEngineEnabled === true);
+          }
         } else if (response.status === 401) {
           throw new Error('Unauthorized - please log in again');
         } else {
@@ -151,8 +164,13 @@ export default function CardDetailPage() {
     return 'active';
   };
 
+  // Deduplicate benefits when engine is enabled — collapse period rows
+  const deduplicatedBenefits = useMemo(() => {
+    return deduplicateBenefits(benefits, benefitEngineEnabled);
+  }, [benefits, benefitEngineEnabled]);
+
   // Filter benefits based on selected status and add status field for display
-  const filteredBenefits = benefits
+  const filteredBenefits = deduplicatedBenefits
     .filter((benefit) => {
       if (filterStatus === 'all') return true;
       return getBenefitStatus(benefit) === filterStatus;
@@ -607,7 +625,9 @@ export default function CardDetailPage() {
                 >
                   {status.charAt(0).toUpperCase() + status.slice(1)}
                   {' '}
-                  ({status === 'all' ? benefits.length : benefits.filter((b) => getBenefitStatus(b) === status).length})
+                  ({status === 'all'
+                    ? getUniqueBenefitCount(benefits, benefitEngineEnabled)
+                    : getUniqueBenefitCount(benefits, benefitEngineEnabled, getBenefitStatus, status)})
                 </button>
               ))}
             </div>
@@ -659,7 +679,7 @@ export default function CardDetailPage() {
       {/* Delete Card Confirmation Dialog */}
       <DeleteCardConfirmationDialog
         card={card}
-        benefitCount={benefits.length}
+        benefitCount={deduplicatedBenefits.length}
         isOpen={isDeleteCardOpen}
         onClose={() => setIsDeleteCardOpen(false)}
         onConfirm={handleCardDeleted}

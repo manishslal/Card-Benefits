@@ -4,6 +4,7 @@
  */
 
 import { Prisma } from '@prisma/client';
+import { featureFlags } from '@/lib/feature-flags';
 
 export interface FilterCriteria {
   status?: string[];
@@ -63,6 +64,16 @@ export function buildBenefitWhereClause(
   // Filter by search term (name)
   if (criteria.searchTerm && criteria.searchTerm.length > 0) {
     where.name = { contains: criteria.searchTerm, mode: 'insensitive' };
+  }
+
+  // Period filter: exclude EXPIRED/UPCOMING when engine is on
+  if (featureFlags.BENEFIT_ENGINE_ENABLED) {
+    // If user explicitly filters for 'expired' status, show EXPIRED rows
+    if (criteria.status?.includes('expired')) {
+      where.periodStatus = 'EXPIRED';
+    } else {
+      where.periodStatus = 'ACTIVE';
+    }
   }
 
   return where;

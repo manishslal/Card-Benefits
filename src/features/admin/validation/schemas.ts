@@ -224,7 +224,15 @@ export const UpdateBenefitSchema = z.object({
   variableAmounts: z
     .record(z.string(), z.number().int().min(0))
     .nullable()
-    .optional(),
+    .optional()
+    .refine(
+      (val) => {
+        if (val === null || val === undefined) return true;
+        const validMonths = new Set(['1','2','3','4','5','6','7','8','9','10','11','12']);
+        return Object.keys(val).every((k) => validMonths.has(k));
+      },
+      { message: 'variableAmounts keys must be month numbers 1-12' }
+    ),
   isActive: z.boolean().optional(),
 });
 

@@ -357,7 +357,9 @@ export async function DELETE(
     }
 
     // 5. Check if benefit is used by user cards
-    const userBenefitCount = 0; // No direct relation available
+    const userBenefitCount = await prisma.userBenefit.count({
+      where: { name: benefit.name },
+    });
 
     // If benefit is in use and not forced, either deactivate or return error
     if (userBenefitCount > 0 && !query.force) {

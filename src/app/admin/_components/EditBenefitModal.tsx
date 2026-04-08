@@ -26,11 +26,15 @@ import type { Benefit } from '@/features/admin/types/admin';
 // Constants
 // ============================================================
 
-const VALID_TYPES = ['StatementCredit', 'UsagePerk'];
+const VALID_TYPES = ['INSURANCE', 'CASHBACK', 'TRAVEL', 'BANKING', 'POINTS', 'OTHER'];
 
 const TYPE_OPTIONS = [
-  { value: 'StatementCredit', label: 'Statement Credit' },
-  { value: 'UsagePerk', label: 'Usage Perk' },
+  { value: 'INSURANCE', label: 'Insurance' },
+  { value: 'CASHBACK', label: 'Cashback' },
+  { value: 'TRAVEL', label: 'Travel' },
+  { value: 'BANKING', label: 'Banking' },
+  { value: 'POINTS', label: 'Points' },
+  { value: 'OTHER', label: 'Other' },
 ];
 
 const CLAIMING_CADENCE_OPTIONS = [

@@ -152,7 +152,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const player = await prisma.player.findFirst({
       where: {
         userId,
-        playerName: 'Primary',
+        isActive: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
       },
       select: {
         id: true,

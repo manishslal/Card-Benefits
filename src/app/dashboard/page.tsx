@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Button from '@/shared/components/ui/button';
 import EmptyState from '@/shared/components/ui/EmptyState';
@@ -8,8 +8,14 @@ import { AppHeader } from '@/shared/components/layout';
 import { CardSwitcher, DashboardSummary } from '@/shared/components/features';
 import { BenefitsGrid, AddBenefitModal, EditBenefitModal, DeleteBenefitConfirmationDialog } from '@/features/benefits';
 import { AddCardModal } from '@/features/cards/components/modals/AddCardModal';
-import { Plus, CreditCard } from 'lucide-react';
+import { Plus, CreditCard, CheckCircle, AlertCircle, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { SkeletonCard } from '@/shared/components/loaders';
+import { PeriodSelector, type PeriodOption } from './new/components/PeriodSelector';
+import { StatusFilters, type BenefitStatus, type StatusOption } from './new/components/StatusFilters';
+import {
+  getCurrentMonthDisplay,
+  getCurrentQuarterInfo,
+} from './utils/period-helpers';
 
 /**
  * Dashboard Page - Redesigned
@@ -53,6 +59,8 @@ interface BenefitData {
   description?: string;
   value?: number;
   usage?: number;
+  isUsed?: boolean;
+  createdDate?: Date | string;
 }
 
 /**
@@ -162,11 +170,199 @@ export default function DashboardPage() {
   const [selectedBenefit, setSelectedBenefit] = useState<BenefitData | null>(null);
 
   // ============================================================
+  // State Management - Filtering
+  // ============================================================
+
+  const [selectedPeriodId, setSelectedPeriodId] = useState<string>('all-time');
+  const [selectedStatuses, setSelectedStatuses] = useState<BenefitStatus[]>([
+    'active',
+    'expiring_soon',
+    'used',
+    'expired',
+    'pending',
+  ]);
+
+  // ============================================================
   // Effect: Load user cards from API (BLOCKER #7 implementation)
   // ============================================================
 
   // Define retry constants at the top level
   const MAX_RETRIES = 3;
+
+  // ============================================================
+  // Filtering Configuration - Period Options
+  // ============================================================
+
+  const periodOptions: PeriodOption[] = useMemo(
+    () => [
+      {
+        id: 'this-month',
+        label: 'This Month',
+        displayLabel: getCurrentMonthDisplay(),
+        getDateRange: () => {
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = now.getMonth();
+          return {
+            start: new Date(year, month, 1),
+            end: new Date(year, month + 1, 0, 23, 59, 59, 999),
+          };
+        },
+      },
+      {
+        id: 'this-quarter',
+        label: 'This Quarter',
+        displayLabel: (() => {
+          const { quarter, year } = getCurrentQuarterInfo();
+          return `Q${quarter} ${year}`;
+        })(),
+        getDateRange: () => {
+          const now = new Date();
+          const year = now.getFullYear();
+          const quarter = Math.floor(now.getMonth() / 3);
+          const quarterStart = quarter * 3;
+          return {
+            start: new Date(year, quarterStart, 1),
+            end: new Date(year, quarterStart + 3, 0, 23, 59, 59, 999),
+          };
+        },
+      },
+      {
+        id: 'first-half',
+        label: 'First Half Year',
+        displayLabel: (() => `H1 ${new Date().getFullYear()}`)(),
+        getDateRange: () => {
+          const now = new Date();
+          const year = now.getFullYear();
+          return {
+            start: new Date(year, 0, 1),
+            end: new Date(year, 5, 30, 23, 59, 59, 999),
+          };
+        },
+      },
+      {
+        id: 'full-year',
+        label: 'Full Year',
+        displayLabel: `${new Date().getFullYear()}`,
+        getDateRange: () => {
+          const now = new Date();
+          const year = now.getFullYear();
+          return {
+            start: new Date(year, 0, 1),
+            end: new Date(year, 11, 31, 23, 59, 59, 999),
+          };
+        },
+      },
+      {
+        id: 'all-time',
+        label: 'All Time',
+        displayLabel: 'All Time',
+        getDateRange: () => ({
+          start: new Date(1970, 0, 1),
+          end: new Date(2099, 11, 31, 23, 59, 59, 999),
+        }),
+      },
+    ],
+    []
+  );
+
+  // ============================================================
+  // Filtering Configuration - Status Options
+  // ============================================================
+
+  const statusOptions: StatusOption[] = useMemo(
+    () => [
+      {
+        id: 'active',
+        label: 'Active',
+        icon: <CheckCircle size={16} />,
+        description: 'Currently active benefits',
+        color: '--color-success',
+      },
+      {
+        id: 'expiring_soon',
+        label: 'Expiring Soon',
+        icon: <AlertCircle size={16} />,
+        description: 'Benefits expiring within 7 days',
+        color: '--color-warning',
+      },
+      {
+        id: 'used',
+        label: 'Used',
+        icon: <CheckCircle2 size={16} />,
+        description: 'Benefits already used',
+        color: '--color-info',
+      },
+      {
+        id: 'expired',
+        label: 'Expired',
+        icon: <XCircle size={16} />,
+        description: 'Benefits past expiration date',
+        color: '--color-border',
+      },
+      {
+        id: 'pending',
+        label: 'Pending',
+        icon: <Clock size={16} />,
+        description: 'Benefits pending review',
+        color: '--color-border',
+      },
+    ],
+    []
+  );
+
+  // ============================================================
+  // Filtering Logic - Apply Period and Status Filters
+  // ============================================================
+
+  const filteredBenefits = useMemo(() => {
+    if (!benefits) return [];
+
+    return benefits.filter((benefit) => {
+      // Check status filter - map API status to filter status
+      let benefitStatus: BenefitStatus;
+      const apiStatus = benefit.status?.toLowerCase() || 'pending';
+
+      if (apiStatus === 'active') {
+        benefitStatus = 'active';
+      } else if (apiStatus === 'expiring') {
+        benefitStatus = 'expiring_soon';
+      } else if (apiStatus === 'used' || benefit.isUsed) {
+        benefitStatus = 'used';
+      } else if (apiStatus === 'expired') {
+        benefitStatus = 'expired';
+      } else {
+        benefitStatus = 'pending';
+      }
+
+      // Status filter check
+      if (selectedStatuses.length > 0 && !selectedStatuses.includes(benefitStatus)) {
+        return false;
+      }
+
+      // Period filter check - only if not 'all-time'
+      if (selectedPeriodId !== 'all-time') {
+        const periodOption = periodOptions.find((p) => p.id === selectedPeriodId);
+        if (periodOption) {
+          const { start: rangeStart, end: rangeEnd } = periodOption.getDateRange();
+
+          // Use createdDate if available, otherwise expirationDate, otherwise current date
+          const benefitDate = benefit.createdDate
+            ? new Date(benefit.createdDate)
+            : benefit.expirationDate
+            ? new Date(benefit.expirationDate)
+            : new Date();
+
+          // Check if benefit date falls within the selected period
+          if (benefitDate < rangeStart || benefitDate > rangeEnd) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    });
+  }, [benefits, selectedPeriodId, selectedStatuses, periodOptions]);
 
   const handleRetry = () => {
     if (retryCount < MAX_RETRIES) {
@@ -485,19 +681,19 @@ export default function DashboardPage() {
   };
 
   // ============================================================
-  // Summary Statistics - Computed from real benefit data
+  // Summary Statistics - Computed from filtered benefit data
   // ============================================================
 
   const summaryStats = [
     {
       label: 'Total Benefits',
-      value: benefits.length,
+      value: filteredBenefits.length,
       icon: 'CreditCard',
       variant: 'default' as const,
     },
     {
       label: 'Total Value',
-      value: `$${benefits.reduce((sum, b) => sum + (b.value || 0), 0).toLocaleString()}`,
+      value: `$${filteredBenefits.reduce((sum, b) => sum + (b.value || 0), 0).toLocaleString()}`,
       icon: 'DollarSign',
       variant: 'default' as const,
     },
@@ -509,7 +705,7 @@ export default function DashboardPage() {
     },
     {
       label: 'Expiring Soon',
-      value: benefits.filter((b) => b.status === 'expiring').length,
+      value: filteredBenefits.filter((b) => b.status === 'expiring').length,
       icon: 'Clock',
       variant: 'default' as const,
     },
@@ -672,6 +868,24 @@ export default function DashboardPage() {
                 onSelectCard={setSelectedCardId}
               />
 
+              {/* Period Selector - New Filter */}
+              <div className="mt-6 mb-4">
+                <PeriodSelector
+                  selectedPeriodId={selectedPeriodId}
+                  onPeriodChange={setSelectedPeriodId}
+                  periods={periodOptions}
+                />
+              </div>
+
+              {/* Status Filters - New Filter */}
+              <div className="mt-4 mb-6">
+                <StatusFilters
+                  selectedStatuses={selectedStatuses}
+                  onStatusChange={setSelectedStatuses}
+                  availableStatuses={statusOptions}
+                />
+              </div>
+
               {/* Dashboard Summary */}
               <DashboardSummary stats={summaryStats} />
 
@@ -683,6 +897,14 @@ export default function DashboardPage() {
                     style={{ fontSize: 'var(--text-h4)' }}
                   >
                     Benefits on {cards.find((c) => c.id === selectedCardId)?.name || 'Selected Card'}
+                    {filteredBenefits.length !== benefits.length && (
+                      <span
+                        className="ml-2 text-sm font-normal"
+                        style={{ color: 'var(--color-text-secondary)' }}
+                      >
+                        ({filteredBenefits.length} of {benefits.length})
+                      </span>
+                    )}
                   </h3>
                   <Button
                     variant="secondary"
@@ -693,14 +915,49 @@ export default function DashboardPage() {
                   </Button>
                 </div>
 
+                {/* Empty State for Filtered Results */}
+                {filteredBenefits.length === 0 && benefits.length > 0 && (
+                  <div
+                    className="text-center py-12 rounded-lg"
+                    style={{
+                      backgroundColor: 'var(--color-bg-secondary)',
+                      color: 'var(--color-text-secondary)',
+                    }}
+                  >
+                    <p className="text-sm">
+                      No benefits match the selected period and status filters.
+                    </p>
+                    <button
+                      onClick={() => {
+                        setSelectedPeriodId('all-time');
+                        setSelectedStatuses(
+                          statusOptions.map((s) => s.id)
+                        );
+                      }}
+                      className="text-sm underline mt-2 transition-colors"
+                      style={{ color: 'var(--color-primary)' }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.color = 'var(--color-primary-light)')
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.color = 'var(--color-primary)')
+                      }
+                    >
+                      Clear filters
+                    </button>
+                  </div>
+                )}
+
                 {/* Benefits Grid */}
-                <BenefitsGrid
-                  benefits={benefits.map(transformBenefitForGrid)}
-                  onEdit={handleEditBenefitClick}
-                  onDelete={handleDeleteBenefitClick}
-                  onMarkUsed={handleMarkUsed}
-                  gridColumns={3}
-                />
+                {filteredBenefits.length > 0 && (
+                  <BenefitsGrid
+                    benefits={filteredBenefits.map(transformBenefitForGrid)}
+                    onEdit={handleEditBenefitClick}
+                    onDelete={handleDeleteBenefitClick}
+                    onMarkUsed={handleMarkUsed}
+                    gridColumns={3}
+                  />
+                )}
               </section>
             </>
           )}

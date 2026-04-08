@@ -49,14 +49,14 @@ const MIGRATIONS = [
     cardName: 'American Express Platinum Card',
     benefits: [
       { name: '$600 Annual Hotel Credit',            claimingCadence: 'SEMI_ANNUAL',     claimingAmount: 30000, variableAmounts: null },
-      { name: '$400 Resy Dining Credit',             claimingCadence: 'MONTHLY',         claimingAmount: 3333,  variableAmounts: { '12': 3337 } },
+      { name: '$400 Resy Dining Credit',             claimingCadence: 'QUARTERLY',       claimingAmount: 10000, variableAmounts: null },
       { name: '$300 Entertainment Credit',           claimingCadence: 'MONTHLY',         claimingAmount: 2500,  variableAmounts: null },
       { name: '$300 Lululemon Annual Credit',        claimingCadence: 'QUARTERLY',       claimingAmount: 7500,  variableAmounts: null },
       { name: '$200 Uber Annual Credit',             claimingCadence: 'MONTHLY',         claimingAmount: 1500,  variableAmounts: { '12': 3500 } },
       { name: '$209 CLEAR Annual Credit',            claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 20900, variableAmounts: null },
       { name: 'Centurion Lounge Access',             claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
-      { name: 'Complimentary Airport Meet & Greet',  claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
-      { name: 'Global Entry or TSA PreCheck',        claimingCadence: 'ONE_TIME',        claimingAmount: 10500, variableAmounts: null },
+      { name: 'Complimentary Airport Meet & Greet',  claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null, isActive: false },
+      { name: 'Global Entry or TSA PreCheck',        claimingCadence: 'ONE_TIME',        claimingAmount: 12000, variableAmounts: null },
       { name: 'Fine Hotels & Resorts Partner Program', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,   variableAmounts: null },
     ],
   },
@@ -67,9 +67,9 @@ const MIGRATIONS = [
     cardName: 'American Express Gold Card',
     benefits: [
       { name: '4x Points on Dining & Restaurants', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,    variableAmounts: null },
-      { name: '4x Points on Flights',              claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,    variableAmounts: null },
+      { name: '4x Points on Flights',              claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,    variableAmounts: null, newName: '3x Points on Flights' },
       { name: '$120 Annual Dining Credit',          claimingCadence: 'MONTHLY',         claimingAmount: 1000, variableAmounts: null },
-      { name: '$100 Annual Uber Credit',            claimingCadence: 'MONTHLY',         claimingAmount: 833,  variableAmounts: { '12': 837 } },
+      { name: '$100 Annual Uber Credit',            claimingCadence: 'MONTHLY',         claimingAmount: 1000, variableAmounts: null, stickerValue: 12000 },
       { name: 'Purchase Protection',               claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,    variableAmounts: null },
     ],
   },
@@ -80,10 +80,10 @@ const MIGRATIONS = [
     cardName: 'Chase Sapphire Reserve',
     benefits: [
       { name: '$300 Annual Travel Credit',         claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 30000, variableAmounts: null },
-      { name: '$500 The Edit Hotel Credit',        claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 50000, variableAmounts: null },
+      { name: '$500 The Edit Hotel Credit',        claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 25000, variableAmounts: null },
       { name: '$250 Hotel Chain Credit',           claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 25000, variableAmounts: null },
-      { name: '$300 Dining Credit',                claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 30000, variableAmounts: null },
-      { name: '$300 Entertainment Credit',         claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 30000, variableAmounts: null },
+      { name: '$300 Dining Credit',                claimingCadence: 'SEMI_ANNUAL',     claimingAmount: 15000, variableAmounts: null },
+      { name: '$300 Entertainment Credit',         claimingCadence: 'SEMI_ANNUAL',     claimingAmount: 15000, variableAmounts: null },
       { name: 'Priority Pass Select Lounge Access', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,    variableAmounts: null },
       { name: 'Trip Cancellation Insurance',       claimingCadence: 'ONE_TIME',        claimingAmount: 0,     variableAmounts: null },
       { name: 'Lost Luggage Reimbursement',        claimingCadence: 'ONE_TIME',        claimingAmount: 0,     variableAmounts: null },
@@ -145,7 +145,7 @@ const MIGRATIONS = [
     benefits: [
       { name: '3x Membership Rewards on Travel',             claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
       { name: '1x Membership Rewards on All Other Purchases', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
-      { name: 'Statement Credits for Travel',                 claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 10000, variableAmounts: null },
+      { name: 'Statement Credits for Travel',                 claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 20900, variableAmounts: null, newName: '$209 CLEAR+ Credit', stickerValue: 20900 },
     ],
   },
 
@@ -154,9 +154,12 @@ const MIGRATIONS = [
     issuer: 'American Express',
     cardName: 'American Express Business Gold Card',
     benefits: [
-      { name: '4x Membership Rewards on Business Purchases',  claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0, variableAmounts: null },
+      { name: '4x Membership Rewards on Business Purchases',  claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0, variableAmounts: null, newName: '4x on Top 2 Categories' },
       { name: '1x Membership Rewards on All Other Purchases', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0, variableAmounts: null },
       { name: 'Business Expense Tracking',                    claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0, variableAmounts: null },
+      // ── April 2026: New benefits ──
+      { name: '$240 Flexible Business Credit',               claimingCadence: 'MONTHLY',         claimingAmount: 2000,  variableAmounts: null, isNew: true, type: 'StatementCredit', stickerValue: 24000, resetCadence: 'Monthly' },
+      { name: '$150 Squarespace Credit',                     claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 15000, variableAmounts: null, isNew: true, type: 'StatementCredit', stickerValue: 15000, resetCadence: 'CalendarYear' },
     ],
   },
 
@@ -166,9 +169,9 @@ const MIGRATIONS = [
     cardName: 'American Express Hilton Honors Surpass Card',
     benefits: [
       { name: 'Free Night Award Certificate', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 30000, variableAmounts: null },
-      { name: '10x Points on Hilton Hotels',  claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
+      { name: '10x Points on Hilton Hotels',  claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null, newName: '12x Points on Hilton Hotels' },
       { name: 'Complimentary Room Upgrades',  claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 5000,  variableAmounts: null },
-      { name: 'Airline Fee Credit',           claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 15000, variableAmounts: null },
+      { name: 'Airline Fee Credit',           claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 15000, variableAmounts: null, isActive: false },
     ],
   },
 
@@ -180,7 +183,9 @@ const MIGRATIONS = [
       { name: 'Free Night Award Certificate', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 25000, variableAmounts: null },
       { name: '6x Points on Marriott Hotels', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
       { name: 'Elite Night Credits',          claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 10000, variableAmounts: null },
-      { name: 'Airline Fee Credit',           claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 30000, variableAmounts: null },
+      { name: 'Airline Fee Credit',           claimingCadence: 'MONTHLY',         claimingAmount: 2500,  variableAmounts: null, newName: '$300 Dining Credit', stickerValue: 30000 },
+      // ── April 2026: New benefit ──
+      { name: 'Priority Pass Select',         claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null, isNew: true, type: 'TravelPerk', stickerValue: 0, resetCadence: 'CardmemberYear' },
     ],
   },
 
@@ -190,10 +195,10 @@ const MIGRATIONS = [
     cardName: 'Capital One Venture X',
     benefits: [
       { name: '$300 Annual Travel Credit',   claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 30000, variableAmounts: null },
-      { name: '10x Miles on Travel & Dining', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
+      { name: '10x Miles on Travel & Dining', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null, newName: '10x Hotels/Cars via Portal, 5x Flights, 2x All Else' },
       { name: 'Priority Pass Lounge',        claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
       { name: '2x Miles on All Purchases',   claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
-      { name: 'Baggage Fee Credit',          claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 8000,  variableAmounts: null },
+      { name: 'Baggage Fee Credit',          claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 8000,  variableAmounts: null, isActive: false },
     ],
   },
 
@@ -204,7 +209,7 @@ const MIGRATIONS = [
     benefits: [
       { name: '3x Points on JetBlue Flights',   claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,    variableAmounts: null },
       { name: 'Free Checked Bags',               claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 30000, variableAmounts: null },
-      { name: 'Inflight Free Drinks & Snacks',   claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 5000, variableAmounts: null },
+      { name: 'Inflight Free Drinks & Snacks',   claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 5000, variableAmounts: null, newName: '50% Statement Credit on Food & Cocktails' },
     ],
   },
 
@@ -213,8 +218,8 @@ const MIGRATIONS = [
     issuer: 'Citi',
     cardName: 'Citi Prestige Card',
     benefits: [
-      { name: 'Travel Credit',               claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 25000, variableAmounts: null },
-      { name: '3x Prestige Points on Travel', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
+      { name: 'Travel Credit',               claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 25000, variableAmounts: null, newName: '$250 Airline Travel Credit' },
+      { name: '3x Prestige Points on Travel', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null, newName: '5x Airlines/Dining, 3x Hotels/Cruise' },
       { name: 'Fourth Night Free at Hotels',  claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
       { name: 'Concierge Services',           claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
     ],
@@ -225,7 +230,7 @@ const MIGRATIONS = [
     issuer: 'US Bank',
     cardName: 'US Bank Altitude Reserve Visa Infinite',
     benefits: [
-      { name: '$300 Quarterly Travel Credit',    claimingCadence: 'QUARTERLY',       claimingAmount: 18750, variableAmounts: null },
+      { name: '$300 Quarterly Travel Credit',    claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 32500, variableAmounts: null, newName: '$325 Annual Travel Credit', stickerValue: 32500 },
       { name: '4.5x Points on Travel & Dining',  claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
       { name: 'Priority Pass Select',            claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
     ],
@@ -272,6 +277,9 @@ async function main() {
     benefitsSkipped: 0,
     benefitsNotFound: 0,
     benefitsAlreadyCorrect: 0,
+    benefitsDeactivated: 0,
+    benefitsRenamed: 0,
+    benefitsCreated: 0,
     catchAllUpdated: 0,
     errors: 0,
   };
@@ -309,12 +317,43 @@ async function main() {
     for (const benefitMapping of cardMapping.benefits) {
       try {
         // Find MasterBenefit by card + name (scoped to avoid cross-card collisions)
-        const mb = await prisma.masterBenefit.findFirst({
+        let mb = await prisma.masterBenefit.findFirst({
           where: {
             masterCardId: masterCard.id,
             name: benefitMapping.name,
           },
         });
+
+        // For renames: if not found by old name, try new name (idempotent re-run)
+        if (!mb && benefitMapping.newName) {
+          mb = await prisma.masterBenefit.findFirst({
+            where: {
+              masterCardId: masterCard.id,
+              name: benefitMapping.newName,
+            },
+          });
+        }
+
+        // For new benefits: create if not found in DB
+        if (!mb && benefitMapping.isNew) {
+          await prisma.masterBenefit.create({
+            data: {
+              masterCardId: masterCard.id,
+              name: benefitMapping.name,
+              type: benefitMapping.type || 'StatementCredit',
+              stickerValue: benefitMapping.stickerValue || 0,
+              resetCadence: benefitMapping.resetCadence || 'CalendarYear',
+              claimingCadence: benefitMapping.claimingCadence,
+              claimingAmount: benefitMapping.claimingAmount,
+              variableAmounts: benefitMapping.variableAmounts === null
+                ? Prisma.DbNull
+                : benefitMapping.variableAmounts,
+            },
+          });
+          logUpdate(`[NEW] "${benefitMapping.name}" created (${benefitMapping.claimingCadence}, ${formatCents(benefitMapping.claimingAmount)})`);
+          stats.benefitsCreated++;
+          continue;
+        }
 
         if (!mb) {
           logWarn(`Benefit not found: "${benefitMapping.name}"`);
@@ -326,9 +365,12 @@ async function main() {
         const cadenceMatches = mb.claimingCadence === benefitMapping.claimingCadence;
         const amountMatches = mb.claimingAmount === benefitMapping.claimingAmount;
         const variableMatches = variableAmountsEqual(mb.variableAmounts, benefitMapping.variableAmounts);
+        const nameMatches = !benefitMapping.newName || mb.name === benefitMapping.newName;
+        const activeMatches = benefitMapping.isActive === undefined || mb.isActive === benefitMapping.isActive;
+        const stickerMatches = benefitMapping.stickerValue === undefined || mb.stickerValue === benefitMapping.stickerValue;
 
-        if (cadenceMatches && amountMatches && variableMatches) {
-          logSkip(`"${benefitMapping.name}" — already correct (${benefitMapping.claimingCadence}, ${formatCents(benefitMapping.claimingAmount)})`);
+        if (cadenceMatches && amountMatches && variableMatches && nameMatches && activeMatches && stickerMatches) {
+          logSkip(`"${benefitMapping.newName || benefitMapping.name}" — already correct (${benefitMapping.claimingCadence}, ${formatCents(benefitMapping.claimingAmount)})`);
           stats.benefitsAlreadyCorrect++;
           continue;
         }
@@ -348,19 +390,39 @@ async function main() {
             : benefitMapping.variableAmounts,
         };
 
+        // Handle renames
+        if (benefitMapping.newName) {
+          updateData.name = benefitMapping.newName;
+        }
+
+        // Handle deactivations
+        if (benefitMapping.isActive === false) {
+          updateData.isActive = false;
+        }
+
+        // Handle stickerValue updates
+        if (benefitMapping.stickerValue !== undefined) {
+          updateData.stickerValue = benefitMapping.stickerValue;
+        }
+
         await prisma.masterBenefit.update({
           where: { id: mb.id },
           data: updateData,
         });
 
+        const displayName = benefitMapping.newName || benefitMapping.name;
         const beforeStr = `${mb.claimingCadence || 'NULL'}, ${formatCents(mb.claimingAmount)}`;
         const afterStr = `${benefitMapping.claimingCadence}, ${formatCents(benefitMapping.claimingAmount)}`;
         const varStr = benefitMapping.variableAmounts
           ? `, variableAmounts=${JSON.stringify(benefitMapping.variableAmounts)}`
           : '';
+        const renameStr = benefitMapping.newName ? ` (renamed from "${benefitMapping.name}")` : '';
+        const deactivateStr = benefitMapping.isActive === false ? ' [DEACTIVATED]' : '';
 
-        logUpdate(`"${benefitMapping.name}": [${beforeStr}] → [${afterStr}${varStr}]`);
+        logUpdate(`"${displayName}": [${beforeStr}] → [${afterStr}${varStr}]${renameStr}${deactivateStr}`);
         stats.benefitsUpdated++;
+        if (benefitMapping.newName) stats.benefitsRenamed++;
+        if (benefitMapping.isActive === false) stats.benefitsDeactivated++;
       } catch (err) {
         logError(`Failed to update "${benefitMapping.name}": ${err.message}`);
         stats.errors++;
@@ -428,6 +490,9 @@ async function main() {
   console.log(`${DIM}  Cards processed:        ${RESET}${stats.cardsProcessed}`);
   console.log(`${DIM}  Cards not found:        ${RESET}${stats.cardsNotFound > 0 ? YELLOW : ''}${stats.cardsNotFound}${RESET}`);
   console.log(`${DIM}  Benefits updated:       ${RESET}${GREEN}${stats.benefitsUpdated}${RESET}`);
+  console.log(`${DIM}  Benefits created:       ${RESET}${GREEN}${stats.benefitsCreated}${RESET}`);
+  console.log(`${DIM}  Benefits renamed:       ${RESET}${stats.benefitsRenamed}`);
+  console.log(`${DIM}  Benefits deactivated:   ${RESET}${stats.benefitsDeactivated}`);
   console.log(`${DIM}  Benefits already correct:${RESET} ${stats.benefitsAlreadyCorrect}`);
   console.log(`${DIM}  Benefits skipped (set): ${RESET}${stats.benefitsSkipped}`);
   console.log(`${DIM}  Benefits not found:     ${RESET}${stats.benefitsNotFound > 0 ? YELLOW : ''}${stats.benefitsNotFound}${RESET}`);
@@ -435,8 +500,8 @@ async function main() {
   console.log(`${DIM}  Errors:                 ${RESET}${stats.errors > 0 ? RED : ''}${stats.errors}${RESET}`);
   console.log('');
 
-  if (stats.benefitsUpdated > 0 || stats.catchAllUpdated > 0) {
-    console.log(`${GREEN}${BOLD}  ✅ Migration complete — ${stats.benefitsUpdated + stats.catchAllUpdated} record(s) updated.${RESET}\n`);
+  if (stats.benefitsUpdated > 0 || stats.catchAllUpdated > 0 || stats.benefitsCreated > 0) {
+    console.log(`${GREEN}${BOLD}  ✅ Migration complete — ${stats.benefitsUpdated + stats.catchAllUpdated + stats.benefitsCreated} record(s) updated/created.${RESET}\n`);
   } else if (stats.benefitsAlreadyCorrect > 0) {
     console.log(`${GREEN}${BOLD}  ✅ Migration complete — all records already up to date.${RESET}\n`);
   } else {

@@ -172,6 +172,7 @@ const MIGRATIONS = [
       { name: '10x Points on Hilton Hotels',  claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null, newName: '12x Points on Hilton Hotels' },
       { name: 'Complimentary Room Upgrades',  claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 5000,  variableAmounts: null },
       { name: 'Airline Fee Credit',           claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 15000, variableAmounts: null, isActive: false },
+      { name: 'Priority Pass (10 visits)',    claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null, isActive: false },
     ],
   },
 

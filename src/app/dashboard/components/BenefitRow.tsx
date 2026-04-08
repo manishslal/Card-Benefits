@@ -97,24 +97,36 @@ export function BenefitRow({
 
   return (
     <div 
-      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-3 hover:shadow-md transition-shadow"
-      style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }}
+      className="rounded-lg p-4 mb-3 hover:shadow-md transition-shadow border"
+      style={{ 
+        backgroundColor: 'var(--color-bg)', 
+        borderColor: 'var(--color-border)',
+        padding: 'var(--space-md)',
+        marginBottom: 'var(--space-sm)',
+        boxShadow: 'var(--shadow-sm)',
+      }}
     >
       {/* Header: Name, Issuer, Status */}
-      <div className="flex items-start justify-between mb-3">
+      <div className="flex items-start justify-between mb-3" style={{ marginBottom: 'var(--space-sm)' }}>
         <div className="flex-1">
           <h3 
-            className="font-semibold text-gray-900 dark:text-white text-base mb-1"
-            style={{ fontFamily: 'var(--font-heading)' }}
+            className="font-semibold text-base mb-1"
+            style={{ 
+              fontFamily: 'var(--font-heading)',
+              color: 'var(--color-text)',
+              marginBottom: 'var(--space-xs)',
+            }}
           >
             {name}
           </h3>
-          <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+          <div className="flex items-center gap-2 text-sm" style={{ gap: 'var(--space-sm)' }}>
             <span 
               className="text-xs px-2 py-1 rounded"
               style={{ 
-                backgroundColor: 'var(--color-bg-tertiary)',
-                color: 'var(--color-text-secondary)' 
+                backgroundColor: 'var(--color-bg-secondary)',
+                color: 'var(--color-text-secondary)',
+                padding: `${getComputedStyle(document.documentElement).getPropertyValue('--space-xs')} var(--space-sm)`,
+                fontSize: 'var(--text-caption)',
               }}
             >
               {issuer}
@@ -123,8 +135,10 @@ export function BenefitRow({
               <span 
                 className="text-xs px-2 py-1 rounded"
                 style={{ 
-                  backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                  color: 'var(--color-primary)' 
+                  backgroundColor: 'var(--color-primary-light)',
+                  color: 'var(--color-primary)',
+                  padding: `${getComputedStyle(document.documentElement).getPropertyValue('--space-xs')} var(--space-sm)`,
+                  fontSize: 'var(--text-caption)',
                 }}
               >
                 {cardName}
@@ -141,11 +155,11 @@ export function BenefitRow({
       </div>
 
       {/* Period and Amount Info */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 text-sm">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 text-sm" style={{ gap: 'var(--space-md)', marginBottom: 'var(--space-md)' }}>
         <div>
           <span 
             className="text-xs font-medium block"
-            style={{ color: 'var(--color-text-secondary)' }}
+            style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-caption)', marginBottom: 'var(--space-xs)' }}
           >
             Period
           </span>
@@ -154,18 +168,18 @@ export function BenefitRow({
         <div>
           <span 
             className="text-xs font-medium block"
-            style={{ color: 'var(--color-text-secondary)' }}
+            style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-caption)', marginBottom: 'var(--space-xs)' }}
           >
             Reset Cadence
           </span>
-          <p style={{ color: 'var(--color-text)' }} className="text-sm">
+          <p style={{ color: 'var(--color-text)', fontSize: 'var(--text-body-sm)' }}>
             {resetCadence.toLowerCase().replace(/_/g, ' ')}
           </p>
         </div>
         <div>
           <span 
             className="text-xs font-medium block"
-            style={{ color: 'var(--color-text-secondary)' }}
+            style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-caption)', marginBottom: 'var(--space-xs)' }}
           >
             Available
           </span>
@@ -179,7 +193,7 @@ export function BenefitRow({
         <div>
           <span 
             className="text-xs font-medium block"
-            style={{ color: 'var(--color-text-secondary)' }}
+            style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-caption)', marginBottom: 'var(--space-xs)' }}
           >
             Used
           </span>
@@ -189,10 +203,14 @@ export function BenefitRow({
 
       {/* Progress Bar */}
       {available > 0 && (
-        <div className="mb-4">
+        <div className="mb-4" style={{ marginBottom: 'var(--space-md)' }}>
           <div 
             className="w-full rounded-full h-2 overflow-hidden"
-            style={{ backgroundColor: 'var(--color-bg-tertiary)' }}
+            style={{ 
+              backgroundColor: 'var(--color-bg-secondary)',
+              height: '8px',
+              borderRadius: 'var(--radius-full)',
+            }}
           >
             <div
               className="h-full transition-all"
@@ -204,7 +222,8 @@ export function BenefitRow({
                   ? 'var(--color-warning)'
                   : statusDisplay.progressClass.includes('bg-red')
                   ? 'var(--color-error)'
-                  : 'var(--color-text-secondary)'
+                  : 'var(--color-text-secondary)',
+                transitionDuration: 'var(--duration-base)',
               }}
               role="progressbar"
               aria-valuenow={Math.round(percentage)}
@@ -216,7 +235,7 @@ export function BenefitRow({
       )}
 
       {/* Action Buttons */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2" style={{ gap: 'var(--space-sm)' }}>
         {status !== 'used' && status !== 'expired' && onMarkUsed && (
           <DashboardButton
             variant="primary"

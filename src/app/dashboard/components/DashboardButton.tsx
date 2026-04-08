@@ -42,73 +42,61 @@ function getSizeClasses(size: DashboardButtonSize): string {
 }
 
 /**
- * Get variant classes for button
+ * Get variant styles for button using CSS variables
  */
-function getVariantClasses(variant: DashboardButtonVariant): string {
+function getVariantStyles(variant: DashboardButtonVariant): React.CSSProperties {
   switch (variant) {
     case 'primary':
-      return `
-        bg-blue-600 dark:bg-blue-700 
-        hover:bg-blue-700 dark:hover:bg-blue-600
-        text-white
-        focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2
-        dark:focus-visible:ring-offset-gray-900
-        disabled:opacity-50 disabled:cursor-not-allowed
-        transition-colors
-      `;
+      return {
+        backgroundColor: 'var(--color-primary)',
+        color: '#ffffff',
+        borderColor: 'var(--color-primary)',
+      };
     case 'secondary':
-      return `
-        bg-gray-100 dark:bg-gray-700
-        hover:bg-gray-200 dark:hover:bg-gray-600
-        text-gray-900 dark:text-white
-        focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2
-        dark:focus-visible:ring-offset-gray-900
-        disabled:opacity-50 disabled:cursor-not-allowed
-        transition-colors
-      `;
+      return {
+        backgroundColor: 'var(--color-bg-secondary)',
+        color: 'var(--color-text)',
+        borderColor: 'var(--color-border)',
+      };
     case 'ghost':
-      return `
-        bg-transparent
-        hover:bg-gray-100 dark:hover:bg-gray-800
-        text-gray-900 dark:text-white
-        focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2
-        dark:focus-visible:ring-offset-gray-900
-        disabled:opacity-50 disabled:cursor-not-allowed
-        transition-colors
-      `;
+      return {
+        backgroundColor: 'transparent',
+        color: 'var(--color-text)',
+        borderColor: 'transparent',
+      };
     case 'danger':
-      return `
-        bg-red-100 dark:bg-red-900/30
-        hover:bg-red-200 dark:hover:bg-red-900/50
-        text-red-700 dark:text-red-400
-        focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2
-        dark:focus-visible:ring-offset-gray-900
-        disabled:opacity-50 disabled:cursor-not-allowed
-        transition-colors
-      `;
+      return {
+        backgroundColor: 'var(--color-error-light)',
+        color: 'var(--color-error)',
+        borderColor: 'var(--color-error)',
+      };
     case 'success':
-      return `
-        bg-green-100 dark:bg-green-900/30
-        hover:bg-green-200 dark:hover:bg-green-900/50
-        text-green-700 dark:text-green-400
-        focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2
-        dark:focus-visible:ring-offset-gray-900
-        disabled:opacity-50 disabled:cursor-not-allowed
-        transition-colors
-      `;
+      return {
+        backgroundColor: 'var(--color-success-light)',
+        color: 'var(--color-success)',
+        borderColor: 'var(--color-success)',
+      };
     case 'warning':
-      return `
-        bg-orange-100 dark:bg-orange-900/30
-        hover:bg-orange-200 dark:hover:bg-orange-900/50
-        text-orange-700 dark:text-orange-400
-        focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2
-        dark:focus-visible:ring-offset-gray-900
-        disabled:opacity-50 disabled:cursor-not-allowed
-        transition-colors
-      `;
+      return {
+        backgroundColor: 'var(--color-warning-light)',
+        color: 'var(--color-warning)',
+        borderColor: 'var(--color-warning)',
+      };
     default:
-      return '';
+      return {};
   }
+}
+
+/**
+ * Get variant classes for button - combine with inline styles
+ */
+function getVariantClasses(variant: DashboardButtonVariant): string {
+  return `
+    disabled:opacity-50 disabled:cursor-not-allowed
+    transition-colors duration-200
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
+    focus-visible:ring-[var(--color-primary)]
+  `;
 }
 
 /**
@@ -161,21 +149,55 @@ export const DashboardButton = React.forwardRef<
   ) => {
     const sizeClasses = getSizeClasses(size);
     const variantClasses = getVariantClasses(variant);
+    const variantStyles = getVariantStyles(variant);
 
     const combinedClassName = `
       inline-flex items-center justify-center gap-2
-      font-medium rounded-lg
+      font-medium rounded-lg border
       ${sizeClasses}
       ${variantClasses}
       ${isLoading ? 'opacity-75 cursor-wait' : ''}
       ${className}
     `.replace(/\s+/g, ' ').trim();
 
+    // Create hover and active styles based on variant
+    const getHoverStyles = (): React.CSSProperties => {
+      switch (variant) {
+        case 'primary':
+          return { backgroundColor: 'var(--color-primary-dark)' };
+        case 'secondary':
+          return { backgroundColor: 'var(--color-gray-200)' };
+        case 'ghost':
+          return { backgroundColor: 'var(--color-bg-secondary)' };
+        case 'danger':
+          return { backgroundColor: 'var(--color-error)' };
+        case 'success':
+          return { backgroundColor: 'var(--color-success)' };
+        case 'warning':
+          return { backgroundColor: 'var(--color-warning)' };
+        default:
+          return {};
+      }
+    };
+
+    const handleMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (!disabled && !isLoading) {
+        Object.assign(e.currentTarget.style, getHoverStyles());
+      }
+    };
+
+    const handleMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
+      Object.assign(e.currentTarget.style, variantStyles);
+    };
+
     return (
       <button
         ref={ref}
         disabled={disabled || isLoading}
         className={combinedClassName}
+        style={variantStyles}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         {...props}
       >
         {isLoading ? (

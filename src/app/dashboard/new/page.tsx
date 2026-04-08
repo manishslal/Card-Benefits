@@ -11,7 +11,6 @@ import { fetchDashboardData, toggleBenefitUsed } from '../utils/api-client';
 import CardSwitcher from '@/shared/components/features/CardSwitcher';
 import { EditBenefitModal } from '@/features/benefits/components/modals/EditBenefitModal';
 import { DeleteBenefitConfirmationDialog } from '@/features/benefits/components/modals/DeleteBenefitConfirmationDialog';
-import { AddBenefitModal } from '@/features/benefits/components/modals/AddBenefitModal';
 import { CheckCircle, AlertCircle, CheckCircle2, XCircle, Clock } from 'lucide-react';
 
 /**
@@ -34,7 +33,7 @@ interface BenefitData {
   userDeclaredValue: number | null;
   resetCadence: string;
   status?: string;
-  expirationDate?: string | null;
+  expirationDate: string | null;
   description?: string;
   value?: number;
   usage?: number;
@@ -77,7 +76,6 @@ export default function EnhancedDashboardPage() {
   const [selectedBenefit, setSelectedBenefit] = useState<BenefitData | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isAddBenefitOpen, setIsAddBenefitOpen] = useState(false);
 
   // ============================================================
   // Period Configuration
@@ -300,6 +298,7 @@ export default function EnhancedDashboardPage() {
         stickerValue: benefit.available,
         userDeclaredValue: benefit.available,
         resetCadence: benefit.resetCadence,
+        expirationDate: null,
       } as BenefitData);
       setIsEditModalOpen(true);
     }
@@ -315,6 +314,7 @@ export default function EnhancedDashboardPage() {
         stickerValue: benefit.available,
         userDeclaredValue: benefit.available,
         resetCadence: benefit.resetCadence,
+        expirationDate: null,
       } as BenefitData);
       setIsDeleteDialogOpen(true);
     }
@@ -441,7 +441,7 @@ export default function EnhancedDashboardPage() {
       {selectedBenefit && isEditModalOpen && (
         <EditBenefitModal
           benefit={selectedBenefit}
-          cardId={selectedCardId === 'all' ? cards[0]?.id : selectedCardId}
+          isOpen={isEditModalOpen}
           onBenefitUpdated={handleBenefitUpdated}
           onClose={() => {
             setIsEditModalOpen(false);
@@ -453,21 +453,11 @@ export default function EnhancedDashboardPage() {
       {selectedBenefit && isDeleteDialogOpen && (
         <DeleteBenefitConfirmationDialog
           benefit={selectedBenefit}
+          isOpen={isDeleteDialogOpen}
           onConfirm={handleBenefitDeleted}
-          onCancel={() => {
+          onClose={() => {
             setIsDeleteDialogOpen(false);
             setSelectedBenefit(null);
-          }}
-        />
-      )}
-
-      {isAddBenefitOpen && (
-        <AddBenefitModal
-          cardId={selectedCardId === 'all' ? cards[0]?.id : selectedCardId}
-          onClose={() => setIsAddBenefitOpen(false)}
-          onBenefitAdded={(newBenefit) => {
-            // Handle newly added benefit
-            setIsAddBenefitOpen(false);
           }}
         />
       )}

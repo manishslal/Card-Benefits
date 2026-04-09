@@ -38,6 +38,6 @@
     "NODE_ENV": "production",
     "LOG_LEVEL": "warn",
     "FEATURE_FLAGS_ENABLED": "phase2b,recommendations,mobile_offline,usage_ui,api_pagination",
-    "BENEFIT_ENGINE_ENABLED": "false"
+    "BENEFIT_ENGINE_ENABLED": "true"
   }
 }

@@ -48,12 +48,12 @@ const MIGRATIONS = [
     issuer: 'American Express',
     cardName: 'American Express Platinum Card',
     benefits: [
-      { name: '$600 Annual Hotel Credit',            claimingCadence: 'SEMI_ANNUAL',     claimingAmount: 30000, variableAmounts: null },
-      { name: '$400 Resy Dining Credit',             claimingCadence: 'QUARTERLY',       claimingAmount: 10000, variableAmounts: null },
-      { name: '$300 Entertainment Credit',           claimingCadence: 'MONTHLY',         claimingAmount: 2500,  variableAmounts: null },
-      { name: '$300 Lululemon Annual Credit',        claimingCadence: 'QUARTERLY',       claimingAmount: 7500,  variableAmounts: null },
-      { name: '$200 Uber Annual Credit',             claimingCadence: 'MONTHLY',         claimingAmount: 1500,  variableAmounts: { '12': 3500 } },
-      { name: '$209 CLEAR Annual Credit',            claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 20900, variableAmounts: null },
+      { name: '$600 Annual Hotel Credit',            claimingCadence: 'SEMI_ANNUAL',     claimingAmount: 30000, variableAmounts: null, newName: 'Hotel Credit' },
+      { name: '$400 Resy Dining Credit',             claimingCadence: 'QUARTERLY',       claimingAmount: 10000, variableAmounts: null, newName: 'Resy Dining Credit' },
+      { name: '$300 Entertainment Credit',           claimingCadence: 'MONTHLY',         claimingAmount: 2500,  variableAmounts: null, newName: 'Entertainment Credit' },
+      { name: '$300 Lululemon Annual Credit',        claimingCadence: 'QUARTERLY',       claimingAmount: 7500,  variableAmounts: null, newName: 'Lululemon Credit' },
+      { name: '$200 Uber Annual Credit',             claimingCadence: 'MONTHLY',         claimingAmount: 1500,  variableAmounts: { '12': 3500 }, newName: 'Uber Credit' },
+      { name: '$209 CLEAR Annual Credit',            claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 20900, variableAmounts: null, newName: 'CLEAR+ Credit' },
       { name: 'Centurion Lounge Access',             claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
       { name: 'Complimentary Airport Meet & Greet',  claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null, isActive: false },
       { name: 'Global Entry or TSA PreCheck',        claimingCadence: 'ONE_TIME',        claimingAmount: 12000, variableAmounts: null },
@@ -68,8 +68,8 @@ const MIGRATIONS = [
     benefits: [
       { name: '4x Points on Dining & Restaurants', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,    variableAmounts: null },
       { name: '4x Points on Flights',              claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,    variableAmounts: null, newName: '3x Points on Flights' },
-      { name: '$120 Annual Dining Credit',          claimingCadence: 'MONTHLY',         claimingAmount: 1000, variableAmounts: null },
-      { name: '$100 Annual Uber Credit',            claimingCadence: 'MONTHLY',         claimingAmount: 1000, variableAmounts: null, stickerValue: 12000 },
+      { name: '$120 Annual Dining Credit',          claimingCadence: 'MONTHLY',         claimingAmount: 1000, variableAmounts: null, newName: 'Dining Credit' },
+      { name: '$100 Annual Uber Credit',            claimingCadence: 'MONTHLY',         claimingAmount: 1000, variableAmounts: null, stickerValue: 12000, newName: 'Uber Credit' },
       { name: 'Purchase Protection',               claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,    variableAmounts: null },
     ],
   },
@@ -79,11 +79,11 @@ const MIGRATIONS = [
     issuer: 'Chase',
     cardName: 'Chase Sapphire Reserve',
     benefits: [
-      { name: '$300 Annual Travel Credit',         claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 30000, variableAmounts: null },
-      { name: '$500 The Edit Hotel Credit',        claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 25000, variableAmounts: null },
-      { name: '$250 Hotel Chain Credit',           claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 25000, variableAmounts: null },
-      { name: '$300 Dining Credit',                claimingCadence: 'SEMI_ANNUAL',     claimingAmount: 15000, variableAmounts: null },
-      { name: '$300 Entertainment Credit',         claimingCadence: 'SEMI_ANNUAL',     claimingAmount: 15000, variableAmounts: null },
+      { name: '$300 Annual Travel Credit',         claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 30000, variableAmounts: null, newName: 'Travel Credit' },
+      { name: '$500 The Edit Hotel Credit',        claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 25000, variableAmounts: null, newName: 'The Edit Hotel Credit' },
+      { name: '$250 Hotel Chain Credit',           claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 25000, variableAmounts: null, newName: 'Hotel Chain Credit' },
+      { name: '$300 Dining Credit',                claimingCadence: 'SEMI_ANNUAL',     claimingAmount: 15000, variableAmounts: null, newName: 'Dining Credit' },
+      { name: '$300 Entertainment Credit',         claimingCadence: 'SEMI_ANNUAL',     claimingAmount: 15000, variableAmounts: null, newName: 'Entertainment Credit' },
       { name: 'Priority Pass Select Lounge Access', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,    variableAmounts: null },
       { name: 'Trip Cancellation Insurance',       claimingCadence: 'ONE_TIME',        claimingAmount: 0,     variableAmounts: null },
       { name: 'Lost Luggage Reimbursement',        claimingCadence: 'ONE_TIME',        claimingAmount: 0,     variableAmounts: null },
@@ -145,7 +145,7 @@ const MIGRATIONS = [
     benefits: [
       { name: '3x Membership Rewards on Travel',             claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
       { name: '1x Membership Rewards on All Other Purchases', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
-      { name: 'Statement Credits for Travel',                 claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 20900, variableAmounts: null, newName: '$209 CLEAR+ Credit', stickerValue: 20900 },
+      { name: 'Statement Credits for Travel',                 claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 20900, variableAmounts: null, newName: 'CLEAR+ Credit', stickerValue: 20900 },
     ],
   },
 
@@ -158,8 +158,8 @@ const MIGRATIONS = [
       { name: '1x Membership Rewards on All Other Purchases', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0, variableAmounts: null },
       { name: 'Business Expense Tracking',                    claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0, variableAmounts: null },
       // ── April 2026: New benefits ──
-      { name: '$240 Flexible Business Credit',               claimingCadence: 'MONTHLY',         claimingAmount: 2000,  variableAmounts: null, isNew: true, type: 'StatementCredit', stickerValue: 24000, resetCadence: 'Monthly' },
-      { name: '$150 Squarespace Credit',                     claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 15000, variableAmounts: null, isNew: true, type: 'StatementCredit', stickerValue: 15000, resetCadence: 'CalendarYear' },
+      { name: 'Flexible Business Credit',                     claimingCadence: 'MONTHLY',         claimingAmount: 2000,  variableAmounts: null, isNew: true, type: 'StatementCredit', stickerValue: 24000, resetCadence: 'Monthly' },
+      { name: 'Squarespace Credit',                          claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 15000, variableAmounts: null, isNew: true, type: 'StatementCredit', stickerValue: 15000, resetCadence: 'CalendarYear' },
     ],
   },
 
@@ -184,7 +184,7 @@ const MIGRATIONS = [
       { name: 'Free Night Award Certificate', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 25000, variableAmounts: null },
       { name: '6x Points on Marriott Hotels', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
       { name: 'Elite Night Credits',          claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 10000, variableAmounts: null },
-      { name: 'Airline Fee Credit',           claimingCadence: 'MONTHLY',         claimingAmount: 2500,  variableAmounts: null, newName: '$300 Dining Credit', stickerValue: 30000 },
+      { name: 'Airline Fee Credit',           claimingCadence: 'MONTHLY',         claimingAmount: 2500,  variableAmounts: null, newName: 'Dining Credit', stickerValue: 30000 },
       // ── April 2026: New benefit ──
       { name: 'Priority Pass Select',         claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null, isNew: true, type: 'TravelPerk', stickerValue: 0, resetCadence: 'CardmemberYear' },
     ],
@@ -195,7 +195,7 @@ const MIGRATIONS = [
     issuer: 'Capital One',
     cardName: 'Capital One Venture X',
     benefits: [
-      { name: '$300 Annual Travel Credit',   claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 30000, variableAmounts: null },
+      { name: '$300 Annual Travel Credit',   claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 30000, variableAmounts: null, newName: 'Travel Credit' },
       { name: '10x Miles on Travel & Dining', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null, newName: '10x Hotels/Cars via Portal, 5x Flights, 2x All Else' },
       { name: 'Priority Pass Lounge',        claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
       { name: '2x Miles on All Purchases',   claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
@@ -219,7 +219,7 @@ const MIGRATIONS = [
     issuer: 'Citi',
     cardName: 'Citi Prestige Card',
     benefits: [
-      { name: 'Travel Credit',               claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 25000, variableAmounts: null, newName: '$250 Airline Travel Credit' },
+      { name: 'Travel Credit',               claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 25000, variableAmounts: null, newName: 'Airline Travel Credit' },
       { name: '3x Prestige Points on Travel', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null, newName: '5x Airlines/Dining, 3x Hotels/Cruise' },
       { name: 'Fourth Night Free at Hotels',  claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
       { name: 'Concierge Services',           claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
@@ -231,7 +231,7 @@ const MIGRATIONS = [
     issuer: 'US Bank',
     cardName: 'US Bank Altitude Reserve Visa Infinite',
     benefits: [
-      { name: '$300 Quarterly Travel Credit',    claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 32500, variableAmounts: null, newName: '$325 Annual Travel Credit', stickerValue: 32500 },
+      { name: '$300 Quarterly Travel Credit',    claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 32500, variableAmounts: null, newName: 'Travel Credit', stickerValue: 32500 },
       { name: '4.5x Points on Travel & Dining',  claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
       { name: 'Priority Pass Select',            claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null },
     ],

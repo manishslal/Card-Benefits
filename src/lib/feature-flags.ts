@@ -57,7 +57,7 @@ export const featureFlags = {
    *
    * Controlled via env var: BENEFIT_ENGINE_ENABLED=true
    */
-  BENEFIT_ENGINE_ENABLED: process.env.BENEFIT_ENGINE_ENABLED === 'true',
+  BENEFIT_ENGINE_ENABLED: process.env.BENEFIT_ENGINE_ENABLED?.toLowerCase() === 'true',
 
   // ─────────────────────────────────────────────────────────────────
   // CORE PHASE 2B FEATURES

@@ -184,3 +184,4 @@ export function withFeatureFlag<T>(
 
 // Export for testing
 export { isEnabled };
+// Engine enabled: 2026-04-09

@@ -3,7 +3,7 @@
 import React, { useMemo } from 'react';
 import Badge from '@/shared/components/ui/Badge';
 import Button from '@/shared/components/ui/button';
-import { Plane, Tag, Utensils, DollarSign, Zap, Calendar, CheckCircle2 } from 'lucide-react';
+import { Plane, Tag, Utensils, DollarSign, Zap, Calendar, CheckCircle2, Check } from 'lucide-react';
 import { formatPeriodRange } from '@/lib/format-period-range';
 
 interface Benefit {
@@ -62,54 +62,22 @@ function getCadenceLabel(
 
 // ---------------------------------------------------------------------------
 // Helper: Left border color based on period status + used state
+// Signal 1 of 2 — kept as a subtle status indicator
 // ---------------------------------------------------------------------------
 function getLeftBorderColor(benefit: Benefit): string {
   if (benefit.isUsed) {
-    return 'color-mix(in srgb, var(--color-text-secondary) 30%, transparent)';
+    return 'rgba(107, 114, 128, 0.3)';
   }
   const status = benefit.periodStatus?.toUpperCase();
   switch (status) {
     case 'ACTIVE':
       return 'var(--color-success)';
     case 'EXPIRED':
-      return 'color-mix(in srgb, var(--color-text-secondary) 40%, transparent)';
+      return 'rgba(107, 114, 128, 0.4)';
     case 'UPCOMING':
       return 'var(--color-info)';
     default:
       return 'var(--color-border)';
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Helper: Period banner background + text colors by status
-// Uses the design-system *-light / *-dark tokens so dark-mode auto-switches.
-// ---------------------------------------------------------------------------
-function getPeriodBannerStyles(periodStatus?: string | null): {
-  backgroundColor: string;
-  color: string;
-  iconColor: string;
-} {
-  const status = periodStatus?.toUpperCase();
-  switch (status) {
-    case 'ACTIVE':
-      return {
-        backgroundColor: 'var(--color-success-light)',
-        color: 'var(--color-success-dark)',
-        iconColor: 'var(--color-success)',
-      };
-    case 'UPCOMING':
-      return {
-        backgroundColor: 'var(--color-info-light)',
-        color: 'var(--color-info)',
-        iconColor: 'var(--color-info)',
-      };
-    case 'EXPIRED':
-    default:
-      return {
-        backgroundColor: 'var(--color-bg-secondary)',
-        color: 'var(--color-text-secondary)',
-        iconColor: 'var(--color-text-secondary)',
-      };
   }
 }
 
@@ -153,15 +121,125 @@ function getPeriodProgress(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Helper: Progress ring stroke color by percentage
+// green >75%, blue >50%, amber ≤50%
+// ---------------------------------------------------------------------------
+function getProgressRingColor(_usage: number): string {
+  return 'var(--color-primary)';
+}
+
+// ---------------------------------------------------------------------------
+// Sub-component: SVG Circular Progress Ring
+// 40px diameter, stroke-dasharray/offset for percentage, center text
+// ---------------------------------------------------------------------------
+function ProgressRing({
+  usage,
+  isUsed,
+}: {
+  usage?: number;
+  isUsed: boolean;
+}) {
+  const size = 40;
+  const strokeWidth = 3;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const pct = Math.min(Math.max(usage ?? 0, 0), 100);
+  const offset = circumference - (pct / 100) * circumference;
+  const ringColor = getProgressRingColor(pct);
+
+  // When used — show a checkmark icon instead of the ring
+  if (isUsed) {
+    return (
+      <div
+        className="flex items-center justify-center rounded-full flex-shrink-0"
+        style={{
+          width: size,
+          height: size,
+          backgroundColor: 'var(--color-success-light)',
+        }}
+        role="img"
+        aria-label="Benefit used"
+      >
+        <Check
+          size={18}
+          strokeWidth={2.5}
+          style={{ color: 'var(--color-success)' }}
+          aria-hidden="true"
+        />
+      </div>
+    );
+  }
+
+  // No usage data — don't render
+  if (usage === undefined) return null;
+
+  return (
+    <div
+      className="relative flex-shrink-0"
+      style={{ width: size, height: size }}
+      role="img"
+      aria-label={`${pct}% used`}
+    >
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        className="progress-ring-svg"
+        style={{ transform: 'rotate(-90deg)' }}
+      >
+        {/* Background track */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="var(--color-border)"
+          strokeWidth={strokeWidth}
+        />
+        {/* Progress arc */}
+        {pct > 0 && (
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={ringColor}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          className="progress-ring-circle"
+        />
+        )}
+      </svg>
+      {/* Center percentage */}
+      <span
+        className="absolute inset-0 flex items-center justify-center font-mono leading-none"
+        style={{
+          fontSize: '10px',
+          fontWeight: 600,
+          color: 'var(--color-text)',
+        }}
+        aria-hidden="true"
+      >
+        {pct}%
+      </span>
+    </div>
+  );
+}
+
 /**
  * BenefitsGrid Component - Grid View of Benefits
  *
- * Enhanced with period-based UI:
- * - **Period Banner** — prominent date range + cadence at card top
- * - **Status Stripe** — 3 px color-coded left border
- * - **Period-Aware Actions** — "Mark Apr Used" button labels
- * - **Used State Treatment** — dimmed cards, sorted to bottom
- * - **Period Progress** — "Period 4 of 12" indicator
+ * Sprint 4 Redesign — polished, professional, visually clean.
+ *
+ * Design principles:
+ * - **MAX 2 color signals**: left border stripe + status badge only
+ * - **Circular progress ring**: SVG ring replaces flat progress bar
+ * - **Uniform card heights**: min-h, flex layout, actions pinned to bottom
+ * - **Clear info hierarchy**: name → value → description/meta → actions
+ * - **Neutral period banner**: no per-status color variation
  *
  * Layout:
  * - Mobile (320 px): 1 column
@@ -192,7 +270,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
 
     // Benefit type icons
     const getBenefitTypeIcon = (type?: string) => {
-      const iconProps = { size: 20, className: 'flex-shrink-0' };
+      const iconProps = { size: 16, className: 'flex-shrink-0' };
       switch (type?.toLowerCase()) {
         case 'travel':
           return <Plane {...iconProps} aria-hidden="true" />;
@@ -207,6 +285,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
       }
     };
 
+    // Signal 2 of 2 — status badge (kept as a clear status communicator)
     const getStatusBadge = (status: Benefit['status']) => {
       const variants = {
         active: 'success',
@@ -252,7 +331,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="h-40 rounded-lg animate-pulse"
+              className="min-h-[200px] rounded-lg animate-pulse"
               style={{ backgroundColor: 'var(--color-bg-secondary)' }}
             />
           ))}
@@ -281,12 +360,10 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
     }
 
     return (
+      <>
       <div ref={ref} className={`grid ${getGridColsClass()} gap-4`}>
         {sortedBenefits.map((benefit, index) => {
           const hasPeriodData = Boolean(benefit.periodStart);
-          const bannerStyles = hasPeriodData
-            ? getPeriodBannerStyles(benefit.periodStatus)
-            : null;
           const cadenceLabel = getCadenceLabel(
             benefit.resetCadence,
             benefit.claimingCadence
@@ -298,25 +375,26 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
             benefit.claimingCadence
           );
           const isUsed = benefit.isUsed === true;
+          const showRing = benefit.usage !== undefined || isUsed;
 
           return (
             <div
-  key={benefit.id}
-  data-benefit-card
-  className="rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] border-[var(--color-border)] hover:border-[var(--color-primary)] hover:shadow-lg hover:-translate-y-1"
-  style={{
-    animation: `scaleIn 0.3s ease-out forwards`,
-    animationDelay: `${index * 50}ms`,
-    borderLeft: `3px solid ${getLeftBorderColor(benefit)}`,
-  }}
->
-              {/* ── Period Banner — prominent date range + cadence at card top ── */}
-              {hasPeriodData && bannerStyles && (
+              key={benefit.id}
+              data-benefit-card
+              className="rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] border-[var(--color-border)] hover:border-[var(--color-primary)] hover:shadow-lg hover:-translate-y-1 flex flex-col min-h-[200px]"
+              style={{
+                animation: `scaleIn 0.3s ease-out forwards`,
+                animationDelay: `${Math.min(index * 50, 500)}ms`,
+                borderLeft: `3px solid ${getLeftBorderColor(benefit)}`,
+              }}
+            >
+              {/* ── Period Banner — neutral bg, no per-status color variation ── */}
+              {hasPeriodData && (
                 <div
                   className="flex items-center gap-2 px-3 py-2 text-xs font-medium"
                   style={{
-                    backgroundColor: bannerStyles.backgroundColor,
-                    color: bannerStyles.color,
+                    backgroundColor: 'var(--color-bg-secondary)',
+                    color: 'var(--color-text-secondary)',
                   }}
                   role="status"
                   aria-label={`Benefit period: ${formatPeriodRange(
@@ -327,7 +405,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                   <Calendar
                     size={14}
                     className="flex-shrink-0"
-                    style={{ color: bannerStyles.iconColor }}
+                    style={{ color: 'var(--color-text-secondary)' }}
                     aria-hidden="true"
                   />
                   <span className="truncate font-semibold">
@@ -351,189 +429,182 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                 </div>
               )}
 
-              {/* ── Card Content — dimmed when benefit is used (Phase 2) ── */}
+              {/* ── Card Body — flex-1 fills remaining height for uniform cards ── */}
               <div
-  className="p-4"
-  style={{
-    backgroundColor: isUsed ? 'var(--color-bg-secondary)' : undefined,
-    opacity: 1,
-    transition: 'background-color 0.2s ease',
-  }}
->
-  {/* For used state, text color remains strong for contrast. */}
-                <div className="flex flex-col h-full gap-3">
-                  {/* Header: Icon + Name + Status Badge */}
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="flex items-start gap-2 flex-1">
-                      <div className="mt-0.5 text-[var(--color-primary)] flex-shrink-0">
-                        {getBenefitTypeIcon(benefit.type)}
-                      </div>
-                      <h3
-                        className="flex-1 font-semibold text-[var(--color-text)] line-clamp-2"
-                        style={{ fontSize: 'var(--text-body-sm)' }}
-                        title={benefit.name}
-                      >
-                        {benefit.name}
-                      </h3>
+                className="p-4 flex-1 flex flex-col"
+                style={{
+                  backgroundColor: isUsed ? 'var(--color-bg-secondary)' : undefined,
+                  transition: 'background-color 0.2s ease',
+                }}
+              >
+                {/* ── Row 1: Header — Icon + Name + Badge ── */}
+                <div className="flex justify-between items-start gap-2 mb-3">
+                  <div className="flex items-start gap-2 flex-1 min-w-0">
+                    <div
+                      className="mt-0.5 flex-shrink-0"
+                      style={{ color: 'var(--color-primary)' }}
+                    >
+                      {getBenefitTypeIcon(benefit.type)}
                     </div>
-                    {getStatusBadge(benefit.status)}
+                    {/* Primary: Benefit name */}
+                    <h3
+                      className="flex-1 font-semibold line-clamp-2 min-w-0"
+                      style={{
+                        fontSize: 'var(--text-body-sm)',
+                        color: 'var(--color-text)',
+                      }}
+                      title={benefit.name}
+                    >
+                      {benefit.name}
+                    </h3>
                   </div>
+                  {/* Signal 2: Status badge */}
+                  {getStatusBadge(benefit.status)}
+                </div>
 
-                  {/* Description (optional) */}
+                {/* ── Row 2: Value + Progress Ring — secondary info ── */}
+                {(showRing || (benefit.value != null && benefit.value > 0)) && (
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    {/* Secondary: Value amount — neutral color, not green */}
+                    {benefit.value != null && benefit.value > 0 ? (
+                      <span
+                        className="font-mono font-semibold text-base"
+                        style={{ color: 'var(--color-text)' }}
+                      >
+                        ${benefit.value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                      </span>
+                    ) : (
+                      <span />
+                    )}
+                    {/* SVG progress ring or used-checkmark */}
+                    <ProgressRing usage={benefit.usage} isUsed={isUsed} />
+                  </div>
+                )}
+
+                {/* ── Row 3: Description — tertiary, flex-1 absorbs variable height ── */}
+                <div className="flex-1 min-h-0">
                   {benefit.description && (
                     <p
-                      className="text-xs line-clamp-2 flex-1"
+                      className="text-xs line-clamp-2 mb-2"
                       style={{ color: 'var(--color-text-secondary)' }}
                       title={benefit.description}
                     >
                       {benefit.description}
                     </p>
                   )}
+                </div>
 
-                  {/* Period Progress Indicator (Phase 2) */}
-                  {progressText && (
-                    <p
+                {/* ── Row 4: Meta — period progress + expiration (tertiary) ── */}
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <span
+                    className="text-xs"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    {progressText}
+                  </span>
+                  {benefit.expirationDate && (
+                    <span
                       className="text-xs"
                       style={{ color: 'var(--color-text-secondary)' }}
                     >
-                      {progressText}
-                    </p>
+                      Exp: {formatDate(benefit.expirationDate)}
+                    </span>
                   )}
+                </div>
 
-                  {/* Value and Expiration */}
-                  <div className="flex items-center justify-between text-xs gap-2">
-                    {benefit.value != null && benefit.value > 0 && (
-                      <span
-                        className="font-mono font-semibold"
-                        style={{ color: 'var(--color-success)' }}
-                      >
-                        ${benefit.value}
-                      </span>
-                    )}
-                    {benefit.expirationDate && (
-                      <span
-                        className="text-xs"
-                        style={{ color: 'var(--color-text-secondary)' }}
-                      >
-                        Exp: {formatDate(benefit.expirationDate)}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Usage bar — hidden when benefit is already used */}
-                  {benefit.usage !== undefined && !isUsed && (
-                    <div>
-                      <div
-                        className="h-1.5 rounded-full overflow-hidden"
-                        style={{ backgroundColor: 'var(--color-bg-secondary)' }}
-                      >
-                        <div
-                          className="h-full transition-all duration-300"
-                          style={{
-                            width: `${benefit.usage}%`,
-                            backgroundColor:
-                              benefit.usage > 75
-                                ? 'var(--color-success)'
-                                : benefit.usage > 50
-                                  ? 'var(--color-info)'
-                                  : 'var(--color-warning)',
-                          }}
-                        />
-                      </div>
-                      <span
-                        className="text-xs mt-1 block"
-                        style={{ color: 'var(--color-text-secondary)' }}
-                      >
-                        {benefit.usage}% used
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Action buttons - compact layout with period-aware labels */}
-                  <div className="flex gap-1 mt-auto pt-2 flex-wrap">
-                    {onMarkUsed && benefit.status === 'active' && (
-                      isUsed ? (
-                        /* Used state — disabled button with checkmark */
-                        <Button
-  variant="secondary"
-  size="xs"
-  disabled
-  aria-disabled="true"
-  className="flex-1 min-w-0"
-  leftIcon={
-    <CheckCircle2
-      size={14}
-      aria-hidden="true"
-    />
-  }
-  aria-label={`${benefit.name} has been used${
-    periodMonth ? ` for ${periodMonth}` : ''
-  }`}
->
-  Used
-</Button>
-                      ) : (
-                        /* Active state — period-aware "Mark [Month] Used" */
-                        <Button
-  variant="secondary"
-  size="xs"
-  onClick={() => onMarkUsed(benefit.id)}
-  className="flex-1 min-w-0"
-  aria-label={`Mark ${benefit.name} as used${periodMonth ? ` for ${periodMonth}` : ''}`}
->
-  {periodMonth
-    ? `Mark ${periodMonth} Used`
-    : 'Mark Used'}
-</Button>
-                      )
-                    )}
-                    {onEdit && (
+                {/* ── Row 5: Action buttons — pinned to bottom via mt-auto ── */}
+                <div
+                  className="flex gap-2 mt-auto pt-3 flex-wrap"
+                  style={{ borderTop: '1px solid var(--color-border)' }}
+                >
+                  {onMarkUsed && benefit.status === 'active' && (
+                    isUsed ? (
                       <Button
-                        variant="tertiary"
+                        variant="secondary"
                         size="xs"
-                        onClick={() => onEdit(benefit.id)}
+                        disabled
+                        aria-disabled="true"
                         className="flex-1 min-w-0"
+                        leftIcon={
+                          <CheckCircle2 size={14} aria-hidden="true" />
+                        }
+                        aria-label={`${benefit.name} has been used${
+                          periodMonth ? ` for ${periodMonth}` : ''
+                        }`}
                       >
-                        Edit
+                        Used
                       </Button>
-                    )}
-                    {onDelete && (
+                    ) : (
                       <Button
-                        variant="tertiary"
+                        variant="secondary"
                         size="xs"
-                        onClick={() => onDelete(benefit.id)}
-                        className="text-[var(--color-error)]"
+                        onClick={() => onMarkUsed(benefit.id)}
+                        className="flex-1 min-w-0"
+                        aria-label={`Mark ${benefit.name} as used${
+                          periodMonth ? ` for ${periodMonth}` : ''
+                        }`}
                       >
-                        ×
+                        {periodMonth
+                          ? `Mark ${periodMonth} Used`
+                          : 'Mark Used'}
                       </Button>
-                    )}
-                  </div>
+                    )
+                  )}
+                  {onEdit && (
+                    <Button
+                      variant="tertiary"
+                      size="xs"
+                      onClick={() => onEdit(benefit.id)}
+                      className="flex-1 min-w-0"
+                      aria-label={`Edit ${benefit.name}`}
+                    >
+                      Edit
+                    </Button>
+                  )}
+                  {onDelete && (
+                    <Button
+                      variant="tertiary"
+                      size="xs"
+                      onClick={() => onDelete(benefit.id)}
+                      className="text-[var(--color-error)]"
+                      aria-label={`Delete ${benefit.name}`}
+                    >
+                      ×
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
           );
         })}
-
-        {/* Animation keyframes */}
-        <style jsx>{`
-  @keyframes scaleIn {
-    from {
-      opacity: 0;
-      transform: scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    [data-benefit-card] {
-      animation: none !important;
-      transition: none !important;
-    }
-  }
-`}</style>
       </div>
+
+        {/* Animation keyframes + progress ring transition */}
+        <style jsx>{`
+          @keyframes scaleIn {
+            from {
+              opacity: 0;
+              transform: scale(0.95);
+            }
+            to {
+              opacity: 1;
+              transform: scale(1);
+            }
+          }
+          .progress-ring-circle {
+            transition: stroke-dashoffset 0.6s ease;
+          }
+          @media (prefers-reduced-motion: reduce) {
+            [data-benefit-card] {
+              animation: none !important;
+              transition: none !important;
+            }
+            .progress-ring-circle {
+              transition: none !important;
+            }
+          }
+        `}</style>
+      </>
     );
   }
 );

@@ -1,14 +1,12 @@
 'use client';
 
-import { ToastContainer } from '@/shared/components/ui/use-toast';
-
 /**
- * ToastProvider Component
- * 
- * Renders the ToastContainer which displays all active toast notifications.
- * This should be rendered at the root level of the app so toasts can be
- * displayed throughout the application.
+ * ToastProvider Component (legacy)
+ *
+ * The toast UI is now rendered by the <Toaster /> component in layout.tsx.
+ * This provider is kept only for backward-compatible imports — it renders
+ * nothing itself.
  */
 export function ToastProvider() {
-  return <ToastContainer />;
+  return null;
 }

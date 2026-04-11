@@ -3,9 +3,14 @@
 /**
  * Simple toast hook for user notifications.
  * Provides success, error, and info notifications.
+ *
+ * The global store + listener pattern lets both the `useToast` hook
+ * and the standalone `toast()` function work from anywhere in the app.
+ * The `Toaster` component (toaster.tsx) subscribes to the same store
+ * and renders all active toasts — do NOT add a second renderer here.
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 export interface Toast {
   id: string;
@@ -15,9 +20,14 @@ export interface Toast {
   duration?: number;
 }
 
-// Global toast state (simple implementation)
+// ---------------------------------------------------------------------------
+// Global toast store
+// ---------------------------------------------------------------------------
 let toastStore: Toast[] = [];
-let listeners: Set<(toasts: Toast[]) => void> = new Set();
+const listeners: Set<(toasts: Toast[]) => void> = new Set();
+
+// Timeout tracking map — allows clearing auto-dismiss on manual dismiss (M2)
+const timeoutMap = new Map<string, NodeJS.Timeout>();
 
 export const addToastListener = (listener: (toasts: Toast[]) => void) => {
   listeners.add(listener);
@@ -27,60 +37,71 @@ export const addToastListener = (listener: (toasts: Toast[]) => void) => {
 };
 
 const notifyListeners = () => {
-  listeners.forEach((listener) => listener(toastStore));
+  listeners.forEach((listener) => listener([...toastStore]));
 };
 
-const addToastToStore = (toast: Toast) => {
-  toastStore.push(toast);
+let idCounter = 0;
+function generateId(): string {
+  return `toast-${Date.now()}-${++idCounter}`;
+}
+
+function addToastToStore(toast: Omit<Toast, 'id'>): string {
+  const id = generateId();
+  const newToast: Toast = { ...toast, id };
+  toastStore.push(newToast);
   notifyListeners();
 
-  // Auto-remove after duration
+  // Auto-remove after duration (cancelable via removeToastFromStore)
   if (toast.duration !== 0) {
-    const duration = toast.duration || 3000;
-    setTimeout(() => {
-      toastStore = toastStore.filter((t) => t.id !== toast.id);
-      notifyListeners();
+    const duration = toast.duration || 5000;
+    const timeoutId = setTimeout(() => {
+      removeToastFromStore(id);
+      timeoutMap.delete(id);
     }, duration);
+    timeoutMap.set(id, timeoutId);
   }
-};
+
+  return id;
+}
 
 export const removeToastFromStore = (id: string) => {
+  // Clear any pending auto-dismiss timeout (M2)
+  const timeoutId = timeoutMap.get(id);
+  if (timeoutId) {
+    clearTimeout(timeoutId);
+    timeoutMap.delete(id);
+  }
   toastStore = toastStore.filter((t) => t.id !== id);
   notifyListeners();
 };
 
 /**
- * Hook to show toast notifications
+ * Public `toast()` function – can be called from anywhere.
+ */
+export function toast(props: Omit<Toast, 'id'>): string {
+  return addToastToStore(props);
+}
+
+// ---------------------------------------------------------------------------
+// React hook
+// ---------------------------------------------------------------------------
+
+/**
+ * Hook to show toast notifications.
+ *
+ * Subscribes to the global toast store via useEffect so there is
+ * exactly one listener per mounted component, cleaned up on unmount.
  */
 export function useToast() {
-  const [, setToasts] = useState<Toast[]>([]);
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
-  // Subscribe to toast updates
-  const subscribe = useCallback(() => {
-    return addToastListener((toasts) => {
-      setToasts(toasts);
-    });
+  useEffect(() => {
+    const unsubscribe = addToastListener((updatedToasts) => setToasts(updatedToasts));
+    return unsubscribe;
   }, []);
 
-  const toast = useCallback(
-    (props: Omit<Toast, 'id'>) => {
-      const id = `toast-${Date.now()}-${Math.random()}`;
-      const newToast: Toast = {
-        ...props,
-        id,
-      };
-      addToastToStore(newToast);
-      return id;
-    },
-    []
-  );
-
-  // Subscribe on first use
-  if (!('_subscribed' in toast)) {
-    subscribe();
-  }
-
   return {
+    toasts,
     toast,
     /**
      * Show success toast
@@ -100,43 +121,10 @@ export function useToast() {
     /**
      * Dismiss a specific toast by ID
      */
-    dismiss: (id: string) => {
-      toastStore = toastStore.filter((t) => t.id !== id);
-      notifyListeners();
-    },
+    dismiss: (id: string) => removeToastFromStore(id),
+    /**
+     * Dismiss a specific toast by ID (alias)
+     */
+    dismissToast: removeToastFromStore,
   };
-}
-
-/**
- * Toast container component to render all active toasts
- */
-export function ToastContainer() {
-  const [toasts, setToasts] = useState<Toast[]>([]);
-
-  useEffect(() => {
-    const unsubscribe = addToastListener(setToasts);
-    return unsubscribe;
-  }, []);
-
-  return (
-    <div className="fixed bottom-0 right-0 z-50 space-y-2 p-4 max-w-md">
-      {toasts.map((toast) => (
-        <div
-          key={toast.id}
-          className={`rounded-lg p-4 text-white shadow-lg animate-slide-in ${
-            toast.variant === 'success'
-              ? 'bg-green-500'
-              : toast.variant === 'error'
-                ? 'bg-red-500'
-                : 'bg-blue-500'
-          }`}
-        >
-          <div className="font-semibold">{toast.title}</div>
-          {toast.description && (
-            <div className="text-sm opacity-90">{toast.description}</div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
 }

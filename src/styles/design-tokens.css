@@ -37,6 +37,15 @@
   /* Info Cyan */
   --color-info: #0891b2;
   --color-info-light: #cffafe;
+  --color-info-dark: #1e40af;
+
+  /* Toast variant semantic colors */
+  --color-success-bg: #ecfdf5;
+  --color-success-text: #166534;
+  --color-error-bg: #fef2f2;
+  --color-error-text: #991b1b;
+  --color-info-bg: #eff6ff;
+  --color-info-text: #1e40af;
 
   /* Neutral Grays - Light Mode */
   --color-gray-50: #f9fafb;
@@ -182,7 +191,7 @@
      ANIMATION TOKENS
      ======================================== */
   --duration-instant: 50ms;
-  --duration-micro: 150ms;
+  --duration-normal: 300ms;
 }
 
 /* ========================================
@@ -218,6 +227,15 @@
     /* Info - Brightened */
     --color-info: #06b6d4;
     --color-info-light: #164e63;
+    --color-info-dark: #93c5fd;
+
+    /* Toast variant semantic colors - Dark Mode */
+    --color-success-bg: #064e3b;
+    --color-success-text: #6ee7b7;
+    --color-error-bg: #7f1d1d;
+    --color-error-text: #fca5a5;
+    --color-info-bg: #1e3a5f;
+    --color-info-text: #93c5fd;
 
     /* Neutral Grays - Dark Mode */
     --color-gray-50: #0f172a;
@@ -227,6 +245,7 @@
     --color-gray-400: #64748b;
     --color-gray-500: #a8b5c8;
     --color-gray-600: #cbd5e1;
+    --color-gray-700: #d1d5db;
     --color-gray-900: #f1f5f9;
 
     /* Semantic Colors - Dark Mode */
@@ -277,6 +296,15 @@
   /* Info - Brightened */
   --color-info: #06b6d4;
   --color-info-light: #164e63;
+  --color-info-dark: #93c5fd;
+
+  /* Toast variant semantic colors - Dark Mode */
+  --color-success-bg: #064e3b;
+  --color-success-text: #6ee7b7;
+  --color-error-bg: #7f1d1d;
+  --color-error-text: #fca5a5;
+  --color-info-bg: #1e3a5f;
+  --color-info-text: #93c5fd;
 
   /* Neutral Grays - Dark Mode */
   --color-gray-50: #0f172a;
@@ -286,6 +314,7 @@
   --color-gray-400: #64748b;
   --color-gray-500: #a8b5c8;
   --color-gray-600: #cbd5e1;
+  --color-gray-700: #d1d5db;
   --color-gray-900: #f1f5f9;
 
   /* Semantic Colors - Dark Mode */

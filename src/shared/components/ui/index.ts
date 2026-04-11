@@ -24,7 +24,7 @@ export {
 export { Popover, PopoverTrigger, PopoverContent } from './popover';
 export { UnifiedSelect, SelectContent, SelectItem, SelectPrimitive } from './select-unified';
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs';
-export { useToast, ToastContainer } from './use-toast';
+export { useToast } from './use-toast';
 
 // Components with named exports
 export { DarkModeToggle } from './DarkModeToggle';

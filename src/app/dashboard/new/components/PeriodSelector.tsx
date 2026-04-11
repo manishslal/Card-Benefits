@@ -97,7 +97,7 @@ export function PeriodSelector({
         {showLeftArrow && (
           <button
             onClick={() => scroll('left')}
-            className="hidden sm:flex absolute -left-8 z-10 items-center justify-center w-8 h-8 rounded-full transition-all duration-200 focus-visible:outline-offset-2"
+            className="hidden sm:flex absolute -left-8 z-10 items-center justify-center w-8 h-8 rounded-full transition-all duration-200 focus-visible:outline-offset-2 hover:bg-[var(--color-bg-secondary)]"
             style={{
               backgroundColor: 'var(--color-bg)',
               borderColor: 'var(--color-border)',
@@ -105,12 +105,6 @@ export function PeriodSelector({
               borderStyle: 'solid',
               boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
               color: 'var(--color-text)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--color-bg-secondary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--color-bg)';
             }}
             aria-label="Scroll periods left"
             title="Scroll left"
@@ -135,22 +129,12 @@ export function PeriodSelector({
               <button
                 key={period.id}
                 onClick={() => onPeriodChange(period.id)}
-                className="flex-shrink-0 px-3 py-1.5 rounded-lg border-2 transition-all duration-200 font-medium text-sm whitespace-nowrap focus-visible:outline-offset-2"
+                className="flex-shrink-0 px-3 py-1.5 rounded-lg border-2 transition-all duration-200 font-medium text-sm whitespace-nowrap focus-visible:outline-offset-2 hover:border-[var(--color-primary)]"
                 style={{
                   backgroundColor: isSelected ? 'var(--color-primary-light)' : 'var(--color-bg)',
                   borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-border)',
                   color: isSelected ? 'var(--color-primary)' : 'var(--color-text)',
                   outlineColor: 'var(--color-primary)',
-                }}
-                onMouseEnter={(e) => {
-                  if (!isSelected) {
-                    e.currentTarget.style.borderColor = 'var(--color-primary)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isSelected) {
-                    e.currentTarget.style.borderColor = 'var(--color-border)';
-                  }
                 }}
               >
                 {period.label}
@@ -163,7 +147,7 @@ export function PeriodSelector({
         {showRightArrow && (
           <button
             onClick={() => scroll('right')}
-            className="hidden sm:flex absolute -right-8 z-10 items-center justify-center w-8 h-8 rounded-full transition-all duration-200 focus-visible:outline-offset-2"
+            className="hidden sm:flex absolute -right-8 z-10 items-center justify-center w-8 h-8 rounded-full transition-all duration-200 focus-visible:outline-offset-2 hover:bg-[var(--color-bg-secondary)]"
             style={{
               backgroundColor: 'var(--color-bg)',
               borderColor: 'var(--color-border)',
@@ -171,12 +155,6 @@ export function PeriodSelector({
               borderStyle: 'solid',
               boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
               color: 'var(--color-text)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--color-bg-secondary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--color-bg)';
             }}
             aria-label="Scroll periods right"
             title="Scroll right"
@@ -186,16 +164,6 @@ export function PeriodSelector({
         )}
       </div>
 
-      {/* Scrollbar hide CSS */}
-      <style jsx>{`
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
     </div>
   );
 }

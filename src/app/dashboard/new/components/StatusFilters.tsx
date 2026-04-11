@@ -136,13 +136,11 @@ export function StatusFilters({
           <div className="flex gap-2 text-xs">
             <button
               onClick={handleClearAll}
-              className="underline transition-colors"
+              className="underline transition-colors hover:text-[var(--color-text)]"
               style={{
                 color: 'var(--color-text-secondary)',
                 fontSize: 'var(--text-caption)',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-text)'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-secondary)'}
               aria-label="Clear all status filters"
             >
               Clear
@@ -150,13 +148,11 @@ export function StatusFilters({
             <span style={{ color: 'var(--color-border)' }}>|</span>
             <button
               onClick={handleSelectAll}
-              className="underline transition-colors"
+              className="underline transition-colors hover:text-[var(--color-text)]"
               style={{
                 color: 'var(--color-text-secondary)',
                 fontSize: 'var(--text-caption)',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-text)'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-secondary)'}
               aria-label="Select all status filters"
             >
               All
@@ -167,13 +163,11 @@ export function StatusFilters({
         {selectedStatuses.length === 0 && (
           <button
             onClick={handleSelectAll}
-            className="text-xs underline transition-colors"
+            className="text-xs underline transition-colors hover:text-[var(--color-text)]"
             style={{
               color: 'var(--color-text-secondary)',
               fontSize: 'var(--text-caption)',
             }}
-            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-text)'}
-            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-secondary)'}
             aria-label="Select all status filters"
           >
             All
@@ -187,7 +181,7 @@ export function StatusFilters({
         {showLeftArrow && (
           <button
             onClick={() => scroll('left')}
-            className="hidden sm:flex absolute -left-8 z-10 items-center justify-center w-8 h-8 rounded-full transition-all duration-200 focus-visible:outline-offset-2"
+            className="hidden sm:flex absolute -left-8 z-10 items-center justify-center w-8 h-8 rounded-full transition-all duration-200 focus-visible:outline-offset-2 hover:bg-[var(--color-bg-secondary)]"
             style={{
               backgroundColor: 'var(--color-bg)',
               borderColor: 'var(--color-border)',
@@ -195,12 +189,6 @@ export function StatusFilters({
               borderStyle: 'solid',
               boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
               color: 'var(--color-text)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--color-bg-secondary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--color-bg)';
             }}
             aria-label="Scroll status filters left"
             title="Scroll left"
@@ -227,23 +215,14 @@ export function StatusFilters({
                 onClick={() => handleStatusToggle(status.id)}
                 title={status.description}
                 aria-pressed={isSelected}
-                className="flex-shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 transition-all duration-200 whitespace-nowrap focus-visible:outline-offset-2"
+                className="flex-shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 transition-all duration-200 whitespace-nowrap focus-visible:outline-offset-2 hover:border-[var(--status-color)]"
                 style={{
+                  '--status-color': `var(${status.color})`,
                   backgroundColor: isSelected ? 'var(--color-primary-light)' : 'var(--color-bg)',
                   borderColor: isSelected ? `var(${status.color})` : 'var(--color-border)',
                   color: isSelected ? `var(${status.color})` : 'var(--color-text-secondary)',
                   outlineColor: 'var(--color-primary)',
-                }}
-                onMouseEnter={(e) => {
-                  if (!isSelected) {
-                    e.currentTarget.style.borderColor = `var(${status.color})`;
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isSelected) {
-                    e.currentTarget.style.borderColor = 'var(--color-border)';
-                  }
-                }}
+                } as React.CSSProperties}
               >
                 <span style={{ display: 'flex', alignItems: 'center', color: `var(${status.color})` }}>
                   {status.icon}
@@ -258,7 +237,7 @@ export function StatusFilters({
         {showRightArrow && (
           <button
             onClick={() => scroll('right')}
-            className="hidden sm:flex absolute -right-8 z-10 items-center justify-center w-8 h-8 rounded-full transition-all duration-200 focus-visible:outline-offset-2"
+            className="hidden sm:flex absolute -right-8 z-10 items-center justify-center w-8 h-8 rounded-full transition-all duration-200 focus-visible:outline-offset-2 hover:bg-[var(--color-bg-secondary)]"
             style={{
               backgroundColor: 'var(--color-bg)',
               borderColor: 'var(--color-border)',
@@ -266,12 +245,6 @@ export function StatusFilters({
               borderStyle: 'solid',
               boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
               color: 'var(--color-text)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--color-bg-secondary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--color-bg)';
             }}
             aria-label="Scroll status filters right"
             title="Scroll right"
@@ -281,16 +254,6 @@ export function StatusFilters({
         )}
       </div>
 
-      {/* Scrollbar hide CSS */}
-      <style jsx>{`
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
     </div>
   );
 }

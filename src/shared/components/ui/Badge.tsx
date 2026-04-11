@@ -5,6 +5,7 @@ import { CheckCircle, AlertCircle, Clock } from 'lucide-react';
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'neutral';
+  appearance?: 'solid' | 'soft' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   icon?: React.ReactNode;
   showStatusIcon?: boolean; // Show color-independent status icon
@@ -24,6 +25,7 @@ const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
     {
       className = '',
       variant = 'neutral',
+      appearance = 'solid',
       size = 'md',
       icon,
       showStatusIcon = false,
@@ -38,13 +40,34 @@ const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
       className,
     ].join(' ');
 
-    const variantClasses = {
-      primary: 'bg-[var(--color-primary)] text-white',
-      success: 'bg-[var(--color-success)] text-white',
-      warning: 'bg-[var(--color-warning)] text-white',
-      error: 'bg-[var(--color-error)] text-white',
-      info: 'bg-[var(--color-info)] text-white',
-      neutral: 'bg-[var(--color-gray-100)] text-[var(--color-text)]',
+    const getVariantClasses = (v: string, a: string) => {
+      const styles: Record<string, Record<string, string>> = {
+        solid: {
+          primary: 'bg-[var(--color-primary)] text-white',
+          success: 'bg-[var(--color-success)] text-white',
+          warning: 'bg-[var(--color-warning)] text-white',
+          error: 'bg-[var(--color-error)] text-white',
+          info: 'bg-[var(--color-info)] text-white',
+          neutral: 'bg-[var(--color-gray-100)] text-[var(--color-text)]',
+        },
+        soft: {
+          primary: 'bg-[var(--color-primary-light)] text-[var(--color-primary)]',
+          success: 'bg-[var(--color-success-light)] text-[var(--color-success)]',
+          warning: 'bg-[var(--color-warning-light)] text-[var(--color-warning)]',
+          error: 'bg-[var(--color-error-light)] text-[var(--color-error)]',
+          info: 'bg-[var(--color-info-light)] text-[var(--color-info)]',
+          neutral: 'bg-[var(--color-gray-100)] text-[var(--color-text-secondary)]',
+        },
+        outline: {
+          primary: 'border border-[var(--color-primary)] text-[var(--color-primary)] bg-transparent',
+          success: 'border border-[var(--color-success)] text-[var(--color-success)] bg-transparent',
+          warning: 'border border-[var(--color-warning)] text-[var(--color-warning)] bg-transparent',
+          error: 'border border-[var(--color-error)] text-[var(--color-error)] bg-transparent',
+          info: 'border border-[var(--color-info)] text-[var(--color-info)] bg-transparent',
+          neutral: 'border border-[var(--color-border)] text-[var(--color-text-secondary)] bg-transparent',
+        },
+      };
+      return styles[a]?.[v] || styles.solid.neutral;
     };
 
     const sizeClasses = {
@@ -72,7 +95,7 @@ const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
     return (
       <span
         ref={ref}
-        className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]}`}
+        className={`${baseClasses} ${getVariantClasses(variant, appearance)} ${sizeClasses[size]}`}
         {...props}
       >
         {showStatusIcon && getStatusIcon()}

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/shared/components/ui/use-toast';
 import Button from '@/shared/components/ui/button';
 import EmptyState from '@/shared/components/ui/EmptyState';
 import { AppHeader } from '@/shared/components/layout';
@@ -180,6 +181,7 @@ function transformBenefitForModal(benefit: BenefitData | null): {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { toast } = useToast();
   // ============================================================
   // State Management - Real Data Loading
   // ============================================================
@@ -742,7 +744,7 @@ export default function DashboardPage() {
 
         const errorData = await response.json();
         console.error('Failed to mark benefit as used:', errorData);
-        alert(`Error: ${errorData.error || 'Failed to mark benefit as used'}`);
+        toast({ title: errorData.error || 'Failed to mark benefit as used', variant: 'error' });
         return;
       }
 
@@ -762,7 +764,7 @@ export default function DashboardPage() {
           )
         );
         // Show success toast
-        alert('Benefit marked as used!');
+        toast({ title: 'Benefit marked as used!', variant: 'success' });
       }
     } catch (error) {
       console.error('Error marking benefit as used:', error);
@@ -774,7 +776,7 @@ export default function DashboardPage() {
             : b
         )
       );
-      alert('Failed to mark benefit as used. Please try again.');
+      toast({ title: 'Failed to mark benefit as used. Please try again.', variant: 'error' });
     }
   };
 
@@ -1192,7 +1194,7 @@ export default function DashboardPage() {
         }}
       >
         <div className="max-w-6xl mx-auto px-4 md:px-8 text-center text-xs text-[var(--color-text-secondary)]">
-          <p>&copy; 2024 CardTrack. Track your benefits with confidence.</p>
+          <p>&copy; {new Date().getFullYear()} CardTrack. Track your benefits with confidence.</p>
         </div>
       </footer>
 

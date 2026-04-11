@@ -19,7 +19,7 @@ export interface Toast {
 let toastStore: Toast[] = [];
 let listeners: Set<(toasts: Toast[]) => void> = new Set();
 
-const addToastListener = (listener: (toasts: Toast[]) => void) => {
+export const addToastListener = (listener: (toasts: Toast[]) => void) => {
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
@@ -42,6 +42,11 @@ const addToastToStore = (toast: Toast) => {
       notifyListeners();
     }, duration);
   }
+};
+
+export const removeToastFromStore = (id: string) => {
+  toastStore = toastStore.filter((t) => t.id !== id);
+  notifyListeners();
 };
 
 /**

@@ -15,6 +15,7 @@ import { Geist } from "next/font/google";
 import { cn } from "@/shared/lib";
 import { ThemeProvider } from '@/shared/components/providers/ThemeProvider';
 import { ClientLayoutWrapper } from '@/shared/components/layout';
+import { Toaster } from '@/shared/components/ui/toaster';
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -107,6 +108,7 @@ export default function RootLayout({
             
             {children}
           </ClientLayoutWrapper>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

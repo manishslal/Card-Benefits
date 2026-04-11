@@ -114,7 +114,7 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
                 aria-selected={isSelected}
                 onClick={() => onSelectCard(card.id)}
                 className={`
-                  flex-shrink-0 flex items-center gap-3 px-4 py-3 rounded-lg
+                  relative flex-shrink-0 flex items-center gap-3 px-4 py-3 rounded-lg
                   border-2 transition-all duration-200 whitespace-nowrap
                   focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]
                   ${
@@ -168,16 +168,6 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
           </button>
         )}
 
-        {/* Hide scrollbar styles globally */}
-        <style jsx>{`
-          .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-          }
-          .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
       </div>
     );
   }

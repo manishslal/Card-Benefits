@@ -152,6 +152,37 @@
      ======================================== */
   --touch-target-min: 44px;
   --height-header: 64px;
+
+  /* ========================================
+     ELEVATION SYSTEM - Semantic Shadows
+     ======================================== */
+  --elevation-0: none;
+  --elevation-1: var(--shadow-xs);
+  --elevation-2: var(--shadow-sm);
+  --elevation-3: var(--shadow-md);
+  --elevation-4: var(--shadow-lg);
+
+  /* ========================================
+     Z-INDEX SCALE
+     ======================================== */
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-overlay: 30;
+  --z-modal: 40;
+  --z-toast: 50;
+
+  /* ========================================
+     OPACITY TOKENS
+     ======================================== */
+  --opacity-disabled: 0.5;
+  --opacity-hover: 0.08;
+  --opacity-focus: 0.12;
+
+  /* ========================================
+     ANIMATION TOKENS
+     ======================================== */
+  --duration-instant: 50ms;
+  --duration-micro: 150ms;
 }
 
 /* ========================================
@@ -212,6 +243,64 @@
     --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
     --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.6);
   }
+}
+
+/* ========================================
+   DARK MODE - Class-based toggle (for manual dark mode switch)
+   ======================================== */
+.dark {
+  /* Primary - Brightened for dark mode */
+  --color-primary: #4F94FF;
+  --color-primary-light: #1e3a8a;
+  --color-primary-dark: #93c5fd;
+
+  /* Secondary - Brightened */
+  --color-secondary: #fbbf24;
+  --color-secondary-light: #78350f;
+  --color-secondary-dark: #fed7aa;
+
+  /* Success - Brightened for dark mode */
+  --color-success: #10b981;
+  --color-success-light: #064e3b;
+  --color-success-dark: #6ee7b7;
+
+  /* Error - Brightened */
+  --color-error: #f87171;
+  --color-error-light: #7f1d1d;
+  --color-error-dark: #fecaca;
+
+  /* Warning - Brightened (Orange/Amber for better contrast) */
+  --color-warning: #fb923c;
+  --color-warning-light: #713f12;
+  --color-warning-dark: #fed7aa;
+
+  /* Info - Brightened */
+  --color-info: #06b6d4;
+  --color-info-light: #164e63;
+
+  /* Neutral Grays - Dark Mode */
+  --color-gray-50: #0f172a;
+  --color-gray-100: #1e293b;
+  --color-gray-200: #334155;
+  --color-gray-300: #475569;
+  --color-gray-400: #64748b;
+  --color-gray-500: #a8b5c8;
+  --color-gray-600: #cbd5e1;
+  --color-gray-900: #f1f5f9;
+
+  /* Semantic Colors - Dark Mode */
+  --color-bg: #0f172a;
+  --color-bg-secondary: #1e293b;
+  --color-text: #f1f5f9;
+  --color-text-secondary: #a8b5c8;
+  --color-border: #334155;
+
+  /* Shadows - Dark Mode (higher opacity) */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.6);
 }
 
 /* ========================================
@@ -306,6 +395,17 @@ a:focus,
   [role="menuitem"]:focus {
     outline: 3px solid var(--color-primary);
   }
+}
+
+/* Dark mode - brighter focus outline (class-based toggle) */
+.dark .focus-ring:focus,
+.dark button:focus,
+.dark input:focus,
+.dark a:focus,
+.dark [role="button"]:focus,
+.dark [role="link"]:focus,
+.dark [role="menuitem"]:focus {
+  outline: 3px solid var(--color-primary);
 }
 
 /* ========================================

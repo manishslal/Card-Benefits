@@ -331,14 +331,17 @@ export default function EnhancedDashboardPage() {
     }
   }, [allBenefits]);
 
-  const handleBenefitUpdated = (updatedBenefit: BenefitData) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API returns partial fields, merged into state
+  const handleBenefitUpdated = (updatedFields: any) => {
     setAllBenefits((prev) =>
       prev.map((b) =>
-        b.id === updatedBenefit.id
+        b.id === updatedFields.id
           ? {
               ...b,
-              name: updatedBenefit.name,
-              available: updatedBenefit.userDeclaredValue || updatedBenefit.stickerValue,
+              ...(updatedFields.name != null && { name: updatedFields.name }),
+              ...(updatedFields.userDeclaredValue != null && {
+                available: updatedFields.userDeclaredValue / 100,
+              }),
             }
           : b
       )

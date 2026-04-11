@@ -12,6 +12,7 @@ interface PatchBenefitRequest {
   userDeclaredValue?: number | null;
   expirationDate?: string | null;
   resetCadence?: string;
+  claimedAt?: string | null;
 }
 
 interface PatchBenefitResponse {
@@ -62,8 +63,12 @@ function validatePatchBenefitRequest(body: PatchBenefitRequest): {
       const date = new Date(body.expirationDate);
       if (isNaN(date.getTime())) {
         errors.expirationDate = 'Invalid date format';
-      } else if (date < new Date()) {
-        errors.expirationDate = 'Expiration date must be in the future';
+      } else {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (date < today) {
+          errors.expirationDate = 'Expiration date must be in the future';
+        }
       }
     }
   }
@@ -73,6 +78,13 @@ function validatePatchBenefitRequest(body: PatchBenefitRequest): {
       errors.resetCadence = 'Reset cadence must be a string';
     } else if (!['Monthly', 'CalendarYear', 'CardmemberYear', 'OneTime'].includes(body.resetCadence)) {
       errors.resetCadence = 'Invalid reset cadence';
+    }
+  }
+
+  if (body.claimedAt !== undefined && body.claimedAt !== null) {
+    const date = new Date(body.claimedAt);
+    if (isNaN(date.getTime())) {
+      errors.claimedAt = 'Invalid date format';
     }
   }
 
@@ -162,6 +174,9 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     }
     if (body.resetCadence !== undefined) {
       updateData.resetCadence = body.resetCadence;
+    }
+    if (body.claimedAt !== undefined) {
+      updateData.claimedAt = body.claimedAt ? new Date(body.claimedAt) : null;
     }
 
     const updatedBenefit = await prisma.userBenefit.update({

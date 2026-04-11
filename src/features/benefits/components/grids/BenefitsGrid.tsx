@@ -3,7 +3,10 @@
 import React, { useMemo } from 'react';
 import Badge from '@/shared/components/ui/Badge';
 import Button from '@/shared/components/ui/button';
-import { Plane, Tag, Utensils, DollarSign, Zap, Calendar, CheckCircle2, Check } from 'lucide-react';
+import {
+  Plane, Tag, Utensils, DollarSign, Zap, Calendar, CheckCircle2,
+  Shield, Music, Tv, Star, Armchair, Hotel, Heart, Car, Landmark,
+} from 'lucide-react';
 import { formatPeriodRange } from '@/lib/format-period-range';
 
 interface Benefit {
@@ -29,7 +32,6 @@ interface Benefit {
 interface BenefitsGridProps {
   benefits: Benefit[];
   onEdit?: (benefitId: string) => void;
-  onDelete?: (benefitId: string) => void;
   onMarkUsed?: (benefitId: string) => void;
   loading?: boolean;
   emptyMessage?: string;
@@ -125,7 +127,7 @@ function getPeriodProgress(
 // Helper: Progress ring stroke color by percentage
 // green >75%, blue >50%, amber ≤50%
 // ---------------------------------------------------------------------------
-function getProgressRingColor(_usage: number): string {
+function getProgressRingColor(): string {
   return 'var(--color-primary)';
 }
 
@@ -135,10 +137,8 @@ function getProgressRingColor(_usage: number): string {
 // ---------------------------------------------------------------------------
 function ProgressRing({
   usage,
-  isUsed,
 }: {
   usage?: number;
-  isUsed: boolean;
 }) {
   const size = 40;
   const strokeWidth = 3;
@@ -146,30 +146,7 @@ function ProgressRing({
   const circumference = 2 * Math.PI * radius;
   const pct = Math.min(Math.max(usage ?? 0, 0), 100);
   const offset = circumference - (pct / 100) * circumference;
-  const ringColor = getProgressRingColor(pct);
-
-  // When used — show a checkmark icon instead of the ring
-  if (isUsed) {
-    return (
-      <div
-        className="flex items-center justify-center rounded-full flex-shrink-0"
-        style={{
-          width: size,
-          height: size,
-          backgroundColor: 'var(--color-success-light)',
-        }}
-        role="img"
-        aria-label="Benefit used"
-      >
-        <Check
-          size={18}
-          strokeWidth={2.5}
-          style={{ color: 'var(--color-success)' }}
-          aria-hidden="true"
-        />
-      </div>
-    );
-  }
+  const ringColor = getProgressRingColor();
 
   // No usage data — don't render
   if (usage === undefined) return null;
@@ -251,7 +228,6 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
     {
       benefits,
       onEdit,
-      onDelete,
       onMarkUsed,
       loading = false,
       emptyMessage = 'No benefits found',
@@ -280,13 +256,44 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
           return <Utensils {...iconProps} aria-hidden="true" />;
         case 'cashback':
           return <DollarSign {...iconProps} aria-hidden="true" />;
+        case 'insurance':
+          return <Shield {...iconProps} aria-hidden="true" />;
+        case 'entertainment':
+          return <Music {...iconProps} aria-hidden="true" />;
+        case 'streaming':
+          return <Tv {...iconProps} aria-hidden="true" />;
+        case 'points':
+          return <Star {...iconProps} aria-hidden="true" />;
+        case 'lounge':
+        case 'airport':
+          return <Armchair {...iconProps} aria-hidden="true" />;
+        case 'hotel':
+          return <Hotel {...iconProps} aria-hidden="true" />;
+        case 'wellness':
+        case 'fitness':
+          return <Heart {...iconProps} aria-hidden="true" />;
+        case 'transportation':
+        case 'rideshare':
+          return <Car {...iconProps} aria-hidden="true" />;
+        case 'banking':
+          return <Landmark {...iconProps} aria-hidden="true" />;
         default:
           return <Zap {...iconProps} aria-hidden="true" />;
       }
     };
 
     // Signal 2 of 2 — status badge (kept as a clear status communicator)
-    const getStatusBadge = (status: Benefit['status']) => {
+    // When isUsed && status === 'active', show "Used" badge instead
+    const getStatusBadge = (status: Benefit['status'], isUsed?: boolean) => {
+      // Show "Used" badge when the benefit has been claimed for this period
+      if (isUsed && status === 'active') {
+        return (
+          <Badge variant="info" size="sm" className="text-[10px] !px-1.5 !py-0.5">
+            Used
+          </Badge>
+        );
+      }
+
       const variants = {
         active: 'success',
         expiring: 'warning',
@@ -302,7 +309,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
       };
 
       return (
-        <Badge variant={variants[status]} size="sm" showStatusIcon>
+        <Badge variant={variants[status]} size="sm" className="text-[10px] !px-1.5 !py-0.5">
           {labels[status]}
         </Badge>
       );
@@ -331,7 +338,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="min-h-[200px] rounded-lg animate-pulse"
+              className="min-h-[160px] rounded-lg animate-pulse"
               style={{ backgroundColor: 'var(--color-bg-secondary)' }}
             />
           ))}
@@ -375,13 +382,14 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
             benefit.claimingCadence
           );
           const isUsed = benefit.isUsed === true;
+          const isAnnual = (benefit.claimingCadence || benefit.resetCadence || '').toUpperCase() === 'ANNUAL';
           const showRing = benefit.usage !== undefined || isUsed;
 
           return (
             <div
               key={benefit.id}
               data-benefit-card
-              className="rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] border-[var(--color-border)] hover:border-[var(--color-primary)] hover:shadow-lg hover:-translate-y-1 flex flex-col min-h-[200px]"
+              className="rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] border-[var(--color-border)] hover:border-[var(--color-primary)] hover:shadow-lg hover:-translate-y-1 flex flex-col min-h-[160px]"
               style={{
                 animation: `scaleIn 0.3s ease-out forwards`,
                 animationDelay: `${Math.min(index * 50, 500)}ms`,
@@ -396,7 +404,6 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                     backgroundColor: 'var(--color-bg-secondary)',
                     color: 'var(--color-text-secondary)',
                   }}
-                  role="status"
                   aria-label={`Benefit period: ${formatPeriodRange(
                     benefit.periodStart!,
                     benefit.periodEnd
@@ -426,19 +433,23 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                       <span className="truncate">{cadenceLabel}</span>
                     </>
                   )}
+                  {/* Status badge — moved into period banner, right-aligned */}
+                  <span className="ml-auto flex-shrink-0">
+                    {getStatusBadge(benefit.status, isUsed)}
+                  </span>
                 </div>
               )}
 
               {/* ── Card Body — flex-1 fills remaining height for uniform cards ── */}
               <div
-                className="p-4 flex-1 flex flex-col"
+                className="p-3 flex-1 flex flex-col"
                 style={{
                   backgroundColor: isUsed ? 'var(--color-bg-secondary)' : undefined,
                   transition: 'background-color 0.2s ease',
                 }}
               >
-                {/* ── Row 1: Header — Icon + Name + Badge ── */}
-                <div className="flex justify-between items-start gap-2 mb-3">
+                {/* ── Row 1: Header — Icon + Name (badge moved to banner) ── */}
+                <div className="flex justify-between items-start gap-2 mb-2">
                   <div className="flex items-start gap-2 flex-1 min-w-0">
                     <div
                       className="mt-0.5 flex-shrink-0"
@@ -458,13 +469,13 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                       {benefit.name}
                     </h3>
                   </div>
-                  {/* Signal 2: Status badge */}
-                  {getStatusBadge(benefit.status)}
+                  {/* Show badge in row 1 only when no period banner is present */}
+                  {!hasPeriodData && getStatusBadge(benefit.status, isUsed)}
                 </div>
 
                 {/* ── Row 2: Value + Progress Ring — secondary info ── */}
                 {(showRing || (benefit.value != null && benefit.value > 0)) && (
-                  <div className="flex items-center justify-between gap-3 mb-3">
+                  <div className="flex items-center justify-between gap-3 mb-2">
                     {/* Secondary: Value amount — neutral color, not green */}
                     {benefit.value != null && benefit.value > 0 ? (
                       <span
@@ -477,7 +488,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                       <span />
                     )}
                     {/* SVG progress ring or used-checkmark */}
-                    <ProgressRing usage={benefit.usage} isUsed={isUsed} />
+                    <ProgressRing usage={benefit.usage} />
                   </div>
                 )}
 
@@ -495,7 +506,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                 </div>
 
                 {/* ── Row 4: Meta — period progress + expiration (tertiary) ── */}
-                <div className="flex items-center justify-between gap-2 mb-3">
+                <div className="flex items-center justify-between gap-2 mb-2">
                   <span
                     className="text-xs"
                     style={{ color: 'var(--color-text-secondary)' }}
@@ -523,7 +534,6 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                         variant="secondary"
                         size="xs"
                         disabled
-                        aria-disabled="true"
                         className="flex-1 min-w-0"
                         leftIcon={
                           <CheckCircle2 size={14} aria-hidden="true" />
@@ -544,7 +554,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                           periodMonth ? ` for ${periodMonth}` : ''
                         }`}
                       >
-                        {periodMonth
+                        {!isAnnual && periodMonth
                           ? `Mark ${periodMonth} Used`
                           : 'Mark Used'}
                       </Button>
@@ -559,17 +569,6 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                       aria-label={`Edit ${benefit.name}`}
                     >
                       Edit
-                    </Button>
-                  )}
-                  {onDelete && (
-                    <Button
-                      variant="tertiary"
-                      size="xs"
-                      onClick={() => onDelete(benefit.id)}
-                      className="text-[var(--color-error)]"
-                      aria-label={`Delete ${benefit.name}`}
-                    >
-                      ×
                     </Button>
                   )}
                 </div>

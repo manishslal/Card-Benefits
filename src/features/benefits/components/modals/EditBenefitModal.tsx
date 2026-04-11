@@ -6,7 +6,7 @@ import Input from '@/shared/components/ui/Input';
 import { UnifiedSelect } from '@/shared/components/ui/select-unified';
 import { FormError } from '@/shared/components/forms';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { X, Lock, Info } from 'lucide-react';
+import { X, Lock, Info, Trash2, Undo2 } from 'lucide-react';
 
 /**
  * EditBenefitModal Component
@@ -37,14 +37,19 @@ interface UserBenefit {
   resetCadence: string;
   expirationDate: Date | string | null;
   masterBenefitId?: string | null;
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  isUsed?: boolean;
+  claimedAt?: string | null;
 }
 
 interface EditBenefitModalProps {
   benefit: UserBenefit | null;
   isOpen: boolean;
   onClose: () => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Callback receives raw API response data
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Callback receives partial API response merged into state
   onBenefitUpdated?: (benefit: any) => void;
+  onBenefitDeleted?: (benefitId: string) => void;
 }
 
 export function EditBenefitModal({
@@ -52,15 +57,19 @@ export function EditBenefitModal({
   isOpen,
   onClose,
   onBenefitUpdated,
+  onBenefitDeleted,
 }: EditBenefitModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     userDeclaredValue: '',
     expirationDate: '',
     resetCadence: '',
+    claimedAt: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isMarkingUnused, setIsMarkingUnused] = useState(false);
   const [message, setMessage] = useState('');
 
   // Pre-fill form when benefit data arrives
@@ -74,15 +83,26 @@ export function EditBenefitModal({
           : ''
         : '';
 
-      const userDeclaredValue = benefit.userDeclaredValue
+      const userDeclaredValue = benefit.userDeclaredValue != null
         ? (benefit.userDeclaredValue / 100).toFixed(2)
         : '';
+
+      // Pre-fill claimedAt — default to today if benefit is used and no claimedAt exists
+      let claimedAt = '';
+      if (benefit.claimedAt) {
+        claimedAt = typeof benefit.claimedAt === 'string'
+          ? benefit.claimedAt.split('T')[0]
+          : '';
+      } else if (benefit.isUsed) {
+        claimedAt = new Date().toISOString().split('T')[0];
+      }
 
       setFormData({
         name: benefit.name || '',
         userDeclaredValue,
         expirationDate,
         resetCadence: benefit.resetCadence || '',
+        claimedAt,
       });
       setErrors({});
       setMessage('');
@@ -131,8 +151,12 @@ export function EditBenefitModal({
       const date = new Date(formData.expirationDate);
       if (isNaN(date.getTime())) {
         newErrors.expirationDate = 'Invalid date format';
-      } else if (date < new Date()) {
-        newErrors.expirationDate = 'Expiration date must be in the future';
+      } else {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (date < today) {
+          newErrors.expirationDate = 'Expiration date must be in the future';
+        }
       }
     }
 
@@ -159,16 +183,20 @@ export function EditBenefitModal({
       // Convert values to cents
       const userDeclaredValue = formData.userDeclaredValue
         ? Math.round(parseFloat(formData.userDeclaredValue) * 100)
-        : undefined;
+        : null;
 
-      // When engine-managed, only send editable fields (userDeclaredValue)
+      // When engine-managed, only send editable fields (userDeclaredValue + claimedAt)
       const patchBody = isEngineManaged
-        ? { userDeclaredValue }
+        ? {
+            userDeclaredValue,
+            claimedAt: formData.claimedAt || null,
+          }
         : {
             name: formData.name.trim(),
             userDeclaredValue,
-            expirationDate: formData.expirationDate || undefined,
+            expirationDate: formData.expirationDate || null,
             resetCadence: formData.resetCadence,
+            claimedAt: formData.claimedAt || null,
           };
 
       const response = await fetch(`/api/benefits/${benefit.id}`, {
@@ -203,6 +231,77 @@ export function EditBenefitModal({
       setMessage('An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Handler: Delete benefit
+  const handleDelete = async () => {
+    if (!benefit) return;
+    const confirmed = window.confirm('Are you sure you want to delete this benefit? This action cannot be undone.');
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+    setMessage('');
+
+    try {
+      const response = await fetch(`/api/benefits/${benefit.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setMessage(data.error || 'Failed to delete benefit');
+        return;
+      }
+
+      if (onBenefitDeleted) {
+        onBenefitDeleted(benefit.id);
+      }
+      onClose();
+    } catch (error) {
+      console.error('Error deleting benefit:', error);
+      setMessage('Failed to delete benefit. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Handler: Mark benefit as unused
+  const handleMarkUnused = async () => {
+    if (!benefit) return;
+
+    setIsMarkingUnused(true);
+    setMessage('');
+
+    try {
+      const response = await fetch(`/api/benefits/${benefit.id}/toggle-used`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ isUsed: false }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setMessage(data.error || 'Failed to mark benefit as unused');
+        return;
+      }
+
+      const data = await response.json();
+      setMessage('✓ Benefit marked as unused');
+
+      if (onBenefitUpdated && data.benefit) {
+        onBenefitUpdated(data.benefit);
+      }
+
+      setTimeout(onClose, 500);
+    } catch (error) {
+      console.error('Error marking benefit as unused:', error);
+      setMessage('Failed to mark as unused. Please try again.');
+    } finally {
+      setIsMarkingUnused(false);
     }
   };
 
@@ -429,6 +528,74 @@ export function EditBenefitModal({
               />
             )}
 
+            {/* Claimed Date — only when period data exists */}
+            {(benefit.periodStart || benefit.periodEnd) && (
+              <div>
+                <label
+                  htmlFor="edit-benefit-claimed-at"
+                  className="block text-sm font-medium text-[var(--color-text)] mb-2"
+                >
+                  Claimed Date
+                </label>
+                <input
+                  id="edit-benefit-claimed-at"
+                  type="date"
+                  name="claimedAt"
+                  value={formData.claimedAt}
+                  onChange={handleChange}
+                  min={benefit.periodStart ? benefit.periodStart.split('T')[0] : undefined}
+                  max={benefit.periodEnd ? benefit.periodEnd.split('T')[0] : undefined}
+                  disabled={isLoading}
+                  className="w-full p-3 rounded-md border text-sm"
+                  style={{
+                    backgroundColor: 'var(--color-bg)',
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-text)',
+                  }}
+                />
+                <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+                  {benefit.periodStart && benefit.periodEnd
+                    ? `Must be between ${new Date(benefit.periodStart).toLocaleDateString()} and ${new Date(benefit.periodEnd).toLocaleDateString()}`
+                    : benefit.periodStart
+                    ? `Must be on or after ${new Date(benefit.periodStart).toLocaleDateString()}`
+                    : benefit.periodEnd
+                    ? `Must be on or before ${new Date(benefit.periodEnd).toLocaleDateString()}`
+                    : 'Date when you claimed this benefit'}
+                </p>
+              </div>
+            )}
+
+            {/* Mark as Unused — only when benefit is currently used */}
+            {benefit.isUsed && (
+              <div
+                className="flex items-center justify-between p-3 rounded-md border"
+                style={{
+                  backgroundColor: 'var(--color-bg-secondary)',
+                  borderColor: 'var(--color-border)',
+                }}
+              >
+                <div>
+                  <p className="text-sm font-medium text-[var(--color-text)]">
+                    This benefit is marked as used
+                  </p>
+                  <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                    Undo if you marked it by mistake
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleMarkUnused}
+                  disabled={isMarkingUnused || isLoading}
+                  aria-label="Mark benefit as unused"
+                >
+                  <Undo2 size={14} className="mr-1.5" aria-hidden="true" />
+                  {isMarkingUnused ? 'Updating...' : 'Mark as Unused'}
+                </Button>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex gap-3 pt-4">
               <Button
@@ -436,7 +603,7 @@ export function EditBenefitModal({
                 variant="primary"
                 fullWidth
                 isLoading={isLoading}
-                disabled={isLoading}
+                disabled={isLoading || isDeleting || isMarkingUnused}
               >
                 {isLoading ? 'Saving...' : 'Save Changes'}
               </Button>
@@ -445,11 +612,30 @@ export function EditBenefitModal({
                   type="button"
                   variant="outline"
                   fullWidth
-                  disabled={isLoading}
+                  disabled={isLoading || isDeleting || isMarkingUnused}
                 >
                   Cancel
                 </Button>
               </DialogPrimitive.Close>
+            </div>
+
+            {/* Delete Benefit — destructive action at bottom */}
+            <div
+              className="pt-4 mt-2"
+              style={{ borderTop: '1px solid var(--color-border)' }}
+            >
+              <Button
+                type="button"
+                variant="outline"
+                fullWidth
+                onClick={handleDelete}
+                disabled={isDeleting || isLoading || isMarkingUnused}
+                className="!text-[var(--color-error)] !border-[var(--color-error)] hover:!bg-[var(--color-error-light)]"
+                aria-label="Delete this benefit permanently"
+              >
+                <Trash2 size={14} className="mr-1.5" aria-hidden="true" />
+                {isDeleting ? 'Deleting...' : 'Delete Benefit'}
+              </Button>
             </div>
           </form>
         </DialogPrimitive.Content>

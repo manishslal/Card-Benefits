@@ -72,6 +72,7 @@ interface BenefitData {
   periodStatus?: string | null;
   masterBenefitId?: string | null;
   claimingCadence?: string | null;
+  claimedAt?: string | null;
 }
 
 /**
@@ -98,6 +99,7 @@ interface ApiBenefit {
   expirationDate?: string | null;
   description?: string;
   isUsed?: boolean;
+  claimedAt?: string | null;
   // Period-based fields (benefit engine)
   periodStart?: string | null;
   periodEnd?: string | null;
@@ -111,6 +113,47 @@ interface ApiCardsResponse {
   cards: ApiCard[];
   error?: string;
   benefitEngineEnabled?: boolean;
+}
+
+/**
+ * Calculate yearly usage progress for a benefit based on sibling periods.
+ * - MONTHLY: usedCount / 12 × 100
+ * - QUARTERLY: usedCount / 4 × 100
+ * - SEMI_ANNUAL: usedCount / 2 × 100
+ * - ANNUAL / ONE_TIME: isUsed ? 100 : 0
+ */
+function calculateYearlyUsage(
+  benefit: ApiBenefit,
+  allBenefits: ApiBenefit[]
+): number {
+  const cadence = (benefit.claimingCadence || benefit.resetCadence || '').toUpperCase();
+
+  if (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR') {
+    return benefit.isUsed ? 100 : 0;
+  }
+
+  const totalPeriods = cadence === 'MONTHLY' ? 12
+    : cadence === 'QUARTERLY' ? 4
+    : cadence === 'SEMI_ANNUAL' ? 2
+    : 1;
+
+  // Find sibling benefits (same masterBenefitId, same year)
+  if (!benefit.masterBenefitId) {
+    return benefit.isUsed ? 100 : 0;
+  }
+
+  const currentYear = benefit.periodStart
+    ? new Date(benefit.periodStart).getUTCFullYear()
+    : new Date().getFullYear();
+
+  const siblings = allBenefits.filter(b =>
+    b.masterBenefitId === benefit.masterBenefitId &&
+    b.periodStart &&
+    new Date(b.periodStart).getUTCFullYear() === currentYear
+  );
+
+  const usedCount = siblings.filter(b => b.isUsed).length;
+  return Math.round((usedCount / totalPeriods) * 100);
 }
 
 /**
@@ -168,6 +211,10 @@ function transformBenefitForModal(benefit: BenefitData | null): {
   resetCadence: string;
   expirationDate: Date | string | null;
   masterBenefitId?: string | null;
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  isUsed?: boolean;
+  claimedAt?: string | null;
 } | null {
   if (!benefit) return null;
   return {
@@ -179,6 +226,10 @@ function transformBenefitForModal(benefit: BenefitData | null): {
     resetCadence: benefit.resetCadence,
     expirationDate: benefit.expirationDate || null,
     masterBenefitId: benefit.masterBenefitId ?? null,
+    periodStart: benefit.periodStart ?? null,
+    periodEnd: benefit.periodEnd ?? null,
+    isUsed: benefit.isUsed ?? false,
+    claimedAt: benefit.claimedAt ?? null,
   };
 }
 
@@ -241,22 +292,53 @@ export default function DashboardPage() {
   const periodOptions: PeriodOption[] = useMemo(
     () => [
       {
-        id: 'this-month',
-        label: 'This Month',
-        displayLabel: getCurrentMonthDisplay(),
+        id: 'all-time',
+        label: 'All Time',
+        displayLabel: 'All Time',
+        getDateRange: () => ({
+          start: new Date(1970, 0, 1),
+          end: new Date(2099, 11, 31, 23, 59, 59, 999),
+        }),
+      },
+      {
+        id: 'full-year',
+        label: 'Year',
+        displayLabel: `${new Date().getFullYear()}`,
         getDateRange: () => {
           const now = new Date();
           const year = now.getFullYear();
-          const month = now.getMonth();
           return {
-            start: new Date(year, month, 1),
-            end: new Date(year, month + 1, 0, 23, 59, 59, 999),
+            start: new Date(year, 0, 1),
+            end: new Date(year, 11, 31, 23, 59, 59, 999),
+          };
+        },
+      },
+      {
+        id: 'first-half',
+        label: 'Half-year',
+        displayLabel: (() => {
+          const now = new Date();
+          const half = now.getMonth() < 6 ? 'H1' : 'H2';
+          return `${half} ${now.getFullYear()}`;
+        })(),
+        getDateRange: () => {
+          const now = new Date();
+          const year = now.getFullYear();
+          if (now.getMonth() < 6) {
+            return {
+              start: new Date(year, 0, 1),
+              end: new Date(year, 5, 30, 23, 59, 59, 999),
+            };
+          }
+          return {
+            start: new Date(year, 6, 1),
+            end: new Date(year, 11, 31, 23, 59, 59, 999),
           };
         },
       },
       {
         id: 'this-quarter',
-        label: 'This Quarter',
+        label: 'Quarter',
         displayLabel: (() => {
           const { quarter, year } = getCurrentQuarterInfo();
           return `Q${quarter} ${year}`;
@@ -273,39 +355,18 @@ export default function DashboardPage() {
         },
       },
       {
-        id: 'first-half',
-        label: 'First Half Year',
-        displayLabel: (() => `H1 ${new Date().getFullYear()}`)(),
+        id: 'this-month',
+        label: 'Month',
+        displayLabel: getCurrentMonthDisplay(),
         getDateRange: () => {
           const now = new Date();
           const year = now.getFullYear();
+          const month = now.getMonth();
           return {
-            start: new Date(year, 0, 1),
-            end: new Date(year, 5, 30, 23, 59, 59, 999),
+            start: new Date(year, month, 1),
+            end: new Date(year, month + 1, 0, 23, 59, 59, 999),
           };
         },
-      },
-      {
-        id: 'full-year',
-        label: 'Full Year',
-        displayLabel: `${new Date().getFullYear()}`,
-        getDateRange: () => {
-          const now = new Date();
-          const year = now.getFullYear();
-          return {
-            start: new Date(year, 0, 1),
-            end: new Date(year, 11, 31, 23, 59, 59, 999),
-          };
-        },
-      },
-      {
-        id: 'all-time',
-        label: 'All Time',
-        displayLabel: 'All Time',
-        getDateRange: () => ({
-          start: new Date(1970, 0, 1),
-          end: new Date(2099, 11, 31, 23, 59, 59, 999),
-        }),
       },
     ],
     []
@@ -364,16 +425,17 @@ export default function DashboardPage() {
     if (!benefits) return [];
 
     return benefits.filter((benefit) => {
-      // Check status filter - map API status to filter status
+      // Check status filter - isUsed takes priority so used benefits
+      // appear under "Used" filter even when API status is still "active"
       let benefitStatus: BenefitStatus;
       const apiStatus = benefit.status?.toLowerCase() || 'pending';
 
-      if (apiStatus === 'active') {
+      if (benefit.isUsed || apiStatus === 'used') {
+        benefitStatus = 'used';
+      } else if (apiStatus === 'active') {
         benefitStatus = 'active';
       } else if (apiStatus === 'expiring') {
         benefitStatus = 'expiring_soon';
-      } else if (apiStatus === 'used' || benefit.isUsed) {
-        benefitStatus = 'used';
       } else if (apiStatus === 'expired') {
         benefitStatus = 'expired';
       } else {
@@ -472,7 +534,7 @@ export default function DashboardPage() {
             expirationDate: b.expirationDate,
             description: b.description || '',
             value: (b.userDeclaredValue || b.stickerValue) / 100,
-            usage: b.isUsed ? 100 : 0,
+            usage: calculateYearlyUsage(b, apiCard.benefits || []),
             isUsed: b.isUsed ?? false,
             // Carry period fields through when present
             periodStart: b.periodStart ?? null,
@@ -661,7 +723,7 @@ export default function DashboardPage() {
               expirationDate: b.expirationDate,
               description: b.description || '',
               value: (b.userDeclaredValue || b.stickerValue) / 100,
-              usage: b.isUsed ? 100 : 0,
+              usage: calculateYearlyUsage(b, apiCard.benefits || []),
               isUsed: b.isUsed ?? false,
               periodStart: b.periodStart ?? null,
               periodEnd: b.periodEnd ?? null,
@@ -696,19 +758,6 @@ export default function DashboardPage() {
     if (benefit) {
       setSelectedBenefit(benefit);
       setIsEditBenefitOpen(true);
-    }
-  };
-
-  // ============================================================
-  // Handler: Delete Benefit - Opens confirmation dialog
-  // Following the pattern from card detail page
-  // ============================================================
-
-  const handleDeleteBenefitClick = (benefitId: string) => {
-    const benefit = benefits.find((b) => b.id === benefitId);
-    if (benefit) {
-      setSelectedBenefit(benefit);
-      setIsDeleteBenefitOpen(true);
     }
   };
 
@@ -790,8 +839,8 @@ export default function DashboardPage() {
   // Called by EditBenefitModal onBenefitUpdated callback
   // ============================================================
 
-  const handleBenefitUpdated = (updatedBenefit: BenefitData) => {
-    setBenefits(benefits.map((b) => (b.id === updatedBenefit.id ? updatedBenefit : b)));
+  const handleBenefitUpdated = (updatedFields: Partial<BenefitData> & { id: string }) => {
+    setBenefits(prev => prev.map((b) => (b.id === updatedFields.id ? { ...b, ...updatedFields } : b)));
     setIsEditBenefitOpen(false);
     setSelectedBenefit(null);
   };
@@ -802,7 +851,7 @@ export default function DashboardPage() {
   // ============================================================
 
   const handleBenefitAdded = (newBenefit: BenefitData) => {
-    setBenefits([...benefits, newBenefit]);
+    setBenefits(prev => [...prev, newBenefit]);
     setIsAddBenefitOpen(false);
   };
 
@@ -813,9 +862,20 @@ export default function DashboardPage() {
 
   const handleBenefitDeleted = () => {
     if (selectedBenefit) {
-      setBenefits(benefits.filter((b) => b.id !== selectedBenefit.id));
+      setBenefits(prev => prev.filter((b) => b.id !== selectedBenefit.id));
     }
     setIsDeleteBenefitOpen(false);
+    setSelectedBenefit(null);
+  };
+
+  // ============================================================
+  // Handler: Benefit Deleted from Edit Modal
+  // Called by EditBenefitModal onBenefitDeleted callback
+  // ============================================================
+
+  const handleBenefitDeletedFromModal = (benefitId: string) => {
+    setBenefits(prev => prev.filter((b) => b.id !== benefitId));
+    setIsEditBenefitOpen(false);
     setSelectedBenefit(null);
   };
 
@@ -824,6 +884,15 @@ export default function DashboardPage() {
   // ============================================================
 
   const displayBenefits = viewMode === 'history' ? historyBenefits : deduplicatedBenefits;
+
+  // ============================================================
+  // Total benefits across ALL cards (not just selected card)
+  // ============================================================
+
+  const totalBenefitsAcrossCards = useMemo(() => {
+    return cards.reduce((sum, card) =>
+      sum + deduplicateBenefits(card.benefits || [], benefitEngineEnabled).length, 0);
+  }, [cards, benefitEngineEnabled]);
 
   // ============================================================
   // Summary Statistics - Computed from filtered benefit data
@@ -980,7 +1049,7 @@ export default function DashboardPage() {
                 Welcome, {userName}! 👋
               </h2>
               <p className="text-sm mt-1 text-[var(--color-text-secondary)]">
-                You have {cards.length} card{cards.length !== 1 ? 's' : ''} and {deduplicatedBenefits.length} benefits tracked
+                You have {cards.length} card{cards.length !== 1 ? 's' : ''} and {totalBenefitsAcrossCards} benefits tracked
               </p>
             </div>
 
@@ -997,7 +1066,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 px-4 md:px-8 py-8">
+      <main className="flex-1 px-4 md:px-8 py-6">
         <div className="max-w-6xl mx-auto">
           {/* Empty State: No Cards */}
           {cards.length === 0 ? (
@@ -1145,7 +1214,6 @@ export default function DashboardPage() {
                   <BenefitsGrid
                     benefits={displayBenefits.map(transformBenefitForGrid)}
                     onEdit={viewMode === 'current' ? handleEditBenefitClick : undefined}
-                    onDelete={viewMode === 'current' ? handleDeleteBenefitClick : undefined}
                     onMarkUsed={viewMode === 'current' ? handleMarkUsed : undefined}
                     gridColumns={3}
                   />
@@ -1193,6 +1261,7 @@ export default function DashboardPage() {
           setSelectedBenefit(null);
         }}
         onBenefitUpdated={handleBenefitUpdated}
+        onBenefitDeleted={handleBenefitDeletedFromModal}
       />
 
       {/* Delete Benefit Confirmation Dialog */}

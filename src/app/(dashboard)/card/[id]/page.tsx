@@ -224,7 +224,7 @@ export default function CardDetailPage() {
   };
 
   const handleBenefitAdded = (newBenefit: BenefitData) => {
-    setBenefits([...benefits, newBenefit]);
+    setBenefits(prev => [...prev, newBenefit]);
     setIsAddBenefitOpen(false);
   };
 
@@ -241,8 +241,9 @@ export default function CardDetailPage() {
     }
   };
 
-  const handleBenefitUpdated = (updatedBenefit: BenefitData) => {
-    setBenefits(benefits.map((b) => (b.id === updatedBenefit.id ? updatedBenefit : b)));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API returns partial fields, merged into state
+  const handleBenefitUpdated = (updatedFields: any) => {
+    setBenefits(prev => prev.map((b) => (b.id === updatedFields.id ? { ...b, ...updatedFields } : b)));
     setIsEditBenefitOpen(false);
     setSelectedBenefit(null);
   };
@@ -262,7 +263,7 @@ export default function CardDetailPage() {
 
   const handleBenefitDeleted = () => {
     if (selectedBenefit) {
-      setBenefits(benefits.filter((b) => b.id !== selectedBenefit.id));
+      setBenefits(prev => prev.filter((b) => b.id !== selectedBenefit.id));
     }
     setIsDeleteBenefitOpen(false);
     setSelectedBenefit(null);
@@ -278,8 +279,8 @@ export default function CardDetailPage() {
   const handleMarkUsed = async (benefitId: string) => {
     try {
       // Optimistic UI update - mark the benefit as used immediately
-      setBenefits(
-        benefits.map((b) =>
+      setBenefits(prev =>
+        prev.map((b) =>
           b.id === benefitId
             ? { ...b, isUsed: true }
             : b
@@ -296,8 +297,8 @@ export default function CardDetailPage() {
 
       if (!response.ok) {
         // Revert optimistic update on error
-        setBenefits(
-          benefits.map((b) =>
+        setBenefits(prev =>
+          prev.map((b) =>
             b.id === benefitId
               ? { ...b, isUsed: false }
               : b
@@ -314,25 +315,23 @@ export default function CardDetailPage() {
       const data = await response.json();
       if (data.success) {
         // Update benefit with response data (includes updated timesUsed)
-        setBenefits(
-          benefits.map((b) =>
+        setBenefits(prev =>
+          prev.map((b) =>
             b.id === benefitId
               ? {
                   ...b,
                   isUsed: data.benefit.isUsed,
-                  // Note: timesUsed is not in our mock BenefitData, but will be in real API
                 }
               : b
           )
         );
-        // Show success toast
         alert('Benefit marked as used!');
       }
     } catch (error) {
       console.error('Error marking benefit as used:', error);
       // Revert optimistic update
-      setBenefits(
-        benefits.map((b) =>
+      setBenefits(prev =>
+        prev.map((b) =>
           b.id === benefitId
             ? { ...b, isUsed: false }
             : b
@@ -644,7 +643,6 @@ export default function CardDetailPage() {
               <BenefitsGrid
                 benefits={filteredBenefits}
                 onEdit={handleEditBenefitClick}
-                onDelete={handleDeleteBenefitClick}
                 onMarkUsed={handleMarkUsed}
                 gridColumns={3}
               />

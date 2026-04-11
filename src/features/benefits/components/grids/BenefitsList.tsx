@@ -304,19 +304,7 @@ const BenefitsList = React.forwardRef<HTMLDivElement, BenefitsListProps>(
           );
         })}
 
-        {/* Animation keyframes */}
-        <style jsx>{`
-          @keyframes slideIn {
-            from {
-              opacity: 0;
-              transform: translateX(-8px);
-            }
-            to {
-              opacity: 1;
-              transform: translateX(0);
-            }
-          }
-        `}</style>
+        {/* Animation keyframes moved to src/styles/animations.css */}
       </div>
     );
   }

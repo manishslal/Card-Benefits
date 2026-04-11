@@ -16,6 +16,10 @@ import { type PeriodOption } from './new/components/PeriodSelector';
 import { type BenefitStatus, type StatusOption } from './new/components/StatusFilters';
 import { UnifiedFilterBar } from './new/components/UnifiedFilterBar';
 import { MobileSummaryStats } from './new/components/MobileSummaryStats';
+import { SearchSortBar } from './new/components/SearchSortBar';
+import type { SortKey } from './new/components/SearchSortBar';
+import { SmartViewChips } from './new/components/SmartViewChips';
+import type { SmartViewKey } from './new/components/SmartViewChips';
 import {
   getCurrentMonthDisplay,
   getCurrentQuarterInfo,
@@ -279,6 +283,15 @@ export default function DashboardPage() {
   ]);
 
   // ============================================================
+  // State Management - Search, Sort, Smart Views (Sprint 8)
+  // ============================================================
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeSort, setActiveSort] = useState<SortKey>('default');
+  const [smartView, setSmartView] = useState<SmartViewKey>('all');
+  const [celebratingIds, setCelebratingIds] = useState<Set<string>>(new Set());
+
+  // ============================================================
   // Effect: Load user cards from API (BLOCKER #7 implementation)
   // ============================================================
 
@@ -479,6 +492,58 @@ export default function DashboardPage() {
     return deduplicateBenefits(filteredBenefits, benefitEngineEnabled);
   }, [filteredBenefits, benefitEngineEnabled]);
 
+  // ============================================================
+  // Search + Sort + Smart View — applied on top of deduplication
+  // ============================================================
+
+  const searchSortedBenefits = useMemo(() => {
+    let result = [...deduplicatedBenefits];
+
+    // 1. Search filter — case-insensitive name match
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter((b) => b.name.toLowerCase().includes(q));
+    }
+
+    // 2. Smart view filter
+    if (smartView === 'expiring-soon') {
+      const now = new Date();
+      const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      result = result.filter((b) => {
+        if (!b.periodEnd) return false;
+        const end = new Date(b.periodEnd);
+        return end >= now && end <= sevenDaysFromNow;
+      });
+    } else if (smartView === 'highest-value') {
+      // Sort by value desc; show top items or all above average
+      result.sort((a, b) => (b.value || 0) - (a.value || 0));
+      if (result.length > 5) {
+        const avg = result.reduce((sum, b) => sum + (b.value || 0), 0) / result.length;
+        const aboveAvg = result.filter((b) => (b.value || 0) > avg);
+        result = aboveAvg.length >= 5 ? aboveAvg : result.slice(0, 5);
+      }
+    } else if (smartView === 'unused') {
+      result = result.filter((b) => !b.isUsed);
+    }
+
+    // 3. Sort
+    if (activeSort === 'name') {
+      result.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (activeSort === 'value') {
+      result.sort((a, b) => (b.value || 0) - (a.value || 0));
+    } else if (activeSort === 'expiry') {
+      result.sort((a, b) => {
+        const aEnd = a.periodEnd ? new Date(a.periodEnd).getTime() : Infinity;
+        const bEnd = b.periodEnd ? new Date(b.periodEnd).getTime() : Infinity;
+        return aEnd - bEnd;
+      });
+    } else if (activeSort === 'usage') {
+      result.sort((a, b) => (b.usage || 0) - (a.usage || 0));
+    }
+
+    return result;
+  }, [deduplicatedBenefits, searchQuery, activeSort, smartView]);
+
   const handleRetry = () => {
     if (retryCount < MAX_RETRIES) {
       setRetryCount(retryCount + 1);
@@ -525,7 +590,7 @@ export default function DashboardPage() {
             name: b.name,
             type: b.type,
             stickerValue: b.stickerValue,
-            userDeclaredValue: b.userDeclaredValue || null,
+            userDeclaredValue: b.userDeclaredValue ?? null,
             resetCadence: b.resetCadence,
             status: b.status?.toLowerCase() === 'active' ? 'active' as const
               : b.status?.toLowerCase() === 'expired' ? 'expired' as const
@@ -533,7 +598,7 @@ export default function DashboardPage() {
               : 'pending' as const,
             expirationDate: b.expirationDate,
             description: b.description || '',
-            value: (b.userDeclaredValue || b.stickerValue) / 100,
+            value: (b.userDeclaredValue ?? b.stickerValue) / 100,
             usage: calculateYearlyUsage(b, apiCard.benefits || []),
             isUsed: b.isUsed ?? false,
             // Carry period fields through when present
@@ -661,7 +726,7 @@ export default function DashboardPage() {
             resetCadence: b.resetCadence,
             status: 'expired' as const,
             isUsed: b.isUsed,
-            value: (b.userDeclaredValue || b.stickerValue) / 100,
+            value: (b.userDeclaredValue ?? b.stickerValue) / 100,
             usage: b.isUsed ? 100 : 0,
             periodStart: b.periodStart,
             periodEnd: b.periodEnd,
@@ -714,7 +779,7 @@ export default function DashboardPage() {
               name: b.name,
               type: b.type,
               stickerValue: b.stickerValue,
-              userDeclaredValue: b.userDeclaredValue || null,
+              userDeclaredValue: b.userDeclaredValue ?? null,
               resetCadence: b.resetCadence,
               status: b.status?.toLowerCase() === 'active' ? 'active' as const
                 : b.status?.toLowerCase() === 'expired' ? 'expired' as const
@@ -722,7 +787,7 @@ export default function DashboardPage() {
                 : 'pending' as const,
               expirationDate: b.expirationDate,
               description: b.description || '',
-              value: (b.userDeclaredValue || b.stickerValue) / 100,
+              value: (b.userDeclaredValue ?? b.stickerValue) / 100,
               usage: calculateYearlyUsage(b, apiCard.benefits || []),
               isUsed: b.isUsed ?? false,
               periodStart: b.periodStart ?? null,
@@ -849,6 +914,13 @@ export default function DashboardPage() {
             b.id === benefitId ? { ...b, usage: b.isUsed ? 100 : 0 } : b
           );
         });
+        // Trigger celebration animation
+        setCelebratingIds(prev => new Set(prev).add(benefitId));
+        setTimeout(() => setCelebratingIds(prev => {
+          const next = new Set(prev);
+          next.delete(benefitId);
+          return next;
+        }), 500);
         // Show success toast with Undo action
         toast({
           title: 'Benefit marked as used',
@@ -1023,7 +1095,7 @@ export default function DashboardPage() {
   // Determine which benefits to display based on viewMode
   // ============================================================
 
-  const displayBenefits = viewMode === 'history' ? historyBenefits : deduplicatedBenefits;
+  const displayBenefits = viewMode === 'history' ? historyBenefits : searchSortedBenefits;
 
   // ============================================================
   // Total benefits across ALL cards (not just selected card)
@@ -1033,6 +1105,32 @@ export default function DashboardPage() {
     return cards.reduce((sum, card) =>
       sum + deduplicateBenefits(card.benefits || [], benefitEngineEnabled).length, 0);
   }, [cards, benefitEngineEnabled]);
+
+  // ============================================================
+  // Benefit counts per card — for CardSwitcher badges (Sprint 8)
+  // ============================================================
+
+  const benefitCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    cards.forEach((card) => {
+      counts[card.id] = deduplicateBenefits(card.benefits || [], benefitEngineEnabled).length;
+    });
+    return counts;
+  }, [cards, benefitEngineEnabled]);
+
+  // ============================================================
+  // Expiring-soon benefits — within 7 days (Sprint 8 alert banner)
+  // ============================================================
+
+  const expiringBenefits = useMemo(() => {
+    const now = new Date();
+    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    return displayBenefits.filter((b) => {
+      if (!b.periodEnd) return false;
+      const end = new Date(b.periodEnd);
+      return end >= now && end <= sevenDaysFromNow;
+    });
+  }, [displayBenefits]);
 
   // ============================================================
   // Summary Statistics - Computed from filtered benefit data
@@ -1051,6 +1149,12 @@ export default function DashboardPage() {
       label: viewMode === 'history' ? 'Past Value' : 'Total Value',
       value: `$${displayBenefits.reduce((sum, b) => sum + (b.value || 0), 0).toLocaleString()}`,
       icon: 'DollarSign',
+      variant: 'default' as const,
+    },
+    {
+      label: 'Value Captured',
+      value: `$${displayBenefits.filter(b => b.isUsed).reduce((sum, b) => sum + (b.value || 0), 0).toLocaleString()}`,
+      icon: 'TrendingUp',
       variant: 'default' as const,
     },
     {
@@ -1075,7 +1179,7 @@ export default function DashboardPage() {
 
   if (isLoadingCards) {
     return (
-      <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg)' }}>
+      <div className="min-h-screen flex flex-col bg-[var(--color-bg)]">
         <AppHeader />
 
         {/* Loading Content */}
@@ -1122,17 +1226,14 @@ export default function DashboardPage() {
 
   if (cardsError && cards.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg)' }}>
+      <div className="min-h-screen flex flex-col bg-[var(--color-bg)]">
         <AppHeader />
 
         {/* Error Content */}
         <main className="flex-1 px-4 md:px-8 py-8 flex items-center justify-center">
           <div className="text-center max-w-md">
             <div
-              className="p-4 rounded-lg mb-6"
-              style={{
-                backgroundColor: 'var(--color-error-light)',
-              }}
+              className="p-4 rounded-lg mb-6 bg-[var(--color-error-light)]"
             >
               <p className="text-[var(--color-error)] font-medium">{cardsError}</p>
             </div>
@@ -1168,33 +1269,28 @@ export default function DashboardPage() {
   // ============================================================
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg)' }}>
+    <div className="min-h-screen flex flex-col bg-[var(--color-bg)]">
       <AppHeader />
 
       {/* Welcome section below header */}
       <div
-        className="border-b"
-        style={{
-          backgroundColor: 'var(--color-bg)',
-          borderColor: 'var(--color-border)',
-        }}
+        className="border-b bg-[var(--color-bg)] border-[var(--color-border)]"
       >
         <div className="max-w-6xl mx-auto px-4 md:px-8 py-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h2
-                className="font-semibold text-[var(--color-text)]"
-                style={{ fontSize: 'var(--text-h4)' }}
+              <h1
+                className="font-semibold text-[var(--color-text)] text-[length:var(--text-h4)]"
               >
                 Welcome, {userName}! 👋
-              </h2>
+              </h1>
               <p className="text-sm mt-1 text-[var(--color-text-secondary)]">
                 You have {cards.length} card{cards.length !== 1 ? 's' : ''} and {totalBenefitsAcrossCards} benefits tracked
               </p>
             </div>
 
             <Button
-              variant="primary"
+              variant="secondary"
               size="md"
               onClick={() => setIsAddCardModalOpen(true)}
             >
@@ -1221,18 +1317,18 @@ export default function DashboardPage() {
             <>
               {/* Sticky Card Switcher — stays visible while scrolling, below AppHeader (64px = top-16) */}
               <div
-                className="sticky top-16 z-20 -mx-4 px-4 py-2"
-                style={{ backgroundColor: 'var(--color-bg)' }}
+                className="sticky top-16 z-20 -mx-4 px-4 py-2 bg-[var(--color-bg)]"
               >
                 <CardSwitcher
                   cards={cards}
                   selectedCardId={selectedCardId}
                   onSelectCard={setSelectedCardId}
+                  benefitCounts={benefitCounts}
                 />
               </div>
 
               {/* Unified Filter Bar — replaces Period / Status / ViewMode rows */}
-              <div className="mt-4 mb-4">
+              <div className="mt-4">
                 <UnifiedFilterBar
                   selectedPeriodId={selectedPeriodId}
                   onPeriodChange={setSelectedPeriodId}
@@ -1248,8 +1344,24 @@ export default function DashboardPage() {
                 />
               </div>
 
+              {/* Search, Sort & Smart View Chips (Sprint 8) */}
+              {viewMode === 'current' && (
+                <div className="mt-4 space-y-3">
+                  <SearchSortBar
+                    searchQuery={searchQuery}
+                    onSearch={setSearchQuery}
+                    activeSort={activeSort}
+                    onSort={setActiveSort}
+                  />
+                  <SmartViewChips
+                    activeView={smartView}
+                    onSmartView={setSmartView}
+                  />
+                </div>
+              )}
+
               {/* Mobile Summary Stats — compact horizontal pills, hidden on md+ */}
-              <div className="md:hidden mt-3 mb-4">
+              <div className="md:hidden mt-4">
                 <MobileSummaryStats
                   totalBenefits={displayBenefits.length}
                   usedBenefits={displayBenefits.filter((b) => b.isUsed).length}
@@ -1258,16 +1370,33 @@ export default function DashboardPage() {
               </div>
 
               {/* Desktop Dashboard Summary — hidden on mobile */}
-              <div className="hidden md:block">
+              <div className="hidden md:block mt-4">
                 <DashboardSummary stats={summaryStats} />
               </div>
 
               {/* Benefits Section */}
-              <section>
+              <section className="mt-6">
+                {/* Expiring-soon alert banner (Sprint 8) */}
+                {expiringBenefits.length > 0 && viewMode === 'current' && (
+                  <div
+                    className="rounded-lg px-4 py-3 mb-4 flex items-center gap-3"
+                    style={{
+                      backgroundColor: 'var(--color-alert-50)',
+                      border: '1px solid var(--color-alert-500)',
+                      color: 'var(--color-alert-600)',
+                    }}
+                    role="alert"
+                  >
+                    <AlertCircle size={18} aria-hidden="true" />
+                    <span className="text-sm font-medium">
+                      {expiringBenefits.length} benefit{expiringBenefits.length > 1 ? 's' : ''} expiring within 7 days
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between mb-6">
-                  <h3
+                  <h2
                     className="text-lg font-semibold text-[var(--color-text)]"
-                    style={{ fontSize: 'var(--text-h4)' }}
                   >
                     {viewMode === 'history' ? 'Past ' : ''}Benefits on {cards.find((c) => c.id === selectedCardId)?.name || 'Selected Card'}
                     {viewMode === 'current' && deduplicatedBenefits.length !== benefits.length && (
@@ -1286,10 +1415,10 @@ export default function DashboardPage() {
                         ({displayBenefits.length})
                       </span>
                     )}
-                  </h3>
+                  </h2>
                   {viewMode === 'current' && (
                     <Button
-                      variant="secondary"
+                      variant="primary"
                       size="sm"
                       onClick={() => setIsAddBenefitOpen(true)}
                     >
@@ -1311,11 +1440,7 @@ export default function DashboardPage() {
                 {/* Empty State for Current Filtered Results */}
                 {viewMode === 'current' && deduplicatedBenefits.length === 0 && benefits.length > 0 && (
                   <div
-                    className="text-center py-12 rounded-lg"
-                    style={{
-                      backgroundColor: 'var(--color-bg-secondary)',
-                      color: 'var(--color-text-secondary)',
-                    }}
+                    className="text-center py-12 rounded-lg bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)]"
                   >
                     <p className="text-sm">
                       No benefits match the selected period and status filters.
@@ -1337,11 +1462,7 @@ export default function DashboardPage() {
                 {/* Empty State for History */}
                 {viewMode === 'history' && !isLoadingHistory && historyBenefits.length === 0 && (
                   <div
-                    className="text-center py-12 rounded-lg"
-                    style={{
-                      backgroundColor: 'var(--color-bg-secondary)',
-                      color: 'var(--color-text-secondary)',
-                    }}
+                    className="text-center py-12 rounded-lg bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)]"
                   >
                     <p className="text-sm">
                       No previous period benefits found for this card.
@@ -1356,6 +1477,7 @@ export default function DashboardPage() {
                     onEdit={viewMode === 'current' ? handleEditBenefitClick : undefined}
                     onMarkUsed={viewMode === 'current' ? handleMarkUsed : undefined}
                     gridColumns={3}
+                    celebratingIds={celebratingIds}
                   />
                 )}
               </section>
@@ -1366,11 +1488,7 @@ export default function DashboardPage() {
 
       {/* Footer */}
       <footer
-        className="border-t py-6 mt-auto"
-        style={{
-          backgroundColor: 'var(--color-bg-secondary)',
-          borderColor: 'var(--color-border)',
-        }}
+        className="border-t py-6 mt-auto bg-[var(--color-bg-secondary)] border-[var(--color-border)]"
       >
         <div className="max-w-6xl mx-auto px-4 md:px-8 text-center text-xs text-[var(--color-text-secondary)]">
           <p>&copy; {new Date().getFullYear()} CardTrack. Track your benefits with confidence.</p>

@@ -36,6 +36,7 @@ interface BenefitsGridProps {
   loading?: boolean;
   emptyMessage?: string;
   gridColumns?: 'auto' | 2 | 3 | 4;
+  celebratingIds?: Set<string>;
 }
 
 // ---------------------------------------------------------------------------
@@ -68,14 +69,14 @@ function getCadenceLabel(
 // ---------------------------------------------------------------------------
 function getLeftBorderColor(benefit: Benefit): string {
   if (benefit.isUsed) {
-    return 'rgba(107, 114, 128, 0.3)';
+    return 'var(--color-gray-400)';
   }
   const status = benefit.periodStatus?.toUpperCase();
   switch (status) {
     case 'ACTIVE':
       return 'var(--color-success)';
     case 'EXPIRED':
-      return 'rgba(107, 114, 128, 0.4)';
+      return 'var(--color-gray-300)';
     case 'UPCOMING':
       return 'var(--color-info)';
     default:
@@ -232,6 +233,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
       loading = false,
       emptyMessage = 'No benefits found',
       gridColumns = 3,
+      celebratingIds,
     },
     ref
   ) => {
@@ -389,7 +391,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
             <div
               key={benefit.id}
               data-benefit-card
-              className="rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] border-[var(--color-border)] hover:border-[var(--color-primary)] hover:shadow-lg hover:-translate-y-1 flex flex-col min-h-[160px]"
+              className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] border-[var(--color-border)] hover:border-[var(--color-primary)] hover:shadow-lg hover:-translate-y-1 flex flex-col min-h-[160px]${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
               style={{
                 opacity: 1,
                 animation: `scaleIn 0.3s ease-out both`,
@@ -459,7 +461,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                       {getBenefitTypeIcon(benefit.type)}
                     </div>
                     {/* Primary: Benefit name */}
-                    <h3
+                    <p
                       className="flex-1 font-semibold line-clamp-2 min-w-0"
                       style={{
                         fontSize: 'var(--text-body-sm)',
@@ -468,7 +470,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                       title={benefit.name}
                     >
                       {benefit.name}
-                    </h3>
+                    </p>
                   </div>
                   {/* Show badge in row 1 only when no period banner is present */}
                   {!hasPeriodData && getStatusBadge(benefit.status, isUsed)}

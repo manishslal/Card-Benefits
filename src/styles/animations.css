@@ -72,6 +72,18 @@
   }
 }
 
+/* slideIn — used by BenefitsList cards */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 /* ========================================
    SCALE ANIMATIONS
    ======================================== */
@@ -156,6 +168,25 @@
 }
 
 /* ========================================
+   CELEBRATE USED ANIMATION (Sprint 8)
+   ======================================== */
+@keyframes celebrateUsed {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-celebrate-used {
+  animation: celebrateUsed 0.4s var(--ease-bounce);
+}
+
+/* ========================================
    UTILITY ANIMATION CLASSES
    ======================================== */
 .animate-fade-in {
@@ -217,4 +248,15 @@
 
 .animate-stagger > :nth-child(n + 6) {
   animation-delay: 250ms;
+}
+
+/* ── Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -18,6 +18,8 @@ interface CardSwitcherProps {
   cards: Card[];
   selectedCardId: string;
   onSelectCard: (cardId: string) => void;
+  /** Optional map of cardId → active benefit count for badge display */
+  benefitCounts?: Record<string, number>;
 }
 
 /**
@@ -33,7 +35,7 @@ interface CardSwitcherProps {
  * Uses design system colors and tokens for consistency
  */
 const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
-  ({ cards, selectedCardId, onSelectCard }, ref) => {
+  ({ cards, selectedCardId, onSelectCard, benefitCounts }, ref) => {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [showLeftArrow, setShowLeftArrow] = useState(false);
     const [showRightArrow, setShowRightArrow] = useState(false);
@@ -104,7 +106,7 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
     return (
       <div
         ref={ref}
-        className="relative flex items-center gap-3 mb-8"
+        className="relative flex items-center gap-3"
         role="tablist"
       >
         {/* Left scroll arrow - visible on mobile where overflow is common */}
@@ -176,6 +178,24 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
                 >
                   {getCardLabel(card)}
                 </span>
+
+                {/* Benefit count badge */}
+                {benefitCounts && benefitCounts[card.id] != null && (
+                  <span
+                    className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold rounded-full"
+                    style={{
+                      backgroundColor: isSelected
+                        ? 'var(--color-primary)'
+                        : 'var(--color-bg-secondary)',
+                      color: isSelected
+                        ? 'var(--color-text-inverse)'
+                        : 'var(--color-text-secondary)',
+                    }}
+                    aria-label={`${benefitCounts[card.id]} benefits`}
+                  >
+                    {benefitCounts[card.id]}
+                  </span>
+                )}
 
                 {/* Active indicator underline */}
                 {isSelected && (

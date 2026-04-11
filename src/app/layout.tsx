@@ -9,7 +9,6 @@
 
 import type { Metadata, Viewport } from 'next';
 import '@/styles/design-tokens.css';
-import '@/styles/animations.css';
 import '@/styles/globals.css';
 import { Geist } from "next/font/google";
 import { cn } from "@/shared/lib";

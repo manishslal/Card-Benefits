@@ -4,13 +4,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/shared/components/ui/use-toast';
 import Button from '@/shared/components/ui/button';
-import EmptyState from '@/shared/components/ui/EmptyState';
 import { AppHeader } from '@/shared/components/layout';
 import { CardSwitcher, DashboardSummary } from '@/shared/components/features';
 import { BenefitsGrid, AddBenefitModal, EditBenefitModal, DeleteBenefitConfirmationDialog } from '@/features/benefits';
 import { AddCardModal } from '@/features/cards/components/modals/AddCardModal';
 import { deduplicateBenefits } from '@/lib/benefit-utils';
-import { Plus, CreditCard, CheckCircle, AlertCircle, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { Plus, CreditCard, CheckCircle, AlertCircle, CheckCircle2, XCircle, Clock, Sparkles } from 'lucide-react';
 import { SkeletonCard } from '@/shared/components/loaders';
 import { type PeriodOption } from './new/components/PeriodSelector';
 import { type BenefitStatus, type StatusOption } from './new/components/StatusFilters';
@@ -20,6 +19,7 @@ import { SearchSortBar } from './new/components/SearchSortBar';
 import type { SortKey } from './new/components/SearchSortBar';
 import { SmartViewChips } from './new/components/SmartViewChips';
 import type { SmartViewKey } from './new/components/SmartViewChips';
+import { CardArt, getCardGradient } from './new/components/CardArt';
 import {
   getCurrentMonthDisplay,
   getCurrentQuarterInfo,
@@ -615,7 +615,7 @@ export default function DashboardPage() {
         // Set first card as selected and load its benefits
         if (transformedCards.length > 0) {
           setSelectedCardId(transformedCards[0].id);
-          setBenefits(transformedCards[0].benefits || []);
+          setBenefits(() => transformedCards[0].benefits || []);
         }
         
         // Clear retry count on successful load
@@ -676,9 +676,9 @@ export default function DashboardPage() {
     if (selectedCardId && cards.length > 0) {
       const selectedCard = cards.find((c) => c.id === selectedCardId);
       if (selectedCard?.benefits) {
-        setBenefits(selectedCard.benefits);
+        setBenefits(() => selectedCard.benefits ?? []);
       } else {
-        setBenefits([]);
+        setBenefits(() => []);
       }
     }
   }, [selectedCardId, cards]);
@@ -804,7 +804,7 @@ export default function DashboardPage() {
           if (transformedCards.length > 0) {
             const newCard = transformedCards[transformedCards.length - 1];
             setSelectedCardId(newCard.id);
-            setBenefits(newCard.benefits || []);
+            setBenefits(() => newCard.benefits || []);
           }
         }
       }
@@ -1304,15 +1304,44 @@ export default function DashboardPage() {
       {/* Main Content */}
       <main className="flex-1 px-4 md:px-8 py-6">
         <div className="max-w-6xl mx-auto">
-          {/* Empty State: No Cards */}
+          {/* Empty State: No Cards — DASH-026 Rich Onboarding */}
           {cards.length === 0 ? (
-            <EmptyState
-              icon={<CreditCard size={32} />}
-              title="No Cards Added Yet"
-              description="Start tracking your credit card benefits by adding your first card to the wallet."
-              actionLabel="Add Your First Card"
-              onAction={() => setIsAddCardModalOpen(true)}
-            />
+            <div className="flex flex-col items-center justify-center py-16 px-4 md:py-24">
+              <div
+                className="w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-6"
+                style={{ backgroundColor: 'var(--color-primary-light)' }}
+                aria-hidden="true"
+              >
+                <CreditCard size={36} style={{ color: 'var(--color-primary)' }} />
+              </div>
+              <h3
+                className="text-xl md:text-2xl font-bold text-center mb-3"
+                style={{ color: 'var(--color-text)' }}
+              >
+                Welcome to CardTrack!
+              </h3>
+              <p
+                className="text-sm md:text-base max-w-md text-center mb-2"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                Track your credit card benefits so you never miss a perk.
+                See what each card offers, when benefits expire, and how much value you&#39;ve captured.
+              </p>
+              <p
+                className="text-xs max-w-sm text-center mb-8"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                Add your first card to get started — we&#39;ll auto-populate its benefits for you.
+              </p>
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={() => setIsAddCardModalOpen(true)}
+              >
+                <Plus size={18} className="mr-2" />
+                Add Your First Card
+              </Button>
+            </div>
           ) : (
             <>
               {/* Sticky Card Switcher — stays visible while scrolling, below AppHeader (64px = top-16) */}
@@ -1326,6 +1355,40 @@ export default function DashboardPage() {
                   benefitCounts={benefitCounts}
                 />
               </div>
+
+              {/* DASH-G02: Hero Card Visualization */}
+              {(() => {
+                const heroCard = cards.find((c) => c.id === selectedCardId);
+                if (!heroCard) return null;
+                const heroGradient = getCardGradient(heroCard.productName, heroCard.issuer);
+                return (
+                  <div
+                    className="mt-4 relative overflow-hidden rounded-xl p-5 flex items-center gap-5 border"
+                    style={{
+                      borderColor: 'var(--color-border)',
+                      background: `linear-gradient(135deg, ${heroGradient.from}18, ${heroGradient.to}0C)`,
+                    }}
+                  >
+                    <CardArt
+                      cardName={heroCard.productName}
+                      issuer={heroCard.issuer}
+                      type={heroCard.type}
+                      size="lg"
+                    />
+                    <div>
+                      <p
+                        className="font-bold"
+                        style={{ fontSize: 'var(--text-body-lg)', color: 'var(--color-text)' }}
+                      >
+                        {heroCard.name}
+                      </p>
+                      <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                        {deduplicateBenefits(heroCard.benefits || [], benefitEngineEnabled).length} benefits tracked
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Unified Filter Bar — replaces Period / Status / ViewMode rows */}
               <div className="mt-4">
@@ -1360,13 +1423,9 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* Mobile Summary Stats — compact horizontal pills, hidden on md+ */}
+              {/* Mobile Summary Stats — same data as desktop (DASH-041) */}
               <div className="md:hidden mt-4">
-                <MobileSummaryStats
-                  totalBenefits={displayBenefits.length}
-                  usedBenefits={displayBenefits.filter((b) => b.isUsed).length}
-                  unusedBenefits={displayBenefits.filter((b) => !b.isUsed).length}
-                />
+                <MobileSummaryStats stats={summaryStats} />
               </div>
 
               {/* Desktop Dashboard Summary — hidden on mobile */}
@@ -1456,6 +1515,39 @@ export default function DashboardPage() {
                     >
                       Clear filters
                     </button>
+                  </div>
+                )}
+
+                {/* DASH-026: Onboarding empty state when card has zero benefits */}
+                {viewMode === 'current' && benefits.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-12 px-4">
+                    <div
+                      className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
+                      style={{ backgroundColor: 'var(--color-primary-light)' }}
+                      aria-hidden="true"
+                    >
+                      <Sparkles size={28} style={{ color: 'var(--color-primary)' }} />
+                    </div>
+                    <p
+                      className="text-lg font-semibold text-center mb-2"
+                      style={{ color: 'var(--color-text)' }}
+                    >
+                      No Benefits Tracked Yet
+                    </p>
+                    <p
+                      className="text-sm max-w-sm text-center mb-6"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      Start getting more from this card! Add benefits to track their value, expiration dates, and usage throughout the year.
+                    </p>
+                    <Button
+                      variant="primary"
+                      size="md"
+                      onClick={() => setIsAddBenefitOpen(true)}
+                    >
+                      <Plus size={16} className="mr-2" />
+                      Add Your First Benefit
+                    </Button>
                   </div>
                 )}
 

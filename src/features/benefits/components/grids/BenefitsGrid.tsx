@@ -64,24 +64,11 @@ function getCadenceLabel(
 }
 
 // ---------------------------------------------------------------------------
-// Helper: Left border color based on period status + used state
-// Signal 1 of 2 — kept as a subtle status indicator
+// Helper: Left border color — neutral for all states (DASH-044)
+// Status signaling reduced to 2 signals: badge + progress ring
 // ---------------------------------------------------------------------------
-function getLeftBorderColor(benefit: Benefit): string {
-  if (benefit.isUsed) {
-    return 'var(--color-gray-400)';
-  }
-  const status = benefit.periodStatus?.toUpperCase();
-  switch (status) {
-    case 'ACTIVE':
-      return 'var(--color-success)';
-    case 'EXPIRED':
-      return 'var(--color-gray-300)';
-    case 'UPCOMING':
-      return 'var(--color-info)';
-    default:
-      return 'var(--color-border)';
-  }
+function getLeftBorderColor(): string {
+  return 'var(--color-border)';
 }
 
 // ---------------------------------------------------------------------------
@@ -128,7 +115,8 @@ function getPeriodProgress(
 // Helper: Progress ring stroke color by percentage
 // green >75%, blue >50%, amber ≤50%
 // ---------------------------------------------------------------------------
-function getProgressRingColor(): string {
+function getProgressRingColor(isUsed?: boolean): string {
+  if (isUsed) return 'var(--color-success)';
   return 'var(--color-primary)';
 }
 
@@ -138,19 +126,21 @@ function getProgressRingColor(): string {
 // ---------------------------------------------------------------------------
 function ProgressRing({
   usage,
+  isUsed,
 }: {
   usage?: number;
+  isUsed?: boolean;
 }) {
   const size = 40;
   const strokeWidth = 3;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const pct = Math.min(Math.max(usage ?? 0, 0), 100);
+  const pct = isUsed ? 100 : Math.min(Math.max(usage ?? 0, 0), 100);
   const offset = circumference - (pct / 100) * circumference;
-  const ringColor = getProgressRingColor();
+  const ringColor = getProgressRingColor(isUsed);
 
-  // No usage data — don't render
-  if (usage === undefined) return null;
+  // No usage data and not used — don't render
+  if (usage === undefined && !isUsed) return null;
 
   return (
     <div
@@ -245,6 +235,51 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
         return 0;
       });
     }, [benefits]);
+
+    // DASH-G03 — Group consecutive benefits by period for shared headers
+    const benefitGroups = useMemo(() => {
+      const groups: {
+        periodKey: string;
+        periodLabel: string;
+        cadenceLabel: string;
+        benefits: Benefit[];
+      }[] = [];
+
+      for (const benefit of sortedBenefits) {
+        const periodKey = benefit.periodStart
+          ? formatPeriodRange(benefit.periodStart, benefit.periodEnd)
+          : '';
+
+        const lastGroup = groups[groups.length - 1];
+        if (lastGroup && lastGroup.periodKey === periodKey) {
+          lastGroup.benefits.push(benefit);
+        } else {
+          groups.push({
+            periodKey,
+            periodLabel: periodKey,
+            cadenceLabel: getCadenceLabel(
+              benefit.resetCadence,
+              benefit.claimingCadence
+            ),
+            benefits: [benefit],
+          });
+        }
+      }
+
+      return groups;
+    }, [sortedBenefits]);
+
+    // Pre-compute animation indices across groups for staggered entry
+    const cardAnimationIndices = useMemo(() => {
+      const indices = new Map<string, number>();
+      let idx = 0;
+      for (const group of benefitGroups) {
+        for (const b of group.benefits) {
+          indices.set(b.id, idx++);
+        }
+      }
+      return indices;
+    }, [benefitGroups]);
 
     // Benefit type icons
     const getBenefitTypeIcon = (type?: string) => {
@@ -369,218 +404,209 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
     }
 
     return (
-      <>
       <div ref={ref} className={`grid ${getGridColsClass()} gap-4`}>
-        {sortedBenefits.map((benefit, index) => {
-          const hasPeriodData = Boolean(benefit.periodStart);
-          const cadenceLabel = getCadenceLabel(
-            benefit.resetCadence,
-            benefit.claimingCadence
-          );
-          const periodMonth = getPeriodMonth(benefit.periodStart);
-          const progressText = getPeriodProgress(
-            benefit.periodStart,
-            benefit.resetCadence,
-            benefit.claimingCadence
-          );
-          const isUsed = benefit.isUsed === true;
-          const isAnnual = (benefit.claimingCadence || benefit.resetCadence || '').toUpperCase() === 'ANNUAL';
-          const showRing = benefit.usage !== undefined || isUsed;
-
-          return (
-            <div
-              key={benefit.id}
-              data-benefit-card
-              className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] border-[var(--color-border)] hover:border-[var(--color-primary)] hover:shadow-lg hover:-translate-y-1 flex flex-col min-h-[160px]${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
-              style={{
-                opacity: 1,
-                animation: `scaleIn 0.3s ease-out both`,
-                animationDelay: `${Math.min(index * 50, 500)}ms`,
-                borderLeft: `3px solid ${getLeftBorderColor(benefit)}`,
-              }}
-            >
-              {/* ── Period Banner — neutral bg, no per-status color variation ── */}
-              {hasPeriodData && (
-                <div
-                  className="flex items-center gap-2 px-3 py-2 text-xs font-medium"
-                  style={{
-                    backgroundColor: 'var(--color-bg-secondary)',
-                    color: 'var(--color-text-secondary)',
-                  }}
-                  aria-label={`Benefit period: ${formatPeriodRange(
-                    benefit.periodStart!,
-                    benefit.periodEnd
-                  )}`}
-                >
-                  <Calendar
-                    size={14}
-                    className="flex-shrink-0"
-                    style={{ color: 'var(--color-text-secondary)' }}
-                    aria-hidden="true"
-                  />
-                  <span className="truncate font-semibold">
-                    {formatPeriodRange(
-                      benefit.periodStart!,
-                      benefit.periodEnd
-                    )}
-                  </span>
-                  {cadenceLabel && (
-                    <>
-                      <span
-                        className="mx-0.5"
-                        style={{ opacity: 0.4 }}
-                        aria-hidden="true"
-                      >
-                        |
-                      </span>
-                      <span className="truncate">{cadenceLabel}</span>
-                    </>
-                  )}
-                  {/* Status badge — moved into period banner, right-aligned */}
-                  <span className="ml-auto flex-shrink-0">
-                    {getStatusBadge(benefit.status, isUsed)}
-                  </span>
-                </div>
-              )}
-
-              {/* ── Card Body — flex-1 fills remaining height for uniform cards ── */}
+        {benefitGroups.map((group, groupIndex) => (
+          <React.Fragment key={`group-${groupIndex}`}>
+            {/* DASH-G03: Shared period header for consecutive same-period cards */}
+            {group.periodKey && (
               <div
-                className="p-3 flex-1 flex flex-col"
+                className="col-span-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg"
                 style={{
-                  backgroundColor: isUsed ? 'var(--color-bg-secondary)' : undefined,
-                  transition: 'background-color 0.2s ease',
+                  backgroundColor: 'var(--color-bg-secondary)',
+                  color: 'var(--color-text-secondary)',
                 }}
               >
-                {/* ── Row 1: Header — Icon + Name (badge moved to banner) ── */}
-                <div className="flex justify-between items-start gap-2 mb-2">
-                  <div className="flex items-start gap-2 flex-1 min-w-0">
-                    <div
-                      className="mt-0.5 flex-shrink-0"
-                      style={{ color: 'var(--color-primary)' }}
-                    >
-                      {getBenefitTypeIcon(benefit.type)}
-                    </div>
-                    {/* Primary: Benefit name */}
-                    <p
-                      className="flex-1 font-semibold line-clamp-2 min-w-0"
-                      style={{
-                        fontSize: 'var(--text-body-sm)',
-                        color: 'var(--color-text)',
-                      }}
-                      title={benefit.name}
-                    >
-                      {benefit.name}
-                    </p>
-                  </div>
-                  {/* Show badge in row 1 only when no period banner is present */}
-                  {!hasPeriodData && getStatusBadge(benefit.status, isUsed)}
-                </div>
-
-                {/* ── Row 2: Value + Progress Ring — secondary info ── */}
-                {(showRing || (benefit.value != null && benefit.value > 0)) && (
-                  <div className="flex items-center justify-between gap-3 mb-2">
-                    {/* Secondary: Value amount — neutral color, not green */}
-                    {benefit.value != null && benefit.value > 0 ? (
-                      <span
-                        className="font-mono font-semibold text-base"
-                        style={{ color: 'var(--color-text)' }}
-                      >
-                        ${benefit.value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
-                      </span>
-                    ) : (
-                      <span />
-                    )}
-                    {/* SVG progress ring or used-checkmark */}
-                    <ProgressRing usage={benefit.usage} />
-                  </div>
-                )}
-
-                {/* ── Row 3: Description — tertiary, flex-1 absorbs variable height ── */}
-                <div className="flex-1 min-h-0">
-                  {benefit.description && (
-                    <p
-                      className="text-xs line-clamp-2 mb-2"
-                      style={{ color: 'var(--color-text-secondary)' }}
-                      title={benefit.description}
-                    >
-                      {benefit.description}
-                    </p>
-                  )}
-                </div>
-
-                {/* ── Row 4: Meta — period progress + expiration (tertiary) ── */}
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <span
-                    className="text-xs"
-                    style={{ color: 'var(--color-text-secondary)' }}
-                  >
-                    {progressText}
-                  </span>
-                  {benefit.expirationDate && (
+                <Calendar
+                  size={14}
+                  className="flex-shrink-0"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                  aria-hidden="true"
+                />
+                <span className="font-semibold">{group.periodLabel}</span>
+                {group.cadenceLabel && (
+                  <>
                     <span
-                      className="text-xs"
-                      style={{ color: 'var(--color-text-secondary)' }}
+                      className="mx-0.5"
+                      style={{ opacity: 0.4 }}
+                      aria-hidden="true"
                     >
-                      Exp: {formatDate(benefit.expirationDate)}
+                      |
                     </span>
-                  )}
-                </div>
-
-                {/* ── Row 5: Action buttons — pinned to bottom via mt-auto ── */}
-                <div
-                  className="flex gap-2 mt-auto pt-3 flex-wrap"
-                  style={{ borderTop: '1px solid var(--color-border)' }}
-                >
-                  {onMarkUsed && benefit.status === 'active' && (
-                    isUsed ? (
-                      <Button
-                        variant="secondary"
-                        size="xs"
-                        disabled
-                        className="flex-1 min-w-0 min-h-[44px]"
-                        leftIcon={
-                          <CheckCircle2 size={14} aria-hidden="true" />
-                        }
-                        aria-label={`${benefit.name} has been used${
-                          periodMonth ? ` for ${periodMonth}` : ''
-                        }`}
-                      >
-                        Used
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="secondary"
-                        size="xs"
-                        onClick={() => onMarkUsed(benefit.id)}
-                        className="flex-1 min-w-0 min-h-[44px]"
-                        aria-label={`Mark ${benefit.name} as used${
-                          periodMonth ? ` for ${periodMonth}` : ''
-                        }`}
-                      >
-                        {!isAnnual && periodMonth
-                          ? `Mark ${periodMonth} Used`
-                          : 'Mark Used'}
-                      </Button>
-                    )
-                  )}
-                  {onEdit && (
-                    <Button
-                      variant="tertiary"
-                      size="xs"
-                      onClick={() => onEdit(benefit.id)}
-                      className="flex-1 min-w-0 min-h-[44px]"
-                      aria-label={`Edit ${benefit.name}`}
-                    >
-                      Edit
-                    </Button>
-                  )}
-                </div>
+                    <span>{group.cadenceLabel}</span>
+                  </>
+                )}
               </div>
-            </div>
-          );
-        })}
+            )}
+
+            {group.benefits.map((benefit) => {
+              const periodMonth = getPeriodMonth(benefit.periodStart);
+              const progressText = getPeriodProgress(
+                benefit.periodStart,
+                benefit.resetCadence,
+                benefit.claimingCadence
+              );
+              const isUsed = benefit.isUsed === true;
+              const isAnnual = (benefit.claimingCadence || benefit.resetCadence || '').toUpperCase() === 'ANNUAL';
+              const showRing = benefit.usage !== undefined || isUsed;
+              const animIndex = cardAnimationIndices.get(benefit.id) ?? 0;
+
+              return (
+                <div
+                  key={benefit.id}
+                  data-benefit-card
+                  onClick={() => onEdit?.(benefit.id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit?.(benefit.id); } }}
+                  className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] border-[var(--color-border)] hover:border-[var(--color-primary)] hover:shadow-lg hover:-translate-y-1 flex flex-col min-h-[160px] cursor-pointer${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
+                  style={{
+                    opacity: isUsed ? 0.7 : 1,
+                    animation: `scaleIn 0.3s ease-out both`,
+                    animationDelay: `${Math.min(animIndex * 50, 500)}ms`,
+                    borderLeft: `3px solid ${getLeftBorderColor()}`,
+                  }}
+                >
+                  {/* ── Card Body ── */}
+                  <div
+                    className="p-3 flex-1 flex flex-col"
+                    style={{
+                      backgroundColor: isUsed ? 'var(--color-bg-secondary)' : undefined,
+                      transition: 'background-color 0.2s ease',
+                    }}
+                  >
+                    {/* ── Row 1: Header — Icon + Name + Badge ── */}
+                    <div className="flex justify-between items-start gap-2 mb-2">
+                      <div className="flex items-start gap-2 flex-1 min-w-0">
+                        <div
+                          className="mt-0.5 flex-shrink-0"
+                          style={{ color: 'var(--color-primary)' }}
+                        >
+                          {getBenefitTypeIcon(benefit.type)}
+                        </div>
+                        <p
+                          className="flex-1 font-semibold line-clamp-2 min-w-0"
+                          style={{
+                            fontSize: 'var(--text-body-sm)',
+                            color: 'var(--color-text)',
+                          }}
+                          title={benefit.name}
+                        >
+                          {benefit.name}
+                        </p>
+                      </div>
+                      {getStatusBadge(benefit.status, isUsed)}
+                    </div>
+
+                    {/* ── Row 2: Value + Progress Ring ── */}
+                    {(showRing || (benefit.value != null && benefit.value > 0)) && (
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        {benefit.value != null && benefit.value > 0 ? (
+                          <span
+                            className="font-mono font-semibold text-base"
+                            style={{ color: 'var(--color-text)' }}
+                          >
+                            ${benefit.value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                          </span>
+                        ) : (
+                          <span />
+                        )}
+                        <ProgressRing usage={benefit.usage} isUsed={isUsed} />
+                      </div>
+                    )}
+
+                    {/* ── Row 3: Description ── */}
+                    <div className="flex-1 min-h-0">
+                      {benefit.description && (
+                        <p
+                          className="text-xs line-clamp-2 mb-2"
+                          style={{ color: 'var(--color-text-secondary)' }}
+                          title={benefit.description}
+                        >
+                          {benefit.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* ── Row 4: Meta — period progress + expiration ── */}
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span
+                        className="text-xs"
+                        style={{ color: 'var(--color-text-secondary)' }}
+                      >
+                        {progressText}
+                      </span>
+                      {benefit.expirationDate && (
+                        <span
+                          className="text-xs"
+                          style={{ color: 'var(--color-text-secondary)' }}
+                        >
+                          Exp: {formatDate(benefit.expirationDate)}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* ── Row 5: Action buttons — stopPropagation to avoid card click ── */}
+                    <div
+                      className="flex gap-2 mt-auto pt-3 flex-wrap"
+                      style={{ borderTop: '1px solid var(--color-border)' }}
+                    >
+                      {onMarkUsed && benefit.status === 'active' && (
+                        isUsed ? (
+                          <Button
+                            variant="secondary"
+                            size="xs"
+                            disabled
+                            className="flex-1 min-w-0 min-h-[44px]"
+                            leftIcon={
+                              <CheckCircle2 size={14} aria-hidden="true" />
+                            }
+                            aria-label={`${benefit.name} has been used${
+                              periodMonth ? ` for ${periodMonth}` : ''
+                            }`}
+                          >
+                            Used
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="secondary"
+                            size="xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onMarkUsed(benefit.id);
+                            }}
+                            className="flex-1 min-w-0 min-h-[44px]"
+                            aria-label={`Mark ${benefit.name} as used${
+                              periodMonth ? ` for ${periodMonth}` : ''
+                            }`}
+                          >
+                            {!isAnnual && periodMonth
+                              ? `Mark ${periodMonth} Used`
+                              : 'Mark Used'}
+                          </Button>
+                        )
+                      )}
+                      {onEdit && (
+                        <Button
+                          variant="tertiary"
+                          size="xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit(benefit.id);
+                          }}
+                          className="flex-1 min-w-0 min-h-[44px]"
+                          aria-label={`Edit ${benefit.name}`}
+                        >
+                          Edit
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </React.Fragment>
+        ))}
       </div>
-      </>
     );
   }
 );

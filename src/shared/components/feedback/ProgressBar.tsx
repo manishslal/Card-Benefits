@@ -64,7 +64,7 @@ const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
 
         {/* Progress Bar Track */}
         <div
-          className="w-full h-2 rounded-full bg-[var(--color-border)] dark:bg-[var(--color-bg-secondary)] overflow-hidden"
+          className="w-full h-2 rounded-full bg-[var(--color-border)] overflow-hidden"
           role="progressbar"
           aria-valuenow={validProgress}
           aria-valuemin={0}
@@ -73,7 +73,7 @@ const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
         >
           {/* Progress Bar Fill */}
           <div
-            className={`h-full rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[#5b6dd3] ${
+            className={`h-full rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-dark)] ${
               animated ? 'transition-all duration-500 ease-out' : ''
             }`}
             style={{

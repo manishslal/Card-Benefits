@@ -164,12 +164,12 @@ const BenefitsList = React.forwardRef<HTMLDivElement, BenefitsListProps>(
                       {getBenefitTypeIcon(benefit.type)}
                     </div>
                     <div className="flex-1">
-                      <h3
+                      <p
                         className="font-semibold text-[var(--color-text)]"
                         style={{ fontSize: 'var(--text-body-md)' }}
                       >
                         {benefit.name}
-                      </h3>
+                      </p>
                       {benefit.description && (
                         <p
                           className="text-xs mt-1"
@@ -213,7 +213,7 @@ const BenefitsList = React.forwardRef<HTMLDivElement, BenefitsListProps>(
                     </span>
                   </div>
 
-                  {benefit.value && (
+                  {benefit.value != null && benefit.value > 0 && (
                     <div>
                       <span
                         className="block font-semibold"

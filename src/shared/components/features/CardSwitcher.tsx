@@ -131,7 +131,7 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
             // Derive a subtle glow shadow from the card's own gradient colour
             const cardGradient = getCardGradient(card.productName, card.issuer);
             const glowShadow = isSelected
-              ? `0 0 8px ${cardGradient.from}40, 0 2px 4px rgba(0,0,0,0.08)`
+              ? `0 0 8px ${cardGradient.from}40, var(--shadow-sm)`
               : undefined;
 
             return (

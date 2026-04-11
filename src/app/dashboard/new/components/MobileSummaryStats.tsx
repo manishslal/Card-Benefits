@@ -2,80 +2,34 @@
 
 // ============================================================
 // MobileSummaryStats — compact horizontal stat chips for mobile
+// Shares the same stats array as DashboardSummary (DASH-041)
 // Hidden on md+ screens via Tailwind `md:hidden` on the wrapper
 // ============================================================
 
 export interface MobileSummaryStatsProps {
-  totalBenefits: number;
-  usedBenefits: number;
-  unusedBenefits: number;
+  stats: Array<{ label: string; value: string | number }>;
 }
 
-export function MobileSummaryStats({
-  totalBenefits,
-  usedBenefits,
-  unusedBenefits,
-}: MobileSummaryStatsProps) {
+export function MobileSummaryStats({ stats }: MobileSummaryStatsProps) {
   return (
     <div
-      className="flex gap-2"
+      className="flex gap-2 overflow-x-auto scrollbar-hide pb-1"
       role="group"
       aria-label="Benefit statistics summary"
     >
-      {/* Total */}
-      <StatChip
-        value={totalBenefits}
-        label="Total"
-        bgVar="--color-bg-secondary"
-        textVar="--color-text"
-      />
-
-      {/* Used */}
-      <StatChip
-        value={usedBenefits}
-        label="Used"
-        bgVar="--color-info-light"
-        textVar="--color-info"
-      />
-
-      {/* Remaining */}
-      <StatChip
-        value={unusedBenefits}
-        label="Left"
-        bgVar="--color-success-light"
-        textVar="--color-success"
-      />
+      {stats.map((stat) => (
+        <span
+          key={stat.label}
+          className="flex-shrink-0 text-center px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap"
+          style={{
+            backgroundColor: 'var(--color-bg-secondary)',
+            color: 'var(--color-text)',
+          }}
+          aria-label={`${stat.value} ${stat.label}`}
+        >
+          {stat.value} {stat.label}
+        </span>
+      ))}
     </div>
-  );
-}
-
-// ============================================================
-// StatChip — individual rounded-full stat pill
-// ============================================================
-
-function StatChip({
-  value,
-  label,
-  bgVar,
-  textVar,
-}: {
-  value: number;
-  label: string;
-  /** CSS custom property name for background, e.g. "--color-bg-secondary" */
-  bgVar: string;
-  /** CSS custom property name for text, e.g. "--color-text" */
-  textVar: string;
-}) {
-  return (
-    <span
-      className="flex-1 text-center px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap"
-      style={{
-        backgroundColor: `var(${bgVar})`,
-        color: `var(${textVar})`,
-      }}
-      aria-label={`${value} ${label}`}
-    >
-      {value} {label}
-    </span>
   );
 }

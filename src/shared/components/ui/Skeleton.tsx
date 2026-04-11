@@ -46,7 +46,6 @@ const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(
   ) => {
     const baseClasses = [
       'bg-[var(--color-border)]',
-      'dark:bg-[var(--color-bg-secondary)]',
       className,
     ].join(' ');
 

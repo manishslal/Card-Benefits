@@ -6,3 +6,5 @@ export { PeriodSelector, type PeriodOption } from './PeriodSelector';
 export { UnifiedFilterBar, type UnifiedFilterBarProps } from './UnifiedFilterBar';
 export { MobileSummaryStats, type MobileSummaryStatsProps } from './MobileSummaryStats';
 export { CardArt, getCardGradient, type CardArtProps, type GradientConfig } from './CardArt';
+export { SearchSortBar, type SearchSortBarProps, type SortKey } from './SearchSortBar';
+export { SmartViewChips, type SmartViewChipsProps, type SmartViewKey } from './SmartViewChips';

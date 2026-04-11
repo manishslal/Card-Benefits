@@ -169,8 +169,8 @@ const DEFAULT_GRADIENT: GradientConfig = {
  * Exported so other components can reuse the colour lookup.
  */
 export function getCardGradient(cardName: string, issuer: string): GradientConfig {
-  const normName = cardName.toLowerCase();
-  const normIssuer = issuer.toLowerCase();
+  const normName = (cardName ?? '').toLowerCase();
+  const normIssuer = (issuer ?? '').toLowerCase();
 
   // 1. Card-name match (substring check so partial names still hit)
   for (const [key, config] of Object.entries(CARD_NAME_GRADIENTS)) {

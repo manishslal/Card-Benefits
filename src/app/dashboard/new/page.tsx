@@ -26,6 +26,15 @@ interface CardData {
   customName?: string | null;
 }
 
+interface ApiCard {
+  id: string;
+  cardName: string;
+  customName?: string | null;
+  type?: string;
+  lastFour?: string;
+  issuer: string;
+}
+
 interface BenefitData {
   id: string;
   name: string;
@@ -185,7 +194,7 @@ export default function EnhancedDashboardPage() {
         if (cardsResponse.ok) {
           const cardsData = await cardsResponse.json();
           if (cardsData.success && cardsData.cards) {
-            const transformedCards: CardData[] = cardsData.cards.map((card: any) => ({
+            const transformedCards: CardData[] = cardsData.cards.map((card: ApiCard) => ({
               id: card.id,
               name: card.customName || card.cardName,
               productName: card.cardName,

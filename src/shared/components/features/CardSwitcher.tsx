@@ -71,6 +71,24 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
       });
     };
 
+    // ARIA tablist keyboard navigation (ArrowLeft/Right, Home, End)
+    const handleTabKeyDown = (e: React.KeyboardEvent, index: number) => {
+      let nextIndex: number | null = null;
+      if (e.key === 'ArrowRight') nextIndex = (index + 1) % cards.length;
+      else if (e.key === 'ArrowLeft') nextIndex = (index - 1 + cards.length) % cards.length;
+      else if (e.key === 'Home') nextIndex = 0;
+      else if (e.key === 'End') nextIndex = cards.length - 1;
+
+      if (nextIndex !== null) {
+        e.preventDefault();
+        onSelectCard(cards[nextIndex].id);
+        // Focus the newly selected tab button
+        const container = scrollContainerRef.current;
+        const buttons = container?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+        buttons?.[nextIndex]?.focus();
+      }
+    };
+
     // Enhancement 3: Display customName if set, otherwise fallback to issuer + last 4 digits
     const getCardLabel = (card: Card) => {
       // If customName is set and not empty after trimming, use it
@@ -89,11 +107,11 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
         className="relative flex items-center gap-3 mb-8"
         role="tablist"
       >
-        {/* Left scroll arrow - hidden on desktop */}
+        {/* Left scroll arrow - visible on mobile where overflow is common */}
         {showLeftArrow && (
           <button
             onClick={() => scroll('left')}
-            className="hidden sm:flex absolute -left-2 z-10 items-center justify-center w-8 h-8 rounded-full bg-[var(--color-bg)] border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-secondary)] transition-all duration-200 focus-visible:outline-offset-2"
+            className="flex sm:hidden absolute -left-2 z-10 items-center justify-center w-8 h-8 rounded-full bg-[var(--color-bg)] border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-secondary)] transition-all duration-200 focus-visible:outline-offset-2"
             aria-label="Scroll cards left"
           >
             <ChevronLeft size={16} />
@@ -106,7 +124,7 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
           className="flex gap-3 overflow-x-auto scrollbar-hide pb-2"
           style={{ scrollBehavior: 'smooth' }}
         >
-          {cards.map((card) => {
+          {cards.map((card, index) => {
             const isSelected = card.id === selectedCardId;
             // Derive a subtle glow shadow from the card's own gradient colour
             const cardGradient = getCardGradient(card.productName, card.issuer);
@@ -119,7 +137,9 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
                 key={card.id}
                 role="tab"
                 aria-selected={isSelected}
+                tabIndex={isSelected ? 0 : -1}
                 onClick={() => onSelectCard(card.id)}
+                onKeyDown={(e) => handleTabKeyDown(e, index)}
                 style={glowShadow ? { boxShadow: glowShadow } : undefined}
                 className={`
                   relative flex-shrink-0 flex items-center gap-3 px-4 py-3 rounded-lg
@@ -169,11 +189,11 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
           })}
         </div>
 
-        {/* Right scroll arrow - hidden on desktop */}
+        {/* Right scroll arrow - visible on mobile where overflow is common */}
         {showRightArrow && (
           <button
             onClick={() => scroll('right')}
-            className="hidden sm:flex absolute -right-2 z-10 items-center justify-center w-8 h-8 rounded-full bg-[var(--color-bg)] border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-secondary)] transition-all duration-200 focus-visible:outline-offset-2"
+            className="flex sm:hidden absolute -right-2 z-10 items-center justify-center w-8 h-8 rounded-full bg-[var(--color-bg)] border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-secondary)] transition-all duration-200 focus-visible:outline-offset-2"
             aria-label="Scroll cards right"
           >
             <ChevronRight size={16} />

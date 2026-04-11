@@ -1,0 +1,1 @@
+{"nodes": [{"id": "container", "label": "Container.tsx", "file_type": "code", "source_file": "src/shared/components/layout/Container.tsx", "source_location": "L1"}], "edges": [{"source": "container", "target": "react", "relation": "imports_from", "confidence": "EXTRACTED", "source_file": "src/shared/components/layout/Container.tsx", "source_location": "L3", "weight": 1.0}]}

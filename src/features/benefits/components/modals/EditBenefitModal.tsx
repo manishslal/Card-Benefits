@@ -70,6 +70,7 @@ export function EditBenefitModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isMarkingUnused, setIsMarkingUnused] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [message, setMessage] = useState('');
 
   // Pre-fill form when benefit data arrives
@@ -106,6 +107,7 @@ export function EditBenefitModal({
       });
       setErrors({});
       setMessage('');
+      setShowDeleteConfirm(false);
     }
   }, [isOpen, benefit]);
 
@@ -237,8 +239,6 @@ export function EditBenefitModal({
   // Handler: Delete benefit
   const handleDelete = async () => {
     if (!benefit) return;
-    const confirmed = window.confirm('Are you sure you want to delete this benefit? This action cannot be undone.');
-    if (!confirmed) return;
 
     setIsDeleting(true);
     setMessage('');
@@ -293,7 +293,8 @@ export function EditBenefitModal({
       setMessage('✓ Benefit marked as unused');
 
       if (onBenefitUpdated && data.benefit) {
-        onBenefitUpdated(data.benefit);
+        // Explicitly ensure isUsed/claimedAt are correct even if API returns partial data
+        onBenefitUpdated({ ...data.benefit, isUsed: false, claimedAt: null });
       }
 
       setTimeout(onClose, 500);
@@ -323,10 +324,10 @@ export function EditBenefitModal({
       if (!open) onClose();
     }}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-black/50" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-[30] bg-black/50" />
         
         <DialogPrimitive.Content
-          className="fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] sm:max-w-lg md:max-w-2xl translate-x-[-50%] translate-y-[-50%] rounded-lg shadow-lg p-6 max-h-[90vh] overflow-y-auto border border-[var(--color-border)]"
+          className="fixed left-[50%] top-[50%] z-[40] w-full max-w-[calc(100%-2rem)] sm:max-w-lg md:max-w-2xl translate-x-[-50%] translate-y-[-50%] rounded-lg shadow-lg p-6 max-h-[90vh] overflow-y-auto border border-[var(--color-border)]"
           style={{ backgroundColor: 'var(--color-bg)' }}
         >
           <DialogPrimitive.Title className="text-2xl font-bold text-[var(--color-text)] mb-2">
@@ -624,18 +625,48 @@ export function EditBenefitModal({
               className="pt-4 mt-2"
               style={{ borderTop: '1px solid var(--color-border)' }}
             >
-              <Button
-                type="button"
-                variant="outline"
-                fullWidth
-                onClick={handleDelete}
-                disabled={isDeleting || isLoading || isMarkingUnused}
-                className="!text-[var(--color-error)] !border-[var(--color-error)] hover:!bg-[var(--color-error-light)]"
-                aria-label="Delete this benefit permanently"
-              >
-                <Trash2 size={14} className="mr-1.5" aria-hidden="true" />
-                {isDeleting ? 'Deleting...' : 'Delete Benefit'}
-              </Button>
+              {showDeleteConfirm ? (
+                <div className="space-y-3">
+                  <p className="text-sm font-medium text-[var(--color-error)]">
+                    Are you sure you want to delete this benefit? This action cannot be undone.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="danger"
+                      fullWidth
+                      onClick={handleDelete}
+                      disabled={isDeleting || isLoading || isMarkingUnused}
+                      aria-label="Confirm delete this benefit permanently"
+                    >
+                      <Trash2 size={14} className="mr-1.5" aria-hidden="true" />
+                      {isDeleting ? 'Deleting...' : 'Yes, Delete'}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      fullWidth
+                      onClick={() => setShowDeleteConfirm(false)}
+                      disabled={isDeleting}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  fullWidth
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={isDeleting || isLoading || isMarkingUnused}
+                  className="!text-[var(--color-error)] !border-[var(--color-error)] hover:!bg-[var(--color-error-light)]"
+                  aria-label="Delete this benefit permanently"
+                >
+                  <Trash2 size={14} className="mr-1.5" aria-hidden="true" />
+                  Delete Benefit
+                </Button>
+              )}
             </div>
           </form>
         </DialogPrimitive.Content>

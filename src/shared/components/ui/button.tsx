@@ -51,7 +51,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ].join(' ');
 
     const variantClasses = {
-      primary: `bg-gradient-to-br from-[var(--color-primary)] to-[#2844a0] text-white shadow-md
+      primary: `bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-dark)] text-white shadow-md
         ${!disabled && !isLoading ? 'hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0' : ''}`,
       secondary: `border-2 border-[var(--color-primary)] text-[var(--color-primary)] bg-transparent
         ${!disabled && !isLoading ? 'hover:bg-[rgba(51,86,208,0.12)]' : ''}`,

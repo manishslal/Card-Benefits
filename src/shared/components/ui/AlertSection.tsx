@@ -145,7 +145,7 @@ function getAlertColors(
       return {
         bg: 'var(--color-danger-50)',
         border: 'var(--color-danger-500)',
-        text: '#7F1D1D',
+        text: 'var(--color-danger-600)',
         borderLeft: 'var(--color-danger-500)',
         icon: '🔴',
       };
@@ -153,7 +153,7 @@ function getAlertColors(
       return {
         bg: 'var(--color-alert-50)',
         border: 'var(--color-alert-500)',
-        text: '#78350F',
+        text: 'var(--color-alert-600)',
         borderLeft: 'var(--color-alert-500)',
         icon: '⚠️',
       };
@@ -191,7 +191,7 @@ export default function AlertSection({ players }: AlertSectionProps) {
       <section
         className="sticky z-40 px-md md:px-tablet lg:px-desktop py-md"
         style={{
-          top: 'var(--height-header-mobile)',
+          top: 'var(--height-header)',
           backgroundColor: 'var(--color-bg-secondary)',
           borderBottom: '1px solid var(--color-border)',
         }}
@@ -216,7 +216,7 @@ export default function AlertSection({ players }: AlertSectionProps) {
     <section
       className="sticky z-40 px-md md:px-tablet lg:px-desktop py-md space-y-md"
       style={{
-        top: 'var(--height-header-mobile)',
+        top: 'var(--height-header)',
         backgroundColor: 'var(--color-bg-secondary)',
         borderBottom: '1px solid var(--color-border)',
       }}

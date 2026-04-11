@@ -66,6 +66,18 @@ export function Toaster() {
             {toast.description && (
               <p className="text-sm mt-0.5 opacity-90">{toast.description}</p>
             )}
+            {toast.action && (
+              <button
+                onClick={() => {
+                  toast.action!.onClick();
+                  handleDismiss(toast.id);
+                }}
+                className="text-sm font-semibold underline mt-1 hover:opacity-80 transition-opacity"
+                aria-label={toast.action.label}
+              >
+                {toast.action.label}
+              </button>
+            )}
           </div>
 
           {/* Close button */}

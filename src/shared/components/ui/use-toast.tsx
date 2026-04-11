@@ -18,6 +18,10 @@ export interface Toast {
   description?: string;
   variant: 'default' | 'success' | 'error' | 'info';
   duration?: number;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
 }
 
 // ---------------------------------------------------------------------------

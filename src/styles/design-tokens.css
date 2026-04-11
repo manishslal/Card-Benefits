@@ -12,7 +12,7 @@
   /* Primary Blue - Darkened for WCAG AA contrast (4.5:1 minimum) */
   --color-primary: #3356D0;
   --color-primary-light: #e0ecff;
-  --color-primary-dark: #1e40af;
+  --color-primary-dark: #2844a0;
 
   /* Secondary / Accent Orange */
   --color-secondary: #f59e0b;
@@ -193,6 +193,27 @@
      ======================================== */
   --duration-instant: 50ms;
   --duration-normal: 300ms;
+
+  /* ========================================
+     MISSING SEMANTIC TOKENS - LIGHT MODE
+     ======================================== */
+  --color-danger-50: #fef2f2;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+  --color-alert-50: #fffbeb;
+  --color-alert-500: #f59e0b;
+  --color-alert-600: #d97706;
+  --color-success-50: #f0fdf4;
+  --color-success-500: #0a7d57;
+  --color-success-600: #059669;
+  --color-primary-500: #3356D0;
+  --color-bg-tertiary: #f3f4f6;
+  --color-focus-ring: rgba(51, 86, 208, 0.1);
+  --color-primary-bg-muted: rgba(51, 86, 208, 0.12);
+  --color-primary-bg-subtle: rgba(51, 86, 208, 0.08);
+  --color-success-bg-muted: rgba(10, 125, 87, 0.1);
+  --color-warning-bg-muted: rgba(217, 119, 6, 0.1);
+  --color-error-bg-muted: rgba(239, 68, 68, 0.1);
 }
 
 /* ========================================
@@ -203,7 +224,7 @@
     /* Primary - Brightened for dark mode */
     --color-primary: #4F94FF;
     --color-primary-light: #1e3a8a;
-    --color-primary-dark: #93c5fd;
+    --color-primary-dark: #3d6fd4;
 
     /* Secondary - Brightened */
     --color-secondary: #fbbf24;
@@ -263,6 +284,25 @@
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
     --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.6);
+
+    /* Missing semantic tokens - Dark Mode */
+    --color-danger-50: #450a0a;
+    --color-danger-500: #f87171;
+    --color-danger-600: #fb7185;
+    --color-alert-50: #451a03;
+    --color-alert-500: #fbbf24;
+    --color-alert-600: #fcd34d;
+    --color-success-50: #052e16;
+    --color-success-500: #10b981;
+    --color-success-600: #34d399;
+    --color-primary-500: #4F94FF;
+    --color-bg-tertiary: #1a2332;
+    --color-focus-ring: rgba(79, 148, 255, 0.15);
+    --color-primary-bg-muted: rgba(79, 148, 255, 0.15);
+    --color-primary-bg-subtle: rgba(79, 148, 255, 0.1);
+    --color-success-bg-muted: rgba(16, 185, 129, 0.15);
+    --color-warning-bg-muted: rgba(251, 191, 36, 0.12);
+    --color-error-bg-muted: rgba(248, 113, 113, 0.12);
   }
 }
 
@@ -273,7 +313,7 @@
   /* Primary - Brightened for dark mode */
   --color-primary: #4F94FF;
   --color-primary-light: #1e3a8a;
-  --color-primary-dark: #93c5fd;
+  --color-primary-dark: #3d6fd4;
 
   /* Secondary - Brightened */
   --color-secondary: #fbbf24;
@@ -333,6 +373,25 @@
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
   --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.6);
+
+  /* Missing semantic tokens - Dark Mode */
+  --color-danger-50: #450a0a;
+  --color-danger-500: #f87171;
+  --color-danger-600: #fb7185;
+  --color-alert-50: #451a03;
+  --color-alert-500: #fbbf24;
+  --color-alert-600: #fcd34d;
+  --color-success-50: #052e16;
+  --color-success-500: #10b981;
+  --color-success-600: #34d399;
+  --color-primary-500: #4F94FF;
+  --color-bg-tertiary: #1a2332;
+  --color-focus-ring: rgba(79, 148, 255, 0.15);
+  --color-primary-bg-muted: rgba(79, 148, 255, 0.15);
+  --color-primary-bg-subtle: rgba(79, 148, 255, 0.1);
+  --color-success-bg-muted: rgba(16, 185, 129, 0.15);
+  --color-warning-bg-muted: rgba(251, 191, 36, 0.12);
+  --color-error-bg-muted: rgba(248, 113, 113, 0.12);
 }
 
 /* ========================================

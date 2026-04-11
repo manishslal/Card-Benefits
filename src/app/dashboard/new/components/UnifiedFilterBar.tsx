@@ -188,7 +188,7 @@ function PeriodDropdown({
             backgroundColor: 'var(--color-bg)',
             borderColor: 'var(--color-border)',
             boxShadow: 'var(--shadow-md)',
-            zIndex: 'var(--z-dropdown)' as unknown as number,
+            zIndex: 25,
           }}
         >
           {periods.map((period, idx) => {
@@ -360,7 +360,7 @@ function StatusDropdown({
             backgroundColor: 'var(--color-bg)',
             borderColor: 'var(--color-border)',
             boxShadow: 'var(--shadow-md)',
-            zIndex: 'var(--z-dropdown)' as unknown as number,
+            zIndex: 25,
           }}
         >
           {availableStatuses.map((status, idx) => {

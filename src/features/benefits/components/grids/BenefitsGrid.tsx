@@ -391,7 +391,8 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
               data-benefit-card
               className="rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] border-[var(--color-border)] hover:border-[var(--color-primary)] hover:shadow-lg hover:-translate-y-1 flex flex-col min-h-[160px]"
               style={{
-                animation: `scaleIn 0.3s ease-out forwards`,
+                opacity: 1,
+                animation: `scaleIn 0.3s ease-out both`,
                 animationDelay: `${Math.min(index * 50, 500)}ms`,
                 borderLeft: `3px solid ${getLeftBorderColor(benefit)}`,
               }}
@@ -534,7 +535,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                         variant="secondary"
                         size="xs"
                         disabled
-                        className="flex-1 min-w-0"
+                        className="flex-1 min-w-0 min-h-[44px]"
                         leftIcon={
                           <CheckCircle2 size={14} aria-hidden="true" />
                         }
@@ -549,7 +550,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                         variant="secondary"
                         size="xs"
                         onClick={() => onMarkUsed(benefit.id)}
-                        className="flex-1 min-w-0"
+                        className="flex-1 min-w-0 min-h-[44px]"
                         aria-label={`Mark ${benefit.name} as used${
                           periodMonth ? ` for ${periodMonth}` : ''
                         }`}
@@ -565,7 +566,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                       variant="tertiary"
                       size="xs"
                       onClick={() => onEdit(benefit.id)}
-                      className="flex-1 min-w-0"
+                      className="flex-1 min-w-0 min-h-[44px]"
                       aria-label={`Edit ${benefit.name}`}
                     >
                       Edit
@@ -577,32 +578,6 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
           );
         })}
       </div>
-
-        {/* Animation keyframes + progress ring transition */}
-        <style jsx>{`
-          @keyframes scaleIn {
-            from {
-              opacity: 0;
-              transform: scale(0.95);
-            }
-            to {
-              opacity: 1;
-              transform: scale(1);
-            }
-          }
-          .progress-ring-circle {
-            transition: stroke-dashoffset 0.6s ease;
-          }
-          @media (prefers-reduced-motion: reduce) {
-            [data-benefit-card] {
-              animation: none !important;
-              transition: none !important;
-            }
-            .progress-ring-circle {
-              transition: none !important;
-            }
-          }
-        `}</style>
       </>
     );
   }

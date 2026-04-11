@@ -806,19 +806,117 @@ export default function DashboardPage() {
       const data = await response.json();
       if (data.success) {
         // Update benefit with response data (includes updated timesUsed)
-        setBenefits(prev =>
-          prev.map((b) =>
+        setBenefits(prev => {
+          const updated = prev.map((b) =>
             b.id === benefitId
               ? {
                   ...b,
                   isUsed: data.benefit.isUsed,
-                  // Note: timesUsed is not in our mock BenefitData, but will be in real API
+                  claimedAt: data.benefit.claimedAt ?? null,
                 }
               : b
-          )
-        );
-        // Show success toast
-        toast({ title: 'Benefit marked as used!', variant: 'success' });
+          );
+          // Recalculate usage for sibling benefits sharing same masterBenefitId
+          const changedBenefit = updated.find(b => b.id === benefitId);
+          const masterId = changedBenefit?.masterBenefitId;
+          if (masterId) {
+            return updated.map(b => {
+              if (b.masterBenefitId === masterId) {
+                const cadence = (b.claimingCadence || b.resetCadence || '').toUpperCase();
+                const totalPeriods = cadence === 'MONTHLY' ? 12
+                  : cadence === 'QUARTERLY' ? 4
+                  : cadence === 'SEMI_ANNUAL' ? 2
+                  : 1;
+                const periodStart = b.periodStart;
+                const currentYear = periodStart
+                  ? new Date(periodStart).getUTCFullYear()
+                  : new Date().getFullYear();
+                const siblings = updated.filter(s =>
+                  s.masterBenefitId === masterId &&
+                  s.periodStart &&
+                  new Date(s.periodStart).getUTCFullYear() === currentYear
+                );
+                const usedCount = siblings.filter(s => s.isUsed).length;
+                const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR')
+                  ? (b.isUsed ? 100 : 0)
+                  : Math.round((usedCount / totalPeriods) * 100);
+                return { ...b, usage };
+              }
+              return b;
+            });
+          }
+          return updated.map(b =>
+            b.id === benefitId ? { ...b, usage: b.isUsed ? 100 : 0 } : b
+          );
+        });
+        // Show success toast with Undo action
+        toast({
+          title: 'Benefit marked as used',
+          variant: 'success',
+          duration: 5000,
+          action: {
+            label: 'Undo',
+            onClick: async () => {
+              try {
+                const undoResponse = await fetch(`/api/benefits/${benefitId}/toggle-used`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                  body: JSON.stringify({ isUsed: false }),
+                });
+
+                if (undoResponse.ok) {
+                  const undoData = await undoResponse.json();
+                  setBenefits(prev => {
+                    const updated = prev.map((b) =>
+                      b.id === benefitId
+                        ? { ...b, ...undoData.benefit, isUsed: false, claimedAt: null }
+                        : b
+                    );
+                    // Recalculate usage for sibling benefits
+                    const changedBenefit = updated.find(b => b.id === benefitId);
+                    const masterId = changedBenefit?.masterBenefitId;
+                    if (masterId) {
+                      return updated.map(b => {
+                        if (b.masterBenefitId === masterId) {
+                          const cadence = (b.claimingCadence || b.resetCadence || '').toUpperCase();
+                          const totalPeriods = cadence === 'MONTHLY' ? 12
+                            : cadence === 'QUARTERLY' ? 4
+                            : cadence === 'SEMI_ANNUAL' ? 2
+                            : 1;
+                          const periodStart = b.periodStart;
+                          const currentYear = periodStart
+                            ? new Date(periodStart).getUTCFullYear()
+                            : new Date().getFullYear();
+                          const siblings = updated.filter(s =>
+                            s.masterBenefitId === masterId &&
+                            s.periodStart &&
+                            new Date(s.periodStart).getUTCFullYear() === currentYear
+                          );
+                          const usedCount = siblings.filter(s => s.isUsed).length;
+                          const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR')
+                            ? (b.isUsed ? 100 : 0)
+                            : Math.round((usedCount / totalPeriods) * 100);
+                          return { ...b, usage };
+                        }
+                        return b;
+                      });
+                    }
+                    // Single benefit — set usage directly
+                    return updated.map(b =>
+                      b.id === benefitId ? { ...b, usage: 0 } : b
+                    );
+                  });
+                  toast({ title: 'Undo successful', variant: 'info', duration: 2000 });
+                } else {
+                  toast({ title: 'Failed to undo', variant: 'error', duration: 3000 });
+                }
+              } catch {
+                toast({ title: 'Failed to undo', variant: 'error', duration: 3000 });
+              }
+            },
+          },
+        });
       }
     } catch (error) {
       console.error('Error marking benefit as used:', error);
@@ -840,7 +938,49 @@ export default function DashboardPage() {
   // ============================================================
 
   const handleBenefitUpdated = (updatedFields: Partial<BenefitData> & { id: string }) => {
-    setBenefits(prev => prev.map((b) => (b.id === updatedFields.id ? { ...b, ...updatedFields } : b)));
+    setBenefits(prev => {
+      const updated = prev.map((b) => (b.id === updatedFields.id ? { ...b, ...updatedFields } : b));
+      // Recalculate usage (progress ring %) for benefits sharing the same masterBenefitId
+      // when isUsed changes, since calculateYearlyUsage counts sibling used states
+      if ('isUsed' in updatedFields) {
+        const changedBenefit = updated.find(b => b.id === updatedFields.id);
+        const masterId = changedBenefit?.masterBenefitId;
+        if (masterId) {
+          return updated.map(b => {
+            if (b.masterBenefitId === masterId) {
+              const cadence = (b.claimingCadence || b.resetCadence || '').toUpperCase();
+              const totalPeriods = cadence === 'MONTHLY' ? 12
+                : cadence === 'QUARTERLY' ? 4
+                : cadence === 'SEMI_ANNUAL' ? 2
+                : 1;
+              const periodStart = b.periodStart;
+              const currentYear = periodStart
+                ? new Date(periodStart).getUTCFullYear()
+                : new Date().getFullYear();
+              const siblings = updated.filter(s =>
+                s.masterBenefitId === masterId &&
+                s.periodStart &&
+                new Date(s.periodStart).getUTCFullYear() === currentYear
+              );
+              const usedCount = siblings.filter(s => s.isUsed).length;
+              const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR')
+                ? (b.isUsed ? 100 : 0)
+                : Math.round((usedCount / totalPeriods) * 100);
+              return { ...b, usage };
+            }
+            return b;
+          });
+        }
+        // Single benefit (no masterBenefitId) — just set usage directly
+        return updated.map(b => {
+          if (b.id === updatedFields.id) {
+            return { ...b, usage: b.isUsed ? 100 : 0 };
+          }
+          return b;
+        });
+      }
+      return updated;
+    });
     setIsEditBenefitOpen(false);
     setSelectedBenefit(null);
   };

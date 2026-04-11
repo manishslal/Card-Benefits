@@ -12,8 +12,10 @@ import { AddCardModal } from '@/features/cards/components/modals/AddCardModal';
 import { deduplicateBenefits } from '@/lib/benefit-utils';
 import { Plus, CreditCard, CheckCircle, AlertCircle, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { SkeletonCard } from '@/shared/components/loaders';
-import { PeriodSelector, type PeriodOption } from './new/components/PeriodSelector';
-import { StatusFilters, type BenefitStatus, type StatusOption } from './new/components/StatusFilters';
+import { type PeriodOption } from './new/components/PeriodSelector';
+import { type BenefitStatus, type StatusOption } from './new/components/StatusFilters';
+import { UnifiedFilterBar } from './new/components/UnifiedFilterBar';
+import { MobileSummaryStats } from './new/components/MobileSummaryStats';
 import {
   getCurrentMonthDisplay,
   getCurrentQuarterInfo,
@@ -917,7 +919,7 @@ export default function DashboardPage() {
             <div
               className="p-4 rounded-lg mb-6"
               style={{
-                backgroundColor: 'rgba(255, 59, 48, 0.1)',
+                backgroundColor: 'var(--color-error-light)',
               }}
             >
               <p className="text-[var(--color-error)] font-medium">{cardsError}</p>
@@ -959,7 +961,7 @@ export default function DashboardPage() {
 
       {/* Welcome section below header */}
       <div
-        className="border-b sticky top-16 z-30"
+        className="border-b"
         style={{
           backgroundColor: 'var(--color-bg)',
           borderColor: 'var(--color-border)',
@@ -1005,75 +1007,48 @@ export default function DashboardPage() {
             />
           ) : (
             <>
-              {/* Card Switcher */}
-              <CardSwitcher
-                cards={cards}
-                selectedCardId={selectedCardId}
-                onSelectCard={setSelectedCardId}
-              />
+              {/* Sticky Card Switcher — stays visible while scrolling, below AppHeader (64px = top-16) */}
+              <div
+                className="sticky top-16 z-20 -mx-4 px-4 py-2"
+                style={{ backgroundColor: 'var(--color-bg)' }}
+              >
+                <CardSwitcher
+                  cards={cards}
+                  selectedCardId={selectedCardId}
+                  onSelectCard={setSelectedCardId}
+                />
+              </div>
 
-              {/* Period Selector - New Filter */}
-              <div className="mt-6 mb-4">
-                <PeriodSelector
+              {/* Unified Filter Bar — replaces Period / Status / ViewMode rows */}
+              <div className="mt-4 mb-4">
+                <UnifiedFilterBar
                   selectedPeriodId={selectedPeriodId}
                   onPeriodChange={setSelectedPeriodId}
                   periods={periodOptions}
-                />
-              </div>
-
-              {/* View Mode Toggle — Current vs Previous Periods (benefit engine only) */}
-              {benefitEngineEnabled && (
-                <div className="mt-2 mb-4 flex items-center gap-2">
-                  <span
-                    className="text-sm font-medium"
-                    style={{ color: 'var(--color-text)', fontSize: 'var(--text-body-sm)' }}
-                  >
-                    View:
-                  </span>
-                  <div
-                    className="inline-flex rounded-lg border overflow-hidden"
-                    style={{ borderColor: 'var(--color-border)' }}
-                    role="group"
-                    aria-label="Benefit period view mode"
-                  >
-                    <button
-                      onClick={() => setViewMode('current')}
-                      className="px-3 py-1.5 text-sm font-medium transition-colors"
-                      style={{
-                        backgroundColor: viewMode === 'current' ? 'var(--color-primary)' : 'var(--color-bg)',
-                        color: viewMode === 'current' ? '#fff' : 'var(--color-text-secondary)',
-                      }}
-                      aria-pressed={viewMode === 'current'}
-                    >
-                      Current Period
-                    </button>
-                    <button
-                      onClick={() => setViewMode('history')}
-                      className="px-3 py-1.5 text-sm font-medium transition-colors border-l"
-                      style={{
-                        backgroundColor: viewMode === 'history' ? 'var(--color-primary)' : 'var(--color-bg)',
-                        color: viewMode === 'history' ? '#fff' : 'var(--color-text-secondary)',
-                        borderColor: 'var(--color-border)',
-                      }}
-                      aria-pressed={viewMode === 'history'}
-                    >
-                      Previous Periods
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Status Filters - New Filter */}
-              <div className="mt-4 mb-6">
-                <StatusFilters
                   selectedStatuses={selectedStatuses}
-                  onStatusChange={setSelectedStatuses}
+                  onStatusChange={(statuses) => setSelectedStatuses(statuses as BenefitStatus[])}
                   availableStatuses={statusOptions}
+                  viewMode={viewMode}
+                  onViewModeChange={setViewMode}
+                  benefitEngineEnabled={benefitEngineEnabled}
+                  filteredCount={deduplicatedBenefits.length}
+                  totalCount={deduplicateBenefits(benefits, benefitEngineEnabled).length}
                 />
               </div>
 
-              {/* Dashboard Summary */}
-              <DashboardSummary stats={summaryStats} />
+              {/* Mobile Summary Stats — compact horizontal pills, hidden on md+ */}
+              <div className="md:hidden mt-3 mb-4">
+                <MobileSummaryStats
+                  totalBenefits={displayBenefits.length}
+                  usedBenefits={displayBenefits.filter((b) => b.isUsed).length}
+                  unusedBenefits={displayBenefits.filter((b) => !b.isUsed).length}
+                />
+              </div>
+
+              {/* Desktop Dashboard Summary — hidden on mobile */}
+              <div className="hidden md:block">
+                <DashboardSummary stats={summaryStats} />
+              </div>
 
               {/* Benefits Section */}
               <section>
@@ -1140,14 +1115,7 @@ export default function DashboardPage() {
                           statusOptions.map((s) => s.id)
                         );
                       }}
-                      className="text-sm underline mt-2 transition-colors"
-                      style={{ color: 'var(--color-primary)' }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.color = 'var(--color-primary-light)')
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.color = 'var(--color-primary)')
-                      }
+                      className="text-sm underline mt-2 transition-colors text-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
                     >
                       Clear filters
                     </button>

@@ -37,7 +37,7 @@ const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(
     {
       className = '',
       variant = 'rectangular',
-      animation = 'pulse',
+      animation = 'shimmer',
       width = '100%',
       height = '20px',
       ...props
@@ -51,7 +51,7 @@ const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(
 
     const animationClasses = {
       pulse: 'animate-pulse',
-      shimmer: 'shimmer',
+      shimmer: '',
       none: '',
     };
 
@@ -62,9 +62,16 @@ const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(
       card: 'rounded-xl',
     };
 
+    const shimmerStyle = animation === 'shimmer' ? {
+      background: 'linear-gradient(90deg, var(--color-bg-secondary) 25%, var(--color-bg-tertiary, var(--color-bg)) 50%, var(--color-bg-secondary) 75%)',
+      backgroundSize: '200% 100%',
+      animation: 'shimmer 1.5s infinite',
+    } : {};
+
     const styles = {
       width: typeof width === 'number' ? `${width}px` : width,
       height: typeof height === 'number' ? `${height}px` : height,
+      ...shimmerStyle,
     };
 
     return (

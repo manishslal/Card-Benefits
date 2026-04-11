@@ -620,9 +620,7 @@ export default function DashboardPage() {
         
         // Clear retry count on successful load
         setRetryCount(0);
-      } catch (error) {
-        console.error('Error loading cards:', error);
-        
+      } catch {
         // Set error message with retry information
         const remainingRetries = MAX_RETRIES - retryCount;
         if (remainingRetries > 0) {
@@ -660,8 +658,7 @@ export default function DashboardPage() {
             setUserName(firstName);
           }
         }
-      } catch (error) {
-        console.error('Error loading user profile:', error);
+      } catch {
       }
     };
 
@@ -736,8 +733,7 @@ export default function DashboardPage() {
           }));
           setHistoryBenefits(mapped);
         }
-      } catch (error) {
-        console.error('Error loading benefit history:', error);
+      } catch {
         setHistoryBenefits([]);
       } finally {
         setIsLoadingHistory(false);
@@ -808,8 +804,7 @@ export default function DashboardPage() {
           }
         }
       }
-    } catch (error) {
-      console.error('Error refreshing cards:', error);
+    } catch {
     }
   };
 
@@ -862,7 +857,6 @@ export default function DashboardPage() {
         );
 
         const errorData = await response.json();
-        console.error('Failed to mark benefit as used:', errorData);
         toast({ title: errorData.error || 'Failed to mark benefit as used', variant: 'error' });
         return;
       }
@@ -990,8 +984,7 @@ export default function DashboardPage() {
           },
         });
       }
-    } catch (error) {
-      console.error('Error marking benefit as used:', error);
+    } catch {
       // Revert optimistic update
       setBenefits(prev =>
         prev.map((b) =>
@@ -1391,6 +1384,7 @@ export default function DashboardPage() {
               })()}
 
               {/* Unified Filter Bar — replaces Period / Status / ViewMode rows */}
+              {benefits.length > 0 && (
               <div className="mt-4">
                 <UnifiedFilterBar
                   selectedPeriodId={selectedPeriodId}
@@ -1406,9 +1400,10 @@ export default function DashboardPage() {
                   totalCount={deduplicateBenefits(benefits, benefitEngineEnabled).length}
                 />
               </div>
+              )}
 
               {/* Search, Sort & Smart View Chips (Sprint 8) */}
-              {viewMode === 'current' && (
+              {viewMode === 'current' && benefits.length > 0 && (
                 <div className="mt-4 space-y-3">
                   <SearchSortBar
                     searchQuery={searchQuery}
@@ -1453,7 +1448,7 @@ export default function DashboardPage() {
                   </div>
                 )}
 
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                   <h2
                     className="text-lg font-semibold text-[var(--color-text)]"
                   >

@@ -157,7 +157,7 @@ const SmartViewChips = memo(function SmartViewChips({
       role="radiogroup"
       aria-label="Quick filter views"
       onKeyDown={handleKeyDown}
-      className="flex items-center gap-2 overflow-x-auto pb-1 -mb-1 scrollbar-hide"
+      className="flex items-center gap-2 overflow-x-auto pb-1 -mb-1 scrollbar-hide min-h-[44px]"
     >
       {SMART_VIEWS.map((chip) => (
         <SmartViewChip

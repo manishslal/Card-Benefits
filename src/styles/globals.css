@@ -130,7 +130,7 @@ textarea:focus,
 select:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 4px rgba(64, 128, 255, 0.1);
+  box-shadow: 0 0 0 4px var(--color-focus-ring);
 }
 
 input:disabled,
@@ -404,8 +404,8 @@ label {
     rgba(255, 255, 255, 0.5) 60%,
     transparent 100%
   );
-  background-size: 1000px 100%;
-  animation: shimmer 2s infinite;
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }
 
 .dark .shimmer {
@@ -416,8 +416,8 @@ label {
     rgba(255, 255, 255, 0.3) 60%,
     transparent 100%
   );
-  background-size: 1000px 100%;
-  animation: shimmer 2s infinite;
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }
 
 /* Focus Ring Utilities */

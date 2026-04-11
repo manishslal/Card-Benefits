@@ -404,7 +404,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
     }
 
     return (
-      <div ref={ref} className={`grid ${getGridColsClass()} gap-4`}>
+      <section ref={ref} aria-label="Your benefits" className={`grid ${getGridColsClass()} gap-4`}>
         {benefitGroups.map((group, groupIndex) => (
           <React.Fragment key={`group-${groupIndex}`}>
             {/* DASH-G03: Shared period header for consecutive same-period cards */}
@@ -422,7 +422,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                   style={{ color: 'var(--color-text-secondary)' }}
                   aria-hidden="true"
                 />
-                <span className="font-semibold">{group.periodLabel}</span>
+                <span className="font-medium">{group.periodLabel}</span>
                 {group.cadenceLabel && (
                   <>
                     <span
@@ -606,7 +606,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
             })}
           </React.Fragment>
         ))}
-      </div>
+      </section>
     );
   }
 );

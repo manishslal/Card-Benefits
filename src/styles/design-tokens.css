@@ -208,7 +208,7 @@
   --color-success-600: #059669;
   --color-primary-500: #3356D0;
   --color-bg-tertiary: #f3f4f6;
-  --color-focus-ring: rgba(51, 86, 208, 0.1);
+  --color-focus-ring: rgba(51, 86, 208, 0.15);
   --color-primary-bg-muted: rgba(51, 86, 208, 0.12);
   --color-primary-bg-subtle: rgba(51, 86, 208, 0.08);
   --color-success-bg-muted: rgba(10, 125, 87, 0.1);
@@ -297,7 +297,7 @@
     --color-success-600: #34d399;
     --color-primary-500: #4F94FF;
     --color-bg-tertiary: #1a2332;
-    --color-focus-ring: rgba(79, 148, 255, 0.15);
+    --color-focus-ring: rgba(100, 140, 230, 0.2);
     --color-primary-bg-muted: rgba(79, 148, 255, 0.15);
     --color-primary-bg-subtle: rgba(79, 148, 255, 0.1);
     --color-success-bg-muted: rgba(16, 185, 129, 0.15);
@@ -386,7 +386,7 @@
   --color-success-600: #34d399;
   --color-primary-500: #4F94FF;
   --color-bg-tertiary: #1a2332;
-  --color-focus-ring: rgba(79, 148, 255, 0.15);
+  --color-focus-ring: rgba(100, 140, 230, 0.2);
   --color-primary-bg-muted: rgba(79, 148, 255, 0.15);
   --color-primary-bg-subtle: rgba(79, 148, 255, 0.1);
   --color-success-bg-muted: rgba(16, 185, 129, 0.15);

@@ -231,7 +231,7 @@ interface SizeDimensions {
 const SIZE_MAP: Record<'sm' | 'md' | 'lg', SizeDimensions> = {
   sm: { width: 40, height: 28, chipW: 8,  chipH: 6,  networkFontSize: 5,  chipRadius: 1 },
   md: { width: 64, height: 45, chipW: 12, chipH: 9,  networkFontSize: 7,  chipRadius: 1.5 },
-  lg: { width: 80, height: 56, chipW: 16, chipH: 12, networkFontSize: 9,  chipRadius: 2 },
+  lg: { width: 200, height: 140, chipW: 40, chipH: 30, networkFontSize: 18, chipRadius: 4 },
 };
 
 // ---------------------------------------------------------------------------

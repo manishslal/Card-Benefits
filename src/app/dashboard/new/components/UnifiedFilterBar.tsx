@@ -520,9 +520,14 @@ function FilterChip({
         type="button"
         onClick={onRemove}
         aria-label={`Remove ${label} filter`}
-        className="inline-flex items-center justify-center w-4 h-4 rounded-full transition-colors hover:opacity-70"
+        className="relative inline-flex items-center justify-center w-5 h-5 rounded-full transition-colors hover:opacity-70"
         style={{ color: `var(${colorVar})` }}
       >
+        {/* Invisible touch-target expansion to 44×44px per WCAG */}
+        <span
+          className="absolute inset-0 -m-[12px]"
+          aria-hidden="true"
+        />
         <X size={10} aria-hidden="true" />
       </button>
     </span>
@@ -630,7 +635,7 @@ export function UnifiedFilterBar({
       {/* Row 2 — Active filter chips + count */}
       {(hasActiveFilters || filteredCount !== totalCount) && (
         <div
-          className="flex flex-wrap items-center gap-2 pt-2 border-t"
+          className="flex flex-wrap items-center gap-2 pt-2 border-t min-h-[36px]"
           style={{ borderColor: 'var(--color-border)' }}
         >
           {hasActiveFilters && (

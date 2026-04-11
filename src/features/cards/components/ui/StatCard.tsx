@@ -57,8 +57,8 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
 
         <div className="flex items-end justify-between">
           <span
-            className="text-3xl font-bold text-[var(--color-text)]"
-            style={{ fontFamily: 'var(--font-mono)' }}
+            className="font-bold text-[var(--color-text)]"
+            style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-h4)' }}
           >
             {value}
           </span>

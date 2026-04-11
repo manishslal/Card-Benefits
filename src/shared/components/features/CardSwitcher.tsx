@@ -1,15 +1,17 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { CreditCard, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CardArt, getCardGradient } from '@/app/dashboard/new/components/CardArt';
 
 interface Card {
   id: string;
   name: string;
+  productName: string; // Original card product name for gradient lookup
   type: 'visa' | 'mastercard' | 'amex' | 'discover' | 'other';
   lastFour: string;
   issuer: string;
-  customName?: string | null;  // Enhancement 3: User's custom nickname (optional)
+  customName?: string | null;
 }
 
 interface CardSwitcherProps {
@@ -106,6 +108,11 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
         >
           {cards.map((card) => {
             const isSelected = card.id === selectedCardId;
+            // Derive a subtle glow shadow from the card's own gradient colour
+            const cardGradient = getCardGradient(card.productName, card.issuer);
+            const glowShadow = isSelected
+              ? `0 0 8px ${cardGradient.from}40, 0 2px 4px rgba(0,0,0,0.08)`
+              : undefined;
 
             return (
               <button
@@ -113,6 +120,7 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
                 role="tab"
                 aria-selected={isSelected}
                 onClick={() => onSelectCard(card.id)}
+                style={glowShadow ? { boxShadow: glowShadow } : undefined}
                 className={`
                   relative flex-shrink-0 flex items-center gap-3 px-4 py-3 rounded-lg
                   border-2 transition-all duration-200 whitespace-nowrap
@@ -124,11 +132,15 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
                   }
                 `}
               >
-                {/* Card type icon */}
-                <CreditCard
-                  size={20}
-                  className={isSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-secondary)]'}
-                  aria-hidden="true"
+                {/* Card art visual — issuer-specific gradient mini-card */}
+                <CardArt
+                  cardName={card.productName}
+                  issuer={card.issuer}
+                  type={card.type}
+                  size="sm"
+                  className={`transition-transform duration-200 ${
+                    isSelected ? 'scale-[1.02]' : ''
+                  }`}
                 />
 
                 {/* Card label */}

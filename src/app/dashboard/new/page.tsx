@@ -19,6 +19,7 @@ import { CheckCircle, AlertCircle, CheckCircle2, XCircle, Clock } from 'lucide-r
 interface CardData {
   id: string;
   name: string;
+  productName: string;
   type: 'visa' | 'amex' | 'mastercard' | 'discover' | 'other';
   lastFour: string;
   issuer: string;
@@ -187,6 +188,7 @@ export default function EnhancedDashboardPage() {
             const transformedCards: CardData[] = cardsData.cards.map((card: any) => ({
               id: card.id,
               name: card.customName || card.cardName,
+              productName: card.cardName,
               type: (card.type || 'visa') as CardData['type'],
               lastFour: card.lastFour || '0000',
               issuer: card.issuer,

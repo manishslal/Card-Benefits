@@ -44,6 +44,7 @@ export const dynamic = 'force-dynamic';
 interface CardData {
   id: string;
   name: string;
+  productName: string; // Original card product name (never overwritten by customName)
   type: 'visa' | 'amex' | 'mastercard' | 'discover' | 'other';
   lastFour: string;
   issuer: string;
@@ -452,6 +453,7 @@ export default function DashboardPage() {
         const transformedCards: CardData[] = (apiResponse.cards || []).map((apiCard: ApiCard) => ({
           id: apiCard.id,
           name: apiCard.customName || apiCard.cardName,
+          productName: apiCard.cardName,
           type: (apiCard.type || 'visa') as CardData['type'],
           lastFour: apiCard.lastFour || '0000',
           issuer: apiCard.issuer,
@@ -640,6 +642,7 @@ export default function DashboardPage() {
           const transformedCards: CardData[] = (apiResponse.cards || []).map((apiCard: ApiCard) => ({
             id: apiCard.id,
             name: apiCard.customName || apiCard.cardName,
+            productName: apiCard.cardName,
             type: (apiCard.type || 'visa') as CardData['type'],
             lastFour: apiCard.lastFour || '0000',
             issuer: apiCard.issuer,

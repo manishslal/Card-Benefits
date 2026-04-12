@@ -17,6 +17,8 @@ interface CardEditModalProps {
 
 interface FormData {
   name: string;
+  annualFee: string;    // display as dollars (string for input handling)
+  renewalDate: string;  // YYYY-MM-DD format for date input
 }
 
 /**
@@ -43,6 +45,8 @@ export function CardEditModal({
 }: CardEditModalProps) {
   const [formData, setFormData] = useState<FormData>({
     name: '',
+    annualFee: '',
+    renewalDate: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -53,6 +57,14 @@ export function CardEditModal({
     if (isOpen && card) {
       setFormData({
         name: card.name || '',
+        annualFee:
+          card.actualAnnualFee != null
+            ? String(card.actualAnnualFee / 100)
+            : '',
+        renewalDate:
+          card.renewalDate
+            ? card.renewalDate.slice(0, 10) // extract YYYY-MM-DD from ISO string
+            : '',
       });
       setErrors({});
       setMessage('');
@@ -61,6 +73,12 @@ export function CardEditModal({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+
+    // For annualFee, allow only digits and an optional decimal point
+    if (name === 'annualFee') {
+      if (value !== '' && !/^\d*\.?\d*$/.test(value)) return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -77,6 +95,22 @@ export function CardEditModal({
       newErrors.name = 'Card name is required';
     } else if (formData.name.length > 100) {
       newErrors.name = 'Card name must be 100 characters or less';
+    }
+
+    if (formData.annualFee !== '') {
+      const fee = parseFloat(formData.annualFee);
+      if (isNaN(fee) || fee < 0) {
+        newErrors.annualFee = 'Annual fee must be a non-negative number';
+      } else if (fee > 10000) {
+        newErrors.annualFee = 'Annual fee cannot exceed $10,000';
+      }
+    }
+
+    if (formData.renewalDate !== '') {
+      const parsed = new Date(formData.renewalDate);
+      if (isNaN(parsed.getTime())) {
+        newErrors.renewalDate = 'Please enter a valid date';
+      }
     }
 
     setErrors(newErrors);
@@ -98,6 +132,10 @@ export function CardEditModal({
         credentials: 'include',
         body: JSON.stringify({
           customName: formData.name.trim(),
+          actualAnnualFee: formData.annualFee
+            ? Math.round(parseFloat(formData.annualFee) * 100)
+            : null,
+          renewalDate: formData.renewalDate || null,
         }),
       });
 
@@ -194,6 +232,7 @@ export function CardEditModal({
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Card Name */}
             <Input
+              id="card-name"
               label="Card Name"
               type="text"
               name="name"
@@ -204,6 +243,33 @@ export function CardEditModal({
               disabled={isLoading}
               required
               maxLength={100}
+            />
+
+            {/* Annual Fee */}
+            <Input
+              id="annual-fee"
+              label="Annual Fee"
+              type="text"
+              inputMode="decimal"
+              name="annualFee"
+              placeholder="e.g., 695"
+              value={formData.annualFee}
+              onChange={handleChange}
+              error={errors.annualFee}
+              disabled={isLoading}
+              hint="Enter amount in dollars"
+            />
+
+            {/* Renewal Date */}
+            <Input
+              id="renewal-date"
+              label="Renewal Date"
+              type="date"
+              name="renewalDate"
+              value={formData.renewalDate}
+              onChange={handleChange}
+              error={errors.renewalDate}
+              disabled={isLoading}
             />
 
             {/* Read-Only: Last 4 Digits */}

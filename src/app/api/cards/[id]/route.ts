@@ -11,8 +11,8 @@ import { featureFlags } from '@/lib/feature-flags';
 
 interface PatchCardRequest {
   customName?: string;
-  actualAnnualFee?: number;
-  renewalDate?: string;
+  actualAnnualFee?: number | null;
+  renewalDate?: string | null;
 }
 
 interface GetCardResponse {
@@ -272,7 +272,10 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
       updateData.actualAnnualFee = body.actualAnnualFee !== null ? Math.round(body.actualAnnualFee) : null;
     }
     if (body.renewalDate !== undefined) {
-      updateData.renewalDate = new Date(body.renewalDate);
+      // DB column is non-nullable, so skip update when null is sent (don't corrupt to epoch)
+      if (body.renewalDate !== null) {
+        updateData.renewalDate = new Date(body.renewalDate);
+      }
     }
 
     // Update the card
@@ -303,7 +306,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Build response matching Card interface (8 fields)
+    // Build response matching Card interface
     return NextResponse.json(
       {
         success: true,
@@ -316,6 +319,8 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
           cardType: 'Credit' as const, // From masterCard.type or default to 'Credit'
           isActive: completeCard.isOpen,
           createdAt: completeCard.createdAt.toISOString(),
+          actualAnnualFee: completeCard.actualAnnualFee ?? null,
+          renewalDate: completeCard.renewalDate ? completeCard.renewalDate.toISOString() : null,
         },
       } as PatchCardResponse,
       { status: 200 }

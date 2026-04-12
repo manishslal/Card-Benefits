@@ -10,6 +10,8 @@ export interface Card {
   cardType: 'Credit' | 'Debit' | 'Prepaid';
   isActive: boolean;
   createdAt: string;
+  actualAnnualFee?: number | null;  // stored in cents
+  renewalDate?: string | null;       // ISO date string
 }
 
 /**

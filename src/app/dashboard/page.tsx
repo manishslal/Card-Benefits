@@ -115,6 +115,11 @@ interface ApiBenefit {
 interface ApiCardsResponse {
   success: boolean;
   cards: ApiCard[];
+  // DISC-011: API-provided summary for consistent totals across paginated results
+  summary?: {
+    totalCards: number;
+    totalBenefits: number;
+  };
   error?: string;
   benefitEngineEnabled?: boolean;
 }
@@ -253,6 +258,9 @@ export default function DashboardPage() {
   const [userName, setUserName] = useState('User');
   // Benefit engine awareness — toggled by API response
   const [benefitEngineEnabled, setBenefitEngineEnabled] = useState(false);
+  // DISC-011: API-provided summary for accurate totals (avoids pagination mismatch)
+  const [apiTotalCards, setApiTotalCards] = useState<number | null>(null);
+  const [apiTotalBenefits, setApiTotalBenefits] = useState<number | null>(null);
   // "current" = ACTIVE period benefits, "history" = EXPIRED period benefits
   const [viewMode, setViewMode] = useState<'current' | 'history'>('current');
   // History data loaded from /api/benefits/history
@@ -619,6 +627,12 @@ export default function DashboardPage() {
         const apiResponse = data as ApiCardsResponse;
         const transformedCards = transformApiCards(apiResponse);
 
+        // DISC-011: Store API summary for consistent header display
+        if (apiResponse.summary) {
+          setApiTotalCards(apiResponse.summary.totalCards);
+          setApiTotalBenefits(apiResponse.summary.totalBenefits);
+        }
+
         setCards(transformedCards);
 
         // Set first card as selected and load its benefits
@@ -795,9 +809,13 @@ export default function DashboardPage() {
           const apiResponse = data as ApiCardsResponse;
           const transformedCards = transformApiCards(apiResponse);
 
-          setCards(transformedCards);
+          // DISC-011: Update API summary after card added
+          if (apiResponse.summary) {
+            setApiTotalCards(apiResponse.summary.totalCards);
+            setApiTotalBenefits(apiResponse.summary.totalBenefits);
+          }
 
-          // Select the newly added card and load its benefits
+          setCards(transformedCards);
           if (transformedCards.length > 0) {
             const newCard = transformedCards[transformedCards.length - 1];
             setSelectedCardId(newCard.id);
@@ -1045,14 +1063,44 @@ export default function DashboardPage() {
         });
       }
     } catch {
-      // Revert optimistic update
-      setBenefits(prev =>
-        prev.map((b) =>
-          b.id === benefitId
-            ? { ...b, isUsed: false }
-            : b
-        )
-      );
+      // DISC-012: Revert optimistic update — recalculate sibling usage to match
+      // the revert logic in the !response.ok handler above
+      setBenefits(prev => {
+        const updated = prev.map((b) =>
+          b.id === benefitId ? { ...b, isUsed: false } : b
+        );
+        const target = updated.find(b => b.id === benefitId);
+        const masterId = target?.masterBenefitId;
+        if (masterId) {
+          return updated.map(b => {
+            if (b.masterBenefitId === masterId) {
+              const cadence = (b.claimingCadence || b.resetCadence || '').toUpperCase();
+              const totalPeriods = cadence === 'MONTHLY' ? 12
+                : cadence === 'QUARTERLY' ? 4
+                : cadence === 'SEMI_ANNUAL' ? 2
+                : 1;
+              const periodStart = b.periodStart;
+              const currentYear = periodStart
+                ? new Date(periodStart).getUTCFullYear()
+                : new Date().getFullYear();
+              const siblings = updated.filter(s =>
+                s.masterBenefitId === masterId &&
+                s.periodStart &&
+                new Date(s.periodStart).getUTCFullYear() === currentYear
+              );
+              const usedCount = siblings.filter(s => s.isUsed).length;
+              const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR')
+                ? (b.isUsed ? 100 : 0)
+                : Math.round((usedCount / totalPeriods) * 100);
+              return { ...b, usage };
+            }
+            return b;
+          });
+        }
+        return updated.map(b =>
+          b.id === benefitId ? { ...b, usage: b.isUsed ? 100 : 0 } : b
+        );
+      });
       toast({ title: 'Failed to mark benefit as used. Please try again.', variant: 'error' });
     }
   };
@@ -1344,7 +1392,7 @@ export default function DashboardPage() {
                 Welcome, {userName}! 👋
               </h1>
               <p className="text-sm mt-1 text-[var(--color-text-secondary)]">
-                You have {cards.length} card{cards.length !== 1 ? 's' : ''} and {totalBenefitsAcrossCards} benefits tracked
+                You have {apiTotalCards ?? cards.length} card{(apiTotalCards ?? cards.length) !== 1 ? 's' : ''} and {apiTotalBenefits ?? totalBenefitsAcrossCards} total benefits
               </p>
             </div>
 
@@ -1403,8 +1451,9 @@ export default function DashboardPage() {
             </div>
           ) : (
             <>
-              {/* Sticky Card Switcher — stays visible while scrolling, below AppHeader (64px = top-16) */}
-              <div
+              {/* DISC-010: Card switcher is navigation between cards */}
+              <nav
+                aria-label="Card selection"
                 className="sticky top-16 z-20 -mx-4 px-4 py-2 bg-[var(--color-bg)]"
               >
                 <CardSwitcher
@@ -1413,7 +1462,7 @@ export default function DashboardPage() {
                   onSelectCard={setSelectedCardId}
                   benefitCounts={benefitCounts}
                 />
-              </div>
+              </nav>
 
               {/* DASH-G02: Hero Card Visualization */}
               {(() => {
@@ -1449,9 +1498,9 @@ export default function DashboardPage() {
                 );
               })()}
 
-              {/* Unified Filter Bar — replaces Period / Status / ViewMode rows */}
+              {/* DISC-010: Filter controls landmark */}
               {benefits.length > 0 && (
-              <div className="mt-4">
+              <div className="mt-4" role="search" aria-label="Filter benefits">
                 <UnifiedFilterBar
                   selectedPeriodId={selectedPeriodId}
                   onPeriodChange={setSelectedPeriodId}
@@ -1485,17 +1534,19 @@ export default function DashboardPage() {
               )}
 
               {/* Mobile Summary Stats — same data as desktop (DASH-041) */}
-              <div className="md:hidden mt-4">
+              {/* DISC-010: Region landmark with aria-label for stats */}
+              <div className="md:hidden mt-4" role="region" aria-label="Summary statistics">
                 <MobileSummaryStats stats={summaryStats} />
               </div>
 
               {/* Desktop Dashboard Summary — hidden on mobile */}
-              <div className="hidden md:block mt-4">
+              <div className="hidden md:block mt-4" role="region" aria-label="Summary statistics">
                 <DashboardSummary stats={summaryStats} />
               </div>
 
               {/* Benefits Section */}
-              <section className="mt-6">
+              {/* DISC-010: Section landmark with aria-label */}
+              <section className="mt-6" aria-label="Benefits">
                 {/* Expiring-soon alert banner (Sprint 8) */}
                 {expiringBenefits.length > 0 && viewMode === 'current' && (
                   <div

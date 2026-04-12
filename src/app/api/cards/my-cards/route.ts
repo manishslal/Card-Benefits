@@ -72,6 +72,8 @@ interface CardDisplay {
 
 interface CardWalletSummary {
   totalCards: number;
+  // DISC-011: Cumulative count of ALL benefits across ALL user cards
+  totalBenefits: number;
   totalAnnualFees: number;
   totalBenefitValue: number;
   activeCards: number;
@@ -258,6 +260,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           cards: [],
           summary: {
             totalCards: 0,
+            totalBenefits: 0,
             totalAnnualFees: 0,
             totalBenefitValue: 0,
             activeCards: 0,
@@ -329,6 +332,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // ACTIVE-period benefits only, so the counts here are correct.
     const summary: CardWalletSummary = {
       totalCards: allUserCards.length,
+      // DISC-011: Total count of ALL benefits across ALL cards (not just active/unused)
+      totalBenefits: allUserCards.reduce(
+        (sum, card) => sum + card.userBenefits.length,
+        0
+      ),
       totalAnnualFees: allUserCards.reduce(
         (sum, card) => sum + (card.actualAnnualFee ?? card.masterCard.defaultAnnualFee),
         0

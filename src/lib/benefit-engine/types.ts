@@ -88,3 +88,9 @@ export interface CronRolloverResult {
   processedAt: string;
   durationMs: number;
 }
+
+// ============================================================================
+// Pro-Rata Types (re-exported from pro-rata module)
+// ============================================================================
+
+export type { ProRataResult, ProRataBenefitInput } from './pro-rata';

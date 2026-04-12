@@ -55,3 +55,7 @@ export type { HydratedPeriodFields } from './hydrate-period';
 
 // Re-export the ExpiredBenefitData interface for cron use
 export type { ExpiredBenefitData } from './generate-benefits';
+
+// Pro-rata calculation engine
+export { calculateProRata, isProRataEligible } from './pro-rata';
+export type { ProRataResult, ProRataBenefitInput } from './pro-rata';

@@ -50,7 +50,7 @@ interface CardData {
   name: string;
   productName: string; // Original card product name (never overwritten by customName)
   type: 'visa' | 'amex' | 'mastercard' | 'discover' | 'other';
-  lastFour: string;
+  lastFour?: string;
   issuer: string;
   customName?: string | null;
   benefits?: BenefitData[];
@@ -582,7 +582,7 @@ export default function DashboardPage() {
           name: apiCard.customName || apiCard.cardName,
           productName: apiCard.cardName,
           type: (apiCard.type || 'visa') as CardData['type'],
-          lastFour: apiCard.lastFour || '0000',
+          lastFour: apiCard.lastFour || undefined,
           issuer: apiCard.issuer,
           customName: apiCard.customName,
           benefits: (apiCard.benefits || []).map((b: ApiBenefit) => ({
@@ -767,7 +767,7 @@ export default function DashboardPage() {
             name: apiCard.customName || apiCard.cardName,
             productName: apiCard.cardName,
             type: (apiCard.type || 'visa') as CardData['type'],
-            lastFour: apiCard.lastFour || '0000',
+            lastFour: apiCard.lastFour || undefined,
             issuer: apiCard.issuer,
             customName: apiCard.customName,
             benefits: (apiCard.benefits || []).map((b: ApiBenefit) => ({
@@ -830,13 +830,43 @@ export default function DashboardPage() {
     try {
       // Optimistic UI update - mark the benefit as used immediately
       // Use functional updater to avoid stale closure over `benefits`
-      setBenefits(prev =>
-        prev.map((b) =>
-          b.id === benefitId
-            ? { ...b, isUsed: true }
-            : b
-        )
-      );
+      // Also recalculate sibling usage so ProgressRing updates instantly
+      setBenefits(prev => {
+        const updated = prev.map((b) =>
+          b.id === benefitId ? { ...b, isUsed: true } : b
+        );
+        const target = updated.find(b => b.id === benefitId);
+        const masterId = target?.masterBenefitId;
+        if (masterId) {
+          return updated.map(b => {
+            if (b.masterBenefitId === masterId) {
+              const cadence = (b.claimingCadence || b.resetCadence || '').toUpperCase();
+              const totalPeriods = cadence === 'MONTHLY' ? 12
+                : cadence === 'QUARTERLY' ? 4
+                : cadence === 'SEMI_ANNUAL' ? 2
+                : 1;
+              const periodStart = b.periodStart;
+              const currentYear = periodStart
+                ? new Date(periodStart).getUTCFullYear()
+                : new Date().getFullYear();
+              const siblings = updated.filter(s =>
+                s.masterBenefitId === masterId &&
+                s.periodStart &&
+                new Date(s.periodStart).getUTCFullYear() === currentYear
+              );
+              const usedCount = siblings.filter(s => s.isUsed).length;
+              const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR')
+                ? (b.isUsed ? 100 : 0)
+                : Math.round((usedCount / totalPeriods) * 100);
+              return { ...b, usage };
+            }
+            return b;
+          });
+        }
+        return updated.map(b =>
+          b.id === benefitId ? { ...b, usage: b.isUsed ? 100 : 0 } : b
+        );
+      });
 
       // Call the toggle-used API endpoint
       const response = await fetch(`/api/benefits/${benefitId}/toggle-used`, {
@@ -847,14 +877,43 @@ export default function DashboardPage() {
       });
 
       if (!response.ok) {
-        // Revert optimistic update on error
-        setBenefits(prev =>
-          prev.map((b) =>
-            b.id === benefitId
-              ? { ...b, isUsed: false }
-              : b
-          )
-        );
+        // Revert optimistic update on error — recalculate sibling usage
+        setBenefits(prev => {
+          const updated = prev.map((b) =>
+            b.id === benefitId ? { ...b, isUsed: false } : b
+          );
+          const target = updated.find(b => b.id === benefitId);
+          const masterId = target?.masterBenefitId;
+          if (masterId) {
+            return updated.map(b => {
+              if (b.masterBenefitId === masterId) {
+                const cadence = (b.claimingCadence || b.resetCadence || '').toUpperCase();
+                const totalPeriods = cadence === 'MONTHLY' ? 12
+                  : cadence === 'QUARTERLY' ? 4
+                  : cadence === 'SEMI_ANNUAL' ? 2
+                  : 1;
+                const periodStart = b.periodStart;
+                const currentYear = periodStart
+                  ? new Date(periodStart).getUTCFullYear()
+                  : new Date().getFullYear();
+                const siblings = updated.filter(s =>
+                  s.masterBenefitId === masterId &&
+                  s.periodStart &&
+                  new Date(s.periodStart).getUTCFullYear() === currentYear
+                );
+                const usedCount = siblings.filter(s => s.isUsed).length;
+                const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR')
+                  ? (b.isUsed ? 100 : 0)
+                  : Math.round((usedCount / totalPeriods) * 100);
+                return { ...b, usage };
+              }
+              return b;
+            });
+          }
+          return updated.map(b =>
+            b.id === benefitId ? { ...b, usage: b.isUsed ? 100 : 0 } : b
+          );
+        });
 
         const errorData = await response.json();
         toast({ title: errorData.error || 'Failed to mark benefit as used', variant: 'error' });

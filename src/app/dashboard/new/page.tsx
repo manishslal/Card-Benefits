@@ -21,7 +21,7 @@ interface CardData {
   name: string;
   productName: string;
   type: 'visa' | 'amex' | 'mastercard' | 'discover' | 'other';
-  lastFour: string;
+  lastFour?: string;
   issuer: string;
   customName?: string | null;
 }
@@ -199,7 +199,7 @@ export default function EnhancedDashboardPage() {
               name: card.customName || card.cardName,
               productName: card.cardName,
               type: (card.type || 'visa') as CardData['type'],
-              lastFour: card.lastFour || '0000',
+              lastFour: card.lastFour || undefined,
               issuer: card.issuer,
               customName: card.customName,
             }));

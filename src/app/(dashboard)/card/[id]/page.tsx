@@ -437,7 +437,7 @@ export default function CardDetailPage() {
                     {card.customName || 'Credit Card'}
                   </h2>
                   <p className="text-sm text-[var(--color-text-secondary)]">
-                    {card.issuer || 'Card Issuer'} • {card.type || 'Card Type'} • •••• {card.lastFour || 'XXXX'}
+                    {card.issuer || 'Card Issuer'} • {card.type || 'Card Type'}{card.lastFour ? ` • •••• ${card.lastFour}` : ''}
                   </p>
                 </div>
 

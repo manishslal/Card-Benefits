@@ -112,12 +112,6 @@ function getCardType(issuer: string): string {
   return 'visa';
 }
 
-function generateLastFour(cardId: string): string {
-  const hex = cardId.substring(0, 4);
-  const num = parseInt(hex, 16);
-  return String(num % 10000).padStart(4, '0');
-}
-
 // ============================================================
 // GET Handler
 // ============================================================
@@ -314,7 +308,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         cardName: masterCard.cardName,
         customName: userCard.customName,
         type: getCardType(masterCard.issuer),
-        lastFour: generateLastFour(userCard.id),
+        lastFour: undefined,
         status: userCard.status,
         renewalDate: userCard.renewalDate.toISOString(),
         actualAnnualFee: userCard.actualAnnualFee,

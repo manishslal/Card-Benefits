@@ -9,7 +9,7 @@ interface Card {
   name: string;
   productName: string; // Original card product name for gradient lookup
   type: 'visa' | 'mastercard' | 'amex' | 'discover' | 'other';
-  lastFour: string;
+  lastFour?: string;
   issuer: string;
   customName?: string | null;
 }
@@ -100,7 +100,11 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
       }
       // Fallback with null safety: default to 'Card' if issuer is missing
       const issuer = card.issuer || 'Card';
-      return `${issuer} •••• ${card.lastFour}`;
+      // Only show last four if available and not a generated placeholder
+      if (card.lastFour && card.lastFour !== '0000') {
+        return `${issuer} •••• ${card.lastFour}`;
+      }
+      return issuer;
     };
 
     return (

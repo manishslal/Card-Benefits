@@ -135,7 +135,7 @@ function ProgressRing({
   const strokeWidth = 3;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const pct = isUsed ? 100 : Math.min(Math.max(usage ?? 0, 0), 100);
+  const pct = Math.min(Math.max(usage ?? 0, 0), 100);
   const offset = circumference - (pct / 100) * circumference;
   const ringColor = getProgressRingColor(isUsed);
 
@@ -195,6 +195,39 @@ function ProgressRing({
       </span>
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Helper: Infer a UI category from the DB benefit type AND the benefit name
+// DB types: StatementCredit, TravelPerk, Insurance, Rewards, UsagePerk, Other
+// ---------------------------------------------------------------------------
+function inferBenefitCategory(type?: string, name?: string): string {
+  const nameLower = (name || '').toLowerCase();
+  const typeLower = (type || '').toLowerCase();
+
+  // Name-based inference (most specific)
+  if (/uber|lyft|ride/.test(nameLower)) return 'rideshare';
+  if (/dining|restaurant|resy|grubhub|dunkin|food/.test(nameLower)) return 'dining';
+  if (/hotel|hilton|hyatt|marriott|bonvoy|ihg/.test(nameLower)) return 'hotel';
+  if (/lounge|priority pass|centurion/.test(nameLower)) return 'lounge';
+  if (/travel|flight|airline|tsa|precheck|global entry/.test(nameLower)) return 'travel';
+  if (/entertain|spotify|audible|disney|hulu|peacock|sirius/.test(nameLower)) return 'entertainment';
+  if (/stream|netflix|hbo|paramount|apple\s*tv/.test(nameLower)) return 'streaming';
+  if (/shop|saks|nordstrom|walmart|dell|best buy/.test(nameLower)) return 'shopping';
+  if (/fitness|gym|equinox|wellness|peloton/.test(nameLower)) return 'wellness';
+  if (/insur|protect|luggage|cancel|delay|medical|dental/.test(nameLower)) return 'insurance';
+  if (/point|reward|bonus|earn|multiplier|\dx\b/.test(nameLower)) return 'points';
+  if (/cash\s*back|statement\s*credit|annual\s+credit|monthly\s+credit/.test(nameLower)) return 'cashback';
+  if (/clear|bag|board|companion|free night/.test(nameLower)) return 'travel';
+
+  // Type-based fallback
+  if (typeLower === 'travelperk') return 'travel';
+  if (typeLower === 'insurance') return 'insurance';
+  if (typeLower === 'rewards') return 'points';
+  if (typeLower === 'statementcredit') return 'cashback';
+  if (typeLower === 'usageperk') return 'points';
+
+  return 'default';
 }
 
 /**
@@ -281,10 +314,11 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
       return indices;
     }, [benefitGroups]);
 
-    // Benefit type icons
-    const getBenefitTypeIcon = (type?: string) => {
+    // Benefit type icons — uses inferred category from DB type + benefit name
+    const getBenefitTypeIcon = (type?: string, name?: string) => {
+      const category = inferBenefitCategory(type, name);
       const iconProps = { size: 16, className: 'flex-shrink-0' };
-      switch (type?.toLowerCase()) {
+      switch (category) {
         case 'travel':
           return <Plane {...iconProps} aria-hidden="true" />;
         case 'shopping':
@@ -446,7 +480,6 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                 benefit.claimingCadence
               );
               const isUsed = benefit.isUsed === true;
-              const isAnnual = (benefit.claimingCadence || benefit.resetCadence || '').toUpperCase() === 'ANNUAL';
               const showRing = benefit.usage !== undefined || isUsed;
               const animIndex = cardAnimationIndices.get(benefit.id) ?? 0;
 
@@ -481,7 +514,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                           className="mt-0.5 flex-shrink-0"
                           style={{ color: 'var(--color-primary)' }}
                         >
-                          {getBenefitTypeIcon(benefit.type)}
+                          {getBenefitTypeIcon(benefit.type, benefit.name)}
                         </div>
                         <p
                           className="flex-1 font-semibold line-clamp-2 min-w-0"
@@ -547,7 +580,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
 
                     {/* ── Row 5: Action buttons — stopPropagation to avoid card click ── */}
                     <div
-                      className="flex gap-2 mt-auto pt-3 flex-wrap"
+                      className="flex gap-2 mt-auto pt-1.5 flex-wrap"
                       style={{ borderTop: '1px solid var(--color-border)' }}
                     >
                       {onMarkUsed && benefit.status === 'active' && (
@@ -579,9 +612,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                               periodMonth ? ` for ${periodMonth}` : ''
                             }`}
                           >
-                            {!isAnnual && periodMonth
-                              ? `Mark ${periodMonth} Used`
-                              : 'Mark Used'}
+                            Mark Used
                           </Button>
                         )
                       )}

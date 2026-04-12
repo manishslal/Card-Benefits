@@ -449,7 +449,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="min-h-[160px] rounded-lg animate-pulse"
+              className="min-h-[120px] rounded-lg animate-pulse"
               style={{ backgroundColor: 'var(--color-bg-secondary)' }}
             />
           ))}
@@ -532,7 +532,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit?.(benefit.id); } }}
-                  className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] border-[var(--color-border)] hover:border-[var(--color-primary)] hover:shadow-lg hover:-translate-y-1 flex flex-col min-h-[160px] cursor-pointer${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
+                  className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] border-[var(--color-border)] hover:border-[var(--color-primary)] hover:shadow-lg hover:-translate-y-1 flex flex-col cursor-pointer${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
                   style={{
                     opacity: isUsed ? 0.7 : 1,
                     animation: `scaleIn 0.3s ease-out both`,
@@ -542,17 +542,17 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                 >
                   {/* ── Card Body ── */}
                   <div
-                    className="p-3 flex-1 flex flex-col"
+                    className="p-2.5 flex-1 flex flex-col"
                     style={{
                       backgroundColor: isUsed ? 'var(--color-bg-secondary)' : undefined,
                       transition: 'background-color 0.2s ease',
                     }}
                   >
                     {/* ── Row 1: Header — Icon + Name + Badge ── */}
-                    <div className="flex justify-between items-start gap-2 mb-2">
+                    <div className="flex justify-between items-start gap-2 mb-1.5">
                       <div className="flex items-start gap-2 flex-1 min-w-0">
                         <div
-                          className="mt-0.5 flex-shrink-0"
+                          className="flex-shrink-0"
                           style={{ color: 'var(--color-primary)' }}
                         >
                           {getBenefitTypeIcon(benefit.type, benefit.name)}
@@ -573,7 +573,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
 
                     {/* ── Row 2: Value + Progress Ring ── */}
                     {(showRing || (benefit.value != null && benefit.value > 0)) && (
-                      <div className="flex items-center justify-between gap-3 mb-2">
+                      <div className="flex items-center justify-between gap-3 mb-1">
                         {benefit.value != null && benefit.value > 0 ? (
                           <span
                             className="font-mono font-semibold text-base"
@@ -590,7 +590,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
 
                     {/* ── Row 2b: Cadence info line (Sprint 11b) ── */}
                     {cadenceText && (
-                      <p className="text-xs mb-1.5" style={{ color: 'var(--color-text-tertiary)' }}>
+                      <p className="text-xs mb-1" style={{ color: 'var(--color-text-tertiary)' }}>
                         {cadenceText}
                       </p>
                     )}
@@ -599,7 +599,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                     <div className="flex-1 min-h-0">
                       {benefit.description && (
                         <p
-                          className="text-xs line-clamp-2 mb-2"
+                          className="text-xs line-clamp-2 mb-1"
                           style={{ color: 'var(--color-text-secondary)' }}
                           title={benefit.description}
                         >
@@ -609,7 +609,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                     </div>
 
                     {/* ── Row 4: Meta — period progress + expiration ── */}
-                    <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center justify-between gap-2 mb-1">
                       <span
                         className="text-xs"
                         style={{ color: 'var(--color-text-secondary)' }}
@@ -628,7 +628,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
 
                     {/* ── Row 5: Action buttons — stopPropagation to avoid card click ── */}
                     <div
-                      className="flex gap-2 mt-auto pt-1.5 flex-wrap"
+                      className="flex gap-2 mt-auto pt-1 flex-wrap"
                       style={{ borderTop: '1px solid var(--color-border)' }}
                     >
                       {onMarkUsed && benefit.status === 'active' && (
@@ -637,7 +637,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                             variant="secondary"
                             size="xs"
                             disabled
-                            className="flex-1 min-w-0 min-h-[44px]"
+                            className="flex-1 min-w-0 min-h-[36px]"
                             leftIcon={
                               <CheckCircle2 size={14} aria-hidden="true" />
                             }
@@ -655,7 +655,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                               e.stopPropagation();
                               onMarkUsed(benefit.id);
                             }}
-                            className="flex-1 min-w-0 min-h-[44px]"
+                            className="flex-1 min-w-0 min-h-[36px]"
                             aria-label={`Mark ${benefit.name} as used${
                               periodMonth ? ` for ${periodMonth}` : ''
                             }`}
@@ -672,7 +672,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                             e.stopPropagation();
                             onEdit(benefit.id);
                           }}
-                          className="flex-1 min-w-0 min-h-[44px]"
+                          className="flex-1 min-w-0 min-h-[36px]"
                           aria-label={`Edit ${benefit.name}`}
                         >
                           Edit

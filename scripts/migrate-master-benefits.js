@@ -62,6 +62,13 @@ const MIGRATIONS = [
       { name: '$155 Walmart+ Membership Credit', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 15500, variableAmounts: null, isNew: true, type: 'StatementCredit', stickerValue: 15500, resetCadence: 'CardmemberYear', newName: 'Walmart+ Credit' },
       { name: '$300 Equinox Credit',             claimingCadence: 'MONTHLY',         claimingAmount: 2500,  variableAmounts: null, isNew: true, type: 'StatementCredit', stickerValue: 30000, resetCadence: 'Monthly', newName: 'Equinox Credit' },
       { name: '$100 Saks Fifth Avenue Credit',   claimingCadence: 'SEMI_ANNUAL',     claimingAmount: 5000,  variableAmounts: null, isNew: true, type: 'StatementCredit', stickerValue: 10000, resetCadence: 'CalendarYear', newName: 'Saks Credit' },
+      // ── Sprint 19: Missing Platinum benefits ──
+      { name: '$120 Uber One Membership Credit',       claimingCadence: 'MONTHLY',         claimingAmount: 1000,  variableAmounts: null, isNew: true, type: 'StatementCredit', stickerValue: 12000, resetCadence: 'Monthly', newName: 'Uber One Credit' },
+      { name: '$200 Oura Ring Membership Credit',      claimingCadence: 'ONE_TIME',        claimingAmount: 20000, variableAmounts: null, isNew: true, type: 'StatementCredit', stickerValue: 20000, resetCadence: 'CardmemberYear', newName: 'Oura Ring Credit' },
+      { name: 'Priority Pass Lounge Access',           claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null, isNew: true, type: 'UsagePerk',       stickerValue: 0,     resetCadence: 'CardmemberYear' },
+      { name: '$200 Airline Fee Credit',               claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 20000, variableAmounts: null, isNew: true, type: 'StatementCredit', stickerValue: 20000, resetCadence: 'CardmemberYear', newName: 'Airline Fee Credit' },
+      { name: '5x Points on Hotels (Amex Travel)',     claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null, isNew: true, type: 'Rewards',         stickerValue: 0,     resetCadence: 'CardmemberYear' },
+      { name: '5x Points on Flights (Amex Travel)',    claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null, isNew: true, type: 'Rewards',         stickerValue: 0,     resetCadence: 'CardmemberYear' },
     ],
   },
 

@@ -64,6 +64,46 @@ function getCadenceLabel(
 }
 
 // ---------------------------------------------------------------------------
+// Helper: Cadence info text for benefit cards (Sprint 11b)
+// Returns a short human-readable description of the benefit's reset frequency.
+// Checks specific benefit name overrides first, then falls back to generic text.
+// ---------------------------------------------------------------------------
+function getCadenceInfoText(
+  name: string,
+  resetCadence?: string,
+  claimingCadence?: string | null
+): string {
+  const nameLower = name.toLowerCase();
+
+  // ── Specific benefit name overrides ──
+  if (/global entry|tsa precheck/i.test(nameLower)) return 'Once every 4.5 years';
+  if (/\bclear\b.*credit|\bclear\+/i.test(nameLower)) return 'Once per year';
+  if (/free night award/i.test(nameLower)) return 'Once per cardmember year';
+  if (/centurion lounge/i.test(nameLower)) return 'Unlimited access';
+  if (/priority pass/i.test(nameLower)) return 'Unlimited access';
+  if (/fine hotels\s*&\s*resorts/i.test(nameLower)) return 'Use anytime';
+
+  // ── Generic cadence-based fallback ──
+  const cadence = (claimingCadence || resetCadence || '').toUpperCase();
+  switch (cadence) {
+    case 'MONTHLY':
+      return 'Resets monthly';
+    case 'QUARTERLY':
+      return 'Resets quarterly';
+    case 'SEMI_ANNUAL':
+      return 'Resets every 6 months';
+    case 'ANNUAL':
+      return 'Resets annually';
+    case 'ONE_TIME':
+      return 'One-time benefit';
+    case 'FLEXIBLE_ANNUAL':
+      return 'Use anytime this year';
+    default:
+      return '';
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Helper: Left border color — neutral for all states (DASH-044)
 // Status signaling reduced to 2 signals: badge + progress ring
 // ---------------------------------------------------------------------------
@@ -482,6 +522,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
               const isUsed = benefit.isUsed === true;
               const showRing = benefit.usage !== undefined || isUsed;
               const animIndex = cardAnimationIndices.get(benefit.id) ?? 0;
+              const cadenceText = getCadenceInfoText(benefit.name, benefit.resetCadence, benefit.claimingCadence);
 
               return (
                 <div
@@ -545,6 +586,13 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                         )}
                         <ProgressRing usage={benefit.usage} isUsed={isUsed} />
                       </div>
+                    )}
+
+                    {/* ── Row 2b: Cadence info line (Sprint 11b) ── */}
+                    {cadenceText && (
+                      <p className="text-xs mb-1.5" style={{ color: 'var(--color-text-tertiary)' }}>
+                        {cadenceText}
+                      </p>
                     )}
 
                     {/* ── Row 3: Description ── */}

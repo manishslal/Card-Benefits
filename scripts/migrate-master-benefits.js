@@ -58,6 +58,10 @@ const MIGRATIONS = [
       { name: 'Complimentary Airport Meet & Greet',  claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null, isActive: false },
       { name: 'Global Entry or TSA PreCheck',        claimingCadence: 'ONE_TIME',        claimingAmount: 12000, variableAmounts: null },
       { name: 'Fine Hotels & Resorts Partner Program', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,   variableAmounts: null },
+      // ── Sprint 11b: New benefits ──
+      { name: '$155 Walmart+ Membership Credit', claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 15500, variableAmounts: null, isNew: true, type: 'StatementCredit', stickerValue: 15500, resetCadence: 'CardmemberYear', newName: 'Walmart+ Credit' },
+      { name: '$300 Equinox Credit',             claimingCadence: 'MONTHLY',         claimingAmount: 2500,  variableAmounts: null, isNew: true, type: 'StatementCredit', stickerValue: 30000, resetCadence: 'Monthly', newName: 'Equinox Credit' },
+      { name: '$100 Saks Fifth Avenue Credit',   claimingCadence: 'SEMI_ANNUAL',     claimingAmount: 5000,  variableAmounts: null, isNew: true, type: 'StatementCredit', stickerValue: 10000, resetCadence: 'CalendarYear', newName: 'Saks Credit' },
     ],
   },
 
@@ -71,6 +75,9 @@ const MIGRATIONS = [
       { name: '$120 Annual Dining Credit',          claimingCadence: 'MONTHLY',         claimingAmount: 1000, variableAmounts: null, newName: 'Dining Credit' },
       { name: '$100 Annual Uber Credit',            claimingCadence: 'MONTHLY',         claimingAmount: 1000, variableAmounts: null, stickerValue: 12000, newName: 'Uber Credit' },
       { name: 'Purchase Protection',               claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,    variableAmounts: null },
+      // ── Sprint 11b: New benefits ──
+      { name: '$7 Monthly Dunkin Credit',             claimingCadence: 'MONTHLY',         claimingAmount: 700,  variableAmounts: null, isNew: true, type: 'StatementCredit', stickerValue: 8400, resetCadence: 'Monthly', newName: 'Dunkin Credit' },
+      { name: '$100 Annual Resy Credit',              claimingCadence: 'SEMI_ANNUAL',     claimingAmount: 5000, variableAmounts: null, isNew: true, type: 'StatementCredit', stickerValue: 10000, resetCadence: 'CalendarYear', newName: 'Resy Credit' },
     ],
   },
 
@@ -88,6 +95,11 @@ const MIGRATIONS = [
       { name: 'Trip Cancellation Insurance',       claimingCadence: 'ONE_TIME',        claimingAmount: 0,     variableAmounts: null },
       { name: 'Lost Luggage Reimbursement',        claimingCadence: 'ONE_TIME',        claimingAmount: 0,     variableAmounts: null },
       { name: 'Global Entry or TSA PreCheck Credit', claimingCadence: 'ONE_TIME',      claimingAmount: 10500, variableAmounts: null },
+      // ── Sprint 11b: New benefits ──
+      { name: '$60 Annual DoorDash Credit',          claimingCadence: 'QUARTERLY',       claimingAmount: 1500,  variableAmounts: null, isNew: true, type: 'StatementCredit', stickerValue: 6000, resetCadence: 'CalendarYear', newName: 'DoorDash Credit' },
+      { name: 'Instacart+ Membership',               claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null, isNew: true, type: 'UsagePerk', stickerValue: 9900, resetCadence: 'CardmemberYear' },
+      { name: 'Peloton Membership Credit',            claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null, isNew: true, type: 'UsagePerk', stickerValue: 0, resetCadence: 'CardmemberYear', isActive: false },
+      { name: 'Lyft Pink Membership',                 claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null, isNew: true, type: 'UsagePerk', stickerValue: 0, resetCadence: 'CardmemberYear' },
     ],
   },
 
@@ -172,7 +184,7 @@ const MIGRATIONS = [
       { name: '10x Points on Hilton Hotels',  claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null, newName: '12x Points on Hilton Hotels' },
       { name: 'Complimentary Room Upgrades',  claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 5000,  variableAmounts: null },
       { name: 'Airline Fee Credit',           claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 15000, variableAmounts: null, isActive: false },
-      { name: 'Priority Pass (10 visits)',    claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null, isActive: false },
+      { name: 'Priority Pass (10 visits)',    claimingCadence: 'FLEXIBLE_ANNUAL', claimingAmount: 0,     variableAmounts: null, isActive: true },
     ],
   },
 
@@ -215,6 +227,10 @@ const MIGRATIONS = [
   },
 
   // ── Card 14: Citi Prestige Card ─────────────────────────────────────────
+  // ⚠️  DEPLOY NOTE: Verify that the DB MasterCard row uses 'Citi Prestige Card'
+  // and NOT 'Citi Prestige' (without "Card"). If the DB stores 'Citi Prestige',
+  // the issuer_cardName lookup below will fail silently (card not found).
+  // Run: SELECT "cardName" FROM "MasterCard" WHERE issuer='Citi';
   {
     issuer: 'Citi',
     cardName: 'Citi Prestige Card',
@@ -340,7 +356,7 @@ async function main() {
           await prisma.masterBenefit.create({
             data: {
               masterCardId: masterCard.id,
-              name: benefitMapping.name,
+              name: benefitMapping.newName || benefitMapping.name,
               type: benefitMapping.type || 'StatementCredit',
               stickerValue: benefitMapping.stickerValue || 0,
               resetCadence: benefitMapping.resetCadence || 'CalendarYear',
@@ -396,9 +412,9 @@ async function main() {
           updateData.name = benefitMapping.newName;
         }
 
-        // Handle deactivations
-        if (benefitMapping.isActive === false) {
-          updateData.isActive = false;
+        // Handle activation/deactivation
+        if (benefitMapping.isActive !== undefined) {
+          updateData.isActive = benefitMapping.isActive;
         }
 
         // Handle stickerValue updates

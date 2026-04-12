@@ -109,7 +109,8 @@ function getCardType(issuer: string): string {
   if (lowerIssuer.includes('mastercard') || lowerIssuer.includes('mc')) return 'mastercard';
   if (lowerIssuer.includes('visa')) return 'visa';
   if (lowerIssuer.includes('discover')) return 'discover';
-  return 'visa';
+  // DISC-009: Return 'other' instead of guessing 'visa' for unknown issuers
+  return 'other';
 }
 
 // ============================================================
@@ -135,10 +136,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const pageStr = searchParams.get('page') || '1';
     const limitStr = searchParams.get('limit') || '20';
 
-    const page = Math.max(parseInt(pageStr, 10) || 1, 1);
-    const limit = Math.min(Math.max(parseInt(limitStr, 10) || 20, 1), 100);
+    // DISC-005: Validate BEFORE applying defaults so isNaN check is reachable
+    const rawPage = parseInt(pageStr, 10);
+    const rawLimit = parseInt(limitStr, 10);
 
-    if (isNaN(page) || isNaN(limit)) {
+    if (isNaN(rawPage) || isNaN(rawLimit)) {
       return NextResponse.json(
         {
           success: false,
@@ -147,6 +149,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         { status: 400 }
       );
     }
+
+    const page = Math.max(rawPage, 1);
+    const limit = Math.min(Math.max(rawLimit, 1), 100);
 
     const offset = (page - 1) * limit;
 

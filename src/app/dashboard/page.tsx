@@ -294,6 +294,46 @@ export default function DashboardPage() {
   const [celebratingIds, setCelebratingIds] = useState<Set<string>>(new Set());
 
   // ============================================================
+  // DISC-008: Shared card transformation to prevent copy-paste divergence
+  // ============================================================
+
+  const transformApiCards = (apiResponse: ApiCardsResponse): CardData[] => {
+    setBenefitEngineEnabled(apiResponse.benefitEngineEnabled === true);
+
+    return (apiResponse.cards || []).map((apiCard: ApiCard) => ({
+      id: apiCard.id,
+      name: apiCard.customName || apiCard.cardName,
+      productName: apiCard.cardName,
+      type: (apiCard.type || 'visa') as CardData['type'],
+      lastFour: apiCard.lastFour || undefined,
+      issuer: apiCard.issuer,
+      customName: apiCard.customName,
+      benefits: (apiCard.benefits || []).map((b: ApiBenefit) => ({
+        id: b.id,
+        name: b.name,
+        type: b.type,
+        stickerValue: b.stickerValue,
+        userDeclaredValue: b.userDeclaredValue ?? null,
+        resetCadence: b.resetCadence,
+        status: b.status?.toLowerCase() === 'active' ? 'active' as const
+          : b.status?.toLowerCase() === 'expired' ? 'expired' as const
+          : b.status?.toLowerCase() === 'expiring' ? 'expiring' as const
+          : 'pending' as const,
+        expirationDate: b.expirationDate,
+        description: b.description || '',
+        value: (b.userDeclaredValue ?? b.stickerValue) / 100,
+        usage: calculateYearlyUsage(b, apiCard.benefits || []),
+        isUsed: b.isUsed ?? false,
+        periodStart: b.periodStart ?? null,
+        periodEnd: b.periodEnd ?? null,
+        periodStatus: b.periodStatus ?? null,
+        masterBenefitId: b.masterBenefitId ?? null,
+        claimingCadence: b.claimingCadence ?? null,
+      })),
+    }));
+  };
+
+  // ============================================================
   // Effect: Load user cards from API (BLOCKER #7 implementation)
   // ============================================================
 
@@ -458,7 +498,8 @@ export default function DashboardPage() {
       }
 
       // Status filter check
-      if (selectedStatuses.length > 0 && !selectedStatuses.includes(benefitStatus)) {
+      // DISC-006: Show NONE when no statuses selected (user expects empty results)
+      if (selectedStatuses.length === 0 || !selectedStatuses.includes(benefitStatus)) {
         return false;
       }
 
@@ -574,43 +615,9 @@ export default function DashboardPage() {
         }
 
         // Transform API response to card display format (including benefits)
+        // DISC-008: Use shared transformApiCards (also sets benefitEngineEnabled)
         const apiResponse = data as ApiCardsResponse;
-
-        // Track whether the benefit engine is active for this response
-        setBenefitEngineEnabled(apiResponse.benefitEngineEnabled === true);
-
-        const transformedCards: CardData[] = (apiResponse.cards || []).map((apiCard: ApiCard) => ({
-          id: apiCard.id,
-          name: apiCard.customName || apiCard.cardName,
-          productName: apiCard.cardName,
-          type: (apiCard.type || 'visa') as CardData['type'],
-          lastFour: apiCard.lastFour || undefined,
-          issuer: apiCard.issuer,
-          customName: apiCard.customName,
-          benefits: (apiCard.benefits || []).map((b: ApiBenefit) => ({
-            id: b.id,
-            name: b.name,
-            type: b.type,
-            stickerValue: b.stickerValue,
-            userDeclaredValue: b.userDeclaredValue ?? null,
-            resetCadence: b.resetCadence,
-            status: b.status?.toLowerCase() === 'active' ? 'active' as const
-              : b.status?.toLowerCase() === 'expired' ? 'expired' as const
-              : b.status?.toLowerCase() === 'expiring' ? 'expiring' as const
-              : 'pending' as const,
-            expirationDate: b.expirationDate,
-            description: b.description || '',
-            value: (b.userDeclaredValue ?? b.stickerValue) / 100,
-            usage: calculateYearlyUsage(b, apiCard.benefits || []),
-            isUsed: b.isUsed ?? false,
-            // Carry period fields through when present
-            periodStart: b.periodStart ?? null,
-            periodEnd: b.periodEnd ?? null,
-            periodStatus: b.periodStatus ?? null,
-            masterBenefitId: b.masterBenefitId ?? null,
-            claimingCadence: b.claimingCadence ?? null,
-          })),
-        }));
+        const transformedCards = transformApiCards(apiResponse);
 
         setCards(transformedCards);
 
@@ -698,6 +705,13 @@ export default function DashboardPage() {
     }
   }, [benefits, selectedCardId]);
 
+  // DISC-007: Reset search/sort/smart view filters on card switch
+  useEffect(() => {
+    setSearchQuery('');
+    setActiveSort('default');
+    setSmartView('all');
+  }, [selectedCardId]);
+
   // ============================================================
   // Effect: Load history benefits when viewMode switches to "history"
   // ============================================================
@@ -777,40 +791,9 @@ export default function DashboardPage() {
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.cards) {
+          // DISC-008: Use shared transformApiCards (also sets benefitEngineEnabled)
           const apiResponse = data as ApiCardsResponse;
-          setBenefitEngineEnabled(apiResponse.benefitEngineEnabled === true);
-
-          const transformedCards: CardData[] = (apiResponse.cards || []).map((apiCard: ApiCard) => ({
-            id: apiCard.id,
-            name: apiCard.customName || apiCard.cardName,
-            productName: apiCard.cardName,
-            type: (apiCard.type || 'visa') as CardData['type'],
-            lastFour: apiCard.lastFour || undefined,
-            issuer: apiCard.issuer,
-            customName: apiCard.customName,
-            benefits: (apiCard.benefits || []).map((b: ApiBenefit) => ({
-              id: b.id,
-              name: b.name,
-              type: b.type,
-              stickerValue: b.stickerValue,
-              userDeclaredValue: b.userDeclaredValue ?? null,
-              resetCadence: b.resetCadence,
-              status: b.status?.toLowerCase() === 'active' ? 'active' as const
-                : b.status?.toLowerCase() === 'expired' ? 'expired' as const
-                : b.status?.toLowerCase() === 'expiring' ? 'expiring' as const
-                : 'pending' as const,
-              expirationDate: b.expirationDate,
-              description: b.description || '',
-              value: (b.userDeclaredValue ?? b.stickerValue) / 100,
-              usage: calculateYearlyUsage(b, apiCard.benefits || []),
-              isUsed: b.isUsed ?? false,
-              periodStart: b.periodStart ?? null,
-              periodEnd: b.periodEnd ?? null,
-              periodStatus: b.periodStatus ?? null,
-              masterBenefitId: b.masterBenefitId ?? null,
-              claimingCadence: b.claimingCadence ?? null,
-            })),
-          }));
+          const transformedCards = transformApiCards(apiResponse);
 
           setCards(transformedCards);
 

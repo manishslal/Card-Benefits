@@ -110,7 +110,7 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
     return (
       <div
         ref={ref}
-        className="relative flex items-center gap-3"
+        className="relative flex items-start gap-3"
         role="tablist"
       >
         {/* Left scroll arrow - visible on mobile where overflow is common */}
@@ -127,7 +127,7 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
         {/* Cards scroll container */}
         <div
           ref={scrollContainerRef}
-          className="flex gap-3 overflow-x-auto scrollbar-hide pb-2"
+          className="flex gap-3 overflow-x-auto scrollbar-hide pb-3"
           style={{ scrollBehavior: 'smooth' }}
         >
           {cards.map((card, index) => {
@@ -148,7 +148,7 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
                 onKeyDown={(e) => handleTabKeyDown(e, index)}
                 style={glowShadow ? { boxShadow: glowShadow } : undefined}
                 className={`
-                  relative flex-shrink-0 flex items-center gap-3 px-4 py-3 rounded-lg
+                  relative flex-shrink-0 flex items-center gap-3 px-4 py-3 rounded-lg h-14 min-h-14
                   border-2 transition-all duration-200 whitespace-nowrap
                   focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]
                   ${
@@ -164,7 +164,7 @@ const CardSwitcher = React.forwardRef<HTMLDivElement, CardSwitcherProps>(
                   issuer={card.issuer}
                   type={card.type}
                   size="sm"
-                  className={`transition-transform duration-200 ${
+                  className={`transition-transform duration-200 transform-gpu ${
                     isSelected ? 'scale-[1.02]' : ''
                   }`}
                 />

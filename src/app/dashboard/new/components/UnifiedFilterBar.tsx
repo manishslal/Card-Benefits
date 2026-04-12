@@ -16,23 +16,11 @@ interface PeriodItem {
   getDateRange?: () => { start: Date; end: Date };
 }
 
-interface StatusItem {
-  id: string;
-  label: string;
-  color: string;
-  icon?: ReactNode;
-  description?: string;
-}
-
 export interface UnifiedFilterBarProps {
   /** Currently selected period id */
   selectedPeriodId: string;
   onPeriodChange: (id: string) => void;
   periods: PeriodItem[];
-  /** Currently selected status ids */
-  selectedStatuses: string[];
-  onStatusChange: (statuses: string[]) => void;
-  availableStatuses: StatusItem[];
   /** Current vs history toggle */
   viewMode: 'current' | 'history';
   onViewModeChange: (mode: 'current' | 'history') => void;
@@ -233,210 +221,6 @@ function PeriodDropdown({
 }
 
 // ============================================================
-// Sub-component: StatusDropdown (multi-select with checkboxes)
-// ============================================================
-
-function StatusDropdown({
-  selectedStatuses,
-  onStatusChange,
-  availableStatuses,
-}: {
-  selectedStatuses: string[];
-  onStatusChange: (statuses: string[]) => void;
-  availableStatuses: StatusItem[];
-}) {
-  const [open, setOpen] = useState(false);
-  const [focusedIndex, setFocusedIndex] = useState(-1);
-
-  const handleClose = useCallback(() => setOpen(false), []);
-  const containerRef = useClickOutside<HTMLDivElement>(handleClose, open);
-
-  const handleToggle = useCallback(
-    (id: string) => {
-      if (selectedStatuses.includes(id)) {
-        onStatusChange(selectedStatuses.filter((s) => s !== id));
-      } else {
-        onStatusChange([...selectedStatuses, id]);
-      }
-    },
-    [selectedStatuses, onStatusChange],
-  );
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (!open) {
-        if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
-          e.preventDefault();
-          setOpen(true);
-          setFocusedIndex(0);
-        }
-        return;
-      }
-
-      switch (e.key) {
-        case 'Escape':
-          e.preventDefault();
-          setOpen(false);
-          break;
-        case 'ArrowDown':
-          e.preventDefault();
-          setFocusedIndex((prev) =>
-            prev < availableStatuses.length - 1 ? prev + 1 : 0,
-          );
-          break;
-        case 'ArrowUp':
-          e.preventDefault();
-          setFocusedIndex((prev) =>
-            prev > 0 ? prev - 1 : availableStatuses.length - 1,
-          );
-          break;
-        case 'Enter':
-        case ' ':
-          e.preventDefault();
-          if (
-            focusedIndex >= 0 &&
-            focusedIndex < availableStatuses.length
-          ) {
-            handleToggle(availableStatuses[focusedIndex].id);
-          }
-          break;
-      }
-    },
-    [open, focusedIndex, availableStatuses, handleToggle],
-  );
-
-  return (
-    <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        onKeyDown={handleKeyDown}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-activedescendant={open && focusedIndex >= 0 ? `status-option-${focusedIndex}` : undefined}
-        aria-label={`Status filter: ${selectedStatuses.length} of ${availableStatuses.length} selected`}
-        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-[var(--radius-md)] border transition-colors"
-        style={{
-          backgroundColor: 'var(--color-bg)',
-          borderColor: open ? 'var(--color-primary)' : 'var(--color-border)',
-          color: 'var(--color-text)',
-          transitionDuration: 'var(--duration-fast)',
-        }}
-      >
-        Status
-        {selectedStatuses.length > 0 &&
-          selectedStatuses.length < availableStatuses.length && (
-            <span
-              className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-xs font-semibold"
-              style={{
-                backgroundColor: 'var(--color-primary)',
-                color: 'var(--color-text-inverse, #fff)',
-                fontSize: '11px',
-                lineHeight: 1,
-                padding: '0 4px',
-              }}
-            >
-              {selectedStatuses.length}
-            </span>
-          )}
-        <ChevronDown
-          size={14}
-          aria-hidden="true"
-          className="transition-transform"
-          style={{
-            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-            transitionDuration: 'var(--duration-fast)',
-          }}
-        />
-      </button>
-
-      {open && (
-        <ul
-          role="listbox"
-          aria-label="Select status filters"
-          aria-multiselectable="true"
-          className="absolute left-0 top-full mt-1 min-w-[200px] rounded-[var(--radius-md)] border py-1 overflow-hidden"
-          style={{
-            backgroundColor: 'var(--color-bg)',
-            borderColor: 'var(--color-border)',
-            boxShadow: 'var(--shadow-md)',
-            zIndex: 25,
-          }}
-        >
-          {availableStatuses.map((status, idx) => {
-            const isSelected = selectedStatuses.includes(status.id);
-            const isFocused = idx === focusedIndex;
-            return (
-              <li
-                key={status.id}
-                id={`status-option-${idx}`}
-                role="option"
-                aria-selected={isSelected}
-                tabIndex={-1}
-                onClick={() => handleToggle(status.id)}
-                onMouseEnter={() => setFocusedIndex(idx)}
-                className="px-3 py-2 text-sm cursor-pointer transition-colors flex items-center gap-2"
-                style={{
-                  backgroundColor: isFocused
-                    ? 'var(--color-bg-secondary)'
-                    : 'transparent',
-                  color: 'var(--color-text)',
-                  transitionDuration: 'var(--duration-fast)',
-                }}
-              >
-                {/* Checkbox indicator */}
-                <span
-                  className="flex items-center justify-center w-4 h-4 rounded border flex-shrink-0 transition-colors"
-                  style={{
-                    borderColor: isSelected
-                      ? 'var(--color-primary)'
-                      : 'var(--color-border)',
-                    backgroundColor: isSelected
-                      ? 'var(--color-primary)'
-                      : 'transparent',
-                    color: 'var(--color-text-inverse, #fff)',
-                    transitionDuration: 'var(--duration-fast)',
-                  }}
-                  aria-hidden="true"
-                >
-                  {isSelected && (
-                    <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                      <path
-                        d="M1 4L3.5 6.5L9 1"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  )}
-                </span>
-
-                {/* Status icon */}
-                {status.icon && (
-                  <span
-                    className="flex-shrink-0 flex items-center"
-                    style={{ color: `var(${status.color})` }}
-                    aria-hidden="true"
-                  >
-                    {status.icon}
-                  </span>
-                )}
-
-                {/* Label */}
-                <span className={isSelected ? 'font-medium' : ''}>
-                  {status.label}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-// ============================================================
 // Sub-component: ViewModeToggle (segmented control)
 // ============================================================
 
@@ -542,9 +326,6 @@ export function UnifiedFilterBar({
   selectedPeriodId,
   onPeriodChange,
   periods,
-  selectedStatuses,
-  onStatusChange,
-  availableStatuses,
   viewMode,
   onViewModeChange,
   benefitEngineEnabled,
@@ -560,15 +341,7 @@ export function UnifiedFilterBar({
 
   const isPeriodFiltered = selectedPeriodId !== 'all-time';
 
-  const activeStatusChips = availableStatuses.filter((s) =>
-    selectedStatuses.includes(s.id),
-  );
-
-  // Show chips when at least one filter deviates from "show everything"
-  const isStatusFiltered =
-    selectedStatuses.length !== availableStatuses.length;
-
-  const hasActiveFilters = isPeriodFiltered || isStatusFiltered;
+  const hasActiveFilters = isPeriodFiltered;
 
   // ----------------------------------------------------------
   // Handlers
@@ -578,17 +351,9 @@ export function UnifiedFilterBar({
     onPeriodChange('all-time');
   }, [onPeriodChange]);
 
-  const handleRemoveStatus = useCallback(
-    (id: string) => {
-      onStatusChange(selectedStatuses.filter((s) => s !== id));
-    },
-    [selectedStatuses, onStatusChange],
-  );
-
   const handleClearAll = useCallback(() => {
     onPeriodChange('all-time');
-    onStatusChange(availableStatuses.map((s) => s.id));
-  }, [onPeriodChange, onStatusChange, availableStatuses]);
+  }, [onPeriodChange]);
 
   // ----------------------------------------------------------
   // Render
@@ -612,13 +377,6 @@ export function UnifiedFilterBar({
           selectedPeriodId={selectedPeriodId}
           onPeriodChange={onPeriodChange}
           periods={periods}
-        />
-
-        {/* Status dropdown */}
-        <StatusDropdown
-          selectedStatuses={selectedStatuses}
-          onStatusChange={onStatusChange}
-          availableStatuses={availableStatuses}
         />
 
         {/* View mode toggle — only when benefit engine is on */}
@@ -655,17 +413,6 @@ export function UnifiedFilterBar({
                   colorVar="--color-primary"
                 />
               )}
-
-              {/* Status chips — only show when not all statuses are selected */}
-              {isStatusFiltered &&
-                activeStatusChips.map((status) => (
-                  <FilterChip
-                    key={status.id}
-                    label={status.label}
-                    onRemove={() => handleRemoveStatus(status.id)}
-                    colorVar={status.color}
-                  />
-                ))}
 
               {/* Clear all */}
               <button

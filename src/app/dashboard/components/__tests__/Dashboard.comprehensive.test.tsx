@@ -1,185 +1,11 @@
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { StatusFilters, BenefitStatus } from '../StatusFilters';
+import { type BenefitStatus } from '../../utils/status-colors';
 import { SummaryBox } from '../SummaryBox';
 import { BenefitRow, BenefitRowProps } from '../BenefitRow';
 import { BenefitGroup } from '../BenefitGroup';
 import { BenefitsList } from '../BenefitsList';
-
-/**
- * ============================================================
- * UNIT TESTS: StatusFilters Component
- * ============================================================
- */
-describe('StatusFilters', () => {
-  const mockStatuses = [
-    {
-      id: 'active' as BenefitStatus,
-      label: 'Active',
-      icon: '🟢',
-      description: 'Benefits with balance remaining',
-    },
-    {
-      id: 'expiring_soon' as BenefitStatus,
-      label: 'Expiring Soon',
-      icon: '🟠',
-      description: '7-30 days left to use',
-    },
-    {
-      id: 'used' as BenefitStatus,
-      label: 'Used',
-      icon: '✓',
-      description: 'Already claimed this period',
-    },
-  ];
-
-  const mockOnStatusChange = vi.fn();
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('renders all status filter buttons', () => {
-    render(
-      <StatusFilters
-        selectedStatuses={[]}
-        onStatusChange={mockOnStatusChange}
-        availableStatuses={mockStatuses}
-      />
-    );
-
-    mockStatuses.forEach((status) => {
-      expect(screen.getByText(status.label)).toBeInTheDocument();
-    });
-  });
-
-  it('toggles a filter when clicked', async () => {
-    const user = userEvent.setup();
-    render(
-      <StatusFilters
-        selectedStatuses={[]}
-        onStatusChange={mockOnStatusChange}
-        availableStatuses={mockStatuses}
-      />
-    );
-
-    const activeButton = screen.getByText('Active');
-    await user.click(activeButton);
-
-    expect(mockOnStatusChange).toHaveBeenCalledWith(['active']);
-  });
-
-  it('deselects a filter when clicked again', async () => {
-    const user = userEvent.setup();
-    render(
-      <StatusFilters
-        selectedStatuses={['active']}
-        onStatusChange={mockOnStatusChange}
-        availableStatuses={mockStatuses}
-      />
-    );
-
-    const activeButton = screen.getByText('Active');
-    await user.click(activeButton);
-
-    expect(mockOnStatusChange).toHaveBeenCalledWith([]);
-  });
-
-  it('displays "Clear" and "Select All" buttons when filters selected', () => {
-    render(
-      <StatusFilters
-        selectedStatuses={['active']}
-        onStatusChange={mockOnStatusChange}
-        availableStatuses={mockStatuses}
-      />
-    );
-
-    expect(screen.getByText('Clear')).toBeInTheDocument();
-    expect(screen.getByText('Select All')).toBeInTheDocument();
-  });
-
-  it('clears all filters when Clear clicked', async () => {
-    const user = userEvent.setup();
-    render(
-      <StatusFilters
-        selectedStatuses={['active', 'expiring_soon']}
-        onStatusChange={mockOnStatusChange}
-        availableStatuses={mockStatuses}
-      />
-    );
-
-    await user.click(screen.getByText('Clear'));
-    expect(mockOnStatusChange).toHaveBeenCalledWith([]);
-  });
-
-  it('selects all filters when Select All clicked', async () => {
-    const user = userEvent.setup();
-    render(
-      <StatusFilters
-        selectedStatuses={[]}
-        onStatusChange={mockOnStatusChange}
-        availableStatuses={mockStatuses}
-      />
-    );
-
-    await user.click(screen.getByText('Select filters'));
-    expect(mockOnStatusChange).toHaveBeenCalledWith(['active', 'expiring_soon', 'used']);
-  });
-
-  it('displays correct aria-pressed state', () => {
-    const { rerender } = render(
-      <StatusFilters
-        selectedStatuses={[]}
-        onStatusChange={mockOnStatusChange}
-        availableStatuses={mockStatuses}
-      />
-    );
-
-    let activeButton = screen.getByText('Active').closest('button');
-    expect(activeButton).toHaveAttribute('aria-pressed', 'false');
-
-    rerender(
-      <StatusFilters
-        selectedStatuses={['active']}
-        onStatusChange={mockOnStatusChange}
-        availableStatuses={mockStatuses}
-      />
-    );
-
-    activeButton = screen.getByText('Active').closest('button');
-    expect(activeButton).toHaveAttribute('aria-pressed', 'true');
-  });
-
-  it('allows multi-select (AND logic)', async () => {
-    const user = userEvent.setup();
-    render(
-      <StatusFilters
-        selectedStatuses={[]}
-        onStatusChange={mockOnStatusChange}
-        availableStatuses={mockStatuses}
-      />
-    );
-
-    await user.click(screen.getByText('Active'));
-    expect(mockOnStatusChange).toHaveBeenLastCalledWith(['active']);
-
-    // Clear the mock
-    mockOnStatusChange.mockClear();
-
-    // Re-render with active selected to continue test
-    const { rerender } = render(
-      <StatusFilters
-        selectedStatuses={['active']}
-        onStatusChange={mockOnStatusChange}
-        availableStatuses={mockStatuses}
-      />
-    );
-
-    await user.click(screen.getByText('Expiring Soon'));
-    expect(mockOnStatusChange).toHaveBeenCalledWith(['active', 'expiring_soon']);
-  });
-});
 
 /**
  * ============================================================
@@ -792,7 +618,6 @@ describe('BenefitsList', () => {
     render(
       <BenefitsList
         benefits={[]}
-        selectedStatuses={[]}
         isLoading={false}
       />
     );
@@ -804,7 +629,6 @@ describe('BenefitsList', () => {
     render(
       <BenefitsList
         benefits={[]}
-        selectedStatuses={[]}
         isLoading={true}
       />
     );
@@ -817,7 +641,6 @@ describe('BenefitsList', () => {
     render(
       <BenefitsList
         benefits={mockBenefits}
-        selectedStatuses={[]}
         isLoading={false}
       />
     );
@@ -828,39 +651,10 @@ describe('BenefitsList', () => {
     expect(screen.getByText(/USED THIS PERIOD/)).toBeInTheDocument();
   });
 
-  it('filters benefits by selected statuses', () => {
+  it('shows all groups when benefits have multiple statuses', () => {
     render(
       <BenefitsList
         benefits={mockBenefits}
-        selectedStatuses={['active']}
-        isLoading={false}
-      />
-    );
-
-    // Should show only active group
-    expect(screen.getByText(/ACTIVE/)).toBeInTheDocument();
-    expect(screen.queryByText(/EXPIRING SOON/)).not.toBeInTheDocument();
-  });
-
-  it('shows multiple groups when multiple statuses selected', () => {
-    render(
-      <BenefitsList
-        benefits={mockBenefits}
-        selectedStatuses={['active', 'expiring_soon']}
-        isLoading={false}
-      />
-    );
-
-    expect(screen.getByText(/ACTIVE/)).toBeInTheDocument();
-    expect(screen.getByText(/EXPIRING SOON/)).toBeInTheDocument();
-    expect(screen.queryByText(/USED THIS PERIOD/)).not.toBeInTheDocument();
-  });
-
-  it('shows all groups when no status filter selected', () => {
-    render(
-      <BenefitsList
-        benefits={mockBenefits}
-        selectedStatuses={[]}
         isLoading={false}
       />
     );
@@ -874,7 +668,6 @@ describe('BenefitsList', () => {
     render(
       <BenefitsList
         benefits={mockBenefits}
-        selectedStatuses={[]}
         isLoading={false}
       />
     );
@@ -888,7 +681,6 @@ describe('BenefitsList', () => {
     render(
       <BenefitsList
         benefits={mockBenefits}
-        selectedStatuses={[]}
         isLoading={false}
       />
     );
@@ -923,7 +715,6 @@ describe('BenefitsList', () => {
     render(
       <BenefitsList
         benefits={singleBenefit}
-        selectedStatuses={[]}
         isLoading={false}
       />
     );
@@ -941,7 +732,6 @@ describe('BenefitsList', () => {
     render(
       <BenefitsList
         benefits={mockBenefits}
-        selectedStatuses={[]}
         isLoading={false}
         onMarkUsed={mockMarkUsed}
         onEdit={mockEdit}
@@ -951,118 +741,6 @@ describe('BenefitsList', () => {
 
     // Handlers should be available (tested in BenefitGroup/BenefitRow tests)
     expect(screen.getByText('Active Benefit')).toBeInTheDocument();
-  });
-});
-
-/**
- * ============================================================
- * INTEGRATION TESTS: Filter + Period Interactions
- * ============================================================
- */
-describe('BenefitsList Integration - Filter Logic', () => {
-  it('correctly applies AND logic with multiple filters', () => {
-    const benefits: BenefitRowProps[] = [
-      {
-        id: '1',
-        name: 'Active 1',
-        issuer: 'Card',
-        status: 'active',
-        periodStart: new Date(),
-        periodEnd: new Date(),
-        available: 50,
-        used: 0,
-        resetCadence: 'MONTHLY',
-      },
-      {
-        id: '2',
-        name: 'Expiring 1',
-        issuer: 'Card',
-        status: 'expiring_soon',
-        periodStart: new Date(),
-        periodEnd: new Date(),
-        available: 100,
-        used: 0,
-        resetCadence: 'MONTHLY',
-      },
-      {
-        id: '3',
-        name: 'Used 1',
-        issuer: 'Card',
-        status: 'used',
-        periodStart: new Date(),
-        periodEnd: new Date(),
-        available: 75,
-        used: 75,
-        resetCadence: 'MONTHLY',
-      },
-    ];
-
-    // Select active + expiring
-    render(
-      <BenefitsList
-        benefits={benefits}
-        selectedStatuses={['active', 'expiring_soon']}
-        isLoading={false}
-      />
-    );
-
-    // Should show active and expiring groups
-    expect(screen.getByText(/ACTIVE/)).toBeInTheDocument();
-    expect(screen.getByText(/EXPIRING SOON/)).toBeInTheDocument();
-    // Should not show used group
-    expect(screen.queryByText(/USED THIS PERIOD/)).not.toBeInTheDocument();
-  });
-
-  it('updates display when filters change', () => {
-    const benefits: BenefitRowProps[] = [
-      {
-        id: '1',
-        name: 'Active 1',
-        issuer: 'Card',
-        status: 'active',
-        periodStart: new Date(),
-        periodEnd: new Date(),
-        available: 50,
-        used: 0,
-        resetCadence: 'MONTHLY',
-      },
-      {
-        id: '2',
-        name: 'Used 1',
-        issuer: 'Card',
-        status: 'used',
-        periodStart: new Date(),
-        periodEnd: new Date(),
-        available: 75,
-        used: 75,
-        resetCadence: 'MONTHLY',
-      },
-    ];
-
-    const { rerender } = render(
-      <BenefitsList
-        benefits={benefits}
-        selectedStatuses={['active']}
-        isLoading={false}
-      />
-    );
-
-    // Initially shows only active
-    expect(screen.getByText(/ACTIVE/)).toBeInTheDocument();
-    expect(screen.queryByText(/USED THIS PERIOD/)).not.toBeInTheDocument();
-
-    // Change filter to show used instead
-    rerender(
-      <BenefitsList
-        benefits={benefits}
-        selectedStatuses={['used']}
-        isLoading={false}
-      />
-    );
-
-    // Now should show only used
-    expect(screen.queryByText(/ACTIVE/)).not.toBeInTheDocument();
-    expect(screen.getByText(/USED THIS PERIOD/)).toBeInTheDocument();
   });
 });
 
@@ -1177,7 +855,6 @@ describe('Edge Cases and Error Scenarios', () => {
     render(
       <BenefitsList
         benefits={benefits}
-        selectedStatuses={[]}
         isLoading={false}
       />
     );

@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { PeriodSelector, PeriodOption } from './components/PeriodSelector';
-import { StatusFilters, BenefitStatus, StatusOption } from './components/StatusFilters';
 import { SummaryBox } from './components/SummaryBox';
 import { BenefitsList } from './components/BenefitsList';
 import { BenefitRowProps } from './components/BenefitRow';
@@ -11,7 +10,6 @@ import { fetchDashboardData, toggleBenefitUsed } from '../utils/api-client';
 import CardSwitcher from '@/shared/components/features/CardSwitcher';
 import { EditBenefitModal } from '@/features/benefits/components/modals/EditBenefitModal';
 import { DeleteBenefitConfirmationDialog } from '@/features/benefits/components/modals/DeleteBenefitConfirmationDialog';
-import { CheckCircle, AlertCircle, CheckCircle2, XCircle, Clock } from 'lucide-react';
 
 /**
  * Type definitions for card and benefit
@@ -75,7 +73,6 @@ export default function EnhancedDashboardPage() {
   // State Management - Filters and Benefits
   // ============================================================
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>('this-month');
-  const [selectedStatuses, setSelectedStatuses] = useState<BenefitStatus[]>([]);
   const [allBenefits, setAllBenefits] = useState<BenefitRowProps[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -121,50 +118,6 @@ export default function EnhancedDashboardPage() {
         label: 'All Time',
         displayLabel: getPeriodDisplayLabel('all-time'),
         getDateRange: () => calculatePeriodDateRange('all-time'),
-      },
-    ],
-    []
-  );
-
-  // ============================================================
-  // Status Filter Configuration with Lucide Icons
-  // ============================================================
-  const statusOptions: StatusOption[] = useMemo(
-    () => [
-      {
-        id: 'active',
-        label: 'Active',
-        icon: <CheckCircle size={16} />,
-        description: 'Benefits with balance remaining',
-        color: '--color-success',
-      },
-      {
-        id: 'expiring_soon',
-        label: 'Expiring Soon',
-        icon: <AlertCircle size={16} />,
-        description: '7-30 days left to use',
-        color: '--color-warning',
-      },
-      {
-        id: 'used',
-        label: 'Used',
-        icon: <CheckCircle2 size={16} />,
-        description: 'Already claimed this period',
-        color: '--color-info',
-      },
-      {
-        id: 'expired',
-        label: 'Expired',
-        icon: <XCircle size={16} />,
-        description: 'Period ended',
-        color: '--color-text-secondary',
-      },
-      {
-        id: 'pending',
-        label: 'Pending',
-        icon: <Clock size={16} />,
-        description: 'Future periods',
-        color: '--color-text-secondary',
       },
     ],
     []
@@ -238,13 +191,8 @@ export default function EnhancedDashboardPage() {
       filtered = filtered.filter((b) => b.cardName === selectedCardId);
     }
 
-    // Filter by selected statuses
-    if (selectedStatuses.length > 0) {
-      filtered = filtered.filter((b) => selectedStatuses.includes(b.status));
-    }
-
     return filtered;
-  }, [allBenefits, selectedCardId, selectedStatuses]);
+  }, [allBenefits, selectedCardId]);
 
   // ============================================================
   // Calculate Summary Statistics
@@ -270,10 +218,6 @@ export default function EnhancedDashboardPage() {
   // ============================================================
   const handlePeriodChange = useCallback((periodId: string) => {
     setSelectedPeriodId(periodId);
-  }, []);
-
-  const handleStatusChange = useCallback((statuses: BenefitStatus[]) => {
-    setSelectedStatuses(statuses);
   }, []);
 
   const handleCardSelect = useCallback((cardId: string) => {
@@ -398,11 +342,6 @@ export default function EnhancedDashboardPage() {
               onPeriodChange={handlePeriodChange}
               periods={periodOptions}
             />
-            <StatusFilters
-              selectedStatuses={selectedStatuses}
-              onStatusChange={handleStatusChange}
-              availableStatuses={statusOptions}
-            />
           </div>
         </div>
       </div>
@@ -440,9 +379,6 @@ export default function EnhancedDashboardPage() {
         <div className="mt-8">
           <BenefitsList
             benefits={benefits}
-            selectedStatuses={
-              selectedStatuses.length > 0 ? selectedStatuses : statusOptions.map((s) => s.id)
-            }
             isLoading={isLoading}
             onMarkUsed={handleMarkUsed}
             onEdit={handleEdit}

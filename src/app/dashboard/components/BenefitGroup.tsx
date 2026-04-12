@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { BenefitRow, BenefitRowProps } from './BenefitRow';
-import { BenefitStatus } from './StatusFilters';
+import { BenefitStatus } from '../utils/status-colors';
 
 /**
  * Props for BenefitGroup component

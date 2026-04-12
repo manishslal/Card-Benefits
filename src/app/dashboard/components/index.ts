@@ -3,8 +3,7 @@
 export { PeriodSelector } from './PeriodSelector';
 export type { PeriodOption } from './PeriodSelector';
 
-export { StatusFilters } from './StatusFilters';
-export type { BenefitStatus, StatusOption } from './StatusFilters';
+export type { BenefitStatus, StatusOption } from '../utils/status-colors';
 
 export { SummaryBox } from './SummaryBox';
 

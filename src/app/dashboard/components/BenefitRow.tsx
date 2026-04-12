@@ -2,7 +2,7 @@
 
 import React, { useCallback, useState } from 'react';
 import { Edit2, Trash2, CheckCircle2 } from 'lucide-react';
-import { BenefitStatus } from './StatusFilters';
+import { BenefitStatus } from '../utils/status-colors';
 import { DashboardButton } from './DashboardButton';
 import { getStatusColor } from '../utils/status-colors';
 

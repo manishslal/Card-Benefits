@@ -1,7 +1,7 @@
 export { SummaryBox } from './SummaryBox';
 export { BenefitsList } from './BenefitsList';
 export { BenefitRow, type BenefitRowProps } from './BenefitRow';
-export { StatusFilters, type BenefitStatus, type StatusOption } from './StatusFilters';
+export type { BenefitStatus, StatusOption } from '../../utils/status-colors';
 export { PeriodSelector, type PeriodOption } from './PeriodSelector';
 export { UnifiedFilterBar, type UnifiedFilterBarProps } from './UnifiedFilterBar';
 export { MobileSummaryStats, type MobileSummaryStatsProps } from './MobileSummaryStats';

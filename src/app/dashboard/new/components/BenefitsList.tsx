@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useCallback } from 'react';
 import { BenefitRow, BenefitRowProps } from './BenefitRow';
-import { BenefitStatus } from './StatusFilters';
+import { BenefitStatus } from '../../utils/status-colors';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 /**
@@ -10,7 +10,6 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
  */
 interface BenefitsListProps {
   benefits: BenefitRowProps[];
-  selectedStatuses: BenefitStatus[];
   isLoading?: boolean;
   onMarkUsed?: (benefitId: string) => Promise<void>;
   onEdit?: (benefitId: string) => void;
@@ -59,7 +58,6 @@ const BENEFIT_GROUPS: Record<BenefitStatus, BenefitGroupConfig> = {
  *
  * Main content area that groups and displays benefits by status.
  * Features:
- * - Smart filtering by selected statuses
  * - Expandable/collapsible sections
  * - Empty state messages
  * - Loading skeletons
@@ -67,7 +65,6 @@ const BENEFIT_GROUPS: Record<BenefitStatus, BenefitGroupConfig> = {
  */
 export function BenefitsList({
   benefits,
-  selectedStatuses,
   isLoading = false,
   onMarkUsed,
   onEdit,
@@ -96,27 +93,6 @@ export function BenefitsList({
 
     return groups;
   }, [benefits]);
-
-  // Filter groups based on selected statuses
-  const filteredGroups = useMemo(() => {
-    if (selectedStatuses.length === 0) {
-      return groupedBenefits;
-    }
-
-    const filtered: Record<BenefitStatus, BenefitRowProps[]> = {
-      active: [],
-      expiring_soon: [],
-      used: [],
-      expired: [],
-      pending: [],
-    };
-
-    selectedStatuses.forEach((status) => {
-      filtered[status] = groupedBenefits[status];
-    });
-
-    return filtered;
-  }, [groupedBenefits, selectedStatuses]);
 
   const handleToggleSection = useCallback((status: BenefitStatus) => {
     setExpandedSections((prev) => {
@@ -156,7 +132,7 @@ export function BenefitsList({
   }
 
   // Calculate total benefits to show
-  const totalBenefitsInView = Object.values(filteredGroups).reduce(
+  const totalBenefitsInView = Object.values(groupedBenefits).reduce(
     (sum, benefitList) => sum + benefitList.length,
     0
   );
@@ -183,7 +159,7 @@ export function BenefitsList({
 
   return (
     <div className="space-y-6">
-      {Object.entries(filteredGroups).map(([statusKey, statusBenefits]) => {
+      {Object.entries(groupedBenefits).map(([statusKey, statusBenefits]) => {
         const status = statusKey as BenefitStatus;
         if (statusBenefits.length === 0) return null;
 

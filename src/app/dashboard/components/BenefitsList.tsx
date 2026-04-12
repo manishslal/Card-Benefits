@@ -4,7 +4,7 @@ import React, { useMemo, useState, useCallback } from 'react';
 import { BenefitGroup } from './BenefitGroup';
 import { PastPeriodsSection, PastPeriodEntry } from './PastPeriodsSection';
 import { BenefitRowProps } from './BenefitRow';
-import { BenefitStatus } from './StatusFilters';
+import { BenefitStatus } from '../utils/status-colors';
 
 /**
  * Props for BenefitsList component
@@ -12,7 +12,6 @@ import { BenefitStatus } from './StatusFilters';
 interface BenefitsListProps {
   benefits: BenefitRowProps[];
   pastPeriods?: PastPeriodEntry[];
-  selectedStatuses: BenefitStatus[];
   isLoading?: boolean;
   onMarkUsed?: (benefitId: string) => Promise<void>;
   onEdit?: (benefitId: string) => void;
@@ -32,7 +31,6 @@ interface BenefitsListProps {
  * - 📜 PAST PERIODS (collapsed by default)
  *
  * Features:
- * - Smart filtering by selected statuses
  * - Expandable/collapsible sections
  * - Empty state messages
  * - Loading skeletons
@@ -40,7 +38,6 @@ interface BenefitsListProps {
 export function BenefitsList({
   benefits,
   pastPeriods = [],
-  selectedStatuses,
   isLoading = false,
   onMarkUsed,
   onEdit,
@@ -69,27 +66,6 @@ export function BenefitsList({
 
     return groups;
   }, [benefits]);
-
-  // Filter groups based on selected statuses
-  const filteredGroups = useMemo(() => {
-    if (selectedStatuses.length === 0) {
-      return groupedBenefits;
-    }
-
-    const filtered: Record<BenefitStatus, BenefitRowProps[]> = {
-      active: [],
-      expiring_soon: [],
-      used: [],
-      expired: [],
-      pending: [],
-    };
-
-    selectedStatuses.forEach((status) => {
-      filtered[status] = groupedBenefits[status];
-    });
-
-    return filtered;
-  }, [groupedBenefits, selectedStatuses]);
 
   const handleToggleSection = useCallback((status: BenefitStatus) => {
     setExpandedSections((prev) => {
@@ -129,7 +105,7 @@ export function BenefitsList({
   }
 
   // Calculate total benefits to show
-  const totalBenefitsInView = Object.values(filteredGroups).reduce(
+  const totalBenefitsInView = Object.values(groupedBenefits).reduce(
     (sum, benefits) => sum + benefits.length,
     0
   );
@@ -157,12 +133,12 @@ export function BenefitsList({
   return (
     <div className="space-y-6">
       {/* Active Benefits */}
-      {filteredGroups.active.length > 0 && (
+      {groupedBenefits.active.length > 0 && (
         <BenefitGroup
           status="active"
           title="ACTIVE"
           icon="🟢"
-          benefits={filteredGroups.active}
+          benefits={groupedBenefits.active}
           isExpanded={expandedSections.has('active')}
           onToggleExpand={handleToggleSection}
           color="green"
@@ -173,12 +149,12 @@ export function BenefitsList({
       )}
 
       {/* Expiring Soon Benefits */}
-      {filteredGroups.expiring_soon.length > 0 && (
+      {groupedBenefits.expiring_soon.length > 0 && (
         <BenefitGroup
           status="expiring_soon"
           title="EXPIRING SOON - 7 DAYS"
           icon="🟠"
-          benefits={filteredGroups.expiring_soon}
+          benefits={groupedBenefits.expiring_soon}
           isExpanded={expandedSections.has('expiring_soon')}
           onToggleExpand={handleToggleSection}
           color="orange"
@@ -189,12 +165,12 @@ export function BenefitsList({
       )}
 
       {/* Used Benefits */}
-      {filteredGroups.used.length > 0 && (
+      {groupedBenefits.used.length > 0 && (
         <BenefitGroup
           status="used"
           title="USED THIS PERIOD"
           icon="✓"
-          benefits={filteredGroups.used}
+          benefits={groupedBenefits.used}
           isExpanded={expandedSections.has('used')}
           onToggleExpand={handleToggleSection}
           color="gray"
@@ -205,12 +181,12 @@ export function BenefitsList({
       )}
 
       {/* Expired Benefits */}
-      {filteredGroups.expired.length > 0 && (
+      {groupedBenefits.expired.length > 0 && (
         <BenefitGroup
           status="expired"
           title="EXPIRED"
           icon="🔴"
-          benefits={filteredGroups.expired}
+          benefits={groupedBenefits.expired}
           isExpanded={expandedSections.has('expired')}
           onToggleExpand={handleToggleSection}
           color="red"
@@ -221,12 +197,12 @@ export function BenefitsList({
       )}
 
       {/* Pending Benefits */}
-      {filteredGroups.pending.length > 0 && (
+      {groupedBenefits.pending.length > 0 && (
         <BenefitGroup
           status="pending"
           title="PENDING"
           icon="⏳"
-          benefits={filteredGroups.pending}
+          benefits={groupedBenefits.pending}
           isExpanded={expandedSections.has('pending')}
           onToggleExpand={handleToggleSection}
           color="blue"

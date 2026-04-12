@@ -9,10 +9,10 @@ import { CardSwitcher, DashboardSummary } from '@/shared/components/features';
 import { BenefitsGrid, AddBenefitModal, EditBenefitModal, DeleteBenefitConfirmationDialog } from '@/features/benefits';
 import { AddCardModal } from '@/features/cards/components/modals/AddCardModal';
 import { deduplicateBenefits } from '@/lib/benefit-utils';
-import { Plus, CreditCard, CheckCircle, AlertCircle, CheckCircle2, XCircle, Clock, Sparkles } from 'lucide-react';
+import { Plus, CreditCard, AlertCircle, Sparkles } from 'lucide-react';
 import { SkeletonCard } from '@/shared/components/loaders';
 import { type PeriodOption } from './new/components/PeriodSelector';
-import { type BenefitStatus, type StatusOption } from './new/components/StatusFilters';
+
 import { UnifiedFilterBar } from './new/components/UnifiedFilterBar';
 import { MobileSummaryStats } from './new/components/MobileSummaryStats';
 import { SearchSortBar } from './new/components/SearchSortBar';
@@ -284,14 +284,6 @@ export default function DashboardPage() {
   // ============================================================
 
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>('all-time');
-  const [selectedStatuses, setSelectedStatuses] = useState<BenefitStatus[]>([
-    'active',
-    'expiring_soon',
-    'used',
-    'expired',
-    'pending',
-  ]);
-
   // ============================================================
   // State Management - Search, Sort, Smart Views (Sprint 8)
   // ============================================================
@@ -436,81 +428,13 @@ export default function DashboardPage() {
   );
 
   // ============================================================
-  // Filtering Configuration - Status Options
-  // ============================================================
-
-  const statusOptions: StatusOption[] = useMemo(
-    () => [
-      {
-        id: 'active',
-        label: 'Active',
-        icon: <CheckCircle size={16} />,
-        description: 'Currently active benefits',
-        color: '--color-success',
-      },
-      {
-        id: 'expiring_soon',
-        label: 'Expiring Soon',
-        icon: <AlertCircle size={16} />,
-        description: 'Benefits expiring within 7 days',
-        color: '--color-warning',
-      },
-      {
-        id: 'used',
-        label: 'Used',
-        icon: <CheckCircle2 size={16} />,
-        description: 'Benefits already used',
-        color: '--color-info',
-      },
-      {
-        id: 'expired',
-        label: 'Expired',
-        icon: <XCircle size={16} />,
-        description: 'Benefits past expiration date',
-        color: '--color-border',
-      },
-      {
-        id: 'pending',
-        label: 'Pending',
-        icon: <Clock size={16} />,
-        description: 'Benefits pending review',
-        color: '--color-border',
-      },
-    ],
-    []
-  );
-
-  // ============================================================
-  // Filtering Logic - Apply Period and Status Filters
+  // Filtering Logic - Apply Period Filter
   // ============================================================
 
   const filteredBenefits = useMemo(() => {
     if (!benefits) return [];
 
     return benefits.filter((benefit) => {
-      // Check status filter - isUsed takes priority so used benefits
-      // appear under "Used" filter even when API status is still "active"
-      let benefitStatus: BenefitStatus;
-      const apiStatus = benefit.status?.toLowerCase() || 'pending';
-
-      if (benefit.isUsed || apiStatus === 'used') {
-        benefitStatus = 'used';
-      } else if (apiStatus === 'active') {
-        benefitStatus = 'active';
-      } else if (apiStatus === 'expiring') {
-        benefitStatus = 'expiring_soon';
-      } else if (apiStatus === 'expired') {
-        benefitStatus = 'expired';
-      } else {
-        benefitStatus = 'pending';
-      }
-
-      // Status filter check
-      // DISC-006: Show NONE when no statuses selected (user expects empty results)
-      if (selectedStatuses.length === 0 || !selectedStatuses.includes(benefitStatus)) {
-        return false;
-      }
-
       // Period filter check - only if not 'all-time'
       if (selectedPeriodId !== 'all-time') {
         const periodOption = periodOptions.find((p) => p.id === selectedPeriodId);
@@ -533,7 +457,7 @@ export default function DashboardPage() {
 
       return true;
     });
-  }, [benefits, selectedPeriodId, selectedStatuses, periodOptions]);
+  }, [benefits, selectedPeriodId, periodOptions]);
 
   // ============================================================
   // Deduplication — collapse multi-period rows when engine is ON
@@ -1505,9 +1429,6 @@ export default function DashboardPage() {
                   selectedPeriodId={selectedPeriodId}
                   onPeriodChange={setSelectedPeriodId}
                   periods={periodOptions}
-                  selectedStatuses={selectedStatuses}
-                  onStatusChange={(statuses) => setSelectedStatuses(statuses as BenefitStatus[])}
-                  availableStatuses={statusOptions}
                   viewMode={viewMode}
                   onViewModeChange={setViewMode}
                   benefitEngineEnabled={benefitEngineEnabled}
@@ -1614,14 +1535,11 @@ export default function DashboardPage() {
                     className="text-center py-12 rounded-lg bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)]"
                   >
                     <p className="text-sm">
-                      No benefits match the selected period and status filters.
+                      No benefits match your current filters.
                     </p>
                     <button
                       onClick={() => {
                         setSelectedPeriodId('all-time');
-                        setSelectedStatuses(
-                          statusOptions.map((s) => s.id)
-                        );
                       }}
                       className="text-sm underline mt-2 transition-colors text-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
                     >

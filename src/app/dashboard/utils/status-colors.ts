@@ -3,7 +3,17 @@
  * Uses CSS design tokens for light and dark mode support
  */
 
-import { BenefitStatus } from '../components/StatusFilters';
+/**
+ * Status filter options available in the dashboard
+ */
+export type BenefitStatus = 'active' | 'expiring_soon' | 'used' | 'expired' | 'pending';
+
+export interface StatusOption {
+  id: BenefitStatus;
+  label: string;
+  icon: string;
+  description: string;
+}
 
 export interface StatusColorConfig {
   icon: string;

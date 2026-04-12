@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/shared/components/ui/use-toast';
 import Button from '@/shared/components/ui/button';
@@ -264,6 +264,8 @@ export default function DashboardPage() {
   // ============================================================
 
   const [benefits, setBenefits] = useState<BenefitData[]>([]);
+  // DISC-001: Track previous card to distinguish card-switch from benefit-mutation
+  const prevSelectedCardIdRef = useRef(selectedCardId);
   const [isAddBenefitOpen, setIsAddBenefitOpen] = useState(false);
   const [isEditBenefitOpen, setIsEditBenefitOpen] = useState(false);
   const [isDeleteBenefitOpen, setIsDeleteBenefitOpen] = useState(false);
@@ -679,6 +681,22 @@ export default function DashboardPage() {
       }
     }
   }, [selectedCardId, cards]);
+
+  // DISC-001: Sync benefits back to cards state to prevent stale data on card switch
+  useEffect(() => {
+    // Only sync when benefits were mutated, not when we just switched cards
+    if (selectedCardId !== prevSelectedCardIdRef.current) {
+      prevSelectedCardIdRef.current = selectedCardId;
+      return;
+    }
+    if (selectedCardId) {
+      setCards(prev => prev.map(card =>
+        card.id === selectedCardId
+          ? { ...card, benefits }
+          : card
+      ));
+    }
+  }, [benefits, selectedCardId]);
 
   // ============================================================
   // Effect: Load history benefits when viewMode switches to "history"
@@ -1210,7 +1228,7 @@ export default function DashboardPage() {
       variant: 'default' as const,
     },
     {
-      label: 'Active Cards',
+      label: 'My Cards',
       value: cards.length,
       icon: 'Wallet',
       variant: 'default' as const,
@@ -1219,7 +1237,13 @@ export default function DashboardPage() {
       label: viewMode === 'history' ? 'Used' : 'Expiring Soon',
       value: viewMode === 'history'
         ? displayBenefits.filter((b) => b.isUsed).length
-        : displayBenefits.filter((b) => b.status === 'expiring').length,
+        : displayBenefits.filter((b) => {
+            if (!b.periodEnd) return false;
+            const end = new Date(b.periodEnd);
+            const now = new Date();
+            const daysUntilExpiry = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            return daysUntilExpiry >= 0 && daysUntilExpiry <= 7;
+          }).length,
       icon: 'Clock',
       variant: 'default' as const,
     },

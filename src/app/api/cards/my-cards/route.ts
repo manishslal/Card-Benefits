@@ -325,14 +325,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const summary: CardWalletSummary = {
       totalCards: allUserCards.length,
       totalAnnualFees: allUserCards.reduce(
-        (sum, card) => sum + (card.actualAnnualFee || card.masterCard.defaultAnnualFee),
+        (sum, card) => sum + (card.actualAnnualFee ?? card.masterCard.defaultAnnualFee),
         0
       ),
       totalBenefitValue: allUserCards.reduce(
         (sum, card) =>
           sum +
           card.userBenefits.reduce(
-            (bSum, benefit) => bSum + (benefit.userDeclaredValue || benefit.stickerValue),
+            (bSum, benefit) => bSum + (benefit.userDeclaredValue ?? benefit.stickerValue),
             0
           ),
         0

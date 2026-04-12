@@ -67,7 +67,7 @@ interface BenefitData {
   expirationDate?: Date | string | null;
   description?: string;
   value?: number;
-  usage?: number;
+  usage?: number | null;
   isUsed?: boolean;
   createdDate?: Date | string;
   // Period-based fields (benefit engine)
@@ -134,7 +134,13 @@ interface ApiCardsResponse {
 function calculateYearlyUsage(
   benefit: ApiBenefit,
   allBenefits: ApiBenefit[]
-): number {
+): number | null {
+  // Unlimited/multiplier benefits (stickerValue=0, no user override) don't track percentage usage
+  const effectiveValue = benefit.userDeclaredValue ?? benefit.stickerValue;
+  if (effectiveValue === 0) {
+    return null;
+  }
+
   const cadence = (benefit.claimingCadence || benefit.resetCadence || '').toUpperCase();
 
   if (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR') {
@@ -176,7 +182,7 @@ function transformBenefitForGrid(benefit: BenefitData): {
   status: 'active' | 'expiring' | 'expired' | 'pending';
   expirationDate?: Date | string;
   value?: number;
-  usage?: number;
+  usage?: number | null;
   type?: string;
   periodStart?: string | null;
   periodEnd?: string | null;
@@ -694,7 +700,12 @@ export default function DashboardPage() {
             status: 'expired' as const,
             isUsed: b.isUsed,
             value: (b.userDeclaredValue ?? b.stickerValue) / 100,
-            usage: b.isUsed ? 100 : 0,
+            usage: (() => {
+              // H-1 fix: Preserve null for unlimited/multiplier benefits
+              const effectiveValue = b.userDeclaredValue ?? b.stickerValue;
+              if (effectiveValue === 0) return null;
+              return b.isUsed ? 100 : 0;
+            })(),
             periodStart: b.periodStart,
             periodEnd: b.periodEnd,
             periodStatus: b.periodStatus,
@@ -783,6 +794,8 @@ export default function DashboardPage() {
         if (masterId) {
           return updated.map(b => {
             if (b.masterBenefitId === masterId) {
+              // C-1 fix: Preserve null for unlimited/multiplier benefits
+              if (b.usage === null) return { ...b, usage: null };
               const cadence = (b.claimingCadence || b.resetCadence || '').toUpperCase();
               const totalPeriods = cadence === 'MONTHLY' ? 12
                 : cadence === 'QUARTERLY' ? 4
@@ -807,7 +820,7 @@ export default function DashboardPage() {
           });
         }
         return updated.map(b =>
-          b.id === benefitId ? { ...b, usage: b.isUsed ? 100 : 0 } : b
+          b.id === benefitId ? { ...b, usage: b.usage === null ? null : (b.isUsed ? 100 : 0) } : b
         );
       });
 
@@ -830,6 +843,8 @@ export default function DashboardPage() {
           if (masterId) {
             return updated.map(b => {
               if (b.masterBenefitId === masterId) {
+                // C-1 fix: Preserve null for unlimited/multiplier benefits
+                if (b.usage === null) return { ...b, usage: null };
                 const cadence = (b.claimingCadence || b.resetCadence || '').toUpperCase();
                 const totalPeriods = cadence === 'MONTHLY' ? 12
                   : cadence === 'QUARTERLY' ? 4
@@ -854,7 +869,7 @@ export default function DashboardPage() {
             });
           }
           return updated.map(b =>
-            b.id === benefitId ? { ...b, usage: b.isUsed ? 100 : 0 } : b
+            b.id === benefitId ? { ...b, usage: b.usage === null ? null : (b.isUsed ? 100 : 0) } : b
           );
         });
 
@@ -883,6 +898,8 @@ export default function DashboardPage() {
           if (masterId) {
             return updated.map(b => {
               if (b.masterBenefitId === masterId) {
+                // C-1 fix: Preserve null for unlimited/multiplier benefits
+                if (b.usage === null) return { ...b, usage: null };
                 const cadence = (b.claimingCadence || b.resetCadence || '').toUpperCase();
                 const totalPeriods = cadence === 'MONTHLY' ? 12
                   : cadence === 'QUARTERLY' ? 4
@@ -907,7 +924,7 @@ export default function DashboardPage() {
             });
           }
           return updated.map(b =>
-            b.id === benefitId ? { ...b, usage: b.isUsed ? 100 : 0 } : b
+            b.id === benefitId ? { ...b, usage: b.usage === null ? null : (b.isUsed ? 100 : 0) } : b
           );
         });
         // Trigger celebration animation
@@ -947,6 +964,8 @@ export default function DashboardPage() {
                     if (masterId) {
                       return updated.map(b => {
                         if (b.masterBenefitId === masterId) {
+                          // C-1 fix: Preserve null for unlimited/multiplier benefits
+                          if (b.usage === null) return { ...b, usage: null };
                           const cadence = (b.claimingCadence || b.resetCadence || '').toUpperCase();
                           const totalPeriods = cadence === 'MONTHLY' ? 12
                             : cadence === 'QUARTERLY' ? 4
@@ -970,9 +989,9 @@ export default function DashboardPage() {
                         return b;
                       });
                     }
-                    // Single benefit — set usage directly
+                    // Single benefit — set usage directly (preserve null for unlimited)
                     return updated.map(b =>
-                      b.id === benefitId ? { ...b, usage: 0 } : b
+                      b.id === benefitId ? { ...b, usage: b.usage === null ? null : 0 } : b
                     );
                   });
                   toast({ title: 'Undo successful', variant: 'info', duration: 2000 });
@@ -998,6 +1017,8 @@ export default function DashboardPage() {
         if (masterId) {
           return updated.map(b => {
             if (b.masterBenefitId === masterId) {
+              // C-1 fix: Preserve null for unlimited/multiplier benefits
+              if (b.usage === null) return { ...b, usage: null };
               const cadence = (b.claimingCadence || b.resetCadence || '').toUpperCase();
               const totalPeriods = cadence === 'MONTHLY' ? 12
                 : cadence === 'QUARTERLY' ? 4
@@ -1022,7 +1043,7 @@ export default function DashboardPage() {
           });
         }
         return updated.map(b =>
-          b.id === benefitId ? { ...b, usage: b.isUsed ? 100 : 0 } : b
+          b.id === benefitId ? { ...b, usage: b.usage === null ? null : (b.isUsed ? 100 : 0) } : b
         );
       });
       toast({ title: 'Failed to mark benefit as used. Please try again.', variant: 'error' });
@@ -1045,6 +1066,8 @@ export default function DashboardPage() {
         if (masterId) {
           return updated.map(b => {
             if (b.masterBenefitId === masterId) {
+              // C-1 fix: Preserve null for unlimited/multiplier benefits
+              if (b.usage === null) return { ...b, usage: null };
               const cadence = (b.claimingCadence || b.resetCadence || '').toUpperCase();
               const totalPeriods = cadence === 'MONTHLY' ? 12
                 : cadence === 'QUARTERLY' ? 4
@@ -1071,7 +1094,8 @@ export default function DashboardPage() {
         // Single benefit (no masterBenefitId) — just set usage directly
         return updated.map(b => {
           if (b.id === updatedFields.id) {
-            return { ...b, usage: b.isUsed ? 100 : 0 };
+            // C-1 fix: Preserve null for unlimited/multiplier benefits
+            return { ...b, usage: b.usage === null ? null : (b.isUsed ? 100 : 0) };
           }
           return b;
         });

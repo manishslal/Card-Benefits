@@ -16,7 +16,7 @@ interface Benefit {
   status: 'active' | 'expiring' | 'expired' | 'pending';
   expirationDate?: Date | string;
   value?: number;
-  usage?: number; // 0-100 percentage
+  usage?: number | null; // 0-100 percentage, null = unlimited/multiplier benefit
   type?: string; // travel, shopping, dining, cashback, other
   // Period-based fields (present when benefit engine is enabled)
   periodStart?: string | null;
@@ -168,19 +168,76 @@ function ProgressRing({
   usage,
   isUsed,
 }: {
-  usage?: number;
+  usage?: number | null;
   isUsed?: boolean;
 }) {
   const size = 40;
   const strokeWidth = 3;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const pct = Math.min(Math.max(usage ?? 0, 0), 100);
-  const offset = circumference - (pct / 100) * circumference;
-  const ringColor = getProgressRingColor(isUsed);
 
   // No usage data and not used — don't render
   if (usage === undefined && !isUsed) return null;
+
+  // Infinity mode — unlimited/multiplier benefits
+  if (usage === null) {
+    // M-1 fix: Dynamic color — green when used, accent when unused
+    const infinityColor = isUsed
+      ? 'var(--color-success)'
+      : 'var(--color-accent, var(--color-primary))';
+    return (
+      <div
+        className="relative flex-shrink-0"
+        style={{ width: size, height: size }}
+        role="img"
+        aria-label="Unlimited benefit"
+      >
+        <svg
+          width={size}
+          height={size}
+          viewBox={`0 0 ${size} ${size}`}
+          style={{ transform: 'rotate(-90deg)' }}
+        >
+          {/* Full ring background (faded) */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke={infinityColor}
+            strokeWidth={strokeWidth}
+            opacity={0.3}
+          />
+          {/* Full ring foreground */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke={infinityColor}
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={0}
+          />
+        </svg>
+        <span
+          className="absolute inset-0 flex items-center justify-center leading-none"
+          style={{
+            fontSize: '14px',
+            fontWeight: 700,
+            color: infinityColor,
+          }}
+          aria-hidden="true"
+        >
+          ∞
+        </span>
+      </div>
+    );
+  }
+
+  const pct = Math.min(Math.max(usage ?? 0, 0), 100);
+  const offset = circumference - (pct / 100) * circumference;
+  const ringColor = getProgressRingColor(isUsed);
 
   return (
     <div
@@ -268,6 +325,15 @@ function inferBenefitCategory(type?: string, name?: string): string {
   if (typeLower === 'usageperk') return 'points';
 
   return 'default';
+}
+
+// ---------------------------------------------------------------------------
+// Helper: Extract point multiplier from benefit name (e.g., "5x Points on Hotels" → 5)
+// ---------------------------------------------------------------------------
+function extractMultiplier(name?: string): number | null {
+  if (!name) return null;
+  const match = name.match(/(\d+\.?\d*)x\b/i);
+  return match ? parseFloat(match[1]) : null;
 }
 
 /**
@@ -520,7 +586,6 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                 benefit.claimingCadence
               );
               const isUsed = benefit.isUsed === true;
-              const showRing = benefit.usage !== undefined || isUsed;
               const animIndex = cardAnimationIndices.get(benefit.id) ?? 0;
               const cadenceText = getCadenceInfoText(benefit.name, benefit.resetCadence, benefit.claimingCadence);
 
@@ -572,21 +637,40 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                     </div>
 
                     {/* ── Row 2: Value + Progress Ring ── */}
-                    {(showRing || (benefit.value != null && benefit.value > 0)) && (
-                      <div className="flex items-center justify-between gap-3 mb-1">
-                        {benefit.value != null && benefit.value > 0 ? (
-                          <span
-                            className="font-mono font-semibold text-base"
-                            style={{ color: 'var(--color-text)' }}
-                          >
-                            ${benefit.value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
-                          </span>
-                        ) : (
-                          <span />
-                        )}
-                        <ProgressRing usage={benefit.usage} isUsed={isUsed} />
-                      </div>
-                    )}
+                    {(() => {
+                      const multiplier = extractMultiplier(benefit.name);
+                      const isUnlimited = benefit.usage === null;
+                      const hasMonetaryValue = benefit.value != null && benefit.value > 0;
+                      const showRow = hasMonetaryValue || isUnlimited || multiplier !== null;
+
+                      if (!showRow) return null;
+
+                      return (
+                        <div className="flex items-center justify-between gap-3 mb-1">
+                          {multiplier !== null ? (
+                            <span
+                              className="font-mono font-bold text-base px-2 py-0.5 rounded"
+                              style={{
+                                color: 'var(--color-accent, var(--color-primary))',
+                                backgroundColor: 'var(--color-accent-subtle, rgba(59, 130, 246, 0.1))',
+                              }}
+                            >
+                              {multiplier}x
+                            </span>
+                          ) : hasMonetaryValue ? (
+                            <span
+                              className="font-mono font-semibold text-base"
+                              style={{ color: 'var(--color-text)' }}
+                            >
+                              ${(benefit.value ?? 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                            </span>
+                          ) : (
+                            <span />
+                          )}
+                          <ProgressRing usage={benefit.usage} isUsed={isUsed} />
+                        </div>
+                      );
+                    })()}
 
                     {/* ── Row 2b: Cadence info line (Sprint 11b) ── */}
                     {cadenceText && (

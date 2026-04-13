@@ -137,7 +137,7 @@ export default function CompactCardChips({
               style={{
                 scrollSnapAlign: 'center',
                 minWidth: 'auto',
-                minHeight: 'auto',
+                minHeight: '44px',
               }}
               aria-label={`${card.name}${count != null ? `, ${count} benefits` : ''}`}
             >
@@ -153,7 +153,7 @@ export default function CompactCardChips({
                 }}
               />
               {/* Card name — truncated */}
-              <span className="truncate" style={{ maxWidth: 100 }}>
+              <span className="truncate" style={{ maxWidth: 'min(140px, 30vw)' }}>
                 {label}
               </span>
               {/* Benefit count */}
@@ -182,7 +182,7 @@ export default function CompactCardChips({
           onClick={() => onEditCard(selectedCardId)}
           className="flex-shrink-0 p-1.5 rounded-md transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-secondary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
           aria-label="Edit card settings"
-          style={{ minWidth: 'auto', minHeight: 'auto' }}
+          style={{ minWidth: '44px', minHeight: '44px' }}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />

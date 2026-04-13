@@ -34,10 +34,9 @@ export function AppHeader({
 }: AppHeaderProps) {
   return (
     <header
-      className="sticky top-0 z-40 border-b py-2.5"
+      className="sticky top-0 z-40 shadow-sm py-2.5"
       style={{
         backgroundColor: 'var(--color-bg)',
-        borderColor: 'var(--color-border)',
       }}
     >
       <div className="max-w-6xl mx-auto px-4 md:px-8">
@@ -50,7 +49,7 @@ export function AppHeader({
             >
               <CreditCard size={20} />
             </div>
-            <h1 className="text-lg font-bold text-[var(--color-text)]">CardTrack</h1>
+            <span className="text-lg font-bold text-[var(--color-text)]">CardTrack</span>
           </Link>
 
           {/* Right: Settings or Back button + optional slot */}

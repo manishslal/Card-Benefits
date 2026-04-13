@@ -2,10 +2,10 @@
 
 import React, { useMemo } from 'react';
 import Badge from '@/shared/components/ui/Badge';
-import Button from '@/shared/components/ui/button';
 import {
   Plane, Tag, Utensils, DollarSign, Zap, Calendar, CheckCircle2,
   Shield, Music, Tv, Star, Armchair, Hotel, Heart, Car, Landmark,
+  Pencil,
 } from 'lucide-react';
 import { formatPeriodRange } from '@/lib/format-period-range';
 
@@ -597,11 +597,12 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit?.(benefit.id); } }}
-                  className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] border-[var(--color-border)] hover:border-[var(--color-primary)] hover:shadow-lg hover:-translate-y-1 flex flex-col cursor-pointer${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
+                  className={`rounded-lg border shadow-sm overflow-hidden transition-all duration-200 bg-[var(--color-bg)] hover:border-[var(--color-primary)] hover:shadow-lg hover:-translate-y-1 flex flex-col cursor-pointer${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
                   style={{
                     opacity: isUsed ? 0.7 : 1,
                     animation: `scaleIn 0.3s ease-out both`,
                     animationDelay: `${Math.min(animIndex * 50, 500)}ms`,
+                    borderColor: 'color-mix(in srgb, var(--color-border) 50%, transparent)',
                     borderLeft: `3px solid ${getLeftBorderColor()}`,
                   }}
                 >
@@ -636,48 +637,49 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                       {getStatusBadge(benefit.status, isUsed)}
                     </div>
 
-                    {/* ── Row 2: Value + Progress Ring ── */}
+                    {/* ── Row 2: Value · Cadence + Progress Ring (merged, Sprint 28B) ── */}
                     {(() => {
                       const multiplier = extractMultiplier(benefit.name);
                       const isUnlimited = benefit.usage === null;
                       const hasMonetaryValue = benefit.value != null && benefit.value > 0;
-                      const showRow = hasMonetaryValue || isUnlimited || multiplier !== null;
+                      const showRow = hasMonetaryValue || isUnlimited || multiplier !== null || !!cadenceText;
 
                       if (!showRow) return null;
 
                       return (
                         <div className="flex items-center justify-between gap-3 mb-1">
-                          {multiplier !== null ? (
-                            <span
-                              className="font-mono font-bold text-base px-2 py-0.5 rounded"
-                              style={{
-                                color: 'var(--color-accent, var(--color-primary))',
-                                backgroundColor: 'var(--color-accent-subtle, rgba(59, 130, 246, 0.1))',
-                              }}
-                            >
-                              {multiplier}x
-                            </span>
-                          ) : hasMonetaryValue ? (
-                            <span
-                              className="font-mono font-semibold text-base"
-                              style={{ color: 'var(--color-text)' }}
-                            >
-                              ${(benefit.value ?? 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
-                            </span>
-                          ) : (
-                            <span />
-                          )}
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            {multiplier !== null ? (
+                              <span
+                                className="font-mono font-bold text-base px-2 py-0.5 rounded flex-shrink-0"
+                                style={{
+                                  color: 'var(--color-accent, var(--color-primary))',
+                                  backgroundColor: 'var(--color-accent-subtle, rgba(59, 130, 246, 0.1))',
+                                }}
+                              >
+                                {multiplier}x
+                              </span>
+                            ) : hasMonetaryValue ? (
+                              <span
+                                className="font-mono font-semibold text-base flex-shrink-0"
+                                style={{ color: 'var(--color-text)' }}
+                              >
+                                ${(benefit.value ?? 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                              </span>
+                            ) : null}
+                            {cadenceText && (hasMonetaryValue || multiplier !== null) && (
+                              <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-text-tertiary)' }}>·</span>
+                            )}
+                            {cadenceText && (
+                              <span className="text-xs truncate" style={{ color: 'var(--color-text-tertiary)' }}>
+                                {cadenceText}
+                              </span>
+                            )}
+                          </div>
                           <ProgressRing usage={benefit.usage} isUsed={isUsed} />
                         </div>
                       );
                     })()}
-
-                    {/* ── Row 2b: Cadence info line (Sprint 11b) ── */}
-                    {cadenceText && (
-                      <p className="text-xs mb-1" style={{ color: 'var(--color-text-tertiary)' }}>
-                        {cadenceText}
-                      </p>
-                    )}
 
                     {/* ── Row 3: Description ── */}
                     <div className="flex-1 min-h-0">
@@ -692,76 +694,67 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                       )}
                     </div>
 
-                    {/* ── Row 4: Meta — period progress + expiration ── */}
+                    {/* ── Row 4: Meta — period progress + expiration + inline action icons (Sprint 28B) ── */}
                     <div className="flex items-center justify-between gap-2 mb-1">
-                      <span
-                        className="text-xs"
-                        style={{ color: 'var(--color-text-secondary)' }}
-                      >
-                        {progressText}
-                      </span>
-                      {benefit.expirationDate && (
+                      <div className="flex items-center gap-2 min-w-0">
                         <span
-                          className="text-xs"
+                          className="text-xs truncate"
                           style={{ color: 'var(--color-text-secondary)' }}
                         >
-                          Exp: {formatDate(benefit.expirationDate)}
+                          {progressText}
                         </span>
-                      )}
-                    </div>
-
-                    {/* ── Row 5: Action buttons — stopPropagation to avoid card click ── */}
-                    <div
-                      className="flex gap-2 mt-auto pt-1 flex-wrap"
-                      style={{ borderTop: '1px solid var(--color-border)' }}
-                    >
-                      {onMarkUsed && benefit.status === 'active' && (
-                        isUsed ? (
-                          <Button
-                            variant="secondary"
-                            size="xs"
-                            disabled
-                            className="flex-1 min-w-0 min-h-[36px]"
-                            leftIcon={
-                              <CheckCircle2 size={14} aria-hidden="true" />
-                            }
-                            aria-label={`${benefit.name} has been used${
-                              periodMonth ? ` for ${periodMonth}` : ''
-                            }`}
+                        {benefit.expirationDate && (
+                          <span
+                            className="text-xs flex-shrink-0"
+                            style={{ color: 'var(--color-text-secondary)' }}
                           >
-                            Used
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="secondary"
-                            size="xs"
+                            Exp: {formatDate(benefit.expirationDate)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        {onMarkUsed && benefit.status === 'active' && (
+                          isUsed ? (
+                            <button
+                              type="button"
+                              disabled
+                              className="w-9 h-9 rounded-full flex items-center justify-center text-[var(--color-text-tertiary)] opacity-50 cursor-not-allowed"
+                              aria-label={`${benefit.name} has been used${
+                                periodMonth ? ` for ${periodMonth}` : ''
+                              }`}
+                            >
+                              <CheckCircle2 size={16} fill="currentColor" aria-hidden="true" />
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onMarkUsed(benefit.id);
+                              }}
+                              className="w-9 h-9 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors"
+                              aria-label={`Mark ${benefit.name} as used${
+                                periodMonth ? ` for ${periodMonth}` : ''
+                              }`}
+                            >
+                              <CheckCircle2 size={16} aria-hidden="true" />
+                            </button>
+                          )
+                        )}
+                        {onEdit && (
+                          <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              onMarkUsed(benefit.id);
+                              onEdit(benefit.id);
                             }}
-                            className="flex-1 min-w-0 min-h-[36px]"
-                            aria-label={`Mark ${benefit.name} as used${
-                              periodMonth ? ` for ${periodMonth}` : ''
-                            }`}
+                            className="w-9 h-9 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors"
+                            aria-label={`Edit ${benefit.name}`}
                           >
-                            Mark Used
-                          </Button>
-                        )
-                      )}
-                      {onEdit && (
-                        <Button
-                          variant="tertiary"
-                          size="xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onEdit(benefit.id);
-                          }}
-                          className="flex-1 min-w-0 min-h-[36px]"
-                          aria-label={`Edit ${benefit.name}`}
-                        >
-                          Edit
-                        </Button>
-                      )}
+                            <Pencil size={14} aria-hidden="true" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

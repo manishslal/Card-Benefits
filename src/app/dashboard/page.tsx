@@ -1517,15 +1517,15 @@ export default function DashboardPage() {
       <div
         className="border-b bg-[var(--color-bg)] border-[var(--color-border)]"
       >
-        <div className="max-w-6xl mx-auto px-4 md:px-8 py-2">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-3">
           <div className="flex flex-row items-center justify-between">
             <div>
               <h1
-                className="font-semibold text-[var(--color-text)] text-[length:var(--text-h4)]"
+                className="font-bold text-[var(--color-text)] text-[length:var(--text-h4)]"
               >
                 Welcome, {userName}! 👋
               </h1>
-              <p className="text-sm mt-0.5 text-[var(--color-text-secondary)]">
+              <p className="text-sm mt-1 text-[var(--color-text-secondary)]">
                 You have {apiTotalCards ?? cards.length} card{(apiTotalCards ?? cards.length) !== 1 ? 's' : ''} and {apiTotalBenefits ?? totalBenefitsAcrossCards} benefit{(apiTotalBenefits ?? totalBenefitsAcrossCards) !== 1 ? 's' : ''} tracked
               </p>
             </div>
@@ -1590,7 +1590,7 @@ export default function DashboardPage() {
               <div ref={carouselSentinelRef} aria-hidden="true" className="h-0 w-0 overflow-hidden" />
 
               {/* Sticky carousel container */}
-              <div className="sticky top-16 z-20 -mx-4 px-4 bg-[var(--color-bg)]">
+              <div className="sticky top-16 z-20 -mx-4 md:-mx-8 px-0 md:px-8 bg-[var(--color-bg)]">
                 {/* Expanded carousel */}
                 <div
                   style={{
@@ -1636,7 +1636,7 @@ export default function DashboardPage() {
 
               {/* DISC-010: Filter controls landmark */}
               {benefits.length > 0 && (
-              <div className="mt-4" role="search" aria-label="Filter benefits">
+              <div className="mt-6" role="search" aria-label="Filter benefits">
                 <UnifiedFilterBar
                   selectedPeriodId={selectedPeriodId}
                   onPeriodChange={setSelectedPeriodId}
@@ -1652,7 +1652,7 @@ export default function DashboardPage() {
 
               {/* Search, Sort & Smart View Chips (Sprint 8) */}
               {viewMode === 'current' && benefits.length > 0 && (
-                <div className="mt-4 space-y-3">
+                <div className="mt-3 space-y-3">
                   <SearchSortBar
                     searchQuery={searchQuery}
                     onSearch={setSearchQuery}

@@ -122,6 +122,7 @@ interface ApiCardsResponse {
   summary?: {
     totalCards: number;
     totalBenefits: number;
+    totalAnnualFees?: number;
   };
   error?: string;
   benefitEngineEnabled?: boolean;
@@ -307,6 +308,7 @@ export default function DashboardPage() {
   // DISC-011: API-provided summary for accurate totals (avoids pagination mismatch)
   const [apiTotalCards, setApiTotalCards] = useState<number | null>(null);
   const [apiTotalBenefits, setApiTotalBenefits] = useState<number | null>(null);
+  const [apiTotalFees, setApiTotalFees] = useState<number>(0);
   // "current" = ACTIVE period benefits, "history" = EXPIRED period benefits
   const [viewMode, setViewMode] = useState<'current' | 'history'>('current');
   // History data loaded from /api/benefits/history
@@ -603,6 +605,7 @@ export default function DashboardPage() {
         if (apiResponse.summary) {
           setApiTotalCards(apiResponse.summary.totalCards);
           setApiTotalBenefits(apiResponse.summary.totalBenefits);
+          setApiTotalFees(apiResponse.summary.totalAnnualFees ?? 0);
         }
 
         setCards(transformedCards);
@@ -794,6 +797,7 @@ export default function DashboardPage() {
           if (apiResponse.summary) {
             setApiTotalCards(apiResponse.summary.totalCards);
             setApiTotalBenefits(apiResponse.summary.totalBenefits);
+            setApiTotalFees(apiResponse.summary.totalAnnualFees ?? 0);
           }
 
           setCards(transformedCards);
@@ -1221,6 +1225,20 @@ export default function DashboardPage() {
   }, [cards, benefitEngineEnabled]);
 
   // ============================================================
+  // Net Savings — total used benefit value minus total annual fees
+  // ============================================================
+
+  const totalUsedValue = useMemo(() => {
+    return cards.reduce((sum, card) => {
+      return sum + (card.benefits || [])
+        .filter(b => b.isUsed)
+        .reduce((bSum, b) => bSum + (b.value || 0), 0);
+    }, 0);
+  }, [cards]);
+
+  const netSavings = totalUsedValue - (apiTotalFees / 100);
+
+  // ============================================================
   // Benefit counts per card — for CardSwitcher badges (Sprint 8)
   // ============================================================
 
@@ -1269,12 +1287,6 @@ export default function DashboardPage() {
       label: 'Value Captured',
       value: `$${displayBenefits.filter(b => b.isUsed).reduce((sum, b) => sum + (b.value || 0), 0).toLocaleString()}`,
       icon: 'TrendingUp',
-      variant: 'default' as const,
-    },
-    {
-      label: 'My Cards',
-      value: cards.length,
-      icon: 'Wallet',
       variant: 'default' as const,
     },
     {
@@ -1392,34 +1404,73 @@ export default function DashboardPage() {
     <div className="min-h-screen flex flex-col bg-[var(--color-bg)]">
       <AppHeader />
 
-      {/* Welcome section below header */}
+      {/* Welcome section below header — compact layout */}
       <div
         className="border-b bg-[var(--color-bg)] border-[var(--color-border)]"
       >
-        <div className="max-w-6xl mx-auto px-4 md:px-8 py-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-2">
+          <div className="flex flex-row items-center justify-between">
             <div>
               <h1
                 className="font-semibold text-[var(--color-text)] text-[length:var(--text-h4)]"
               >
                 Welcome, {userName}! 👋
               </h1>
-              <p className="text-sm mt-1 text-[var(--color-text-secondary)]">
+              <p className="text-sm mt-0.5 text-[var(--color-text-secondary)]">
                 You have {apiTotalCards ?? cards.length} card{(apiTotalCards ?? cards.length) !== 1 ? 's' : ''} and {apiTotalBenefits ?? totalBenefitsAcrossCards} total benefits
               </p>
             </div>
 
             <Button
               variant="secondary"
-              size="md"
+              size="sm"
               onClick={() => setIsAddCardModalOpen(true)}
+              className="shrink-0"
             >
-              <Plus size={16} className="mr-2" />
+              <Plus size={16} className="mr-1.5" />
               Add Card
             </Button>
           </div>
         </div>
       </div>
+
+      {/* Summary Cards — Cards & Benefits + Net Savings */}
+      {cards.length > 0 && (
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Card 1: Total Cards & Benefits */}
+            <div role="group" aria-label="Cards and Benefits summary" className="rounded-xl p-4 border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+              <div className="flex items-center gap-2 mb-2">
+                <CreditCard size={20} style={{ color: 'var(--color-text-secondary)' }} />
+                <span className="text-sm text-[var(--color-text-secondary)]">Cards &amp; Benefits</span>
+              </div>
+              <p className="text-xl font-bold text-[var(--color-text)]">
+                {apiTotalCards ?? cards.length} card{(apiTotalCards ?? cards.length) !== 1 ? 's' : ''} · {apiTotalBenefits ?? totalBenefitsAcrossCards} benefits
+              </p>
+            </div>
+
+            {/* Card 2: Net Savings */}
+            <div role="group" aria-label="Net savings summary" className="rounded-xl p-4 border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles size={20} style={{ color: 'var(--color-text-secondary)' }} />
+                <span className="text-sm text-[var(--color-text-secondary)]">Net Savings</span>
+              </div>
+              <p
+                className="text-xl font-bold"
+                style={{
+                  color: netSavings < 0
+                    ? 'var(--color-error-text, #ef4444)'
+                    : netSavings > 0
+                      ? 'var(--color-success-text, var(--color-primary))'
+                      : 'var(--color-text)',
+                }}
+              >
+                {netSavings < 0 ? '-' : ''}${Math.abs(netSavings).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="flex-1 px-4 md:px-8 py-6">

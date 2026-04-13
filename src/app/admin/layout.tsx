@@ -11,6 +11,8 @@
 
 import { ReactNode, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { CreditCard, LayoutDashboard, Gift, Users, FileText, ArrowLeft } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -52,27 +54,27 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <aside className="hidden md:flex md:w-64 flex-col border-r" style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }}>
         <div className="flex items-center gap-3 px-6 py-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
           <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white" style={{ backgroundColor: 'var(--color-primary)' }}>
-            CB
+            <CreditCard size={20} />
           </div>
           <h1 className="text-lg font-bold text-[var(--color-text)]">
-            Admin
+            CardTrack <span className="text-xs font-normal text-[var(--color-text-secondary)]">Admin</span>
           </h1>
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-2">
-          {[
-            { href: '/admin', label: 'Dashboard', icon: '📊' },
-            { href: '/admin/cards', label: 'Cards', icon: '💳' },
-            { href: '/admin/benefits', label: 'Benefits', icon: '🎁' },
-            { href: '/admin/users', label: 'Users', icon: '👥' },
-            { href: '/admin/audit', label: 'Audit Log', icon: '📋' },
-          ].map((item) => (
+          {([
+            { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+            { href: '/admin/cards', label: 'Cards', icon: CreditCard },
+            { href: '/admin/benefits', label: 'Benefits', icon: Gift },
+            { href: '/admin/users', label: 'Users', icon: Users },
+            { href: '/admin/audit', label: 'Audit Log', icon: FileText },
+          ] as { href: string; label: string; icon: LucideIcon }[]).map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className="flex items-center gap-3 px-4 py-2 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors hover:opacity-80"
             >
-              <span className="text-lg">{item.icon}</span>
+              <item.icon size={20} />
               <span>{item.label}</span>
             </Link>
           ))}
@@ -99,7 +101,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               color: 'var(--color-text-secondary)',
             }}
           >
-            <span>←</span>
+            <ArrowLeft size={16} />
             <span>Back to Dashboard</span>
           </Link>
         </div>
@@ -108,7 +110,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
-        <header className="border-b px-4 py-4" style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }}>
+        <header
+          className="sticky top-0 z-30 border-b px-4 py-4"
+          style={{
+            backgroundColor: 'color-mix(in srgb, var(--color-bg) 80%, transparent)',
+            backdropFilter: 'blur(12px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+            borderColor: 'var(--color-border)',
+            boxShadow: 'var(--header-shadow)',
+          }}
+        >
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold text-[var(--color-text)]">
               Admin Dashboard
@@ -122,7 +133,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 color: 'var(--color-text-secondary)',
               }}
             >
-              ← Back
+              <ArrowLeft size={14} /> Back
             </Link>
           </div>
         </header>

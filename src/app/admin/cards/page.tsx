@@ -19,6 +19,7 @@ import useSWR from 'swr';
 import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import { AdminBreadcrumb } from '../_components/AdminBreadcrumb';
 import { Loader2, Plus } from 'lucide-react';
+import { Button } from '@/shared/components/ui/button';
 import type { Card, PaginationInfo } from '@/features/admin/types/admin';
 
 interface CardsListResponse {
@@ -400,13 +401,14 @@ export default function CardsPage() {
             Manage master card types
           </p>
         </div>
-        <button
+        <Button
+          variant="primary"
+          size="sm"
+          leftIcon={<Plus size={16} />}
           onClick={() => setShowCreateModal(true)}
-          className="px-4 py-2 rounded-lg text-white hover:opacity-90 font-medium transition-colors flex items-center gap-1"
-          style={{ backgroundColor: 'var(--color-primary)' }}
         >
-          <Plus size={16} /> Add Card
-        </button>
+          Add Card
+        </Button>
       </div>
 
       {/* Notifications */}
@@ -439,48 +441,36 @@ export default function CardsPage() {
         
         {/* Status Filter Buttons */}
         <div className="flex gap-2 flex-wrap">
-          <button
+          <Button
+            variant={activeFilter === 'all' ? 'primary' : 'ghost'}
+            size="xs"
             onClick={() => {
               setActiveFilter('all');
               setPage(1);
             }}
-            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-              activeFilter === 'all'
-                ? 'text-white'
-                : 'bg-[var(--color-bg-secondary)] text-[var(--color-text)] hover:opacity-80'
-            }`}
-            style={activeFilter === 'all' ? { backgroundColor: 'var(--color-primary)', color: 'white' } : undefined}
           >
             All Cards
-          </button>
-          <button
+          </Button>
+          <Button
+            variant={activeFilter === 'active' ? 'primary' : 'ghost'}
+            size="xs"
             onClick={() => {
               setActiveFilter('active');
               setPage(1);
             }}
-            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-              activeFilter === 'active'
-                ? 'text-white'
-                : 'bg-[var(--color-bg-secondary)] text-[var(--color-text)] hover:opacity-80'
-            }`}
-            style={activeFilter === 'active' ? { backgroundColor: 'var(--color-primary)', color: 'white' } : undefined}
           >
             Active Only
-          </button>
-          <button
+          </Button>
+          <Button
+            variant={activeFilter === 'archived' ? 'primary' : 'ghost'}
+            size="xs"
             onClick={() => {
               setActiveFilter('archived');
               setPage(1);
             }}
-            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-              activeFilter === 'archived'
-                ? 'text-white'
-                : 'bg-[var(--color-bg-secondary)] text-[var(--color-text)] hover:opacity-80'
-            }`}
-            style={activeFilter === 'archived' ? { backgroundColor: 'var(--color-primary)', color: 'white' } : undefined}
           >
             Archived Only
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -571,21 +561,19 @@ export default function CardsPage() {
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           {!card.id.startsWith('temp-') && (
-                            <Link
-                              href={`/admin/cards/${card.id}`}
-                              className="px-3 py-1 rounded text-sm hover:opacity-80 transition-colors"
-                              style={{ backgroundColor: 'var(--color-primary-bg-subtle)', color: 'var(--color-primary)' }}
-                            >
-                              View
-                            </Link>
+                            <Button asChild variant="ghost" size="xs">
+                              <Link href={`/admin/cards/${card.id}`}>
+                                View
+                              </Link>
+                            </Button>
                           )}
-                          <button
+                          <Button
+                            variant="danger"
+                            size="xs"
                             onClick={() => handleDeleteCard(card.id)}
-                            className="px-3 py-1 rounded text-sm hover:opacity-80 transition-colors"
-                            style={{ backgroundColor: 'var(--color-error-bg-muted)', color: 'var(--color-error)' }}
                           >
                             Delete
-                          </button>
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -600,20 +588,22 @@ export default function CardsPage() {
                 Page {pagination.page} of {pagination.totalPages}
               </span>
               <div className="flex gap-2">
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setPage(Math.max(1, page - 1))}
                   disabled={page === 1 || isLoading}
-                  className="px-4 py-2 rounded border border-[var(--color-border)] text-[var(--color-text)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-bg-secondary)] transition-colors"
                 >
                   Previous
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setPage(page + 1)}
                   disabled={!pagination.hasMore || isLoading}
-                  className="px-4 py-2 rounded border border-[var(--color-border)] text-[var(--color-text)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-bg-secondary)] transition-colors"
                 >
                   Next
-                </button>
+                </Button>
               </div>
             </div>
           </>
@@ -698,23 +688,24 @@ export default function CardsPage() {
               </div>
 
               <div className="flex gap-3 pt-4">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  fullWidth
                   onClick={() => setShowCreateModal(false)}
                   disabled={isSubmitting}
-                  className="flex-1 px-4 py-2 rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors disabled:opacity-50"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
+                  variant="primary"
+                  fullWidth
+                  isLoading={isSubmitting}
                   disabled={isSubmitting}
-                  className="flex-1 px-4 py-2 rounded-lg text-white hover:opacity-90 font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                  style={{ backgroundColor: 'var(--color-primary)' }}
                 >
-                  {isSubmitting && <Loader2 className="animate-spin" size={16} />}
                   {isSubmitting ? 'Creating...' : 'Create Card'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -741,22 +732,23 @@ export default function CardsPage() {
             </p>
 
             <div className="flex gap-3">
-              <button
+              <Button
+                variant="outline"
+                fullWidth
                 onClick={() => setShowDeleteModal(false)}
                 disabled={isDeleting}
-                className="flex-1 px-4 py-2 rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors disabled:opacity-50"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="danger"
+                fullWidth
+                isLoading={isDeleting}
                 onClick={handleDeleteCardConfirm}
                 disabled={isDeleting}
-                className="flex-1 px-4 py-2 rounded-lg text-white hover:opacity-90 font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                style={{ backgroundColor: 'var(--color-error)' }}
               >
-                {isDeleting && <Loader2 className="animate-spin" size={16} />}
                 {isDeleting ? 'Deleting...' : 'Delete'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

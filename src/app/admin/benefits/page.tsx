@@ -25,6 +25,7 @@ import { AdminBreadcrumb } from '../_components/AdminBreadcrumb';
 import { CardFilterDropdown } from '../_components/CardFilterDropdown';
 import { EditBenefitModal } from '../_components/EditBenefitModal';
 import { Loader2 } from 'lucide-react';
+import { Button } from '@/shared/components/ui/button';
 import { formatCurrency } from '@/shared/lib/format-currency';
 import type { Benefit, PaginationInfo } from '@/features/admin/types/admin';
 
@@ -434,23 +435,25 @@ export default function BenefitsPage() {
                         {formatCurrency(benefit.stickerValue)}
                       </td>
                       {/* NEW: Add Edit button before Delete */}
-                      <td className="px-6 py-4 text-right flex gap-2 justify-end">
-                        <button
-                          onClick={() => handleEdit(benefit)}
-                          disabled={isLoading}
-                          className="px-3 py-1 rounded text-sm hover:opacity-80 disabled:opacity-50 transition-colors"
-                          style={{ backgroundColor: 'var(--color-primary-bg-subtle)', color: 'var(--color-primary)' }}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteBenefit(benefit.id)}
-                          disabled={isLoading}
-                          className="px-3 py-1 rounded text-sm hover:opacity-80 disabled:opacity-50 transition-colors"
-                          style={{ backgroundColor: 'var(--color-error-bg-muted)', color: 'var(--color-error)' }}
-                        >
-                          Delete
-                        </button>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex gap-2 justify-end">
+                          <Button
+                            variant="ghost"
+                            size="xs"
+                            onClick={() => handleEdit(benefit)}
+                            disabled={isLoading}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="xs"
+                            onClick={() => handleDeleteBenefit(benefit.id)}
+                            disabled={isLoading}
+                          >
+                            Delete
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -464,20 +467,22 @@ export default function BenefitsPage() {
                 Page {pagination.page} of {pagination.totalPages}
               </span>
               <div className="flex gap-2">
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setPage(Math.max(1, page - 1))}
                   disabled={page === 1 || isLoading}
-                  className="px-4 py-2 rounded border border-[var(--color-border)] text-[var(--color-text)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-bg-secondary)] transition-colors"
                 >
                   Previous
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setPage(page + 1)}
                   disabled={!pagination.hasMore || isLoading}
-                  className="px-4 py-2 rounded border border-[var(--color-border)] text-[var(--color-text)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-bg-secondary)] transition-colors"
                 >
                   Next
-                </button>
+                </Button>
               </div>
             </div>
           </>

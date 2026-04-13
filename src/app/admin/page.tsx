@@ -190,7 +190,7 @@ export default function AdminDashboard() {
             <Link
               key={idx}
               href={action.href}
-              className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors hover:opacity-80"
+              className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all hover:-translate-y-0.5 hover:shadow-md"
               style={{
                 backgroundColor: 'var(--color-primary-bg-subtle)',
                 color: 'var(--color-primary)',

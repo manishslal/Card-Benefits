@@ -15,6 +15,7 @@ import useSWR from 'swr';
 import { apiClient } from '@/features/admin/lib/api-client';
 import { AdminBreadcrumb } from '../_components/AdminBreadcrumb';
 import { Loader2 } from 'lucide-react';
+import { Button } from '@/shared/components/ui/button';
 import type { AuditLog, PaginationInfo } from '@/features/admin/types/admin';
 
 interface AuditListResponse {
@@ -306,20 +307,22 @@ export default function AuditPage() {
                 Page {pagination.page} of {pagination.totalPages}
               </span>
               <div className="flex gap-2">
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setPage(Math.max(1, page - 1))}
                   disabled={page === 1 || isLoading}
-                  className="px-4 py-2 rounded border border-[var(--color-border)] text-[var(--color-text)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-bg-secondary)] transition-colors"
                 >
                   Previous
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setPage(page + 1)}
                   disabled={!pagination.hasMore || isLoading}
-                  className="px-4 py-2 rounded border border-[var(--color-border)] text-[var(--color-text)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-bg-secondary)] transition-colors"
                 >
                   Next
-                </button>
+                </Button>
               </div>
             </div>
           </>

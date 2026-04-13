@@ -18,6 +18,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import { formatCurrency, parseCurrency } from '@/shared/lib/format-currency';
 import { FormError } from '@/shared/components/forms';
+import { Button } from '@/shared/components/ui/button';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X, Plus, Trash2 } from 'lucide-react';
 import type { Benefit } from '@/features/admin/types/admin';
@@ -334,12 +335,9 @@ export function EditBenefitModal({
               Edit Benefit
             </DialogPrimitive.Title>
             <DialogPrimitive.Close asChild>
-              <button
-                aria-label="Close dialog"
-                className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors p-2 rounded-md hover:bg-[var(--color-bg-secondary)]"
-              >
-                <X size={24} />
-              </button>
+              <Button variant="ghost" size="icon-xs" aria-label="Close dialog">
+                <X size={20} />
+              </Button>
             </DialogPrimitive.Close>
           </div>
 
@@ -498,16 +496,16 @@ export function EditBenefitModal({
                 <label className={labelClasses}>
                   Month Overrides
                 </label>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="xs"
+                  leftIcon={<Plus size={14} />}
                   onClick={handleAddOverride}
                   disabled={isSubmitting || usedMonths.size >= 12}
-                  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded hover:opacity-80 disabled:opacity-50 transition-colors"
-                  style={{ backgroundColor: 'var(--color-primary-bg-subtle)', color: 'var(--color-primary)' }}
                 >
-                  <Plus size={14} />
                   Add Override
-                </button>
+                </Button>
               </div>
 
               {variableAmounts.length === 0 ? (
@@ -545,16 +543,17 @@ export function EditBenefitModal({
                           className="w-full pl-7 pr-3 py-2 border border-[var(--color-border)] rounded-lg bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] disabled:opacity-50 text-sm"
                         />
                       </div>
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="icon-xs"
                         onClick={() => handleRemoveOverride(idx)}
                         disabled={isSubmitting}
-                        className="p-2 hover:opacity-80 rounded-lg disabled:opacity-50 transition-colors"
-                        style={{ color: 'var(--color-error)' }}
                         aria-label={`Remove ${MONTH_NAMES[Number(entry.month) - 1]} override`}
+                        className="text-[var(--color-error)]"
                       >
                         <Trash2 size={16} />
-                      </button>
+                      </Button>
                     </div>
                   ))}
                   <p className={helperClasses}>
@@ -592,22 +591,12 @@ export function EditBenefitModal({
 
             {/* Action Buttons */}
             <div className="flex gap-3 justify-end mt-6">
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={isSubmitting}
-                className="px-4 py-2 rounded border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-bg-secondary)] disabled:opacity-50 transition-colors"
-              >
+              <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                 Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="px-4 py-2 rounded text-white hover:opacity-90 disabled:opacity-50 transition-colors"
-                style={{ backgroundColor: 'var(--color-primary)' }}
-              >
+              </Button>
+              <Button type="submit" variant="primary" isLoading={isSubmitting}>
                 {isSubmitting ? 'Saving...' : 'Save'}
-              </button>
+              </Button>
             </div>
           </form>
         </DialogPrimitive.Content>

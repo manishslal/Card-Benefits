@@ -18,7 +18,8 @@ import { formatCurrency } from '@/shared/lib/format-currency';
 import type { Card, Benefit } from '@/features/admin/types/admin';
 import { AdminBreadcrumb } from '../../_components/AdminBreadcrumb';
 import { EditBenefitModal } from '../../_components/EditBenefitModal';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus } from 'lucide-react';
+import { Button } from '@/shared/components/ui/button';
 
 interface CardDetailResponse {
   success: boolean;
@@ -325,13 +326,14 @@ export default function CardDetailPage() {
           <h2 className="text-lg font-semibold text-[var(--color-text)]">
             Benefits ({benefits.length})
           </h2>
-          <button
+          <Button
+            variant="primary"
+            size="sm"
+            leftIcon={<Plus size={16} />}
             onClick={() => setShowBenefitModal(true)}
-            className="px-4 py-2 rounded-lg text-white hover:opacity-90 font-medium text-sm"
-            style={{ backgroundColor: 'var(--color-primary)' }}
           >
-            + Add Benefit
-          </button>
+            Add Benefit
+          </Button>
         </div>
 
         {/* Issue 11: Add loading spinner while benefits are fetching */}
@@ -422,22 +424,22 @@ export default function CardDetailPage() {
                       </td>
                       <td className="py-3 px-3 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="xs"
                             onClick={() => setEditingBenefit(benefit)}
-                            className="px-3 py-1 rounded text-sm hover:opacity-80 transition-colors"
-                            style={{ backgroundColor: 'var(--color-primary-bg-subtle)', color: 'var(--color-primary)' }}
                           >
                             Edit
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="xs"
+                            isLoading={isDeleting === benefit.id}
                             onClick={() => handleDeleteBenefit(benefit.id)}
                             disabled={isDeleting === benefit.id}
-                            className="px-3 py-1 rounded text-sm hover:opacity-80 disabled:opacity-50 flex items-center gap-1 transition-colors"
-                            style={{ backgroundColor: 'var(--color-error-bg-muted)', color: 'var(--color-error)' }}
                           >
-                            {isDeleting === benefit.id && <Loader2 className="animate-spin" size={14} />}
                             Delete
-                          </button>
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -537,23 +539,24 @@ export default function CardDetailPage() {
               </div>
 
               <div className="flex gap-3 pt-4">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  fullWidth
                   onClick={() => setShowBenefitModal(false)}
                   disabled={isSubmitting}
-                  className="flex-1 px-4 py-2 rounded-lg border border-[var(--color-border)] text-[var(--color-text)] disabled:opacity-50 transition-colors"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
+                  variant="primary"
+                  fullWidth
+                  isLoading={isSubmitting}
                   disabled={isSubmitting}
-                  className="flex-1 px-4 py-2 rounded-lg text-white hover:opacity-90 font-medium disabled:opacity-50 flex items-center justify-center gap-2"
-                  style={{ backgroundColor: 'var(--color-primary)' }}
                 >
-                  {isSubmitting && <Loader2 className="animate-spin" size={16} />}
                   {isSubmitting ? 'Adding...' : 'Add'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>

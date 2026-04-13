@@ -11,6 +11,7 @@
 
 import { ReactNode, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { CreditCard, LayoutDashboard, Gift, Users, FileText, ArrowLeft } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -22,6 +23,7 @@ interface AdminLayoutProps {
 export const dynamic = 'force-dynamic';
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
+  const pathname = usePathname();
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -49,7 +51,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }, []);
 
   return (
-    <div className="flex h-screen" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
+    <div className="flex h-screen" style={{ backgroundColor: 'var(--color-bg)' }}>
       {/* Sidebar Navigation */}
       <aside className="hidden md:flex md:w-64 flex-col border-r" style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }}>
         <div className="flex items-center gap-3 px-6 py-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
@@ -68,16 +70,24 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             { href: '/admin/benefits', label: 'Benefits', icon: Gift },
             { href: '/admin/users', label: 'Users', icon: Users },
             { href: '/admin/audit', label: 'Audit Log', icon: FileText },
-          ] as { href: string; label: string; icon: LucideIcon }[]).map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-3 px-4 py-2 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors hover:opacity-80"
-            >
-              <item.icon size={20} />
-              <span>{item.label}</span>
-            </Link>
-          ))}
+          ] as { href: string; label: string; icon: LucideIcon }[]).map((item) => {
+            const isActive = item.href === '/admin' ? pathname === '/admin' : pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={isActive ? 'page' : undefined}
+                className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
+                  isActive
+                    ? 'bg-[var(--color-primary-bg-subtle)] text-[var(--color-primary)] font-semibold'
+                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-secondary)]'
+                }`}
+              >
+                <item.icon size={20} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
 
         {/* Footer Section with User Info and Exit Button */}
@@ -95,9 +105,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           {/* Back to Dashboard Button */}
           <Link
             href="/dashboard"
-            className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg transition-colors text-sm font-medium hover:opacity-80"
+            className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg transition-colors text-sm font-medium hover:bg-[var(--color-bg-secondary)]"
             style={{
-              backgroundColor: 'var(--color-bg-secondary)',
               color: 'var(--color-text-secondary)',
             }}
           >
@@ -111,12 +120,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
         <header
-          className="sticky top-0 z-30 border-b px-4 py-4"
+          className="sticky top-0 z-30 px-[max(1rem,env(safe-area-inset-right))] py-4 pt-[env(safe-area-inset-top)]"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--color-bg) 80%, transparent)',
             backdropFilter: 'blur(12px) saturate(180%)',
             WebkitBackdropFilter: 'blur(12px) saturate(180%)',
-            borderColor: 'var(--color-border)',
             boxShadow: 'var(--header-shadow)',
           }}
         >
@@ -127,13 +135,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             {/* Mobile back button */}
             <Link
               href="/dashboard"
-              className="md:hidden px-3 py-2 rounded-lg transition-colors text-sm hover:opacity-80"
+              className="md:hidden flex items-center gap-1 px-3 py-2 rounded-lg transition-colors text-sm hover:bg-[var(--color-bg-secondary)]"
               style={{
-                backgroundColor: 'var(--color-bg-secondary)',
                 color: 'var(--color-text-secondary)',
               }}
             >
-              <ArrowLeft size={14} /> Back
+              <ArrowLeft size={14} /> <span>Back</span>
             </Link>
           </div>
         </header>

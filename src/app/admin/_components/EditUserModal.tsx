@@ -15,6 +15,7 @@
 import { useState, useEffect } from 'react';
 import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import { FormError } from '@/shared/components/forms';
+import { Button } from '@/shared/components/ui/button';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import type { AdminUser } from '@/features/admin/types/admin';
@@ -162,12 +163,9 @@ export function EditUserModal({
               Edit User
             </DialogPrimitive.Title>
             <DialogPrimitive.Close asChild>
-              <button
-                aria-label="Close dialog"
-                className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors p-2 rounded-md hover:bg-[var(--color-bg-secondary)]"
-              >
-                <X size={24} />
-              </button>
+              <Button variant="ghost" size="icon-xs" aria-label="Close dialog">
+                <X size={20} />
+              </Button>
             </DialogPrimitive.Close>
           </div>
 
@@ -287,22 +285,12 @@ export function EditUserModal({
 
             {/* Action Buttons */}
             <div className="flex gap-3 justify-end mt-6">
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={isSubmitting}
-                className="px-4 py-2 rounded border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-bg-secondary)] disabled:opacity-50 transition-colors"
-              >
+              <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                 Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="px-4 py-2 rounded text-white hover:opacity-90 disabled:opacity-50 transition-colors"
-                style={{ backgroundColor: 'var(--color-primary)' }}
-              >
+              </Button>
+              <Button type="submit" variant="primary" isLoading={isSubmitting}>
                 {isSubmitting ? 'Saving...' : 'Save'}
-              </button>
+              </Button>
             </div>
           </form>
         </DialogPrimitive.Content>

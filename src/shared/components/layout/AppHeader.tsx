@@ -14,7 +14,7 @@ import { CreditCard, Settings, ArrowLeft } from 'lucide-react';
  * - Left: Logo icon + "CardTrack" text (vertically centered)
  * - Right: Settings button OR Back button (when backHref is provided)
  * - Optional rightSlot for additional controls
- * - Sticky positioning with border and CSS variable theming
+ * - Sticky positioning with ring outline and CSS variable theming
  * - No dark mode toggle (toggle stays in Preferences tab only)
  */
 
@@ -57,10 +57,9 @@ export function AppHeader({
               {backHref ? (
                 <Link
                   href={backHref}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium border transition-colors hover:bg-[var(--color-bg-secondary)]"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium ring-1 ring-inset ring-[var(--color-border)] transition-colors hover:bg-[var(--color-bg-secondary)]"
                   style={{
                     color: 'var(--color-text)',
-                    borderColor: 'var(--color-border)',
                   }}
                 >
                   <ArrowLeft size={16} />
@@ -69,10 +68,9 @@ export function AppHeader({
               ) : (
                 <Link
                   href="/settings"
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium border transition-colors hover:bg-[var(--color-bg-secondary)]"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium ring-1 ring-inset ring-[var(--color-border)] transition-colors hover:bg-[var(--color-bg-secondary)]"
                   style={{
                     color: 'var(--color-text)',
-                    borderColor: 'var(--color-border)',
                   }}
                 >
                   <Settings size={16} />

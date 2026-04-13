@@ -312,6 +312,8 @@
 .carousel-collapse-transition {
   transition: max-height var(--carousel-collapse-duration, 300ms) var(--carousel-collapse-easing, cubic-bezier(0.4, 0, 0.2, 1)),
               opacity var(--carousel-collapse-duration, 300ms) var(--carousel-collapse-easing, cubic-bezier(0.4, 0, 0.2, 1));
+  /* will-change: opacity only — max-height excluded because it triggers
+     layout reflow (not compositor-friendly). Sprint 31 QA decision. */
   will-change: opacity;
 }
 

@@ -333,6 +333,7 @@
     --carousel-inactive-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     --carousel-arrow-opacity: 0.85;
     --compact-chip-height: 36px;
+    --height-header: 52px;
     --compact-bar-height: 52px;
     --carousel-collapse-duration: 300ms;
     --carousel-collapse-easing: cubic-bezier(0.4, 0, 0.2, 1);
@@ -431,6 +432,7 @@
   --carousel-inactive-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   --carousel-arrow-opacity: 0.85;
   --compact-chip-height: 36px;
+  --height-header: 52px;
   --compact-bar-height: 52px;
   --carousel-collapse-duration: 300ms;
   --carousel-collapse-easing: cubic-bezier(0.4, 0, 0.2, 1);

@@ -714,7 +714,7 @@ export default function DashboardPage() {
         setIsCarouselCollapsed(!entry.isIntersecting);
       },
       {
-        rootMargin: '-32px 0px 0px 0px',
+        rootMargin: '-52px 0px 0px 0px',
         threshold: 0,
       }
     );

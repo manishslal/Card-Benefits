@@ -13,6 +13,9 @@ export { BenefitSkeleton } from './BenefitSkeleton';
 export { default as BenefitsList } from './grids/BenefitsList';
 export { default as BenefitsGrid } from './grids/BenefitsGrid';
 
+// Grids - named exports (internal components)
+export { UsedBenefitsAccordion } from './grids/UsedBenefitsAccordion';
+
 // Custom Values - named exports
 export { BenefitValueComparison } from './BenefitValueComparison';
 export { BenefitValuePresets } from './BenefitValuePresets';

@@ -239,6 +239,15 @@
   --carousel-collapse-easing: cubic-bezier(0.4, 0, 0.2, 1);
 
   /* ========================================
+     USED BENEFITS ACCORDION TOKENS
+     ======================================== */
+  --used-accordion-expand-duration: 250ms;
+  --used-accordion-collapse-duration: 180ms;
+  --used-accordion-expand-easing: cubic-bezier(0.0, 0, 0.2, 1);
+  --used-accordion-collapse-easing: cubic-bezier(0.4, 0, 1, 1);
+  --used-accordion-stagger-delay: 40ms;
+
+  /* ========================================
      MISSING SEMANTIC TOKENS - LIGHT MODE
      ======================================== */
   --color-danger-50: #fef2f2;
@@ -343,6 +352,13 @@
   --compact-bar-height: 65px;
   --carousel-collapse-duration: 300ms;
   --carousel-collapse-easing: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Used Benefits Accordion — same values, no dark overrides needed */
+  --used-accordion-expand-duration: 250ms;
+  --used-accordion-collapse-duration: 180ms;
+  --used-accordion-expand-easing: cubic-bezier(0.0, 0, 0.2, 1);
+  --used-accordion-collapse-easing: cubic-bezier(0.4, 0, 1, 1);
+  --used-accordion-stagger-delay: 40ms;
 
   /* Missing semantic tokens - Dark Mode */
   --color-danger-50: #450a0a;

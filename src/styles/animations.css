@@ -330,6 +330,42 @@
   animation: ringGlow 2s ease-in-out 1;
 }
 
+/* ========================================
+   USED BENEFITS ACCORDION (Dashboard Polish)
+   ======================================== */
+@keyframes usedAccordionExpand {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    max-height: 2000px;
+    transform: translateY(0);
+  }
+}
+
+@keyframes usedCardReveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 0.85;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.used-accordion-content {
+  overflow: hidden;
+  animation: usedAccordionExpand var(--used-accordion-expand-duration, 250ms) var(--used-accordion-expand-easing, ease-out) both;
+}
+
+.used-card-stagger {
+  animation: usedCardReveal 220ms var(--ease-out) both;
+}
+
 /* ── Reduced Motion ── */
 @media (prefers-reduced-motion: reduce) {
   *,

@@ -8,6 +8,7 @@ import {
   Pencil,
 } from 'lucide-react';
 import { formatPeriodRange } from '@/lib/format-period-range';
+import { UsedBenefitsAccordion } from './UsedBenefitsAccordion';
 
 interface Benefit {
   id: string;
@@ -540,6 +541,183 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
       return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
     };
 
+    // ------------------------------------------------------------------
+    // Shared card body renderer — used by both inline rendering and the
+    // UsedBenefitsAccordion's renderCard prop to avoid JSX duplication.
+    // ------------------------------------------------------------------
+    const renderCardBody = (benefit: Benefit) => {
+      const periodMonth = getPeriodMonth(benefit.periodStart);
+      const progressText = getPeriodProgress(
+        benefit.periodStart,
+        benefit.resetCadence,
+        benefit.claimingCadence
+      );
+      const isUsed = benefit.isUsed === true;
+      const cadenceText = getCadenceInfoText(benefit.name, benefit.resetCadence, benefit.claimingCadence);
+
+      return (
+        <div
+          className="p-2.5 flex-1 flex flex-col"
+          style={{
+            backgroundColor: isUsed ? 'var(--color-bg-secondary)' : undefined,
+            transition: 'background-color 0.2s ease',
+          }}
+        >
+          {/* ── Row 1: Header — Icon + Name + Badge ── */}
+          <div className="flex justify-between items-start gap-2 mb-1.5">
+            <div className="flex items-start gap-2 flex-1 min-w-0">
+              <div
+                className="flex-shrink-0"
+                style={{
+                  color: 'var(--color-primary)',
+                  width: 28,
+                  height: 28,
+                  borderRadius: '50%',
+                  background: 'var(--color-bg-secondary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {getBenefitTypeIcon(benefit.type, benefit.name)}
+              </div>
+              <p
+                className="flex-1 font-semibold line-clamp-2 min-w-0"
+                style={{
+                  fontSize: 'var(--text-body-sm)',
+                  color: 'var(--color-text)',
+                }}
+                title={benefit.name}
+              >
+                {benefit.name}
+              </p>
+            </div>
+            {getStatusBadge(benefit.status, isUsed)}
+          </div>
+
+          {/* ── Row 2: Value · Cadence + Progress Ring (merged, Sprint 28B) ── */}
+          {(() => {
+            const multiplier = extractMultiplier(benefit.name);
+            const isUnlimited = benefit.usage === null;
+            const hasMonetaryValue = benefit.value != null && benefit.value > 0;
+            const showRow = hasMonetaryValue || isUnlimited || multiplier !== null || !!cadenceText;
+
+            if (!showRow) return null;
+
+            return (
+              <div className="flex items-center justify-between gap-3 mb-1">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  {multiplier !== null ? (
+                    <span
+                      className="font-mono font-bold text-base px-2 py-0.5 rounded flex-shrink-0"
+                      style={{
+                        color: 'var(--color-accent, var(--color-primary))',
+                        backgroundColor: 'var(--color-accent-subtle, rgba(59, 130, 246, 0.1))',
+                      }}
+                    >
+                      {multiplier}x
+                    </span>
+                  ) : hasMonetaryValue ? (
+                    <span
+                      className="font-mono font-semibold text-base flex-shrink-0"
+                      style={{ color: 'var(--color-text)' }}
+                    >
+                      ${(benefit.value ?? 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                    </span>
+                  ) : null}
+                  {cadenceText && (hasMonetaryValue || multiplier !== null) && (
+                    <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-text-tertiary)' }}>·</span>
+                  )}
+                  {cadenceText && (
+                    <span className="text-xs truncate" style={{ color: 'var(--color-text-tertiary)' }}>
+                      {cadenceText}
+                    </span>
+                  )}
+                </div>
+                <ProgressRing usage={benefit.usage} isUsed={isUsed} />
+              </div>
+            );
+          })()}
+
+          {/* ── Row 3: Description ── */}
+          <div className="flex-1 min-h-0">
+            {benefit.description && (
+              <p
+                className="text-xs line-clamp-2 mb-1"
+                style={{ color: 'var(--color-text-secondary)' }}
+                title={benefit.description}
+              >
+                {benefit.description}
+              </p>
+            )}
+          </div>
+
+          {/* ── Row 4: Meta — period progress + expiration + inline action icons (Sprint 28B) ── */}
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="flex items-center gap-2 min-w-0">
+              <span
+                className="text-xs truncate"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                {progressText}
+              </span>
+              {benefit.expirationDate && (
+                <span
+                  className="text-xs flex-shrink-0"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Exp: {formatDate(benefit.expirationDate)}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {onMarkUsed && benefit.status === 'active' && (
+                isUsed ? (
+                  <button
+                    type="button"
+                    disabled
+                    className={`w-11 h-11 rounded-full flex items-center justify-center text-[var(--color-text-tertiary)] opacity-50 cursor-not-allowed${celebratingIds?.has(benefit.id) ? ' animate-toggle-check' : ''}`}
+                    aria-label={`${benefit.name} has been used${
+                      periodMonth ? ` for ${periodMonth}` : ''
+                    }`}
+                  >
+                    <CheckCircle2 size={16} fill="currentColor" aria-hidden="true" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMarkUsed(benefit.id);
+                    }}
+                    className="w-11 h-11 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors press-feedback"
+                    aria-label={`Mark ${benefit.name} as used${
+                      periodMonth ? ` for ${periodMonth}` : ''
+                    }`}
+                  >
+                    <CheckCircle2 size={16} aria-hidden="true" />
+                  </button>
+                )
+              )}
+              {onEdit && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(benefit.id);
+                  }}
+                  className="w-11 h-11 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors press-feedback"
+                  aria-label={`Edit ${benefit.name}`}
+                >
+                  <Pencil size={14} aria-hidden="true" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
     if (loading) {
       return (
         <div ref={ref} className={`grid ${getGridColsClass()} gap-4`}>
@@ -580,249 +758,109 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
 
     return (
       <section ref={ref} aria-label="Your benefits" className={`grid ${getGridColsClass()} gap-4`}>
-        {benefitGroups.map((group, groupIndex) => (
-          <React.Fragment key={`group-${groupIndex}`}>
-            {/* DASH-G03: Shared period header for consecutive same-period cards */}
-            {group.periodKey && (
-              <div
-                className="col-span-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg"
-                style={{
-                  background: 'var(--color-bg-subtle, var(--color-bg-secondary))',
-                  color: 'var(--color-text-secondary)',
-                  borderLeft: '3px solid var(--color-primary)',
-                  paddingLeft: '0.5rem',
-                  borderTopLeftRadius: '2px',
-                  borderBottomLeftRadius: '2px',
+        {benefitGroups.map((group, groupIndex) => {
+          // ── Used benefits → delegate to UsedBenefitsAccordion ──
+          if (group.periodKey === '__used__') {
+            return (
+              <UsedBenefitsAccordion
+                key="used-benefits-accordion"
+                benefits={group.benefits}
+                gridColsClass={getGridColsClass()}
+                renderCard={(benefit) => {
+                  return (
+                    <div
+                      data-benefit-card
+                      onClick={() => onEdit?.(benefit.id)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit?.(benefit.id); } }}
+                      className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] hover:border-[var(--color-primary)] flex flex-col cursor-pointer${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
+                      style={{
+                        opacity: 0.85,
+                        borderColor: 'color-mix(in srgb, var(--color-border) 50%, transparent)',
+                        borderLeft: `3px solid ${getLeftBorderColor()}`,
+                      }}
+                    >
+                      {/* Card body — shared with inline rendering */}
+                      {renderCardBody(benefit as Benefit)}
+                    </div>
+                  );
                 }}
-              >
-                {group.periodKey === '__used__' ? (
-                  <CheckCircle2
-                    size={14}
-                    className="flex-shrink-0"
-                    style={{ color: 'var(--color-text-secondary)' }}
-                    aria-hidden="true"
-                  />
-                ) : (
+              />
+            );
+          }
+
+          // ── Regular period groups → render as before ──
+          return (
+            <React.Fragment key={`group-${groupIndex}`}>
+              {/* DASH-G03: Shared period header for consecutive same-period cards */}
+              {group.periodKey && (
+                <div
+                  className="col-span-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg"
+                  style={{
+                    background: 'var(--color-bg-subtle, var(--color-bg-secondary))',
+                    color: 'var(--color-text-secondary)',
+                    borderLeft: '3px solid var(--color-primary)',
+                    paddingLeft: '0.5rem',
+                    borderTopLeftRadius: '2px',
+                    borderBottomLeftRadius: '2px',
+                  }}
+                >
                   <Calendar
                     size={14}
                     className="flex-shrink-0"
                     style={{ color: 'var(--color-text-secondary)' }}
                     aria-hidden="true"
                   />
-                )}
-                <span className="font-medium">{group.periodLabel}</span>
-                {group.cadenceLabel && (
-                  <>
-                    <span
-                      className="mx-0.5"
-                      style={{ opacity: 0.4 }}
-                      aria-hidden="true"
-                    >
-                      |
-                    </span>
-                    <span>{group.cadenceLabel}</span>
-                  </>
-                )}
-              </div>
-            )}
+                  <span className="font-medium">{group.periodLabel}</span>
+                  {group.cadenceLabel && (
+                    <>
+                      <span
+                        className="mx-0.5"
+                        style={{ opacity: 0.4 }}
+                        aria-hidden="true"
+                      >
+                        |
+                      </span>
+                      <span>{group.cadenceLabel}</span>
+                    </>
+                  )}
+                </div>
+              )}
 
-            {group.benefits.map((benefit) => {
-              const periodMonth = getPeriodMonth(benefit.periodStart);
-              const progressText = getPeriodProgress(
-                benefit.periodStart,
-                benefit.resetCadence,
-                benefit.claimingCadence
-              );
-              const isUsed = benefit.isUsed === true;
-              const animIndex = cardAnimationIndices.get(benefit.id) ?? 0;
-              const cadenceText = getCadenceInfoText(benefit.name, benefit.resetCadence, benefit.claimingCadence);
+              {group.benefits.map((benefit) => {
+                const isUsed = benefit.isUsed === true;
+                const animIndex = cardAnimationIndices.get(benefit.id) ?? 0;
 
-              return (
-                <div
-                  key={benefit.id}
-                  data-benefit-card
-                  onClick={() => onEdit?.(benefit.id)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit?.(benefit.id); } }}
-                  className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] hover:border-[var(--color-primary)] flex flex-col cursor-pointer${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
-                  style={{
-                    opacity: isUsed ? 0.85 : 1,
-                    animation: celebratingIds?.has(benefit.id)
-                      ? undefined
-                      : `slideUp 0.3s ease-out both`,
-                    animationDelay: celebratingIds?.has(benefit.id)
-                      ? undefined
-                      : `${Math.min(animIndex * 60, 500)}ms`,
-                    borderColor: 'color-mix(in srgb, var(--color-border) 50%, transparent)',
-                    borderLeft: `3px solid ${getLeftBorderColor()}`,
-                  }}
-                >
-                  {/* ── Card Body ── */}
+                return (
                   <div
-                    className="p-2.5 flex-1 flex flex-col"
+                    key={benefit.id}
+                    data-benefit-card
+                    onClick={() => onEdit?.(benefit.id)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit?.(benefit.id); } }}
+                    className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] hover:border-[var(--color-primary)] flex flex-col cursor-pointer${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
                     style={{
-                      backgroundColor: isUsed ? 'var(--color-bg-secondary)' : undefined,
-                      transition: 'background-color 0.2s ease',
+                      opacity: isUsed ? 0.85 : 1,
+                      animation: celebratingIds?.has(benefit.id)
+                        ? undefined
+                        : `slideUp 0.3s ease-out both`,
+                      animationDelay: celebratingIds?.has(benefit.id)
+                        ? undefined
+                        : `${Math.min(animIndex * 60, 500)}ms`,
+                      borderColor: 'color-mix(in srgb, var(--color-border) 50%, transparent)',
+                      borderLeft: `3px solid ${getLeftBorderColor()}`,
                     }}
                   >
-                    {/* ── Row 1: Header — Icon + Name + Badge ── */}
-                    <div className="flex justify-between items-start gap-2 mb-1.5">
-                      <div className="flex items-start gap-2 flex-1 min-w-0">
-                        <div
-                          className="flex-shrink-0"
-                          style={{
-                            color: 'var(--color-primary)',
-                            width: 28,
-                            height: 28,
-                            borderRadius: '50%',
-                            background: 'var(--color-bg-secondary)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          {getBenefitTypeIcon(benefit.type, benefit.name)}
-                        </div>
-                        <p
-                          className="flex-1 font-semibold line-clamp-2 min-w-0"
-                          style={{
-                            fontSize: 'var(--text-body-sm)',
-                            color: 'var(--color-text)',
-                          }}
-                          title={benefit.name}
-                        >
-                          {benefit.name}
-                        </p>
-                      </div>
-                      {getStatusBadge(benefit.status, isUsed)}
-                    </div>
-
-                    {/* ── Row 2: Value · Cadence + Progress Ring (merged, Sprint 28B) ── */}
-                    {(() => {
-                      const multiplier = extractMultiplier(benefit.name);
-                      const isUnlimited = benefit.usage === null;
-                      const hasMonetaryValue = benefit.value != null && benefit.value > 0;
-                      const showRow = hasMonetaryValue || isUnlimited || multiplier !== null || !!cadenceText;
-
-                      if (!showRow) return null;
-
-                      return (
-                        <div className="flex items-center justify-between gap-3 mb-1">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            {multiplier !== null ? (
-                              <span
-                                className="font-mono font-bold text-base px-2 py-0.5 rounded flex-shrink-0"
-                                style={{
-                                  color: 'var(--color-accent, var(--color-primary))',
-                                  backgroundColor: 'var(--color-accent-subtle, rgba(59, 130, 246, 0.1))',
-                                }}
-                              >
-                                {multiplier}x
-                              </span>
-                            ) : hasMonetaryValue ? (
-                              <span
-                                className="font-mono font-semibold text-base flex-shrink-0"
-                                style={{ color: 'var(--color-text)' }}
-                              >
-                                ${(benefit.value ?? 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
-                              </span>
-                            ) : null}
-                            {cadenceText && (hasMonetaryValue || multiplier !== null) && (
-                              <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-text-tertiary)' }}>·</span>
-                            )}
-                            {cadenceText && (
-                              <span className="text-xs truncate" style={{ color: 'var(--color-text-tertiary)' }}>
-                                {cadenceText}
-                              </span>
-                            )}
-                          </div>
-                          <ProgressRing usage={benefit.usage} isUsed={isUsed} />
-                        </div>
-                      );
-                    })()}
-
-                    {/* ── Row 3: Description ── */}
-                    <div className="flex-1 min-h-0">
-                      {benefit.description && (
-                        <p
-                          className="text-xs line-clamp-2 mb-1"
-                          style={{ color: 'var(--color-text-secondary)' }}
-                          title={benefit.description}
-                        >
-                          {benefit.description}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* ── Row 4: Meta — period progress + expiration + inline action icons (Sprint 28B) ── */}
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span
-                          className="text-xs truncate"
-                          style={{ color: 'var(--color-text-secondary)' }}
-                        >
-                          {progressText}
-                        </span>
-                        {benefit.expirationDate && (
-                          <span
-                            className="text-xs flex-shrink-0"
-                            style={{ color: 'var(--color-text-secondary)' }}
-                          >
-                            Exp: {formatDate(benefit.expirationDate)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        {onMarkUsed && benefit.status === 'active' && (
-                          isUsed ? (
-                            <button
-                              type="button"
-                              disabled
-                              className={`w-11 h-11 rounded-full flex items-center justify-center text-[var(--color-text-tertiary)] opacity-50 cursor-not-allowed${celebratingIds?.has(benefit.id) ? ' animate-toggle-check' : ''}`}
-                              aria-label={`${benefit.name} has been used${
-                                periodMonth ? ` for ${periodMonth}` : ''
-                              }`}
-                            >
-                              <CheckCircle2 size={16} fill="currentColor" aria-hidden="true" />
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onMarkUsed(benefit.id);
-                              }}
-                              className="w-11 h-11 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors press-feedback"
-                              aria-label={`Mark ${benefit.name} as used${
-                                periodMonth ? ` for ${periodMonth}` : ''
-                              }`}
-                            >
-                              <CheckCircle2 size={16} aria-hidden="true" />
-                            </button>
-                          )
-                        )}
-                        {onEdit && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onEdit(benefit.id);
-                            }}
-                            className="w-11 h-11 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors press-feedback"
-                            aria-label={`Edit ${benefit.name}`}
-                          >
-                            <Pencil size={14} aria-hidden="true" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                    {/* Card body — shared with accordion rendering */}
+                    {renderCardBody(benefit)}
                   </div>
-                </div>
-              );
-            })}
-          </React.Fragment>
-        ))}
+                );
+              })}
+            </React.Fragment>
+          );
+        })}
       </section>
     );
   }

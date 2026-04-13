@@ -14,8 +14,10 @@ import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { apiClient } from '@/features/admin/lib/api-client';
 import { AdminBreadcrumb } from '../_components/AdminBreadcrumb';
-import { Loader2 } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
+import Skeleton from '@/shared/components/ui/Skeleton';
+import EmptyState from '@/shared/components/ui/EmptyState';
 import type { AuditLog, PaginationInfo } from '@/features/admin/types/admin';
 
 interface AuditListResponse {
@@ -185,14 +187,28 @@ export default function AuditPage() {
 
       <div className="bg-[var(--color-bg)] rounded-lg border border-[var(--color-border)] overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center">
-            <Loader2 className="inline-block animate-spin" size={20} />
-            <p className="text-[var(--color-text-secondary)] mt-2">Loading audit logs...</p>
+          <div className="p-4 space-y-0" role="status" aria-busy="true" aria-label="Loading audit logs">
+            {[...Array(5)].map((_, idx) => (
+              <div key={idx} className="grid grid-cols-3 gap-4 items-center px-6 py-4 border-b border-[var(--color-border)] last:border-b-0">
+                <div className="flex items-center gap-3">
+                  <Skeleton width={32} height={32} variant="circular" />
+                  <Skeleton width="60%" height={16} variant="text" />
+                </div>
+                <Skeleton width="50%" height={16} variant="text" />
+                <Skeleton width="40%" height={16} variant="text" />
+              </div>
+            ))}
           </div>
         ) : auditLogs.length === 0 ? (
-          <div className="p-8 text-center">
-            <p className="text-[var(--color-text-secondary)]">No audit logs found</p>
-          </div>
+          <EmptyState
+            icon={<FileText size={28} />}
+            title="No audit logs found"
+            description={
+              search || actionFilter || resourceFilter
+                ? 'Try adjusting your search or filter criteria.'
+                : 'No system activity has been recorded yet.'
+            }
+          />
         ) : (
           <>
             <div className="space-y-0 divide-y divide-[var(--color-border)]">
@@ -234,7 +250,7 @@ export default function AuditPage() {
                 <div key={log.id || idx}>
                   <button
                     onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}
-                    className="w-full px-6 py-4 hover:bg-[var(--color-bg-secondary)] transition-colors text-left flex items-center justify-between grid grid-cols-3 gap-4"
+                    className="w-full px-6 py-4 hover:bg-[var(--color-bg-secondary)] transition-colors text-left grid grid-cols-3 gap-4 items-center"
                   >
                     <div className="flex items-center gap-3">
                       <span className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0" style={{ backgroundColor: 'var(--color-primary-bg-subtle)', color: 'var(--color-primary)' }}>

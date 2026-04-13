@@ -18,8 +18,10 @@ import Link from 'next/link';
 import useSWR from 'swr';
 import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import { AdminBreadcrumb } from '../_components/AdminBreadcrumb';
-import { Loader2, Plus } from 'lucide-react';
+import { Plus, CreditCard } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
+import Skeleton from '@/shared/components/ui/Skeleton';
+import EmptyState from '@/shared/components/ui/EmptyState';
 import type { Card, PaginationInfo } from '@/features/admin/types/admin';
 
 interface CardsListResponse {
@@ -477,14 +479,29 @@ export default function CardsPage() {
       {/* Table */}
       <div className="bg-[var(--color-bg)] rounded-lg border border-[var(--color-border)] overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center">
-            <Loader2 className="inline-block animate-spin" size={20} />
-            <p className="text-[var(--color-text-secondary)] mt-2">Loading cards...</p>
+          <div className="p-4 space-y-0" role="status" aria-busy="true" aria-label="Loading cards">
+            {[...Array(5)].map((_, idx) => (
+              <div key={idx} className="flex items-center gap-4 px-6 py-4 border-b border-[var(--color-border)] last:border-b-0">
+                <Skeleton width="15%" height={16} variant="text" />
+                <Skeleton width="22%" height={16} variant="text" />
+                <Skeleton width="12%" height={16} variant="text" />
+                <Skeleton width="10%" height={16} variant="text" />
+                <Skeleton width="10%" height={16} variant="text" />
+              </div>
+            ))}
           </div>
         ) : cards.length === 0 ? (
-          <div className="p-8 text-center">
-            <p className="text-[var(--color-text-secondary)]">No cards found</p>
-          </div>
+          <EmptyState
+            icon={<CreditCard size={28} />}
+            title="No cards found"
+            description={
+              search || activeFilter !== 'all'
+                ? 'Try adjusting your search or filter criteria.'
+                : 'Get started by adding your first credit card.'
+            }
+            actionLabel={!search && activeFilter === 'all' ? 'Add Card' : undefined}
+            onAction={!search && activeFilter === 'all' ? () => setShowCreateModal(true) : undefined}
+          />
         ) : (
           <>
             <div className="overflow-x-auto">

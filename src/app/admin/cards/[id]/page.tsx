@@ -18,8 +18,10 @@ import { formatCurrency } from '@/shared/lib/format-currency';
 import type { Card, Benefit } from '@/features/admin/types/admin';
 import { AdminBreadcrumb } from '../../_components/AdminBreadcrumb';
 import { EditBenefitModal } from '../../_components/EditBenefitModal';
-import { Loader2, Plus } from 'lucide-react';
+import { Plus, Gift } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
+import Skeleton from '@/shared/components/ui/Skeleton';
+import EmptyState from '@/shared/components/ui/EmptyState';
 
 interface CardDetailResponse {
   success: boolean;
@@ -276,9 +278,16 @@ export default function CardDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8 text-center">
-        <Loader2 className="inline-block animate-spin" size={20} />
-        <p className="text-[var(--color-text-secondary)] mt-2">Loading card details...</p>
+      <div className="space-y-6">
+        <div className="p-4" role="status" aria-busy="true" aria-label="Loading card details">
+          <Skeleton width="40%" height={28} variant="text" className="mb-4" />
+          <Skeleton width="20%" height={16} variant="text" className="mb-8" />
+          <div className="space-y-3">
+            {[...Array(3)].map((_, idx) => (
+              <Skeleton key={idx} width="100%" height={64} variant="rectangular" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -347,9 +356,13 @@ export default function CardDetailPage() {
             ))}
           </div>
         ) : benefits.length === 0 ? (
-          <p className="text-[var(--color-text-secondary)] text-center py-8">
-            No benefits added yet
-          </p>
+          <EmptyState
+            icon={<Gift size={28} />}
+            title="No benefits added yet"
+            description="Add a benefit to track its value and usage for this card."
+            actionLabel="Add Benefit"
+            onAction={() => setShowBenefitModal(true)}
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

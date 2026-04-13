@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CreditCard, Users, Gift, FileText } from 'lucide-react';
 import { apiClient } from '@/features/admin/lib/api-client';
+import EmptyState from '@/shared/components/ui/EmptyState';
 import type { AuditLog } from '@/features/admin/types/admin';
 
 export default function AdminDashboard() {
@@ -220,9 +221,11 @@ export default function AdminDashboard() {
             ))}
           </div>
         ) : recentAudits.length === 0 ? (
-          <p className="text-[var(--color-text-secondary)] text-center py-8">
-            No recent activity
-          </p>
+          <EmptyState
+            icon={<FileText size={28} />}
+            title="No recent activity"
+            description="System activity and changes will appear here as they occur."
+          />
         ) : (
           <div className="space-y-4">
             {recentAudits.map((log: AuditLog, idx: number) => {

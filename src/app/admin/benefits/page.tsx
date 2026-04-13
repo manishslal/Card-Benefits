@@ -24,8 +24,10 @@ import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import { AdminBreadcrumb } from '../_components/AdminBreadcrumb';
 import { CardFilterDropdown } from '../_components/CardFilterDropdown';
 import { EditBenefitModal } from '../_components/EditBenefitModal';
-import { Loader2 } from 'lucide-react';
+import { Gift } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
+import Skeleton from '@/shared/components/ui/Skeleton';
+import EmptyState from '@/shared/components/ui/EmptyState';
 import { formatCurrency } from '@/shared/lib/format-currency';
 import type { Benefit, PaginationInfo } from '@/features/admin/types/admin';
 
@@ -348,14 +350,27 @@ export default function BenefitsPage() {
 
       <div className="bg-[var(--color-bg)] rounded-lg border border-[var(--color-border)] overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center">
-            <Loader2 className="inline-block animate-spin" size={20} />
-            <p className="text-[var(--color-text-secondary)] mt-2">Loading benefits...</p>
+          <div className="p-4 space-y-0" role="status" aria-busy="true" aria-label="Loading benefits">
+            {[...Array(5)].map((_, idx) => (
+              <div key={idx} className="flex items-center gap-4 px-6 py-4 border-b border-[var(--color-border)] last:border-b-0">
+                <Skeleton width="20%" height={16} variant="text" />
+                <Skeleton width="18%" height={16} variant="text" />
+                <Skeleton width="12%" height={16} variant="text" />
+                <Skeleton width="10%" height={16} variant="text" />
+                <Skeleton width="10%" height={16} variant="text" />
+              </div>
+            ))}
           </div>
         ) : benefits.length === 0 ? (
-          <div className="p-8 text-center">
-            <p className="text-[var(--color-text-secondary)]">No benefits found</p>
-          </div>
+          <EmptyState
+            icon={<Gift size={28} />}
+            title="No benefits found"
+            description={
+              debouncedSearch || selectedCard
+                ? 'Try adjusting your search or filter criteria.'
+                : 'No benefits have been added to the system yet.'
+            }
+          />
         ) : (
           <>
             <div className="overflow-x-auto">

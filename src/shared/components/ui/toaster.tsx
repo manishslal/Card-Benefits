@@ -48,7 +48,7 @@ export function Toaster() {
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className="pointer-events-auto flex items-start gap-3 rounded-lg p-4 shadow-lg border animate-slide-up"
+          className="pointer-events-auto flex items-start gap-3 rounded-lg p-4 shadow-lg border animate-toast-in"
           style={{
             backgroundColor: variantBg(toast.variant),
             borderColor: variantBorder(toast.variant),

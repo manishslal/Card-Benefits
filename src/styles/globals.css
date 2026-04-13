@@ -508,6 +508,34 @@ form:focus-within,
 .touch-pan-x { touch-action: pan-x; }
 .touch-pan-y { touch-action: pan-y; }
 
+/* ========================================
+   BUTTON PRESS FEEDBACK (Sprint 28D)
+   ======================================== */
+.press-feedback {
+  transition: transform 0.1s ease;
+}
+.press-feedback:active {
+  transform: scale(0.95);
+}
+
+/* ========================================
+   CHIP SELECTION UNDERLINE INDICATOR (Sprint 28D)
+   ======================================== */
+.chip-selected-indicator {
+  position: relative;
+}
+.chip-selected-indicator::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: var(--color-primary);
+  border-radius: 1px;
+  animation: scaleIn 0.2s ease-out both;
+}
+
 /* Responsive text sizing for better mobile readability */
 @media (max-width: 640px) {
   body {

@@ -740,7 +740,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                                 e.stopPropagation();
                                 onMarkUsed(benefit.id);
                               }}
-                              className="w-9 h-9 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors"
+                              className="w-9 h-9 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors press-feedback"
                               aria-label={`Mark ${benefit.name} as used${
                                 periodMonth ? ` for ${periodMonth}` : ''
                               }`}
@@ -756,7 +756,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                               e.stopPropagation();
                               onEdit(benefit.id);
                             }}
-                            className="w-9 h-9 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors"
+                            className="w-9 h-9 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors press-feedback"
                             aria-label={`Edit ${benefit.name}`}
                           >
                             <Pencil size={14} aria-hidden="true" />

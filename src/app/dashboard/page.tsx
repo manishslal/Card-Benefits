@@ -1762,7 +1762,12 @@ export default function DashboardPage() {
 
                 {/* DASH-026: Onboarding empty state when card has zero benefits */}
                 {viewMode === 'current' && benefits.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-12 px-4">
+                  <div
+                    className="flex flex-col items-center justify-center py-12 px-4 rounded-xl"
+                    style={{
+                      background: 'linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg-tertiary) 100%)',
+                    }}
+                  >
                     <div
                       className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
                       style={{ backgroundColor: 'var(--color-primary-light)' }}
@@ -1876,6 +1881,16 @@ export default function DashboardPage() {
         onClose={() => setEditingCard(null)}
         onCardUpdated={handleCardEdited}
       />
+
+      {/* Sprint 28D: Mobile FAB — Add Benefit */}
+      <button
+        onClick={() => setIsAddBenefitOpen(true)}
+        className="fixed bottom-6 right-6 z-30 md:hidden w-14 h-14 rounded-full shadow-lg flex items-center justify-center press-feedback safe-area-bottom"
+        style={{ background: 'var(--color-primary)' }}
+        aria-label="Add benefit"
+      >
+        <Plus className="w-6 h-6 text-white" />
+      </button>
     </div>
   );
 }

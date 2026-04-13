@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib';
 import type { Card } from '@/features/cards/components/MyCardsSection/types';
 import { featureFlags } from '@/lib/feature-flags';
+import { getCardType } from '@/lib/card-utils';
 
 interface PatchCardRequest {
   customName?: string;
@@ -78,8 +79,8 @@ function validatePatchCardRequest(body: PatchCardRequest): {
   if (body.actualAnnualFee !== undefined && body.actualAnnualFee !== null) {
     if (typeof body.actualAnnualFee !== 'number' || !Number.isFinite(body.actualAnnualFee) || body.actualAnnualFee < 0) {
       errors.actualAnnualFee = 'Annual fee must be a non-negative number';
-    } else if (body.actualAnnualFee > 1_000_000) {
-      errors.actualAnnualFee = 'Annual fee cannot exceed $10,000';
+    } else if (body.actualAnnualFee > 999900) {
+      errors.actualAnnualFee = 'Annual fee cannot exceed $9,999';
     }
   }
 
@@ -322,8 +323,8 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
           id: completeCard.id,
           userId: userId,
           name: completeCard.customName || completeCard.masterCard.cardName,
-          lastFourDigits: '****', // Placeholder until card numbers stored in DB
-          cardNetwork: completeCard.masterCard.issuer as 'Visa' | 'Mastercard' | 'Amex' | 'Discover',
+          lastFourDigits: null,
+          cardNetwork: getCardType(completeCard.masterCard.issuer),
           cardType: 'Credit' as const, // From masterCard.type or default to 'Credit'
           isActive: completeCard.isOpen,
           createdAt: completeCard.createdAt.toISOString(),

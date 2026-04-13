@@ -103,13 +103,13 @@ export async function GET(request: Request): Promise<NextResponse> {
   const expectedHeader = `Bearer ${cronSecret}`;
 
   let isValidSecret = false;
-  try {
-    isValidSecret = timingSafeEqual(
-      Buffer.from(authHeader),
-      Buffer.from(expectedHeader)
-    );
-  } catch {
+  const a = Buffer.from(authHeader);
+  const b = Buffer.from(expectedHeader);
+  if (a.length !== b.length) {
+    timingSafeEqual(b, b);  // Burn same time to prevent length leakage
     isValidSecret = false;
+  } else {
+    isValidSecret = timingSafeEqual(a, b);
   }
 
   if (!isValidSecret) {

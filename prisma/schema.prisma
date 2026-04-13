@@ -112,6 +112,9 @@ model User {
   recommendations   BenefitRecommendation[]
   usageRecords      BenefitUsageRecord[]
 
+  // Phase 2B - Onboarding sessions
+  onboardingSessions OnboardingSession[] @relation("UserOnboardingSessions")
+
   @@index([email])
   @@index([role])
   @@index([isActive])
@@ -177,7 +180,7 @@ model UserCard {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
   userBenefits        UserBenefit[]
-  masterCard          MasterCard    @relation(fields: [masterCardId], references: [id])
+  masterCard          MasterCard    @relation(fields: [masterCardId], references: [id], onDelete: Cascade)
   player              Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@unique([playerId, masterCardId])
@@ -504,6 +507,7 @@ model OnboardingSession {
   id              String    @id @default(cuid())
   playerId        String    @unique
   userId          String
+  user            User      @relation("UserOnboardingSessions", fields: [userId], references: [id], onDelete: Cascade)
   
   // Progress tracking
   currentStep     Int       @default(1) // 1-6

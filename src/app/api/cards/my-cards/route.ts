@@ -30,6 +30,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib';
 import { featureFlags } from '@/lib/feature-flags';
+import { getCardType } from '@/lib/card-utils';
 
 // ============================================================
 // Type Definitions
@@ -102,20 +103,6 @@ interface UserCardsResponse {
 interface ErrorResponse {
   success: false;
   error: string;
-}
-
-// ============================================================
-// Helper Functions
-// ============================================================
-
-function getCardType(issuer: string): string {
-  const lowerIssuer = issuer.toLowerCase();
-  if (lowerIssuer.includes('american') || lowerIssuer.includes('amex')) return 'amex';
-  if (lowerIssuer.includes('mastercard') || lowerIssuer.includes('mc')) return 'mastercard';
-  if (lowerIssuer.includes('visa')) return 'visa';
-  if (lowerIssuer.includes('discover')) return 'discover';
-  // DISC-009: Return 'other' instead of guessing 'visa' for unknown issuers
-  return 'other';
 }
 
 // ============================================================

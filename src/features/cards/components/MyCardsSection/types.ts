@@ -5,8 +5,8 @@ export interface Card {
   id: string;
   userId: string;
   name: string;
-  lastFourDigits: string;
-  cardNetwork: 'Visa' | 'Mastercard' | 'Amex' | 'Discover';
+  lastFourDigits: string | null;
+  cardNetwork: string;
   cardType: 'Credit' | 'Debit' | 'Prepaid';
   isActive: boolean;
   createdAt: string;

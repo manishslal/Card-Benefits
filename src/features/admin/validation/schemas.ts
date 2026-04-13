@@ -152,10 +152,13 @@ export const BenefitTypeEnum = z.enum([
  */
 export const ResetCadenceEnum = z.enum([
   'ANNUAL',
+  'QUARTERLY',
+  'SEMI_ANNUAL',
   'PER_TRANSACTION',
   'PER_DAY',
   'MONTHLY',
   'ONE_TIME',
+  'CardmemberYear',
 ]);
 
 /**

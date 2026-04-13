@@ -62,7 +62,7 @@ export async function PATCH(
       return NextResponse.json(
         {
           success: false,
-          error: 'UNAUTHORIZED',
+          error: 'FORBIDDEN',
           message: 'Cannot modify records from other users',
           statusCode: 403,
         },
@@ -208,7 +208,7 @@ export async function DELETE(
       return NextResponse.json(
         {
           success: false,
-          error: 'UNAUTHORIZED',
+          error: 'FORBIDDEN',
           message: 'Cannot delete records from other users',
           statusCode: 403,
         },

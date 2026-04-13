@@ -728,7 +728,7 @@ export default function DashboardPage() {
         setIsCarouselCollapsed(!entry.isIntersecting);
       },
       {
-        rootMargin: '-64px 0px 0px 0px',
+        rootMargin: '-32px 0px 0px 0px',
         threshold: 0,
       }
     );
@@ -1547,7 +1547,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 px-4 md:px-8 py-6">
+      <main className="flex-1 px-4 md:px-8 pt-2 pb-6">
         <div className="max-w-6xl mx-auto">
           {/* Empty State: No Cards — DASH-026 Rich Onboarding */}
           {cards.length === 0 ? (
@@ -1593,7 +1593,7 @@ export default function DashboardPage() {
               <div ref={carouselSentinelRef} aria-hidden="true" className="h-0 w-0 overflow-hidden" />
 
               {/* Sticky carousel container */}
-              <div className="sticky top-16 z-20 -mx-4 md:-mx-8 px-0 md:px-8 bg-[var(--color-bg)]">
+              <div className="sticky z-20 -mx-4 md:-mx-8 px-0 md:px-8 bg-[var(--color-bg)]" style={{ top: 'calc(4rem + env(safe-area-inset-top, 0px))' }}>
                 {/* Expanded carousel */}
                 <div
                   style={{

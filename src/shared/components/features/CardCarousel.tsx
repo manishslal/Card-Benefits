@@ -560,9 +560,9 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
                       }}
                       className="absolute focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded"
                       style={{
-                        top: 10,
-                        left: 10,
-                        padding: 4,
+                        top: 8,
+                        left: 8,
+                        padding: 8,
                         backgroundColor: light ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)',
                         borderRadius: 6,
                         color: textColor,
@@ -573,8 +573,8 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
                         justifyContent: 'center',
                         backdropFilter: 'blur(4px)',
                         transition: 'background-color 200ms',
-                        minWidth: 'auto',
-                        minHeight: 'auto',
+                        minWidth: 36,
+                        minHeight: 36,
                       }}
                       aria-label="Edit card settings"
                       onMouseEnter={(e) => {
@@ -584,7 +584,7 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
                         (e.currentTarget as HTMLButtonElement).style.backgroundColor = light ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)';
                       }}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
                         <path d="m15 5 4 4" />
                       </svg>
@@ -641,10 +641,10 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
                         ? 'var(--carousel-dot-active-color)'
                         : 'var(--carousel-dot-color)',
                     border: 'none',
-                    padding: 0,
+                    padding: '10px',
+                    backgroundClip: 'content-box',
+                    boxSizing: 'content-box',
                     cursor: 'pointer',
-                    minWidth: 'auto',
-                    minHeight: 'auto',
                   }}
                 />
               ))

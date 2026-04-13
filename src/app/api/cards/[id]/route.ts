@@ -130,6 +130,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       );
     }
 
+    // Determine if benefit engine is enabled for period-based filtering
+    const engineEnabled = featureFlags.BENEFIT_ENGINE_ENABLED;
+    const benefitWhereClause = engineEnabled
+      ? { status: { not: 'ARCHIVED' }, periodStatus: 'ACTIVE' }
+      : { status: 'ACTIVE' };
+
     // Fetch card with benefits from database
     const card = await prisma.userCard.findUnique({
       where: { id: cardId },
@@ -138,7 +144,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           select: { userId: true },
         },
         userBenefits: {
-          where: { status: 'ACTIVE' },  // Only active benefits
+          where: benefitWhereClause,
           select: {
             id: true,
             name: true,

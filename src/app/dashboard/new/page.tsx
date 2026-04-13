@@ -227,7 +227,7 @@ export default function EnhancedDashboardPage() {
   const handleMarkUsed = useCallback(
     async (benefitId: string) => {
       try {
-        const result = await toggleBenefitUsed(benefitId);
+        const result = await toggleBenefitUsed(benefitId, true);
         if (result.success) {
           setAllBenefits((prev) =>
             prev.map((b) =>

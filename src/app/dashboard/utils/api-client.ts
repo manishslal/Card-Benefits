@@ -127,7 +127,7 @@ export async function fetchBenefitPeriods(benefitId: string): Promise<PeriodResp
 /**
  * Toggle benefit as used/unused
  */
-export async function toggleBenefitUsed(benefitId: string): Promise<{ success: boolean }> {
+export async function toggleBenefitUsed(benefitId: string, isUsed: boolean): Promise<{ success: boolean }> {
   try {
     const response = await fetch(
       `/api/benefits/${encodeURIComponent(benefitId)}/toggle-used`,
@@ -135,7 +135,7 @@ export async function toggleBenefitUsed(benefitId: string): Promise<{ success: b
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({}),
+        body: JSON.stringify({ isUsed }),
       }
     );
 

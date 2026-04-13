@@ -138,7 +138,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
       data: {
         isUsed,
         timesUsed: isUsed && !benefit.isUsed ? benefit.timesUsed + 1 : benefit.timesUsed,
-        claimedAt: isUsed ? new Date() : benefit.claimedAt,
+        claimedAt: isUsed ? new Date() : null,
       },
       include: { masterBenefit: true },
     });

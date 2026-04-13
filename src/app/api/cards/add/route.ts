@@ -167,10 +167,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const masterCardId = body.masterCardId as string;
-    // Default renewal date to 1 year from now if not provided
-    const renewalDate = body.renewalDate 
+    // Default renewal date to 1 year from now if not provided (UTC to avoid TZ drift)
+    const now = new Date();
+    const renewalDate = body.renewalDate
       ? new Date(body.renewalDate)
-      : new Date(new Date().setFullYear(new Date().getFullYear() + 1));
+      : new Date(Date.UTC(now.getUTCFullYear() + 1, now.getUTCMonth(), now.getUTCDate()));
     const { customName, actualAnnualFee } = body;
 
     // Get user's primary player profile

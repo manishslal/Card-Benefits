@@ -31,7 +31,7 @@ import { prisma } from '@/shared/lib';
 import { getNextExpirationDate } from '@/features/benefits/lib';
 import { RateLimiter } from '@/shared/lib';
 import { featureFlags } from '@/lib/feature-flags';
-import { calculateNextPeriod, resolveCadence } from '@/lib/benefit-engine';
+import { calculateNextPeriod, resolveCadence, resolveClaimingAmount } from '@/lib/benefit-engine';
 
 // ============================================================
 // Configuration
@@ -252,7 +252,13 @@ async function handleNewBehavior(
 
   const masterBenefitMap = new Map<
     string,
-    { isActive: boolean; claimingCadence: string | null; claimingWindowEnd: string | null }
+    {
+      isActive: boolean;
+      claimingCadence: string | null;
+      claimingWindowEnd: string | null;
+      claimingAmount: number | null;
+      variableAmounts: Record<string, number> | null;
+    }
   >();
 
   if (masterBenefitIds.length > 0) {
@@ -263,6 +269,8 @@ async function handleNewBehavior(
         isActive: true,
         claimingCadence: true,
         claimingWindowEnd: true,
+        claimingAmount: true,
+        variableAmounts: true,
       },
     });
     for (const mb of masterBenefits) {
@@ -270,6 +278,8 @@ async function handleNewBehavior(
         isActive: mb.isActive,
         claimingCadence: mb.claimingCadence,
         claimingWindowEnd: mb.claimingWindowEnd,
+        claimingAmount: mb.claimingAmount,
+        variableAmounts: mb.variableAmounts as Record<string, number> | null,
       });
     }
   }
@@ -374,13 +384,30 @@ async function handleNewBehavior(
         // ONE_TIME guard (should already be filtered, but defense in depth)
         if (nextPeriod.periodEnd === null) continue;
 
+        // Resolve stickerValue from master benefit for variable-amount benefits
+        const masterBenefit = benefit.masterBenefitId
+          ? masterBenefitMap?.get(benefit.masterBenefitId)
+          : null;
+
+        const nextPeriodMonth = nextPeriod.periodStart
+          ? new Date(nextPeriod.periodStart).getUTCMonth() + 1
+          : new Date().getUTCMonth() + 1;
+
+        const resolvedStickerValue = masterBenefit?.claimingAmount != null
+          ? resolveClaimingAmount(
+              masterBenefit.claimingAmount,
+              masterBenefit.variableAmounts,
+              nextPeriodMonth
+            )
+          : benefit.stickerValue;
+
         nextPeriodData.push({
           userCardId: benefit.userCardId,
           playerId: benefit.playerId,
           masterBenefitId: benefit.masterBenefitId,
           name: benefit.name,
           type: benefit.type,
-          stickerValue: benefit.stickerValue,
+          stickerValue: resolvedStickerValue,
           resetCadence: benefit.resetCadence,
           periodStart: nextPeriod.periodStart,
           periodEnd: nextPeriod.periodEnd,

@@ -63,6 +63,20 @@ function getCadenceLabel(
   }
 }
 
+/** Cadence sort priority — lower number = shown first */
+const CADENCE_ORDER: Record<string, number> = {
+  MONTHLY: 0,
+  QUARTERLY: 1,
+  SEMI_ANNUAL: 2,
+  ANNUAL: 3,
+  ONE_TIME: 4,
+};
+
+function getCadencePriority(benefit: { resetCadence?: string; claimingCadence?: string | null }): number {
+  const cadence = (benefit.claimingCadence || benefit.resetCadence || '').toUpperCase();
+  return CADENCE_ORDER[cadence] ?? 5;
+}
+
 // ---------------------------------------------------------------------------
 // Helper: Cadence info text for benefit cards (Sprint 11b)
 // Returns a short human-readable description of the benefit's reset frequency.
@@ -370,34 +384,41 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
     },
     ref
   ) => {
-    // Phase 2 — sort used benefits to the bottom of the grid
+    // Phase 2 + Sprint 29C — sort: unused first, then by cadence priority
     const sortedBenefits = useMemo(() => {
       return [...benefits].sort((a, b) => {
-        if (a.isUsed && !b.isUsed) return 1;
-        if (!a.isUsed && b.isUsed) return -1;
+        // Primary: unused before used (normalize to boolean for antisymmetry)
+        const aUsed = !!a.isUsed;
+        const bUsed = !!b.isUsed;
+        if (aUsed !== bUsed) return aUsed ? 1 : -1;
+        // Secondary: cadence priority (Monthly first, then Quarterly, etc.)
+        const cadenceA = getCadencePriority(a);
+        const cadenceB = getCadencePriority(b);
+        if (cadenceA !== cadenceB) return cadenceA - cadenceB;
         return 0;
       });
     }, [benefits]);
 
-    // DASH-G03 — Group consecutive benefits by period for shared headers
+    // DASH-G03 + Sprint 29C — Map-based consolidation so same-period benefits
+    // are always grouped together regardless of sort position.
     const benefitGroups = useMemo(() => {
-      const groups: {
+      const groupMap = new Map<string, {
         periodKey: string;
         periodLabel: string;
         cadenceLabel: string;
         benefits: Benefit[];
-      }[] = [];
+      }>();
 
       for (const benefit of sortedBenefits) {
         const periodKey = benefit.periodStart
           ? formatPeriodRange(benefit.periodStart, benefit.periodEnd)
           : '';
 
-        const lastGroup = groups[groups.length - 1];
-        if (lastGroup && lastGroup.periodKey === periodKey) {
-          lastGroup.benefits.push(benefit);
+        const existing = groupMap.get(periodKey);
+        if (existing) {
+          existing.benefits.push(benefit);
         } else {
-          groups.push({
+          groupMap.set(periodKey, {
             periodKey,
             periodLabel: periodKey,
             cadenceLabel: getCadenceLabel(
@@ -409,7 +430,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
         }
       }
 
-      return groups;
+      return Array.from(groupMap.values());
     }, [sortedBenefits]);
 
     // Pre-compute animation indices across groups for staggered entry

@@ -214,6 +214,14 @@
   --carousel-arrow-opacity: 0.85;
 
   /* ========================================
+     CAROUSEL COLLAPSE TOKENS
+     ======================================== */
+  --compact-chip-height: 36px;
+  --compact-bar-height: 52px;
+  --carousel-collapse-duration: 300ms;
+  --carousel-collapse-easing: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ========================================
      MISSING SEMANTIC TOKENS - LIGHT MODE
      ======================================== */
   --color-danger-50: #fef2f2;
@@ -308,6 +316,10 @@
     --carousel-active-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
     --carousel-inactive-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     --carousel-arrow-opacity: 0.85;
+    --compact-chip-height: 36px;
+    --compact-bar-height: 52px;
+    --carousel-collapse-duration: 300ms;
+    --carousel-collapse-easing: cubic-bezier(0.4, 0, 0.2, 1);
     --color-danger-500: #f87171;
     --color-danger-600: #fb7185;
     --color-alert-50: #451a03;
@@ -399,6 +411,10 @@
   --carousel-active-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
   --carousel-inactive-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   --carousel-arrow-opacity: 0.85;
+  --compact-chip-height: 36px;
+  --compact-bar-height: 52px;
+  --carousel-collapse-duration: 300ms;
+  --carousel-collapse-easing: cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Missing semantic tokens - Dark Mode */
   --color-danger-50: #450a0a;
@@ -555,3 +571,6 @@ a:focus,
 .skip-to-content:focus {
   top: 0;
 }
+
+/* Compact card chips scrollbar hide */
+[data-compact-chips]::-webkit-scrollbar { display: none; }

@@ -6,13 +6,14 @@ import { useToast } from '@/shared/components/ui/use-toast';
 import Button from '@/shared/components/ui/button';
 import { AppHeader } from '@/shared/components/layout';
 import { CardCarousel, DashboardSummary } from '@/shared/components/features';
+import CompactCardChips from '@/shared/components/features/CompactCardChips';
 import { BenefitsGrid, AddBenefitModal, EditBenefitModal, DeleteBenefitConfirmationDialog } from '@/features/benefits';
 import { AddCardModal } from '@/features/cards/components/modals/AddCardModal';
 import { CardEditModal } from '@/features/cards/components/MyCardsSection/CardEditModal';
 import type { Card as EditableCard } from '@/features/cards/components/MyCardsSection/types';
 import { deduplicateBenefits } from '@/lib/benefit-utils';
 import { calculateProRata, isProRataEligible } from '@/lib/benefit-engine/pro-rata';
-import { Plus, CreditCard, AlertCircle, Sparkles, Pencil } from 'lucide-react';
+import { Plus, CreditCard, AlertCircle, Sparkles } from 'lucide-react';
 import { SkeletonCard } from '@/shared/components/loaders';
 import { type PeriodOption } from './new/components/PeriodSelector';
 
@@ -335,6 +336,10 @@ export default function DashboardPage() {
   const [selectedBenefit, setSelectedBenefit] = useState<BenefitData | null>(null);
   // Sprint 25: Card edit modal on dashboard
   const [editingCard, setEditingCard] = useState<string | null>(null);
+
+  // Sprint 27: Carousel collapse on scroll
+  const carouselSentinelRef = useRef<HTMLDivElement>(null);
+  const [isCarouselCollapsed, setIsCarouselCollapsed] = useState(false);
 
   // ============================================================
   // State Management - Filtering
@@ -712,6 +717,25 @@ export default function DashboardPage() {
     setActiveSort('default');
     setSmartView('all');
   }, [selectedCardId]);
+
+  // Sprint 27: IntersectionObserver for carousel collapse on scroll
+  useEffect(() => {
+    const sentinel = carouselSentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsCarouselCollapsed(!entry.isIntersecting);
+      },
+      {
+        rootMargin: '-64px 0px 0px 0px',
+        threshold: 0,
+      }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
 
   // ============================================================
   // Effect: Load history benefits when viewMode switches to "history"
@@ -1319,7 +1343,9 @@ export default function DashboardPage() {
     }, 0);
   }, [cards]);
 
+  // Kept for future use (summary cards may be re-added)
   const netSavings = totalUsedValue - (apiTotalFees / 100);
+  void netSavings;
 
   // ============================================================
   // Benefit counts per card — for CardCarousel badges (Sprint 8)
@@ -1499,7 +1525,9 @@ export default function DashboardPage() {
               >
                 Welcome, {userName}! 👋
               </h1>
-
+              <p className="text-sm mt-0.5 text-[var(--color-text-secondary)]">
+                You have {apiTotalCards ?? cards.length} card{(apiTotalCards ?? cards.length) !== 1 ? 's' : ''} and {apiTotalBenefits ?? totalBenefitsAcrossCards} benefit{(apiTotalBenefits ?? totalBenefitsAcrossCards) !== 1 ? 's' : ''} tracked
+              </p>
             </div>
 
             <Button
@@ -1514,47 +1542,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-
-      {/* Summary Cards — Cards & Benefits + Net Savings */}
-      {cards.length > 0 && (
-        <div className="max-w-6xl mx-auto px-4 md:px-8 py-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Card 1: Total Cards & Benefits */}
-            <div role="group" aria-label="Cards and Benefits summary" className="rounded-xl p-4 border border-[var(--color-border)] bg-[var(--color-bg-secondary)] flex flex-col items-center justify-center text-center">
-              <div className="flex items-center gap-2 mb-2">
-                <CreditCard size={20} style={{ color: 'var(--color-text-secondary)' }} />
-                <span className="text-sm text-[var(--color-text-secondary)]">Cards &amp; Benefits</span>
-              </div>
-              <p className="text-xl font-bold text-[var(--color-text)]">
-                {apiTotalCards ?? cards.length} card{(apiTotalCards ?? cards.length) !== 1 ? 's' : ''}
-              </p>
-              <p className="text-sm text-[var(--color-text-secondary)]">
-                {apiTotalBenefits ?? totalBenefitsAcrossCards} benefit{(apiTotalBenefits ?? totalBenefitsAcrossCards) !== 1 ? 's' : ''} tracked
-              </p>
-            </div>
-
-            {/* Card 2: Net Savings */}
-            <div role="group" aria-label="Net savings summary" className="rounded-xl p-4 border border-[var(--color-border)] bg-[var(--color-bg-secondary)] flex flex-col items-center justify-center text-center">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles size={20} style={{ color: 'var(--color-text-secondary)' }} />
-                <span className="text-sm text-[var(--color-text-secondary)]">Net Savings</span>
-              </div>
-              <p
-                className="text-xl font-bold"
-                style={{
-                  color: netSavings < 0
-                    ? 'var(--color-error-text, #ef4444)'
-                    : netSavings > 0
-                      ? 'var(--color-success-text, var(--color-primary))'
-                      : 'var(--color-text)',
-                }}
-              >
-                {netSavings < 0 ? '-' : ''}${Math.abs(netSavings).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Main Content */}
       <main className="flex-1 px-4 md:px-8 py-6">
@@ -1599,30 +1586,52 @@ export default function DashboardPage() {
             </div>
           ) : (
             <>
-              {/* Unified Card Carousel (Sprint 24 — replaces CardSwitcher + Hero Card) */}
-              <div className="sticky top-16 z-20 -mx-4 px-4 py-2 bg-[var(--color-bg)]">
-                <CardCarousel
-                  cards={cards}
-                  selectedCardId={selectedCardId}
-                  onSelectCard={setSelectedCardId}
-                  benefitCounts={benefitCounts}
-                />
-                {/* Sprint 25: Edit card from dashboard */}
-                {selectedCardId && (
-                  <div className="flex justify-end mt-1 mr-1">
-                    <button
-                      type="button"
-                      onClick={() => setEditingCard(selectedCardId)}
-                      className="inline-flex items-center gap-1 text-xs font-medium rounded-md px-2 py-1 transition-colors
-                        text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-secondary)]
-                        focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
-                      aria-label="Edit card settings"
-                    >
-                      <Pencil size={14} aria-hidden="true" />
-                      Edit
-                    </button>
+              {/* Sentinel for collapse detection */}
+              <div ref={carouselSentinelRef} aria-hidden="true" className="h-0 w-0 overflow-hidden" />
+
+              {/* Sticky carousel container */}
+              <div className="sticky top-16 z-20 -mx-4 px-4 bg-[var(--color-bg)]">
+                {/* Expanded carousel */}
+                <div
+                  style={{
+                    maxHeight: isCarouselCollapsed ? 0 : 400,
+                    overflow: 'hidden',
+                    transition: `max-height var(--carousel-collapse-duration, 300ms) var(--carousel-collapse-easing, cubic-bezier(0.4, 0, 0.2, 1)), opacity var(--carousel-collapse-duration, 300ms) var(--carousel-collapse-easing, cubic-bezier(0.4, 0, 0.2, 1))`,
+                    opacity: isCarouselCollapsed ? 0 : 1,
+                  }}
+                  {...(isCarouselCollapsed ? { inert: '' } as unknown as React.HTMLAttributes<HTMLDivElement> : {})}
+                >
+                  <div className="py-2">
+                    <CardCarousel
+                      cards={cards}
+                      selectedCardId={selectedCardId}
+                      onSelectCard={setSelectedCardId}
+                      benefitCounts={benefitCounts}
+                      onEditCard={(cardId) => setEditingCard(cardId)}
+                    />
                   </div>
-                )}
+                </div>
+
+                {/* Collapsed compact chips */}
+                <div
+                  style={{
+                    maxHeight: isCarouselCollapsed ? 'var(--compact-bar-height)' : '0px',
+                    overflow: 'hidden',
+                    transition: `max-height var(--carousel-collapse-duration, 300ms) var(--carousel-collapse-easing, cubic-bezier(0.4, 0, 0.2, 1)), opacity var(--carousel-collapse-duration, 300ms) var(--carousel-collapse-easing, cubic-bezier(0.4, 0, 0.2, 1))`,
+                    opacity: isCarouselCollapsed ? 1 : 0,
+                  }}
+                  {...(!isCarouselCollapsed ? { inert: '' } as unknown as React.HTMLAttributes<HTMLDivElement> : {})}
+                >
+                  <div className="py-1.5 border-b border-[var(--color-border)]">
+                    <CompactCardChips
+                      cards={cards}
+                      selectedCardId={selectedCardId}
+                      onSelectCard={setSelectedCardId}
+                      benefitCounts={benefitCounts}
+                      onEditCard={(cardId) => setEditingCard(cardId)}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* DISC-010: Filter controls landmark */}

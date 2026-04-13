@@ -36,6 +36,7 @@ interface CardCarouselProps {
   onSelectCard: (cardId: string) => void;
   benefitCounts?: Record<string, number>;
   className?: string;
+  onEditCard?: (cardId: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -86,7 +87,7 @@ function getCardLabel(card: CarouselCard): string {
 // ---------------------------------------------------------------------------
 
 const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
-  ({ cards, selectedCardId, onSelectCard, benefitCounts, className }, ref) => {
+  ({ cards, selectedCardId, onSelectCard, benefitCounts, className, onEditCard }, ref) => {
     // ---- Refs ----
     const trackRef = useRef<HTMLDivElement>(null);
     const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -547,6 +548,47 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
                     >
                       {networkLabel}
                     </span>
+                  )}
+
+                  {/* Edit button — only on active card */}
+                  {isActive && onEditCard && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditCard(card.id);
+                      }}
+                      className="absolute focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded"
+                      style={{
+                        top: 10,
+                        left: 10,
+                        padding: 4,
+                        backgroundColor: light ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)',
+                        borderRadius: 6,
+                        color: textColor,
+                        cursor: 'pointer',
+                        border: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backdropFilter: 'blur(4px)',
+                        transition: 'background-color 200ms',
+                        minWidth: 'auto',
+                        minHeight: 'auto',
+                      }}
+                      aria-label="Edit card settings"
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.backgroundColor = light ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.25)';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.backgroundColor = light ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)';
+                      }}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                        <path d="m15 5 4 4" />
+                      </svg>
+                    </button>
                   )}
                 </div>
               );

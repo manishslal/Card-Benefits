@@ -49,7 +49,7 @@ const SkeletonCard = React.forwardRef<HTMLDivElement, SkeletonCardProps>(
         {showImage && (
           <Skeleton
             variant="rectangular"
-            animation="pulse"
+            animation="shimmer"
             width="100%"
             height="180px"
             className="mb-4"
@@ -64,14 +64,14 @@ const SkeletonCard = React.forwardRef<HTMLDivElement, SkeletonCardProps>(
               {index === 0 ? (
                 <Skeleton
                   variant="text"
-                  animation="pulse"
+                  animation="shimmer"
                   width="85%"
                   height="20px"
                 />
               ) : (
                 <Skeleton
                   variant="text"
-                  animation="pulse"
+                  animation="shimmer"
                   width="100%"
                   height="16px"
                 />
@@ -84,14 +84,14 @@ const SkeletonCard = React.forwardRef<HTMLDivElement, SkeletonCardProps>(
         <div className="mt-4 flex gap-2">
           <Skeleton
             variant="rectangular"
-            animation="pulse"
+            animation="shimmer"
             width="45%"
             height="36px"
             className="rounded-md"
           />
           <Skeleton
             variant="rectangular"
-            animation="pulse"
+            animation="shimmer"
             width="45%"
             height="36px"
             className="rounded-md"

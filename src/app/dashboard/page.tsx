@@ -1418,15 +1418,15 @@ export default function DashboardPage() {
           <div className="max-w-6xl mx-auto space-y-8">
             {/* Loading Header Skeleton */}
             <div className="space-y-2">
-              <div className="h-8 w-48 bg-[var(--color-border)] rounded animate-pulse" />
-              <div className="h-4 w-72 bg-[var(--color-border)] rounded animate-pulse" />
+              <div className="h-8 w-48 rounded" style={{ background: 'linear-gradient(90deg, var(--color-bg-secondary) 25%, var(--color-bg-tertiary, var(--color-bg)) 50%, var(--color-bg-secondary) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 2s infinite linear' }} />
+              <div className="h-4 w-72 rounded" style={{ background: 'linear-gradient(90deg, var(--color-bg-secondary) 25%, var(--color-bg-tertiary, var(--color-bg)) 50%, var(--color-bg-secondary) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 2s infinite linear' }} />
             </div>
 
             {/* Loading Card Switcher Skeleton */}
             <div className="flex gap-4">
-              <div className="h-10 w-32 bg-[var(--color-border)] rounded animate-pulse" />
-              <div className="h-10 w-32 bg-[var(--color-border)] rounded animate-pulse" />
-              <div className="h-10 w-32 bg-[var(--color-border)] rounded animate-pulse" />
+              <div className="h-10 w-32 rounded" style={{ background: 'linear-gradient(90deg, var(--color-bg-secondary) 25%, var(--color-bg-tertiary, var(--color-bg)) 50%, var(--color-bg-secondary) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 2s infinite linear' }} />
+              <div className="h-10 w-32 rounded" style={{ background: 'linear-gradient(90deg, var(--color-bg-secondary) 25%, var(--color-bg-tertiary, var(--color-bg)) 50%, var(--color-bg-secondary) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 2s infinite linear' }} />
+              <div className="h-10 w-32 rounded" style={{ background: 'linear-gradient(90deg, var(--color-bg-secondary) 25%, var(--color-bg-tertiary, var(--color-bg)) 50%, var(--color-bg-secondary) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 2s infinite linear' }} />
             </div>
 
             {/* Loading Dashboard Summary Skeleton */}
@@ -1438,7 +1438,7 @@ export default function DashboardPage() {
 
             {/* Loading Benefits Grid Skeleton */}
             <div className="space-y-4">
-              <div className="h-6 w-56 bg-[var(--color-border)] rounded animate-pulse" />
+              <div className="h-6 w-56 rounded" style={{ background: 'linear-gradient(90deg, var(--color-bg-secondary) 25%, var(--color-bg-tertiary, var(--color-bg)) 50%, var(--color-bg-secondary) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 2s infinite linear' }} />
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <SkeletonCard rows={4} showImage={true} />
                 <SkeletonCard rows={4} showImage={true} />

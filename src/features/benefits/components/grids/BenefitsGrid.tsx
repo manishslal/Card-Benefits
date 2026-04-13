@@ -546,8 +546,12 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="min-h-[120px] rounded-lg animate-pulse"
-              style={{ backgroundColor: 'var(--color-bg-secondary)' }}
+              className="min-h-[120px] rounded-lg"
+              style={{
+                background: 'linear-gradient(90deg, var(--color-bg-secondary) 25%, var(--color-bg-tertiary, var(--color-bg)) 50%, var(--color-bg-secondary) 75%)',
+                backgroundSize: '200% 100%',
+                animation: 'shimmer 2s infinite linear',
+              }}
             />
           ))}
         </div>
@@ -583,8 +587,12 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
               <div
                 className="col-span-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg"
                 style={{
-                  backgroundColor: 'var(--color-bg-secondary)',
+                  background: 'var(--color-bg-subtle, var(--color-bg-secondary))',
                   color: 'var(--color-text-secondary)',
+                  borderLeft: '3px solid var(--color-primary)',
+                  paddingLeft: '0.5rem',
+                  borderTopLeftRadius: '2px',
+                  borderBottomLeftRadius: '2px',
                 }}
               >
                 {group.periodKey === '__used__' ? (

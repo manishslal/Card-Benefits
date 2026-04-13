@@ -11,9 +11,11 @@
 export function BenefitSkeleton() {
   return (
     <div
-      className="p-4 rounded-lg border animate-pulse"
+      className="p-4 rounded-lg border"
       style={{
-        backgroundColor: 'var(--color-bg-secondary)',
+        background: 'linear-gradient(90deg, var(--color-bg-secondary) 25%, var(--color-bg-tertiary, var(--color-bg)) 50%, var(--color-bg-secondary) 75%)',
+        backgroundSize: '200% 100%',
+        animation: 'shimmer 2s infinite linear',
         borderColor: 'var(--color-border)',
       }}
       aria-busy="true"

@@ -12,6 +12,7 @@ import { AddCardModal } from '@/features/cards/components/modals/AddCardModal';
 import { CardEditModal } from '@/features/cards/components/MyCardsSection/CardEditModal';
 import type { Card as EditableCard } from '@/features/cards/components/MyCardsSection/types';
 import { deduplicateBenefits } from '@/lib/benefit-utils';
+import { formatCurrency } from '@/shared/lib/format-currency';
 import { Plus, CreditCard, AlertCircle, Sparkles } from 'lucide-react';
 import { SkeletonCard } from '@/shared/components/loaders';
 import { type PeriodOption } from './new/components/PeriodSelector';
@@ -1338,6 +1339,22 @@ export default function DashboardPage() {
   void netSavings;
 
   // ============================================================
+  // D-5: Card Annual Fee ROI — % of annual fee recovered by used benefits
+  // ============================================================
+
+  const selectedCardRoi = useMemo(() => {
+    const card = cards.find((c) => c.id === selectedCardId);
+    if (!card) return null;
+    const annualFee = card.actualAnnualFee;
+    if (!annualFee || annualFee === 0) return { type: 'free' as const };
+    const usedValue = (card.benefits || [])
+      .filter((b) => b.isUsed)
+      .reduce((sum, b) => sum + (b.stickerValue > 0 ? (b.userDeclaredValue ?? b.stickerValue) : 0), 0);
+    const pct = Math.round((usedValue / annualFee) * 100);
+    return { type: 'paid' as const, pct, annualFee };
+  }, [cards, selectedCardId]);
+
+  // ============================================================
   // Benefit counts per card — for CardCarousel badges (Sprint 8)
   // ============================================================
 
@@ -1414,7 +1431,7 @@ export default function DashboardPage() {
         <AppHeader />
 
         {/* Loading Content */}
-        <main className="flex-1 px-4 md:px-8 py-8">
+        <main id="main-content" className="flex-1 px-4 md:px-8 py-8">
           <div className="max-w-6xl mx-auto space-y-8">
             {/* Loading Header Skeleton */}
             <div className="space-y-2">
@@ -1461,7 +1478,7 @@ export default function DashboardPage() {
         <AppHeader />
 
         {/* Error Content */}
-        <main className="flex-1 px-4 md:px-8 py-8 flex items-center justify-center">
+        <main id="main-content" className="flex-1 px-4 md:px-8 py-8 flex items-center justify-center">
           <div className="text-center max-w-md">
             <div
               className="p-4 rounded-lg mb-6 bg-[var(--color-error-light)]"
@@ -1505,7 +1522,7 @@ export default function DashboardPage() {
 
       {/* Welcome section below header — compact layout */}
       <div
-        className="border-b bg-[var(--color-bg)] border-[var(--color-border)]"
+        className="border-b bg-[var(--color-bg)] border-[var(--color-border)] animate-slide-up"
       >
         <div className="max-w-6xl mx-auto px-4 md:px-8 py-3">
           <div className="flex flex-row items-center justify-between">
@@ -1626,7 +1643,7 @@ export default function DashboardPage() {
 
               {/* DISC-010: Filter controls landmark */}
               {benefits.length > 0 && (
-              <div className="mt-6" role="search" aria-label="Filter benefits">
+              <div className="mt-6 animate-slide-up" role="search" aria-label="Filter benefits">
                 <UnifiedFilterBar
                   selectedPeriodId={selectedPeriodId}
                   onPeriodChange={setSelectedPeriodId}
@@ -1637,6 +1654,10 @@ export default function DashboardPage() {
                   filteredCount={deduplicatedBenefits.length}
                   totalCount={deduplicateBenefits(benefits, benefitEngineEnabled).length}
                 />
+                {/* D-1: Screen-reader announcement of filter result count */}
+                <div aria-live="polite" className="sr-only">
+                  Showing {displayBenefits.length} of {deduplicateBenefits(benefits, benefitEngineEnabled).length} benefits
+                </div>
               </div>
               )}
 
@@ -1670,10 +1691,12 @@ export default function DashboardPage() {
               {/* Benefits Section */}
               {/* DISC-010: Section landmark with aria-label */}
               <section className="mt-6" aria-label="Benefits">
-                {/* Expiring-soon alert banner (Sprint 8) */}
+                {/* Expiring-soon alert banner (Sprint 8) — D-4: clickable to filter */}
                 {expiringBenefits.length > 0 && viewMode === 'current' && (
-                  <div
-                    className="rounded-lg px-4 py-3 mb-4 flex items-center gap-3"
+                  <button
+                    type="button"
+                    onClick={() => setSmartView('expiring-soon')}
+                    className="w-full rounded-lg px-4 py-3 mb-4 flex items-center gap-3 cursor-pointer transition-colors hover:brightness-95"
                     style={{
                       backgroundColor: 'var(--color-alert-50)',
                       border: '1px solid var(--color-alert-500)',
@@ -1682,34 +1705,70 @@ export default function DashboardPage() {
                     role="alert"
                   >
                     <AlertCircle size={18} aria-hidden="true" />
-                    <span className="text-sm font-medium">
+                    <span className="text-sm font-medium flex-1 text-left">
                       {expiringBenefits.length} benefit{expiringBenefits.length > 1 ? 's' : ''} expiring within 7 days
                     </span>
-                  </div>
+                    <span className="text-sm font-semibold whitespace-nowrap" aria-hidden="true">View them →</span>
+                  </button>
                 )}
 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-                  <h2
-                    className="text-lg font-semibold text-[var(--color-text)]"
-                  >
-                    {viewMode === 'history' ? 'Past ' : ''}Benefits on {cards.find((c) => c.id === selectedCardId)?.name || 'Selected Card'}
-                    {viewMode === 'current' && deduplicatedBenefits.length !== benefits.length && (
-                      <span
-                        className="ml-2 text-sm font-normal"
-                        style={{ color: 'var(--color-text-secondary)' }}
-                      >
-                        ({deduplicatedBenefits.length} of {deduplicateBenefits(benefits, benefitEngineEnabled).length})
-                      </span>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h2
+                      className="text-lg font-semibold text-[var(--color-text)]"
+                    >
+                      {viewMode === 'history' ? 'Past ' : ''}Benefits on {cards.find((c) => c.id === selectedCardId)?.name || 'Selected Card'}
+                      {viewMode === 'current' && deduplicatedBenefits.length !== benefits.length && (
+                        <span
+                          className="ml-2 text-sm font-normal"
+                          style={{ color: 'var(--color-text-secondary)' }}
+                        >
+                          ({deduplicatedBenefits.length} of {deduplicateBenefits(benefits, benefitEngineEnabled).length})
+                        </span>
+                      )}
+                      {viewMode === 'history' && (
+                        <span
+                          className="ml-2 text-sm font-normal"
+                          style={{ color: 'var(--color-text-secondary)' }}
+                        >
+                          ({displayBenefits.length})
+                        </span>
+                      )}
+                    </h2>
+                    {/* D-5: Annual Fee ROI Badge */}
+                    {viewMode === 'current' && selectedCardRoi && (
+                      selectedCardRoi.type === 'free' ? (
+                        <span
+                          className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full"
+                          style={{
+                            backgroundColor: 'var(--color-success-bg-muted, rgba(10,125,87,0.1))',
+                            color: 'var(--color-success)',
+                          }}
+                        >
+                          Free Card
+                        </span>
+                      ) : (
+                        <span
+                          className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full"
+                          style={{
+                            backgroundColor: selectedCardRoi.pct >= 100
+                              ? 'var(--color-success-bg-muted, rgba(10,125,87,0.1))'
+                              : selectedCardRoi.pct >= 50
+                                ? 'var(--color-warning-bg-muted, rgba(180,83,9,0.1))'
+                                : 'var(--color-error-bg-muted, rgba(239,68,68,0.1))',
+                            color: selectedCardRoi.pct >= 100
+                              ? 'var(--color-success)'
+                              : selectedCardRoi.pct >= 50
+                                ? 'var(--color-warning)'
+                                : 'var(--color-error)',
+                          }}
+                          title={`${selectedCardRoi.pct}% of ${formatCurrency(selectedCardRoi.annualFee)} annual fee recovered`}
+                        >
+                          {selectedCardRoi.pct}% ROI
+                        </span>
+                      )
                     )}
-                    {viewMode === 'history' && (
-                      <span
-                        className="ml-2 text-sm font-normal"
-                        style={{ color: 'var(--color-text-secondary)' }}
-                      >
-                        ({displayBenefits.length})
-                      </span>
-                    )}
-                  </h2>
+                  </div>
                   {viewMode === 'current' && (
                     <Button
                       variant="primary"

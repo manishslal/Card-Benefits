@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { addToastListener, removeToastFromStore, type Toast } from './use-toast';
 
 /**
@@ -13,7 +13,7 @@ import { addToastListener, removeToastFromStore, type Toast } from './use-toast'
  * Features:
  * - Auto-dismiss (respects per-toast duration)
  * - Manual close button on each toast
- * - Slide-in animation
+ * - Slide-in / slide-out animations (Sprint D-3)
  * - Design-token driven colors for light/dark mode
  *
  * Accessibility:
@@ -23,17 +23,35 @@ import { addToastListener, removeToastFromStore, type Toast } from './use-toast'
  */
 export function Toaster() {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [exitingIds, setExitingIds] = useState<Set<string>>(new Set());
+  const exitTimers = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   useEffect(() => {
     const unsubscribe = addToastListener((updated) => {
-      // Create a new array reference so React re-renders
       setToasts([...updated]);
     });
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      // Clean up any pending exit timers
+      exitTimers.current.forEach((timer) => clearTimeout(timer));
+    };
   }, []);
 
   const handleDismiss = useCallback((id: string) => {
-    removeToastFromStore(id);
+    // Start exit animation
+    setExitingIds((prev) => new Set(prev).add(id));
+
+    // Remove from store after animation completes (300ms)
+    const timer = setTimeout(() => {
+      setExitingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      removeToastFromStore(id);
+      exitTimers.current.delete(id);
+    }, 300);
+    exitTimers.current.set(id, timer);
   }, []);
 
   if (toasts.length === 0) return null;
@@ -48,7 +66,9 @@ export function Toaster() {
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className="pointer-events-auto flex items-start gap-3 rounded-lg p-4 shadow-lg border animate-toast-in"
+          className={`pointer-events-auto flex items-start gap-3 rounded-lg p-4 shadow-lg border ${
+            exitingIds.has(toast.id) ? 'animate-toast-out' : 'animate-toast-in'
+          }`}
           style={{
             backgroundColor: variantBg(toast.variant),
             borderColor: variantBorder(toast.variant),

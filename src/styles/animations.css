@@ -305,6 +305,15 @@
   animation: toastSlideIn 0.3s var(--ease-out) both;
 }
 
+/* Sprint D-3: Toast exit animation */
+@keyframes toastOut {
+  to { transform: translateX(100%); opacity: 0; }
+}
+
+.animate-toast-out {
+  animation: toastOut 300ms ease-in forwards;
+}
+
 /* ── Carousel Collapse Transition ──
    Shared class for both carousel wrappers (expanded ↔ compact).
    Centralises the transition so the reduced-motion override below
@@ -366,14 +375,31 @@
   animation: usedCardReveal 220ms var(--ease-out) both;
 }
 
-/* ── Reduced Motion ── */
+/* ── Reduced Motion ──
+   Sprint D-6: Only disable decorative/auto-playing animations.
+   User-initiated transitions (hover lifts, button presses) remain active. */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  ::before,
-  ::after {
+  .animate-stagger,
+  .animate-stagger > *,
+  .animate-pulse,
+  .animate-shimmer,
+  .animate-celebration,
+  .animate-celebrate-used,
+  .animate-toast-in,
+  .animate-toast-out,
+  .animate-ring-fill,
+  .animate-content-reveal,
+  .animate-slide-up,
+  .animate-slide-down,
+  .animate-fade-in,
+  .animate-scale-in,
+  .animate-toggle-check,
+  .used-accordion-content,
+  .used-card-stagger,
+  [data-ring-complete] {
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
   }
 
   /* Carousel collapse is user-initiated and brief — keep it

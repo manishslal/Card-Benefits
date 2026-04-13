@@ -274,7 +274,11 @@ function ProgressRing({
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
-          className="progress-ring-circle"
+          className="progress-ring-circle animate-ring-fill"
+          style={{
+            '--ring-circumference': circumference,
+            '--ring-offset': offset,
+          } as React.CSSProperties}
         />
         )}
       </svg>
@@ -600,8 +604,12 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                   className={`rounded-lg border shadow-sm overflow-hidden transition-all duration-200 bg-[var(--color-bg)] hover:border-[var(--color-primary)] hover:shadow-lg hover:-translate-y-1 flex flex-col cursor-pointer${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
                   style={{
                     opacity: isUsed ? 0.7 : 1,
-                    animation: `scaleIn 0.3s ease-out both`,
-                    animationDelay: `${Math.min(animIndex * 50, 500)}ms`,
+                    animation: celebratingIds?.has(benefit.id)
+                      ? undefined
+                      : `scaleIn 0.3s ease-out both`,
+                    animationDelay: celebratingIds?.has(benefit.id)
+                      ? undefined
+                      : `${Math.min(animIndex * 50, 500)}ms`,
                     borderColor: 'color-mix(in srgb, var(--color-border) 50%, transparent)',
                     borderLeft: `3px solid ${getLeftBorderColor()}`,
                   }}
@@ -718,7 +726,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                             <button
                               type="button"
                               disabled
-                              className="w-9 h-9 rounded-full flex items-center justify-center text-[var(--color-text-tertiary)] opacity-50 cursor-not-allowed"
+                              className={`w-9 h-9 rounded-full flex items-center justify-center text-[var(--color-text-tertiary)] opacity-50 cursor-not-allowed${celebratingIds?.has(benefit.id) ? ' animate-toggle-check' : ''}`}
                               aria-label={`${benefit.name} has been used${
                                 periodMonth ? ` for ${periodMonth}` : ''
                               }`}

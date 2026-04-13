@@ -316,8 +316,8 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
           {liveAnnouncement}
         </div>
 
-        {/* Carousel wrapper with arrows */}
-        <div className="relative flex items-center">
+        {/* Carousel wrapper with arrows — touch-pan-y keeps vertical scroll working */}
+        <div className="relative flex items-center touch-pan-y">
           {/* Left arrow — desktop only */}
           {!isSingleCard && (
             <button
@@ -345,7 +345,7 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
             aria-label="Credit cards"
             onKeyDown={handleKeyDown}
             data-carousel-track=""
-            className="flex w-full overflow-x-auto py-3"
+            className="flex w-full overflow-x-auto py-3 touch-pan-x"
             style={{
               scrollSnapType: 'x mandatory',
               scrollBehavior: prefersReducedMotion ? 'auto' : 'smooth',

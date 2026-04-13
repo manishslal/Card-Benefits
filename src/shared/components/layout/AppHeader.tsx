@@ -34,7 +34,7 @@ export function AppHeader({
 }: AppHeaderProps) {
   return (
     <header
-      className="sticky top-0 z-40 shadow-sm py-2.5"
+      className="sticky top-0 z-40 shadow-sm py-2.5 safe-area-top safe-area-x"
       style={{
         backgroundColor: 'var(--color-bg)',
       }}

@@ -167,7 +167,7 @@ export default function SettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg)' }}>
+      <div className="min-h-screen flex flex-col safe-area-bottom" style={{ backgroundColor: 'var(--color-bg)' }}>
         <AppHeader backHref="/dashboard" backLabel="Back to Dashboard" />
         <main className="flex-1 px-4 md:px-8 py-8">
           <div className="max-w-2xl mx-auto">
@@ -184,7 +184,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg)' }}>
+    <div className="min-h-screen flex flex-col safe-area-bottom" style={{ backgroundColor: 'var(--color-bg)' }}>
       <AppHeader backHref="/dashboard" backLabel="Back to Dashboard" />
 
       {/* Main Content */}

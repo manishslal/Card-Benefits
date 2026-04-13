@@ -250,6 +250,43 @@
   animation-delay: 250ms;
 }
 
+/* ========================================
+   TOGGLE CHECKMARK ANIMATION (Sprint 28C)
+   ======================================== */
+@keyframes toggleCheck {
+  0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+  50% { transform: scale(1.2) rotate(0deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.animate-toggle-check {
+  animation: toggleCheck 0.3s var(--ease-bounce) both;
+}
+
+/* ========================================
+   PROGRESS RING FILL ANIMATION (Sprint 28C)
+   ======================================== */
+@keyframes ringFill {
+  from { stroke-dashoffset: var(--ring-circumference, 100); }
+  to { stroke-dashoffset: var(--ring-offset, 0); }
+}
+
+.animate-ring-fill {
+  animation: ringFill 0.8s var(--ease-out) both;
+}
+
+/* ========================================
+   SKELETON TO CONTENT CROSSFADE (Sprint 28C)
+   ======================================== */
+@keyframes contentReveal {
+  from { opacity: 0; filter: blur(4px); }
+  to { opacity: 1; filter: blur(0); }
+}
+
+.animate-content-reveal {
+  animation: contentReveal 0.4s var(--ease-out) both;
+}
+
 /* ── Reduced Motion ── */
 @media (prefers-reduced-motion: reduce) {
   *,

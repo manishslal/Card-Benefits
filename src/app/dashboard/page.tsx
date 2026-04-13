@@ -1510,7 +1510,7 @@ export default function DashboardPage() {
   // ============================================================
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--color-bg)]">
+    <div className="min-h-screen flex flex-col bg-[var(--color-bg)] safe-area-bottom">
       <AppHeader />
 
       {/* Welcome section below header — compact layout */}
@@ -1806,6 +1806,7 @@ export default function DashboardPage() {
 
                 {/* Benefits Grid — uses displayBenefits (current or history) */}
                 {displayBenefits.length > 0 && !(viewMode === 'history' && isLoadingHistory) && (
+                  <div className="animate-content-reveal">
                   <BenefitsGrid
                     benefits={displayBenefits.map(transformBenefitForGrid)}
                     onEdit={viewMode === 'current' ? handleEditBenefitClick : undefined}
@@ -1813,6 +1814,7 @@ export default function DashboardPage() {
                     gridColumns={3}
                     celebratingIds={celebratingIds}
                   />
+                  </div>
                 )}
               </section>
             </>

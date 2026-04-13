@@ -490,6 +490,24 @@ form:focus-within,
   }
 }
 
+/* ========================================
+   iOS SAFE AREA INSETS
+   ======================================== */
+@supports (padding: env(safe-area-inset-top)) {
+  .safe-area-top { padding-top: env(safe-area-inset-top); }
+  .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .safe-area-x {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* ========================================
+   TOUCH ACTION UTILITIES
+   ======================================== */
+.touch-pan-x { touch-action: pan-x; }
+.touch-pan-y { touch-action: pan-y; }
+
 /* Responsive text sizing for better mobile readability */
 @media (max-width: 640px) {
   body {

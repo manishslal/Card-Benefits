@@ -636,7 +636,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit?.(benefit.id); } }}
-                  className={`rounded-lg border shadow-sm overflow-hidden transition-all duration-200 bg-[var(--color-bg)] hover:border-[var(--color-primary)] hover:shadow-lg hover:-translate-y-1 flex flex-col cursor-pointer${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
+                  className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] hover:border-[var(--color-primary)] flex flex-col cursor-pointer${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
                   style={{
                     opacity: isUsed ? 0.85 : 1,
                     animation: celebratingIds?.has(benefit.id)

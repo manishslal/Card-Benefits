@@ -27,6 +27,52 @@
   display: none;
 }
 
+/* Compact chips edge fade — gradient mask for scroll track edges */
+[data-compact-chips] {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 24px,
+    black calc(100% - 24px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 24px,
+    black calc(100% - 24px),
+    transparent 100%
+  );
+}
+
+@media (min-width: 768px) {
+  [data-compact-chips] {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      black 40px,
+      black calc(100% - 40px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      black 40px,
+      black calc(100% - 40px),
+      transparent 100%
+    );
+  }
+}
+
+/* Benefit card layered shadow + hover lift */
+[data-benefit-card] {
+  box-shadow: var(--shadow-benefit-card);
+}
+[data-benefit-card]:hover {
+  box-shadow: var(--shadow-benefit-card-hover);
+  translate: 0 -2px;
+}
+
 /* ========================================
    BASE ELEMENT STYLING
    ======================================== */
@@ -524,8 +570,11 @@ form:focus-within,
 /* ========================================
    BUTTON PRESS FEEDBACK (Sprint 28D)
    ======================================== */
+.press-feedback {
+  transition: transform 80ms ease-out;
+}
 .press-feedback:active {
-  transform: scale(0.95);
+  transform: scale(0.97);
 }
 
 

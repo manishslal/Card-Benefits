@@ -1612,7 +1612,7 @@ export default function DashboardPage() {
                   }}
                   {...(!isCarouselCollapsed ? { inert: '' } as unknown as React.HTMLAttributes<HTMLDivElement> : {})}
                 >
-                  <div className="py-1.5 border-b border-[var(--color-border)] shadow-sm">
+                  <div className="py-1.5 border-b border-[var(--color-border)]" style={{ boxShadow: 'var(--header-shadow)' }}>
                     <CompactCardChips
                       cards={cards}
                       selectedCardId={selectedCardId}
@@ -1804,7 +1804,7 @@ export default function DashboardPage() {
 
                 {/* Benefits Grid — uses displayBenefits (current or history) */}
                 {displayBenefits.length > 0 && !(viewMode === 'history' && isLoadingHistory) && (
-                  <div className="animate-content-reveal">
+                  <div key={selectedCardId} className="animate-content-reveal">
                   <BenefitsGrid
                     benefits={displayBenefits.map(transformBenefitForGrid)}
                     onEdit={viewMode === 'current' ? handleEditBenefitClick : undefined}

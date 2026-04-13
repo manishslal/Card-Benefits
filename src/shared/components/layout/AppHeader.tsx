@@ -33,9 +33,12 @@ export function AppHeader({
 }: AppHeaderProps) {
   return (
     <header
-      className="sticky top-0 z-30 shadow-sm safe-area-top safe-area-x"
+      className="sticky top-0 z-30 safe-area-top safe-area-x"
       style={{
-        backgroundColor: 'var(--color-bg)',
+        backgroundColor: 'color-mix(in srgb, var(--color-bg) 80%, transparent)',
+        backdropFilter: 'blur(12px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+        boxShadow: 'var(--header-shadow)',
       }}
     >
       <div className="py-2.5">

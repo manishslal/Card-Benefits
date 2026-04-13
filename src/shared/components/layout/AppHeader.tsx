@@ -33,7 +33,7 @@ export function AppHeader({
 }: AppHeaderProps) {
   return (
     <header
-      className="sticky top-0 z-40 shadow-sm safe-area-top safe-area-x"
+      className="sticky top-0 z-30 shadow-sm safe-area-top safe-area-x"
       style={{
         backgroundColor: 'var(--color-bg)',
       }}

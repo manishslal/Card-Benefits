@@ -1580,7 +1580,7 @@ export default function DashboardPage() {
               <div ref={carouselSentinelRef} aria-hidden="true" style={{ height: '1px', marginBottom: '-1px', overflow: 'hidden' }} />
 
               {/* Sticky carousel container */}
-              <div className="sticky z-20 -mx-4 md:-mx-8 px-0 md:px-8 bg-[var(--color-bg)]" style={{ top: 'calc(var(--height-header, 52px) + env(safe-area-inset-top, 0px))' }}>
+              <div className="sticky z-30 -mx-4 md:-mx-8 px-0 md:px-8 bg-[var(--color-bg)]" style={{ top: 'calc(var(--height-header, 52px) + env(safe-area-inset-top, 0px))' }}>
                 {/* Expanded carousel */}
                 <div
                   className="carousel-collapse-transition"
@@ -1606,7 +1606,7 @@ export default function DashboardPage() {
                 <div
                   className="carousel-collapse-transition"
                   style={{
-                    maxHeight: isCarouselCollapsed ? 52 /* must match --compact-bar-height */ : 0,
+                    maxHeight: isCarouselCollapsed ? 65 /* py-1.5(6)+py-1(4)+btn(44)+py-1(4)+py-1.5(6)+border(1)=65 */ : 0, // Keep in sync with --compact-bar-height in design-tokens.css
                     overflow: 'hidden',
                     opacity: isCarouselCollapsed ? 1 : 0,
                   }}

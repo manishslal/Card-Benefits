@@ -376,7 +376,7 @@ export default function CardDetailPage() {
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg)' }}>
       {/* Header */}
       <header
-        className="sticky top-0 z-40 border-b py-4"
+        className="sticky top-0 z-30 border-b py-4"
         style={{
           backgroundColor: 'var(--color-bg)',
           borderColor: 'var(--color-border)',

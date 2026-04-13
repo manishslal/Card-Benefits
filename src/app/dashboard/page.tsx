@@ -147,7 +147,7 @@ function calculateYearlyUsage(
 
   const cadence = (benefit.claimingCadence || benefit.resetCadence || '').toUpperCase();
 
-  if (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR') {
+  if (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR' || cadence === 'FLEXIBLE_ANNUAL') {
     return benefit.isUsed ? 100 : 0;
   }
 
@@ -831,13 +831,23 @@ export default function DashboardPage() {
   // ============================================================
 
   const handleMarkUsed = async (benefitId: string) => {
+    // Snapshot original values so error revert paths can fully undo the optimistic update
+    const originalBenefit = benefits.find(b => b.id === benefitId);
+    const originalClaimedAt = originalBenefit?.claimedAt ?? null;
+    const originalValue = originalBenefit?.value;
+
     try {
       // Optimistic UI update - mark the benefit as used immediately
       // Use functional updater to avoid stale closure over `benefits`
       // Also recalculate sibling usage so ProgressRing updates instantly
       setBenefits(prev => {
         const updated = prev.map((b) =>
-          b.id === benefitId ? { ...b, isUsed: true } : b
+          b.id === benefitId
+            ? (() => {
+                const optimistic = { ...b, isUsed: true, claimedAt: b.claimedAt ?? new Date().toISOString() };
+                return { ...optimistic, value: getDisplayValue(optimistic) };
+              })()
+            : b
         );
         const target = updated.find(b => b.id === benefitId);
         const masterId = target?.masterBenefitId;
@@ -861,7 +871,7 @@ export default function DashboardPage() {
                 new Date(s.periodStart).getUTCFullYear() === currentYear
               );
               const usedCount = siblings.filter(s => s.isUsed).length;
-              const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR')
+              const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR' || cadence === 'FLEXIBLE_ANNUAL')
                 ? (b.isUsed ? 100 : 0)
                 : Math.round((usedCount / totalPeriods) * 100);
               return { ...b, usage };
@@ -886,7 +896,9 @@ export default function DashboardPage() {
         // Revert optimistic update on error — recalculate sibling usage
         setBenefits(prev => {
           const updated = prev.map((b) =>
-            b.id === benefitId ? { ...b, isUsed: false } : b
+            b.id === benefitId
+              ? { ...b, isUsed: false, claimedAt: originalClaimedAt, value: originalValue }
+              : b
           );
           const target = updated.find(b => b.id === benefitId);
           const masterId = target?.masterBenefitId;
@@ -910,7 +922,7 @@ export default function DashboardPage() {
                   new Date(s.periodStart).getUTCFullYear() === currentYear
                 );
                 const usedCount = siblings.filter(s => s.isUsed).length;
-                const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR')
+                const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR' || cadence === 'FLEXIBLE_ANNUAL')
                   ? (b.isUsed ? 100 : 0)
                   : Math.round((usedCount / totalPeriods) * 100);
                 return { ...b, usage };
@@ -972,7 +984,7 @@ export default function DashboardPage() {
                   new Date(s.periodStart).getUTCFullYear() === currentYear
                 );
                 const usedCount = siblings.filter(s => s.isUsed).length;
-                const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR')
+                const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR' || cadence === 'FLEXIBLE_ANNUAL')
                   ? (b.isUsed ? 100 : 0)
                   : Math.round((usedCount / totalPeriods) * 100);
                 return { ...b, usage };
@@ -1050,7 +1062,7 @@ export default function DashboardPage() {
                             new Date(s.periodStart).getUTCFullYear() === currentYear
                           );
                           const usedCount = siblings.filter(s => s.isUsed).length;
-                          const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR')
+                          const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR' || cadence === 'FLEXIBLE_ANNUAL')
                             ? (b.isUsed ? 100 : 0)
                             : Math.round((usedCount / totalPeriods) * 100);
                           return { ...b, usage };
@@ -1079,7 +1091,9 @@ export default function DashboardPage() {
       // the revert logic in the !response.ok handler above
       setBenefits(prev => {
         const updated = prev.map((b) =>
-          b.id === benefitId ? { ...b, isUsed: false } : b
+          b.id === benefitId
+            ? { ...b, isUsed: false, claimedAt: originalClaimedAt, value: originalValue }
+            : b
         );
         const target = updated.find(b => b.id === benefitId);
         const masterId = target?.masterBenefitId;
@@ -1103,7 +1117,7 @@ export default function DashboardPage() {
                 new Date(s.periodStart).getUTCFullYear() === currentYear
               );
               const usedCount = siblings.filter(s => s.isUsed).length;
-              const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR')
+              const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR' || cadence === 'FLEXIBLE_ANNUAL')
                 ? (b.isUsed ? 100 : 0)
                 : Math.round((usedCount / totalPeriods) * 100);
               return { ...b, usage };
@@ -1152,7 +1166,7 @@ export default function DashboardPage() {
                 new Date(s.periodStart).getUTCFullYear() === currentYear
               );
               const usedCount = siblings.filter(s => s.isUsed).length;
-              const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR')
+              const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR' || cadence === 'FLEXIBLE_ANNUAL')
                 ? (b.isUsed ? 100 : 0)
                 : Math.round((usedCount / totalPeriods) * 100);
               return { ...b, usage };

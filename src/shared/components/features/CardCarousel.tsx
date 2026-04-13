@@ -641,7 +641,7 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
                         ? 'var(--carousel-dot-active-color)'
                         : 'var(--carousel-dot-color)',
                     border: 'none',
-                    padding: '6px',
+                    padding: '4px',
                     backgroundClip: 'content-box',
                     boxSizing: 'content-box',
                     cursor: 'pointer',

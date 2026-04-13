@@ -131,7 +131,7 @@ export default function CompactCardChips({
                 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-1
                 press-feedback
                 ${isSelected
-                  ? 'ring-1 ring-[var(--color-primary)] bg-[var(--color-bg-secondary)] text-[var(--color-text)] chip-selected-indicator'
+                  ? 'bg-[var(--color-bg-secondary)] text-[var(--color-text)] chip-selected-indicator'
                   : 'bg-[var(--color-bg-tertiary,var(--color-bg-secondary))] text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-secondary)]'
                 }
               `}

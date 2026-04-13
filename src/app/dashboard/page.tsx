@@ -12,7 +12,6 @@ import { AddCardModal } from '@/features/cards/components/modals/AddCardModal';
 import { CardEditModal } from '@/features/cards/components/MyCardsSection/CardEditModal';
 import type { Card as EditableCard } from '@/features/cards/components/MyCardsSection/types';
 import { deduplicateBenefits } from '@/lib/benefit-utils';
-import { calculateProRata, isProRataEligible } from '@/lib/benefit-engine/pro-rata';
 import { Plus, CreditCard, AlertCircle, Sparkles } from 'lucide-react';
 import { SkeletonCard } from '@/shared/components/loaders';
 import { type PeriodOption } from './new/components/PeriodSelector';
@@ -184,40 +183,22 @@ function calculateYearlyUsage(
 }
 
 /**
- * Compute the display value for a benefit, applying pro-rata for eligible monthly memberships.
+ * Compute the per-period display value for a benefit card.
  * Returns value in DOLLARS (divided by 100).
  *
- * Pro-rata only applies when:
- * - claimingAmount is present and positive
- * - claimingCadence is MONTHLY
- * Otherwise, returns the standard effectiveValue / 100.
+ * UserBenefit.stickerValue is set by the benefit engine to the per-period
+ * claiming amount (including variable overrides, e.g. Uber December $35).
+ * For non-engine benefits it holds the total value. In both cases it is the
+ * correct amount to show on the individual benefit card.
+ *
+ * Pro-rata (remaining annual value) is intentionally NOT applied here —
+ * it belongs in annual-summary / fee-offset calculations, not per-card display.
  */
 function getDisplayValue(benefit: {
   stickerValue: number;
   userDeclaredValue?: number | null;
-  claimingCadence?: string | null;
-  claimingAmount?: number | null;
-  claimedAt?: string | null;
 }): number {
-  const effectiveValue = benefit.userDeclaredValue ?? benefit.stickerValue;
-
-  // Check if pro-rata eligible (requires claimingAmount and claimingCadence)
-  if (benefit.claimingAmount != null && benefit.claimingAmount > 0 && benefit.claimingCadence != null) {
-    const proRataInput = {
-      stickerValue: effectiveValue,
-      claimingCadence: benefit.claimingCadence,
-      claimingAmount: benefit.claimingAmount,
-      name: '',
-    };
-
-    if (isProRataEligible(proRataInput)) {
-      const claimedAt = benefit.claimedAt ? new Date(benefit.claimedAt) : null;
-      const result = calculateProRata(proRataInput, claimedAt);
-      return result.proRataValue / 100;
-    }
-  }
-
-  return effectiveValue / 100;
+  return (benefit.userDeclaredValue ?? benefit.stickerValue) / 100;
 }
 
 /**
@@ -1351,7 +1332,8 @@ export default function DashboardPage() {
     }, 0);
   }, [cards]);
 
-  // Kept for future use (summary cards may be re-added)
+  // WARNING: totalUsedValue sums per-period amounts (not annualized).
+  // Annualize before comparing against annual fees if this is re-enabled.
   const netSavings = totalUsedValue - (apiTotalFees / 100);
   void netSavings;
 
@@ -1598,7 +1580,7 @@ export default function DashboardPage() {
               <div ref={carouselSentinelRef} aria-hidden="true" style={{ height: '1px', marginBottom: '-1px', overflow: 'hidden' }} />
 
               {/* Sticky carousel container */}
-              <div className="sticky z-20 -mx-4 md:-mx-8 px-0 md:px-8 bg-[var(--color-bg)]" style={{ top: 'calc(var(--height-header, 64px) + env(safe-area-inset-top, 0px))' }}>
+              <div className="sticky z-20 -mx-4 md:-mx-8 px-0 md:px-8 bg-[var(--color-bg)]" style={{ top: 'calc(var(--height-header, 52px) + env(safe-area-inset-top, 0px))' }}>
                 {/* Expanded carousel */}
                 <div
                   className="carousel-collapse-transition"

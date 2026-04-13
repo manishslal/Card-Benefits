@@ -33,52 +33,54 @@ export function AppHeader({
 }: AppHeaderProps) {
   return (
     <header
-      className="sticky top-0 z-40 shadow-sm py-2.5 safe-area-top safe-area-x"
+      className="sticky top-0 z-40 shadow-sm safe-area-top safe-area-x"
       style={{
         backgroundColor: 'var(--color-bg)',
       }}
     >
-      <div className="max-w-6xl mx-auto px-4 md:px-8">
-        <div className="flex items-center justify-between">
-          {/* Left: Logo + Title */}
-          <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold"
-              style={{ backgroundColor: 'var(--color-primary)' }}
-            >
-              <CreditCard size={20} />
-            </div>
-            <span className="text-lg font-bold text-[var(--color-text)]">CardTrack</span>
-          </Link>
+      <div className="py-2.5">
+        <div className="max-w-6xl mx-auto px-4 md:px-8">
+          <div className="flex items-center justify-between">
+            {/* Left: Logo + Title */}
+            <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold"
+                style={{ backgroundColor: 'var(--color-primary)' }}
+              >
+                <CreditCard size={20} />
+              </div>
+              <span className="text-lg font-bold text-[var(--color-text)]">CardTrack</span>
+            </Link>
 
-          {/* Right: Settings or Back button + optional slot */}
-          <div className="flex items-center gap-3">
-            {backHref ? (
-              <Link
-                href={backHref}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium border transition-colors hover:bg-[var(--color-bg-secondary)]"
-                style={{
-                  color: 'var(--color-text)',
-                  borderColor: 'var(--color-border)',
-                }}
-              >
-                <ArrowLeft size={16} />
-                {backLabel}
-              </Link>
-            ) : (
-              <Link
-                href="/settings"
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium border transition-colors hover:bg-[var(--color-bg-secondary)]"
-                style={{
-                  color: 'var(--color-text)',
-                  borderColor: 'var(--color-border)',
-                }}
-              >
-                <Settings size={16} />
-                Settings
-              </Link>
-            )}
-            {rightSlot}
+            {/* Right: Settings or Back button + optional slot */}
+            <div className="flex items-center gap-3">
+              {backHref ? (
+                <Link
+                  href={backHref}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium border transition-colors hover:bg-[var(--color-bg-secondary)]"
+                  style={{
+                    color: 'var(--color-text)',
+                    borderColor: 'var(--color-border)',
+                  }}
+                >
+                  <ArrowLeft size={16} />
+                  {backLabel}
+                </Link>
+              ) : (
+                <Link
+                  href="/settings"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium border transition-colors hover:bg-[var(--color-bg-secondary)]"
+                  style={{
+                    color: 'var(--color-text)',
+                    borderColor: 'var(--color-border)',
+                  }}
+                >
+                  <Settings size={16} />
+                  Settings
+                </Link>
+              )}
+              {rightSlot}
+            </div>
           </div>
         </div>
       </div>

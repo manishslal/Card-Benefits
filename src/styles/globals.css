@@ -488,6 +488,12 @@ form:focus-within,
     min-height: 44px;
     min-width: 44px;
   }
+
+  /* Carousel dots are supplementary nav (aria-hidden), exempt from touch target minimums */
+  .carousel-dot {
+    min-height: auto !important;
+    min-width: auto !important;
+  }
 }
 
 /* ========================================

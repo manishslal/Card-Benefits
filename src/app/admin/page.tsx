@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { CreditCard, Users, Gift, FileText } from 'lucide-react';
 import { apiClient } from '@/features/admin/lib/api-client';
 import type { AuditLog } from '@/features/admin/types/admin';
 
@@ -127,25 +128,25 @@ export default function AdminDashboard() {
           {
             label: 'Total Cards',
             value: isLoading ? '...' : cardCount,
-            icon: '💳',
+            icon: CreditCard,
             loading: isLoading
           },
           {
             label: 'Users',
             value: isLoading ? '...' : userCount,
-            icon: '👥',
+            icon: Users,
             loading: isLoading
           },
           {
             label: 'Benefits',
             value: isLoading ? '...' : benefitCount,
-            icon: '🎁',
+            icon: Gift,
             loading: isLoading
           },
           {
             label: 'Audit Logs',
             value: auditLoading ? '...' : recentAudits.length,
-            icon: '📋',
+            icon: FileText,
             loading: auditLoading
           },
         ].map((stat, idx) => (
@@ -168,7 +169,7 @@ export default function AdminDashboard() {
                   {stat.value}
                 </p>
               </div>
-              <span className="text-2xl">{stat.icon}</span>
+              <stat.icon size={24} style={{ color: 'var(--color-primary)' }} />
             </div>
           </div>
         ))}
@@ -181,20 +182,21 @@ export default function AdminDashboard() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: 'Add New Card', href: '/admin/cards' },
-            { label: 'Manage Benefits', href: '/admin/benefits' },
-            { label: 'User Roles', href: '/admin/users' },
-            { label: 'View Audit Log', href: '/admin/audit' },
+            { label: 'Add New Card', href: '/admin/cards', icon: CreditCard },
+            { label: 'Manage Benefits', href: '/admin/benefits', icon: Gift },
+            { label: 'User Roles', href: '/admin/users', icon: Users },
+            { label: 'View Audit Log', href: '/admin/audit', icon: FileText },
           ].map((action, idx) => (
             <Link
               key={idx}
               href={action.href}
-              className="flex items-center justify-center px-4 py-3 rounded-lg font-medium transition-colors hover:opacity-80"
+              className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors hover:opacity-80"
               style={{
                 backgroundColor: 'var(--color-primary-bg-subtle)',
                 color: 'var(--color-primary)',
               }}
             >
+              <action.icon size={18} />
               {action.label}
             </Link>
           ))}

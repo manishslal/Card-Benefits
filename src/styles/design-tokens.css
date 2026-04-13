@@ -232,7 +232,7 @@
      ======================================== */
   --compact-chip-height: 36px;
   --compact-bar-height: 52px;
-  --carousel-collapse-duration: 300ms;
+  --carousel-collapse-duration: 200ms;
   --carousel-collapse-easing: cubic-bezier(0.4, 0, 0.2, 1);
 
   /* ========================================
@@ -334,7 +334,7 @@
     --carousel-arrow-opacity: 0.85;
     --compact-chip-height: 36px;
     --compact-bar-height: 52px;
-    --carousel-collapse-duration: 300ms;
+    --carousel-collapse-duration: 200ms;
     --carousel-collapse-easing: cubic-bezier(0.4, 0, 0.2, 1);
     --color-danger-50: #450a0a;
     --color-danger-500: #f87171;
@@ -432,7 +432,7 @@
   --carousel-arrow-opacity: 0.85;
   --compact-chip-height: 36px;
   --compact-bar-height: 52px;
-  --carousel-collapse-duration: 300ms;
+  --carousel-collapse-duration: 200ms;
   --carousel-collapse-easing: cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Missing semantic tokens - Dark Mode */

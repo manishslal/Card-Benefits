@@ -410,21 +410,26 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
       }>();
 
       for (const benefit of sortedBenefits) {
-        const periodKey = benefit.periodStart
-          ? formatPeriodRange(benefit.periodStart, benefit.periodEnd)
-          : '';
+        // Used benefits go into a single "Used" group
+        const groupKey = benefit.isUsed
+          ? '__used__'
+          : (benefit.periodStart
+              ? formatPeriodRange(benefit.periodStart, benefit.periodEnd)
+              : '');
 
-        const existing = groupMap.get(periodKey);
+        const existing = groupMap.get(groupKey);
         if (existing) {
           existing.benefits.push(benefit);
         } else {
-          groupMap.set(periodKey, {
-            periodKey,
-            periodLabel: periodKey,
-            cadenceLabel: getCadenceLabel(
-              benefit.resetCadence,
-              benefit.claimingCadence
-            ),
+          groupMap.set(groupKey, {
+            periodKey: groupKey,
+            periodLabel: groupKey === '__used__' ? 'Used' : groupKey,
+            cadenceLabel: groupKey === '__used__'
+              ? ''
+              : getCadenceLabel(
+                  benefit.resetCadence,
+                  benefit.claimingCadence
+                ),
             benefits: [benefit],
           });
         }
@@ -581,12 +586,21 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                   color: 'var(--color-text-secondary)',
                 }}
               >
-                <Calendar
-                  size={14}
-                  className="flex-shrink-0"
-                  style={{ color: 'var(--color-text-secondary)' }}
-                  aria-hidden="true"
-                />
+                {group.periodKey === '__used__' ? (
+                  <CheckCircle2
+                    size={14}
+                    className="flex-shrink-0"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Calendar
+                    size={14}
+                    className="flex-shrink-0"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                    aria-hidden="true"
+                  />
+                )}
                 <span className="font-medium">{group.periodLabel}</span>
                 {group.cadenceLabel && (
                   <>

@@ -1625,7 +1625,7 @@ export default function DashboardPage() {
                   }}
                   {...(!isCarouselCollapsed ? { inert: '' } as unknown as React.HTMLAttributes<HTMLDivElement> : {})}
                 >
-                  <div className="py-1.5 border-b border-[var(--color-border)]">
+                  <div className="py-1.5 border-b border-[var(--color-border)] shadow-sm">
                     <CompactCardChips
                       cards={cards}
                       selectedCardId={selectedCardId}

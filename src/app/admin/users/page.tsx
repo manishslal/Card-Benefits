@@ -18,6 +18,7 @@ import useSWR from 'swr';
 import { apiClient } from '@/features/admin/lib/api-client';
 import { AdminBreadcrumb } from '../_components/AdminBreadcrumb';
 import { EditUserModal } from '../_components/EditUserModal';
+import { Loader2 } from 'lucide-react';
 import type { AdminUser, PaginationInfo } from '@/features/admin/types/admin';
 
 // ============================================================
@@ -182,18 +183,18 @@ export default function UsersPage() {
       <AdminBreadcrumb currentPage="users" />
       
       <div>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Users</h1>
-        <p className="text-slate-600 dark:text-slate-400 mt-2">Manage user roles</p>
+        <h1 className="text-3xl font-bold text-[var(--color-text)]">Users</h1>
+        <p className="text-[var(--color-text-secondary)] mt-2">Manage user roles</p>
       </div>
 
       {error && (
-        <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">
+        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-error-light)', color: 'var(--color-error)', borderColor: 'var(--color-error)' }}>
           {error}
         </div>
       )}
 
       {success && (
-        <div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800">
+        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-success-light)', color: 'var(--color-success)', borderColor: 'var(--color-success)' }}>
           {success}
         </div>
       )}
@@ -207,31 +208,31 @@ export default function UsersPage() {
             setSearch(e.target.value);
             setPage(1);
           }}
-          className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
         />
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div className="bg-[var(--color-bg)] rounded-lg border border-[var(--color-border)] overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center">
-            <div className="inline-block animate-spin">⏳</div>
-            <p className="text-slate-600 dark:text-slate-400 mt-2">Loading users...</p>
+            <Loader2 className="inline-block animate-spin" size={20} />
+            <p className="text-[var(--color-text-secondary)] mt-2">Loading users...</p>
           </div>
         ) : users.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="text-slate-600 dark:text-slate-400">No users found</p>
+            <p className="text-[var(--color-text-secondary)]">No users found</p>
           </div>
         ) : (
           <>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                  <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
                     {/* Issue 12: Clickable sortable column headers */}
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-[var(--color-text)]">
                       <button
                         onClick={() => handleSort('name')}
-                        className="group flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors"
                         title="Click to sort by name"
                       >
                         Name
@@ -240,10 +241,10 @@ export default function UsersPage() {
                         </span>
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-[var(--color-text)]">
                       <button
                         onClick={() => handleSort('email')}
-                        className="group flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors"
                         title="Click to sort by email"
                       >
                         Email
@@ -252,10 +253,10 @@ export default function UsersPage() {
                         </span>
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-[var(--color-text)]">
                       <button
                         onClick={() => handleSort('role')}
-                        className="group flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors"
                         title="Click to sort by role"
                       >
                         Role
@@ -264,28 +265,31 @@ export default function UsersPage() {
                         </span>
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-right text-sm font-semibold text-slate-900 dark:text-white">
+                    <th className="px-6 py-3 text-right text-sm font-semibold text-[var(--color-text)]">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                <tbody className="divide-y divide-[var(--color-border)]">
                   {users.map((user: AdminUser) => (
-                    <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                      <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">
+                    <tr key={user.id} className="hover:bg-[var(--color-bg-secondary)]">
+                      <td className="px-6 py-4 text-sm font-medium text-[var(--color-text)]">
                         {formatUserName(user.firstName, user.lastName)}
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                      <td className="px-6 py-4 text-sm text-[var(--color-text-secondary)]">
                         {user.email}
                       </td>
                       <td className="px-6 py-4 text-sm">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          user.role === 'SUPER_ADMIN'
-                            ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300'
-                            : user.role === 'ADMIN'
-                            ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                        }`}>
+                        <span
+                          className="px-3 py-1 rounded-full text-xs font-medium"
+                          style={
+                            user.role === 'SUPER_ADMIN'
+                              ? { backgroundColor: 'var(--color-primary-bg-subtle)', color: 'var(--color-primary)' }
+                              : user.role === 'ADMIN'
+                              ? { backgroundColor: 'var(--color-info-light)', color: 'var(--color-info)' }
+                              : { backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-secondary)' }
+                          }
+                        >
                           {user.role}
                         </span>
                       </td>
@@ -295,7 +299,8 @@ export default function UsersPage() {
                             setSelectedUserForEdit(user);
                             setIsEditModalOpen(true);
                           }}
-                          className="px-3 py-1 rounded text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100"
+                          className="px-3 py-1 rounded text-sm hover:opacity-80 transition-colors"
+                          style={{ backgroundColor: 'var(--color-primary-bg-subtle)', color: 'var(--color-primary)' }}
                         >
                           Edit
                         </button>
@@ -307,22 +312,22 @@ export default function UsersPage() {
             </div>
 
             {/* Issue 15: Enhanced pagination feedback */}
-            <div className="border-t border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
-              <span className="text-sm text-slate-600 dark:text-slate-400">
+            <div className="border-t border-[var(--color-border)] px-6 py-4 flex items-center justify-between">
+              <span className="text-sm text-[var(--color-text-secondary)]">
                 Page {pagination.page} of {pagination.totalPages}
               </span>
               <div className="flex gap-2">
                 <button
                   onClick={() => setPage(Math.max(1, page - 1))}
                   disabled={page === 1 || isLoading}
-                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                  className="px-4 py-2 rounded border border-[var(--color-border)] text-[var(--color-text)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-bg-secondary)] transition-colors"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setPage(page + 1)}
                   disabled={!pagination.hasMore || isLoading}
-                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                  className="px-4 py-2 rounded border border-[var(--color-border)] text-[var(--color-text)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-bg-secondary)] transition-colors"
                 >
                   Next
                 </button>

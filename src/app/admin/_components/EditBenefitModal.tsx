@@ -77,10 +77,10 @@ interface EditBenefitModalProps {
 
 // Shared Tailwind class strings
 const inputClasses =
-  'w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50';
-const helperClasses = 'text-slate-500 dark:text-slate-400 text-xs mt-1';
-const errorClasses = 'text-red-500 dark:text-red-400 text-sm mt-1';
-const labelClasses = 'block text-sm font-medium text-slate-900 dark:text-white mb-1';
+  'w-full px-3 py-2 border border-[var(--color-border)] rounded-lg bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] disabled:opacity-50';
+const helperClasses = 'text-[var(--color-text-secondary)] text-xs mt-1';
+const errorClasses = 'text-[var(--color-error)] text-sm mt-1';
+const labelClasses = 'block text-sm font-medium text-[var(--color-text)] mb-1';
 
 // ============================================================
 // Component
@@ -327,16 +327,16 @@ export function EditBenefitModal({
         <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-black/50" />
         
         <DialogPrimitive.Content
-          className="fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] sm:max-w-lg md:max-w-2xl translate-x-[-50%] translate-y-[-50%] rounded-lg shadow-lg p-6 max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
+          className="fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] sm:max-w-lg md:max-w-2xl translate-x-[-50%] translate-y-[-50%] rounded-lg shadow-lg p-6 max-h-[90vh] overflow-y-auto border border-[var(--color-border)] bg-[var(--color-bg)]"
         >
           <div className="flex items-center justify-between mb-4">
-            <DialogPrimitive.Title className="text-2xl font-bold text-slate-900 dark:text-white">
+            <DialogPrimitive.Title className="text-2xl font-bold text-[var(--color-text)]">
               Edit Benefit
             </DialogPrimitive.Title>
             <DialogPrimitive.Close asChild>
               <button
                 aria-label="Close dialog"
-                className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors p-2 rounded-md hover:bg-[var(--color-bg-secondary)]"
               >
                 <X size={24} />
               </button>
@@ -480,7 +480,7 @@ export function EditBenefitModal({
                 placeholder="0.00"
               />
               {suggestedAmount && (
-                <p className="text-blue-600 dark:text-blue-400 text-xs mt-1">
+                <p className="text-xs mt-1" style={{ color: 'var(--color-primary)' }}>
                   {suggestedAmount}
                 </p>
               )}
@@ -502,7 +502,8 @@ export function EditBenefitModal({
                   type="button"
                   onClick={handleAddOverride}
                   disabled={isSubmitting || usedMonths.size >= 12}
-                  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded hover:opacity-80 disabled:opacity-50 transition-colors"
+                  style={{ backgroundColor: 'var(--color-primary-bg-subtle)', color: 'var(--color-primary)' }}
                 >
                   <Plus size={14} />
                   Add Override
@@ -521,7 +522,7 @@ export function EditBenefitModal({
                         value={entry.month}
                         onChange={(e) => handleOverrideChange(idx, 'month', e.target.value)}
                         disabled={isSubmitting}
-                        className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 text-sm"
+                        className="flex-1 px-3 py-2 border border-[var(--color-border)] rounded-lg bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] disabled:opacity-50 text-sm"
                       >
                         {MONTH_NAMES.map((name, mIdx) => {
                           const monthNum = String(mIdx + 1);
@@ -534,21 +535,22 @@ export function EditBenefitModal({
                         })}
                       </select>
                       <div className="relative flex-1">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)] text-sm">$</span>
                         <input
                           type="text"
                           value={entry.amount}
                           onChange={(e) => handleOverrideChange(idx, 'amount', e.target.value)}
                           disabled={isSubmitting}
                           placeholder="0.00"
-                          className="w-full pl-7 pr-3 py-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 text-sm"
+                          className="w-full pl-7 pr-3 py-2 border border-[var(--color-border)] rounded-lg bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] disabled:opacity-50 text-sm"
                         />
                       </div>
                       <button
                         type="button"
                         onClick={() => handleRemoveOverride(idx)}
                         disabled={isSubmitting}
-                        className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg disabled:opacity-50 transition-colors"
+                        className="p-2 hover:opacity-80 rounded-lg disabled:opacity-50 transition-colors"
+                        style={{ color: 'var(--color-error)' }}
                         aria-label={`Remove ${MONTH_NAMES[Number(entry.month) - 1]} override`}
                       >
                         <Trash2 size={16} />
@@ -576,10 +578,10 @@ export function EditBenefitModal({
                   disabled={isSubmitting}
                   className="sr-only peer"
                 />
-                <div className="w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 dark:peer-focus:ring-blue-400 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600" />
+                <div className="w-9 h-5 bg-[var(--color-bg-secondary)] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--color-primary)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-[var(--color-border)] after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[var(--color-primary)]" />
               </label>
               <div>
-                <span className="text-sm font-medium text-slate-900 dark:text-white">
+                <span className="text-sm font-medium text-[var(--color-text)]">
                   Active
                 </span>
                 <p className={helperClasses}>
@@ -594,14 +596,15 @@ export function EditBenefitModal({
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
+                className="px-4 py-2 rounded border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-bg-secondary)] disabled:opacity-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-4 py-2 rounded bg-blue-600 dark:bg-blue-600 text-white hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                className="px-4 py-2 rounded text-white hover:opacity-90 disabled:opacity-50 transition-colors"
+                style={{ backgroundColor: 'var(--color-primary)' }}
               >
                 {isSubmitting ? 'Saving...' : 'Save'}
               </button>

@@ -16,19 +16,20 @@ import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import { formatCurrency } from '@/shared/lib/format-currency';
 import type { Card, Benefit } from '@/features/admin/types/admin';
 import { EditBenefitModal } from '../../_components/EditBenefitModal';
+import { Loader2 } from 'lucide-react';
 
 interface CardDetailResponse {
   success: boolean;
   data: Card & { benefits?: Benefit[] };
 }
 
-// ── Cadence badge color mapping ──────────────────────────────
-const CADENCE_COLORS: Record<string, string> = {
-  MONTHLY: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-  QUARTERLY: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
-  SEMI_ANNUAL: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300',
-  FLEXIBLE_ANNUAL: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-  ONE_TIME: 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300',
+// ── Cadence badge color mapping (using CSS custom properties) ──
+const CADENCE_COLORS: Record<string, { bg: string; color: string }> = {
+  MONTHLY: { bg: 'var(--color-primary-bg-subtle)', color: 'var(--color-primary)' },
+  QUARTERLY: { bg: 'var(--color-primary-bg-subtle)', color: 'var(--color-primary)' },
+  SEMI_ANNUAL: { bg: 'var(--color-primary-bg-subtle)', color: 'var(--color-primary)' },
+  FLEXIBLE_ANNUAL: { bg: 'var(--color-primary-bg-subtle)', color: 'var(--color-primary)' },
+  ONE_TIME: { bg: 'var(--color-bg-secondary)', color: 'var(--color-text-secondary)' },
 };
 
 const CADENCE_LABELS: Record<string, string> = {
@@ -273,8 +274,8 @@ export default function CardDetailPage() {
   if (isLoading) {
     return (
       <div className="p-8 text-center">
-        <div className="inline-block animate-spin">⏳</div>
-        <p className="text-slate-600 dark:text-slate-400 mt-2">Loading card details...</p>
+        <Loader2 className="inline-block animate-spin" size={20} />
+        <p className="text-[var(--color-text-secondary)] mt-2">Loading card details...</p>
       </div>
     );
   }
@@ -282,7 +283,7 @@ export default function CardDetailPage() {
   if (!card) {
     return (
       <div className="p-8 text-center">
-        <p className="text-slate-600 dark:text-slate-400">Card not found</p>
+        <p className="text-[var(--color-text-secondary)]">Card not found</p>
       </div>
     );
   }
@@ -291,37 +292,38 @@ export default function CardDetailPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{card.cardName}</h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-2">{card.issuer}</p>
+          <h1 className="text-3xl font-bold text-[var(--color-text)]">{card.cardName}</h1>
+          <p className="text-[var(--color-text-secondary)] mt-2">{card.issuer}</p>
         </div>
         <a
           href="/admin/cards"
-          className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+          className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]"
         >
           ← Back
         </a>
       </div>
 
       {error && (
-        <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">
+        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-error-light)', color: 'var(--color-error)', borderColor: 'var(--color-error)' }}>
           {error}
         </div>
       )}
 
       {success && (
-        <div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800">
+        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-success-light)', color: 'var(--color-success)', borderColor: 'var(--color-success)' }}>
           {success}
         </div>
       )}
 
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-6">
+      <div className="bg-[var(--color-bg)] rounded-lg border border-[var(--color-border)] p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+          <h2 className="text-lg font-semibold text-[var(--color-text)]">
             Benefits ({benefits.length})
           </h2>
           <button
             onClick={() => setShowBenefitModal(true)}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium text-sm"
+            className="px-4 py-2 rounded-lg text-white hover:opacity-90 font-medium text-sm"
+            style={{ backgroundColor: 'var(--color-primary)' }}
           >
             + Add Benefit
           </button>
@@ -333,26 +335,26 @@ export default function CardDetailPage() {
             {[...Array(3)].map((_, idx) => (
               <div
                 key={idx}
-                className="h-16 bg-slate-200 dark:bg-slate-800 rounded-lg animate-pulse"
+                className="h-16 bg-[var(--color-bg-secondary)] rounded-lg animate-pulse"
               />
             ))}
           </div>
         ) : benefits.length === 0 ? (
-          <p className="text-slate-600 dark:text-slate-400 text-center py-8">
+          <p className="text-[var(--color-text-secondary)] text-center py-8">
             No benefits added yet
           </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800">
-                  <th className="text-left py-2 px-3 text-slate-600 dark:text-slate-400 font-medium">Name</th>
-                  <th className="text-left py-2 px-3 text-slate-600 dark:text-slate-400 font-medium">Type</th>
-                  <th className="text-right py-2 px-3 text-slate-600 dark:text-slate-400 font-medium">Value</th>
-                  <th className="text-left py-2 px-3 text-slate-600 dark:text-slate-400 font-medium">Reset</th>
-                  <th className="text-left py-2 px-3 text-slate-600 dark:text-slate-400 font-medium">Cadence</th>
-                  <th className="text-right py-2 px-3 text-slate-600 dark:text-slate-400 font-medium">Per Period</th>
-                  <th className="text-right py-2 px-3 text-slate-600 dark:text-slate-400 font-medium">Actions</th>
+                <tr className="border-b border-[var(--color-border)]">
+                  <th className="text-left py-2 px-3 text-[var(--color-text-secondary)] font-medium">Name</th>
+                  <th className="text-left py-2 px-3 text-[var(--color-text-secondary)] font-medium">Type</th>
+                  <th className="text-right py-2 px-3 text-[var(--color-text-secondary)] font-medium">Value</th>
+                  <th className="text-left py-2 px-3 text-[var(--color-text-secondary)] font-medium">Reset</th>
+                  <th className="text-left py-2 px-3 text-[var(--color-text-secondary)] font-medium">Cadence</th>
+                  <th className="text-right py-2 px-3 text-[var(--color-text-secondary)] font-medium">Per Period</th>
+                  <th className="text-right py-2 px-3 text-[var(--color-text-secondary)] font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -362,70 +364,73 @@ export default function CardDetailPage() {
                   return (
                     <tr
                       key={benefit.id}
-                      className={`border-b border-slate-100 dark:border-slate-800/50 transition-colors ${
+                      className={`border-b border-[var(--color-border)] transition-colors ${
                         benefit.id.startsWith('temp-')
-                          ? 'bg-blue-50 dark:bg-blue-900/20'
+                          ? 'opacity-70'
                           : !benefit.isActive
                             ? 'opacity-60'
-                            : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                            : 'hover:bg-[var(--color-bg-secondary)]'
                       }`}
                     >
                       <td className="py-3 px-3">
-                        <span className="font-medium text-slate-900 dark:text-white">
+                        <span className="font-medium text-[var(--color-text)]">
                           {benefit.name}
                         </span>
                         {!benefit.isActive && (
-                          <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400">
+                          <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)]">
                             Inactive
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-3 text-slate-600 dark:text-slate-400">
+                      <td className="py-3 px-3 text-[var(--color-text-secondary)]">
                         {benefit.type}
                       </td>
-                      <td className="py-3 px-3 text-right text-slate-900 dark:text-white">
+                      <td className="py-3 px-3 text-right text-[var(--color-text)]">
                         {formatCurrency(benefit.stickerValue)}
                       </td>
-                      <td className="py-3 px-3 text-slate-600 dark:text-slate-400">
+                      <td className="py-3 px-3 text-[var(--color-text-secondary)]">
                         {benefit.resetCadence}
                       </td>
                       <td className="py-3 px-3">
                         {benefit.claimingCadence ? (
                           <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                              CADENCE_COLORS[benefit.claimingCadence] ||
-                              'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300'
-                            }`}
+                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                            style={{
+                              backgroundColor: (CADENCE_COLORS[benefit.claimingCadence] || CADENCE_COLORS.ONE_TIME).bg,
+                              color: (CADENCE_COLORS[benefit.claimingCadence] || CADENCE_COLORS.ONE_TIME).color,
+                            }}
                           >
                             {CADENCE_LABELS[benefit.claimingCadence] || benefit.claimingCadence}
                           </span>
                         ) : needsCadenceWarning ? (
-                          <span className="text-amber-500 dark:text-amber-400" title="Claiming cadence not set">
+                          <span className="text-[var(--color-text-secondary)]" title="Claiming cadence not set">
                             ⚠️ Not set
                           </span>
                         ) : (
-                          <span className="text-slate-400 dark:text-slate-600">—</span>
+                          <span className="text-[var(--color-text-secondary)]">—</span>
                         )}
                       </td>
-                      <td className="py-3 px-3 text-right text-slate-900 dark:text-white">
+                      <td className="py-3 px-3 text-right text-[var(--color-text)]">
                         {benefit.claimingAmount != null
                           ? formatCurrency(benefit.claimingAmount)
-                          : <span className="text-slate-400 dark:text-slate-600">—</span>}
+                          : <span className="text-[var(--color-text-secondary)]">—</span>}
                       </td>
                       <td className="py-3 px-3 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => setEditingBenefit(benefit)}
-                            className="px-3 py-1 rounded text-sm bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                            className="px-3 py-1 rounded text-sm hover:opacity-80 transition-colors"
+                            style={{ backgroundColor: 'var(--color-primary-bg-subtle)', color: 'var(--color-primary)' }}
                           >
                             Edit
                           </button>
                           <button
                             onClick={() => handleDeleteBenefit(benefit.id)}
                             disabled={isDeleting === benefit.id}
-                            className="px-3 py-1 rounded text-sm bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 disabled:opacity-50 flex items-center gap-1 transition-colors"
+                            className="px-3 py-1 rounded text-sm hover:opacity-80 disabled:opacity-50 flex items-center gap-1 transition-colors"
+                            style={{ backgroundColor: 'var(--color-error-bg-muted)', color: 'var(--color-error)' }}
                           >
-                            {isDeleting === benefit.id && <span className="animate-spin text-xs">⏳</span>}
+                            {isDeleting === benefit.id && <Loader2 className="animate-spin" size={14} />}
                             Delete
                           </button>
                         </div>
@@ -448,12 +453,12 @@ export default function CardDetailPage() {
             }
           }}
         >
-          <div className="bg-white dark:bg-slate-900 rounded-lg max-w-md w-full p-6 border border-slate-200 dark:border-slate-800">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Add Benefit</h2>
+          <div className="bg-[var(--color-bg)] rounded-lg max-w-md w-full p-6 border border-[var(--color-border)]">
+            <h2 className="text-xl font-bold text-[var(--color-text)] mb-4">Add Benefit</h2>
 
             <form onSubmit={handleAddBenefit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
                   Name *
                 </label>
                 <input
@@ -464,12 +469,12 @@ export default function CardDetailPage() {
                   onChange={(e) =>
                     setBenefitFormData({ ...benefitFormData, name: e.target.value })
                   }
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] disabled:opacity-50"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
                   Type *
                 </label>
                 <select
@@ -478,7 +483,7 @@ export default function CardDetailPage() {
                   onChange={(e) =>
                     setBenefitFormData({ ...benefitFormData, type: e.target.value })
                   }
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] disabled:opacity-50"
                 >
                   <option value="INSURANCE">Insurance</option>
                   <option value="CASHBACK">Cashback</option>
@@ -490,7 +495,7 @@ export default function CardDetailPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
                   Sticker Value *
                 </label>
                 <input
@@ -503,12 +508,12 @@ export default function CardDetailPage() {
                   onChange={(e) =>
                     setBenefitFormData({ ...benefitFormData, stickerValue: e.target.value })
                   }
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] disabled:opacity-50"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
                   Reset Cadence *
                 </label>
                 <select
@@ -517,7 +522,7 @@ export default function CardDetailPage() {
                   onChange={(e) =>
                     setBenefitFormData({ ...benefitFormData, resetCadence: e.target.value })
                   }
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] disabled:opacity-50"
                 >
                   <option value="DAILY">Daily</option>
                   <option value="MONTHLY">Monthly</option>
@@ -531,16 +536,17 @@ export default function CardDetailPage() {
                   type="button"
                   onClick={() => setShowBenefitModal(false)}
                   disabled={isSubmitting}
-                  className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 disabled:opacity-50"
+                  className="flex-1 px-4 py-2 rounded-lg border border-[var(--color-border)] text-[var(--color-text)] disabled:opacity-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 rounded-lg text-white hover:opacity-90 font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                  style={{ backgroundColor: 'var(--color-primary)' }}
                 >
-                  {isSubmitting && <span className="animate-spin">⏳</span>}
+                  {isSubmitting && <Loader2 className="animate-spin" size={16} />}
                   {isSubmitting ? 'Adding...' : 'Add'}
                 </button>
               </div>

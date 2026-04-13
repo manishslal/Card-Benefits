@@ -17,6 +17,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import useSWR from 'swr';
 import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import { AdminBreadcrumb } from '../_components/AdminBreadcrumb';
+import { Loader2, Plus } from 'lucide-react';
 import type { Card, PaginationInfo } from '@/features/admin/types/admin';
 
 interface CardsListResponse {
@@ -393,28 +394,29 @@ export default function CardsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Cards</h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-2">
+          <h1 className="text-3xl font-bold text-[var(--color-text)]">Cards</h1>
+          <p className="text-[var(--color-text-secondary)] mt-2">
             Manage master card types
           </p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium transition-colors"
+          className="px-4 py-2 rounded-lg text-white hover:opacity-90 font-medium transition-colors flex items-center gap-1"
+          style={{ backgroundColor: 'var(--color-primary)' }}
         >
-          + Add Card
+          <Plus size={16} /> Add Card
         </button>
       </div>
 
       {/* Notifications */}
       {error && (
-        <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">
+        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-error-light)', color: 'var(--color-error)', borderColor: 'var(--color-error)' }}>
           {error}
         </div>
       )}
 
       {success && (
-        <div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800">
+        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-success-light)', color: 'var(--color-success)', borderColor: 'var(--color-success)' }}>
           {success}
         </div>
       )}
@@ -430,7 +432,7 @@ export default function CardsPage() {
               setSearch(e.target.value);
               setPage(1);
             }}
-            className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
           />
         </div>
         
@@ -443,9 +445,10 @@ export default function CardsPage() {
             }}
             className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
               activeFilter === 'all'
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white hover:bg-slate-300 dark:hover:bg-slate-600'
+                ? 'text-white'
+                : 'bg-[var(--color-bg-secondary)] text-[var(--color-text)] hover:opacity-80'
             }`}
+            style={activeFilter === 'all' ? { backgroundColor: 'var(--color-primary)', color: 'white' } : undefined}
           >
             All Cards
           </button>
@@ -456,9 +459,10 @@ export default function CardsPage() {
             }}
             className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
               activeFilter === 'active'
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white hover:bg-slate-300 dark:hover:bg-slate-600'
+                ? 'text-white'
+                : 'bg-[var(--color-bg-secondary)] text-[var(--color-text)] hover:opacity-80'
             }`}
+            style={activeFilter === 'active' ? { backgroundColor: 'var(--color-primary)', color: 'white' } : undefined}
           >
             Active Only
           </button>
@@ -469,9 +473,10 @@ export default function CardsPage() {
             }}
             className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
               activeFilter === 'archived'
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white hover:bg-slate-300 dark:hover:bg-slate-600'
+                ? 'text-white'
+                : 'bg-[var(--color-bg-secondary)] text-[var(--color-text)] hover:opacity-80'
             }`}
+            style={activeFilter === 'archived' ? { backgroundColor: 'var(--color-primary)', color: 'white' } : undefined}
           >
             Archived Only
           </button>
@@ -479,27 +484,27 @@ export default function CardsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div className="bg-[var(--color-bg)] rounded-lg border border-[var(--color-border)] overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center">
-            <div className="inline-block animate-spin">⏳</div>
-            <p className="text-slate-600 dark:text-slate-400 mt-2">Loading cards...</p>
+            <Loader2 className="inline-block animate-spin" size={20} />
+            <p className="text-[var(--color-text-secondary)] mt-2">Loading cards...</p>
           </div>
         ) : cards.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="text-slate-600 dark:text-slate-400">No cards found</p>
+            <p className="text-[var(--color-text-secondary)]">No cards found</p>
           </div>
         ) : (
           <>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                  <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
                     {/* Issue 12: Make column headers clickable with sort indicators */}
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-[var(--color-text)]">
                       <button
                         onClick={() => handleSort('issuer')}
-                        className="group flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors"
                         title="Click to sort by issuer"
                       >
                         Issuer
@@ -508,10 +513,10 @@ export default function CardsPage() {
                         </span>
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-[var(--color-text)]">
                       <button
                         onClick={() => handleSort('cardName')}
-                        className="group flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors"
                         title="Click to sort by card name"
                       >
                         Card Name
@@ -520,10 +525,10 @@ export default function CardsPage() {
                         </span>
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-[var(--color-text)]">
                       <button
                         onClick={() => handleSort('defaultAnnualFee')}
-                        className="group flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors"
                         title="Click to sort by annual fee"
                       >
                         Annual Fee
@@ -532,34 +537,34 @@ export default function CardsPage() {
                         </span>
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-[var(--color-text)]">
                       Benefits
                     </th>
-                    <th className="px-6 py-3 text-right text-sm font-semibold text-slate-900 dark:text-white">
+                    <th className="px-6 py-3 text-right text-sm font-semibold text-[var(--color-text)]">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                <tbody className="divide-y divide-[var(--color-border)]">
                   {cards.map((card: Card) => (
                     <tr
                       key={card.id}
                       className={`transition-colors ${
                         card.id.startsWith('temp-')
-                          ? 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100'
-                          : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                          ? 'opacity-70'
+                          : 'hover:bg-[var(--color-bg-secondary)]'
                       }`}
                     >
-                      <td className="px-6 py-4 text-sm text-slate-900 dark:text-white font-medium">
+                      <td className="px-6 py-4 text-sm text-[var(--color-text)] font-medium">
                         {card.issuer}
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                      <td className="px-6 py-4 text-sm text-[var(--color-text-secondary)]">
                         {card.cardName}
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                      <td className="px-6 py-4 text-sm text-[var(--color-text-secondary)]">
                         ${card.defaultAnnualFee}
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                      <td className="px-6 py-4 text-sm text-[var(--color-text-secondary)]">
                         {card.benefitCount || 0} benefits
                       </td>
                       <td className="px-6 py-4 text-right">
@@ -567,14 +572,16 @@ export default function CardsPage() {
                           {!card.id.startsWith('temp-') && (
                             <a
                               href={`/admin/cards/${card.id}`}
-                              className="px-3 py-1 rounded text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                              className="px-3 py-1 rounded text-sm hover:opacity-80 transition-colors"
+                              style={{ backgroundColor: 'var(--color-primary-bg-subtle)', color: 'var(--color-primary)' }}
                             >
                               View
                             </a>
                           )}
                           <button
                             onClick={() => handleDeleteCard(card.id)}
-                            className="px-3 py-1 rounded text-sm bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30"
+                            className="px-3 py-1 rounded text-sm hover:opacity-80 transition-colors"
+                            style={{ backgroundColor: 'var(--color-error-bg-muted)', color: 'var(--color-error)' }}
                           >
                             Delete
                           </button>
@@ -587,22 +594,22 @@ export default function CardsPage() {
             </div>
 
             {/* Issue 15: Enhanced pagination - ensure proper disabled/cursor states */}
-            <div className="border-t border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
-              <span className="text-sm text-slate-600 dark:text-slate-400">
+            <div className="border-t border-[var(--color-border)] px-6 py-4 flex items-center justify-between">
+              <span className="text-sm text-[var(--color-text-secondary)]">
                 Page {pagination.page} of {pagination.totalPages}
               </span>
               <div className="flex gap-2">
                 <button
                   onClick={() => setPage(Math.max(1, page - 1))}
                   disabled={page === 1 || isLoading}
-                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                  className="px-4 py-2 rounded border border-[var(--color-border)] text-[var(--color-text)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-bg-secondary)] transition-colors"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setPage(page + 1)}
                   disabled={!pagination.hasMore || isLoading}
-                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                  className="px-4 py-2 rounded border border-[var(--color-border)] text-[var(--color-text)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-bg-secondary)] transition-colors"
                 >
                   Next
                 </button>
@@ -622,14 +629,14 @@ export default function CardsPage() {
             }
           }}
         >
-          <div className="bg-white dark:bg-slate-900 rounded-lg max-w-md w-full p-6 border border-slate-200 dark:border-slate-800">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+          <div className="bg-[var(--color-bg)] rounded-lg max-w-md w-full p-6 border border-[var(--color-border)]">
+            <h2 className="text-xl font-bold text-[var(--color-text)] mb-4">
               Create New Card
             </h2>
 
             <form onSubmit={handleCreateCard} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
                   Issuer *
                 </label>
                 <input
@@ -638,13 +645,13 @@ export default function CardsPage() {
                   disabled={isSubmitting}
                   value={formData.issuer}
                   onChange={(e) => setFormData({ ...formData, issuer: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] disabled:opacity-50"
                   placeholder="e.g., Visa, Mastercard"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
                   Card Name *
                 </label>
                 <input
@@ -653,13 +660,13 @@ export default function CardsPage() {
                   disabled={isSubmitting}
                   value={formData.cardName}
                   onChange={(e) => setFormData({ ...formData, cardName: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] disabled:opacity-50"
                   placeholder="e.g., Premium Card"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
                   Annual Fee *
                 </label>
                 <input
@@ -670,13 +677,13 @@ export default function CardsPage() {
                   step="0.01"
                   value={formData.defaultAnnualFee}
                   onChange={(e) => setFormData({ ...formData, defaultAnnualFee: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] disabled:opacity-50"
                   placeholder="0.00"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
                   Image URL
                 </label>
                 <input
@@ -684,7 +691,7 @@ export default function CardsPage() {
                   disabled={isSubmitting}
                   value={formData.cardImageUrl}
                   onChange={(e) => setFormData({ ...formData, cardImageUrl: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] disabled:opacity-50"
                   placeholder="https://example.com/image.jpg"
                 />
               </div>
@@ -694,16 +701,17 @@ export default function CardsPage() {
                   type="button"
                   onClick={() => setShowCreateModal(false)}
                   disabled={isSubmitting}
-                  className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-2 rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 rounded-lg text-white hover:opacity-90 font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  style={{ backgroundColor: 'var(--color-primary)' }}
                 >
-                  {isSubmitting && <span className="animate-spin">⏳</span>}
+                  {isSubmitting && <Loader2 className="animate-spin" size={16} />}
                   {isSubmitting ? 'Creating...' : 'Create Card'}
                 </button>
               </div>
@@ -722,12 +730,12 @@ export default function CardsPage() {
             }
           }}
         >
-          <div className="bg-white dark:bg-slate-900 rounded-lg max-w-md w-full p-6 border border-slate-200 dark:border-slate-800">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+          <div className="bg-[var(--color-bg)] rounded-lg max-w-md w-full p-6 border border-[var(--color-border)]">
+            <h2 className="text-xl font-bold text-[var(--color-text)] mb-4">
               Delete Card
             </h2>
 
-            <p className="text-slate-600 dark:text-slate-400 mb-6">
+            <p className="text-[var(--color-text-secondary)] mb-6">
               Are you sure you want to delete this card? This action cannot be undone.
             </p>
 
@@ -735,16 +743,17 @@ export default function CardsPage() {
               <button
                 onClick={() => setShowDeleteModal(false)}
                 disabled={isDeleting}
-                className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2 rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteCardConfirm}
                 disabled={isDeleting}
-                className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 rounded-lg text-white hover:opacity-90 font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                style={{ backgroundColor: 'var(--color-error)' }}
               >
-                {isDeleting && <span className="animate-spin">⏳</span>}
+                {isDeleting && <Loader2 className="animate-spin" size={16} />}
                 {isDeleting ? 'Deleting...' : 'Delete'}
               </button>
             </div>

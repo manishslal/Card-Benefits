@@ -155,16 +155,16 @@ export function EditUserModal({
         <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-black/50" />
         
         <DialogPrimitive.Content
-          className="fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] sm:max-w-lg md:max-w-2xl translate-x-[-50%] translate-y-[-50%] rounded-lg shadow-lg p-6 max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
+          className="fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] sm:max-w-lg md:max-w-2xl translate-x-[-50%] translate-y-[-50%] rounded-lg shadow-lg p-6 max-h-[90vh] overflow-y-auto border border-[var(--color-border)] bg-[var(--color-bg)]"
         >
           <div className="flex items-center justify-between mb-4">
-            <DialogPrimitive.Title className="text-2xl font-bold text-slate-900 dark:text-white">
+            <DialogPrimitive.Title className="text-2xl font-bold text-[var(--color-text)]">
               Edit User
             </DialogPrimitive.Title>
             <DialogPrimitive.Close asChild>
               <button
                 aria-label="Close dialog"
-                className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors p-2 rounded-md hover:bg-[var(--color-bg-secondary)]"
               >
                 <X size={24} />
               </button>
@@ -178,7 +178,7 @@ export function EditUserModal({
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* First Name field */}
             <div>
-              <label className="block text-sm font-medium text-slate-900 dark:text-white mb-1">
+              <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
                 First Name
               </label>
               <input
@@ -188,17 +188,17 @@ export function EditUserModal({
                 onChange={handleInputChange}
                 maxLength={50}
                 disabled={isSubmitting}
-                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50"
+                className="w-full px-3 py-2 border border-[var(--color-border)] rounded-lg bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] disabled:opacity-50"
                 placeholder="John"
               />
               {fieldErrors.firstName && (
-                <p className="text-red-500 dark:text-red-400 text-sm mt-1">{fieldErrors.firstName}</p>
+                <p className="text-sm mt-1" style={{ color: 'var(--color-error)' }}>{fieldErrors.firstName}</p>
               )}
             </div>
 
             {/* Last Name field */}
             <div>
-              <label className="block text-sm font-medium text-slate-900 dark:text-white mb-1">
+              <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
                 Last Name
               </label>
               <input
@@ -208,17 +208,17 @@ export function EditUserModal({
                 onChange={handleInputChange}
                 maxLength={50}
                 disabled={isSubmitting}
-                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50"
+                className="w-full px-3 py-2 border border-[var(--color-border)] rounded-lg bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] disabled:opacity-50"
                 placeholder="Doe"
               />
               {fieldErrors.lastName && (
-                <p className="text-red-500 dark:text-red-400 text-sm mt-1">{fieldErrors.lastName}</p>
+                <p className="text-sm mt-1" style={{ color: 'var(--color-error)' }}>{fieldErrors.lastName}</p>
               )}
             </div>
 
             {/* Email field */}
             <div>
-              <label className="block text-sm font-medium text-slate-900 dark:text-white mb-1">
+              <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
                 Email *
               </label>
               <input
@@ -227,14 +227,14 @@ export function EditUserModal({
                 value={formData.email}
                 onChange={handleInputChange}
                 disabled={isSubmitting}
-                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50"
+                className="w-full px-3 py-2 border border-[var(--color-border)] rounded-lg bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] disabled:opacity-50"
                 placeholder="user@example.com"
               />
-              <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">
+              <p className="text-[var(--color-text-secondary)] text-xs mt-1">
                 Must be unique
               </p>
               {fieldErrors.email && (
-                <p className="text-red-500 dark:text-red-400 text-sm mt-1">{fieldErrors.email}</p>
+                <p className="text-sm mt-1" style={{ color: 'var(--color-error)' }}>{fieldErrors.email}</p>
               )}
             </div>
 
@@ -248,23 +248,24 @@ export function EditUserModal({
                   checked={formData.isActive}
                   onChange={handleInputChange}
                   disabled={isSubmitting}
-                  className="w-4 h-4 rounded border-slate-200 dark:border-slate-800 text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-400"
+                  className="w-4 h-4 rounded border-[var(--color-border)] focus:ring-[var(--color-primary)]"
+                  style={{ accentColor: 'var(--color-primary)' }}
                 />
-                <label htmlFor="isActive" className="block text-sm font-medium text-slate-900 dark:text-white">
+                <label htmlFor="isActive" className="block text-sm font-medium text-[var(--color-text)]">
                   Enabled
                 </label>
               </div>
-              <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">
+              <p className="text-[var(--color-text-secondary)] text-xs mt-1">
                 Unchecking prevents user login
               </p>
               {fieldErrors.isActive && (
-                <p className="text-red-500 dark:text-red-400 text-sm mt-1">{fieldErrors.isActive}</p>
+                <p className="text-sm mt-1" style={{ color: 'var(--color-error)' }}>{fieldErrors.isActive}</p>
               )}
             </div>
 
             {/* Role field */}
             <div>
-              <label className="block text-sm font-medium text-slate-900 dark:text-white mb-1">
+              <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
                 Role *
               </label>
               <select
@@ -272,7 +273,7 @@ export function EditUserModal({
                 value={formData.role}
                 onChange={handleInputChange}
                 disabled={isSubmitting}
-                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50"
+                className="w-full px-3 py-2 border border-[var(--color-border)] rounded-lg bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] disabled:opacity-50"
               >
                 <option value="">Select a role</option>
                 <option value="USER">User</option>
@@ -280,7 +281,7 @@ export function EditUserModal({
                 <option value="SUPER_ADMIN">Super Admin</option>
               </select>
               {fieldErrors.role && (
-                <p className="text-red-500 dark:text-red-400 text-sm mt-1">{fieldErrors.role}</p>
+                <p className="text-sm mt-1" style={{ color: 'var(--color-error)' }}>{fieldErrors.role}</p>
               )}
             </div>
 
@@ -290,14 +291,15 @@ export function EditUserModal({
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
+                className="px-4 py-2 rounded border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-bg-secondary)] disabled:opacity-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-4 py-2 rounded bg-blue-600 dark:bg-blue-600 text-white hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                className="px-4 py-2 rounded text-white hover:opacity-90 disabled:opacity-50 transition-colors"
+                style={{ backgroundColor: 'var(--color-primary)' }}
               >
                 {isSubmitting ? 'Saving...' : 'Save'}
               </button>

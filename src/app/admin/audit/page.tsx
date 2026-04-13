@@ -14,6 +14,7 @@ import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { apiClient } from '@/features/admin/lib/api-client';
 import { AdminBreadcrumb } from '../_components/AdminBreadcrumb';
+import { Loader2 } from 'lucide-react';
 import type { AuditLog, PaginationInfo } from '@/features/admin/types/admin';
 
 interface AuditListResponse {
@@ -135,8 +136,8 @@ export default function AuditPage() {
       <AdminBreadcrumb currentPage="audit" />
       
       <div>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Audit Log</h1>
-        <p className="text-slate-600 dark:text-slate-400 mt-2">System activity and changes</p>
+        <h1 className="text-3xl font-bold text-[var(--color-text)]">Audit Log</h1>
+        <p className="text-[var(--color-text-secondary)] mt-2">System activity and changes</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -148,7 +149,7 @@ export default function AuditPage() {
             setSearch(e.target.value);
             setPage(1);
           }}
-          className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
         />
 
         <select
@@ -157,7 +158,7 @@ export default function AuditPage() {
             setActionFilter(e.target.value);
             setPage(1);
           }}
-          className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
         >
           <option value="">All Actions</option>
           <option value="CREATE">Create</option>
@@ -172,7 +173,7 @@ export default function AuditPage() {
             setResourceFilter(e.target.value);
             setPage(1);
           }}
-          className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
         >
           <option value="">All Resources</option>
           <option value="CARD">Card</option>
@@ -181,24 +182,24 @@ export default function AuditPage() {
         </select>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div className="bg-[var(--color-bg)] rounded-lg border border-[var(--color-border)] overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center">
-            <div className="inline-block animate-spin">⏳</div>
-            <p className="text-slate-600 dark:text-slate-400 mt-2">Loading audit logs...</p>
+            <Loader2 className="inline-block animate-spin" size={20} />
+            <p className="text-[var(--color-text-secondary)] mt-2">Loading audit logs...</p>
           </div>
         ) : auditLogs.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="text-slate-600 dark:text-slate-400">No audit logs found</p>
+            <p className="text-[var(--color-text-secondary)]">No audit logs found</p>
           </div>
         ) : (
           <>
-            <div className="space-y-0 divide-y divide-slate-200 dark:divide-slate-800">
+            <div className="space-y-0 divide-y divide-[var(--color-border)]">
               {/* Issue 12: Sortable column headers for the expandable list */}
-              <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-3 grid grid-cols-3 gap-4 text-sm font-semibold text-slate-900 dark:text-white">
+              <div className="bg-[var(--color-bg-secondary)] px-6 py-3 grid grid-cols-3 gap-4 text-sm font-semibold text-[var(--color-text)]">
                 <button
                   onClick={() => handleSort('timestamp')}
-                  className="group flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                  className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors text-left"
                   title="Click to sort by timestamp"
                 >
                   Timestamp
@@ -208,7 +209,7 @@ export default function AuditPage() {
                 </button>
                 <button
                   onClick={() => handleSort('action')}
-                  className="group flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                  className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors text-left"
                   title="Click to sort by action"
                 >
                   Action
@@ -218,7 +219,7 @@ export default function AuditPage() {
                 </button>
                 <button
                   onClick={() => handleSort('resource')}
-                  className="group flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                  className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors text-left"
                   title="Click to sort by resource"
                 >
                   Resource
@@ -232,64 +233,64 @@ export default function AuditPage() {
                 <div key={log.id || idx}>
                   <button
                     onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}
-                    className="w-full px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-left flex items-center justify-between grid grid-cols-3 gap-4"
+                    className="w-full px-6 py-4 hover:bg-[var(--color-bg-secondary)] transition-colors text-left flex items-center justify-between grid grid-cols-3 gap-4"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-xs font-semibold text-blue-600 dark:text-blue-400 flex-shrink-0">
+                      <span className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0" style={{ backgroundColor: 'var(--color-primary-bg-subtle)', color: 'var(--color-primary)' }}>
                         {log.actionType?.[0] || '—'}
                       </span>
-                      <span className="text-sm text-slate-600 dark:text-slate-300">
+                      <span className="text-sm text-[var(--color-text-secondary)]">
                         {log.createdAt
                           ? new Date(log.createdAt).toLocaleString()
                           : '—'}
                       </span>
                     </div>
                     <div>
-                      <p className="font-medium text-slate-900 dark:text-white text-sm">
+                      <p className="font-medium text-[var(--color-text)] text-sm">
                         {log.actionType || 'Unknown'}
                       </p>
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className="text-sm text-slate-600 dark:text-slate-300">
+                      <p className="text-sm text-[var(--color-text-secondary)]">
                         {log.resourceType || 'Unknown'}
                       </p>
-                      <span className="text-slate-400 dark:text-slate-600">
+                      <span className="text-[var(--color-text-secondary)]">
                         {expandedId === log.id ? '▼' : '▶'}
                       </span>
                     </div>
                   </button>
 
                   {expandedId === log.id && (
-                    <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/30 border-t border-slate-200 dark:border-slate-800">
+                    <div className="px-6 py-4 bg-[var(--color-bg-secondary)] border-t border-[var(--color-border)]">
                       <div className="space-y-3 text-sm">
                         <div>
-                          <p className="text-slate-600 dark:text-slate-400 font-medium">User</p>
-                          <p className="text-slate-900 dark:text-white">{log.adminUserEmail || 'Unknown'}</p>
+                          <p className="text-[var(--color-text-secondary)] font-medium">User</p>
+                          <p className="text-[var(--color-text)]">{log.adminUserEmail || 'Unknown'}</p>
                         </div>
                         <div>
-                          <p className="text-slate-600 dark:text-slate-400 font-medium">Resource ID</p>
-                          <p className="text-slate-900 dark:text-white font-mono">{log.resourceId}</p>
+                          <p className="text-[var(--color-text-secondary)] font-medium">Resource ID</p>
+                          <p className="text-[var(--color-text)] font-mono">{log.resourceId}</p>
                         </div>
                         {log.oldValues && (
                           <div>
-                            <p className="text-slate-600 dark:text-slate-400 font-medium">Old Values</p>
-                            <pre className="text-xs bg-white dark:bg-slate-900 p-2 rounded overflow-auto max-h-40">
+                            <p className="text-[var(--color-text-secondary)] font-medium">Old Values</p>
+                            <pre className="text-xs bg-[var(--color-bg)] p-2 rounded overflow-auto max-h-40">
                               {JSON.stringify(log.oldValues, null, 2)}
                             </pre>
                           </div>
                         )}
                         {log.newValues && (
                           <div>
-                            <p className="text-slate-600 dark:text-slate-400 font-medium">New Values</p>
-                            <pre className="text-xs bg-white dark:bg-slate-900 p-2 rounded overflow-auto max-h-40">
+                            <p className="text-[var(--color-text-secondary)] font-medium">New Values</p>
+                            <pre className="text-xs bg-[var(--color-bg)] p-2 rounded overflow-auto max-h-40">
                               {JSON.stringify(log.newValues, null, 2)}
                             </pre>
                           </div>
                         )}
                         {log.ipAddress && (
                           <div>
-                            <p className="text-slate-600 dark:text-slate-400 font-medium">IP Address</p>
-                            <p className="text-slate-900 dark:text-white">{log.ipAddress}</p>
+                            <p className="text-[var(--color-text-secondary)] font-medium">IP Address</p>
+                            <p className="text-[var(--color-text)]">{log.ipAddress}</p>
                           </div>
                         )}
                       </div>
@@ -300,22 +301,22 @@ export default function AuditPage() {
             </div>
 
             {/* Issue 15: Enhanced pagination feedback */}
-            <div className="border-t border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
-              <span className="text-sm text-slate-600 dark:text-slate-400">
+            <div className="border-t border-[var(--color-border)] px-6 py-4 flex items-center justify-between">
+              <span className="text-sm text-[var(--color-text-secondary)]">
                 Page {pagination.page} of {pagination.totalPages}
               </span>
               <div className="flex gap-2">
                 <button
                   onClick={() => setPage(Math.max(1, page - 1))}
                   disabled={page === 1 || isLoading}
-                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                  className="px-4 py-2 rounded border border-[var(--color-border)] text-[var(--color-text)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-bg-secondary)] transition-colors"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setPage(page + 1)}
                   disabled={!pagination.hasMore || isLoading}
-                  className="px-4 py-2 rounded border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                  className="px-4 py-2 rounded border border-[var(--color-border)] text-[var(--color-text)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-bg-secondary)] transition-colors"
                 >
                   Next
                 </button>

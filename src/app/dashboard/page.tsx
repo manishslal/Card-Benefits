@@ -719,6 +719,11 @@ export default function DashboardPage() {
   }, [selectedCardId]);
 
   // Sprint 27: IntersectionObserver for carousel collapse on scroll
+  // BUG FIX: The sentinel <div> is conditionally rendered (only when cards.length > 0).
+  // On mount, `isLoadingCards` is true → early return renders a loading skeleton →
+  // sentinel ref is null. With `[]` deps the effect never re-ran after cards loaded.
+  // Fix: depend on `cards.length > 0` so the observer attaches once the sentinel exists.
+  const hasCards = cards.length > 0;
   useEffect(() => {
     const sentinel = carouselSentinelRef.current;
     if (!sentinel) return;
@@ -735,7 +740,7 @@ export default function DashboardPage() {
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, []);
+  }, [hasCards]);
 
   // ============================================================
   // Effect: Load history benefits when viewMode switches to "history"
@@ -1589,17 +1594,17 @@ export default function DashboardPage() {
             </div>
           ) : (
             <>
-              {/* Sentinel for collapse detection */}
-              <div ref={carouselSentinelRef} aria-hidden="true" className="h-0 w-0 overflow-hidden" />
+              {/* Sentinel for collapse detection — 1px tall for reliable IntersectionObserver across browsers */}
+              <div ref={carouselSentinelRef} aria-hidden="true" style={{ height: '1px', marginBottom: '-1px', overflow: 'hidden' }} />
 
               {/* Sticky carousel container */}
-              <div className="sticky z-20 -mx-4 md:-mx-8 px-0 md:px-8 bg-[var(--color-bg)]" style={{ top: 'calc(4rem + env(safe-area-inset-top, 0px))' }}>
+              <div className="sticky z-20 -mx-4 md:-mx-8 px-0 md:px-8 bg-[var(--color-bg)]" style={{ top: 'calc(var(--height-header, 64px) + env(safe-area-inset-top, 0px))' }}>
                 {/* Expanded carousel */}
                 <div
+                  className="carousel-collapse-transition"
                   style={{
-                    maxHeight: isCarouselCollapsed ? 0 : 400,
+                    maxHeight: isCarouselCollapsed ? 0 : 300,
                     overflow: 'hidden',
-                    transition: `max-height var(--carousel-collapse-duration, 300ms) var(--carousel-collapse-easing, cubic-bezier(0.4, 0, 0.2, 1)), opacity var(--carousel-collapse-duration, 300ms) var(--carousel-collapse-easing, cubic-bezier(0.4, 0, 0.2, 1))`,
                     opacity: isCarouselCollapsed ? 0 : 1,
                   }}
                   {...(isCarouselCollapsed ? { inert: '' } as unknown as React.HTMLAttributes<HTMLDivElement> : {})}
@@ -1617,10 +1622,10 @@ export default function DashboardPage() {
 
                 {/* Collapsed compact chips */}
                 <div
+                  className="carousel-collapse-transition"
                   style={{
-                    maxHeight: isCarouselCollapsed ? 'var(--compact-bar-height)' : '0px',
+                    maxHeight: isCarouselCollapsed ? 52 /* must match --compact-bar-height */ : 0,
                     overflow: 'hidden',
-                    transition: `max-height var(--carousel-collapse-duration, 300ms) var(--carousel-collapse-easing, cubic-bezier(0.4, 0, 0.2, 1)), opacity var(--carousel-collapse-duration, 300ms) var(--carousel-collapse-easing, cubic-bezier(0.4, 0, 0.2, 1))`,
                     opacity: isCarouselCollapsed ? 1 : 0,
                   }}
                   {...(!isCarouselCollapsed ? { inert: '' } as unknown as React.HTMLAttributes<HTMLDivElement> : {})}

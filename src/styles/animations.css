@@ -305,6 +305,16 @@
   animation: toastSlideIn 0.3s var(--ease-out) both;
 }
 
+/* ── Carousel Collapse Transition ──
+   Shared class for both carousel wrappers (expanded ↔ compact).
+   Centralises the transition so the reduced-motion override below
+   can bump duration to a still-perceptible 150 ms instead of 0. */
+.carousel-collapse-transition {
+  transition: max-height var(--carousel-collapse-duration, 300ms) var(--carousel-collapse-easing, cubic-bezier(0.4, 0, 0.2, 1)),
+              opacity var(--carousel-collapse-duration, 300ms) var(--carousel-collapse-easing, cubic-bezier(0.4, 0, 0.2, 1));
+  will-change: opacity;
+}
+
 /* ── Reduced Motion ── */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -313,5 +323,13 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /* Carousel collapse is user-initiated and brief — keep it
+     perceptible even under reduced-motion so the state change
+     isn't jarring.  Class specificity (0,1,0) beats * (0,0,0)
+     when both use !important, so this override wins. */
+  .carousel-collapse-transition {
+    transition-duration: 150ms !important;
   }
 }

@@ -23,6 +23,7 @@ interface ToggleUsedResponse {
     isUsed: boolean;
     timesUsed: number;
     updatedAt: string;
+    claimedAt: string | null;
   };
 }
 
@@ -146,6 +147,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
           isUsed: updatedBenefit.isUsed,
           timesUsed: updatedBenefit.timesUsed,
           updatedAt: updatedBenefit.updatedAt.toISOString(),
+          claimedAt: updatedBenefit.claimedAt?.toISOString() ?? null,
         },
       } as ToggleUsedResponse,
       { status: 200 }

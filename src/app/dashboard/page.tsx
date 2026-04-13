@@ -9,6 +9,7 @@ import { CardSwitcher, DashboardSummary } from '@/shared/components/features';
 import { BenefitsGrid, AddBenefitModal, EditBenefitModal, DeleteBenefitConfirmationDialog } from '@/features/benefits';
 import { AddCardModal } from '@/features/cards/components/modals/AddCardModal';
 import { deduplicateBenefits } from '@/lib/benefit-utils';
+import { calculateProRata, isProRataEligible } from '@/lib/benefit-engine/pro-rata';
 import { Plus, CreditCard, AlertCircle, Sparkles } from 'lucide-react';
 import { SkeletonCard } from '@/shared/components/loaders';
 import { type PeriodOption } from './new/components/PeriodSelector';
@@ -77,6 +78,7 @@ interface BenefitData {
   masterBenefitId?: string | null;
   claimingCadence?: string | null;
   claimedAt?: string | null;
+  claimingAmount?: number | null;
 }
 
 /**
@@ -104,6 +106,7 @@ interface ApiBenefit {
   description?: string;
   isUsed?: boolean;
   claimedAt?: string | null;
+  claimingAmount?: number | null;
   // Period-based fields (benefit engine)
   periodStart?: string | null;
   periodEnd?: string | null;
@@ -169,6 +172,43 @@ function calculateYearlyUsage(
 
   const usedCount = siblings.filter(b => b.isUsed).length;
   return Math.round((usedCount / totalPeriods) * 100);
+}
+
+/**
+ * Compute the display value for a benefit, applying pro-rata for eligible monthly memberships.
+ * Returns value in DOLLARS (divided by 100).
+ *
+ * Pro-rata only applies when:
+ * - claimingAmount is present and positive
+ * - claimingCadence is MONTHLY
+ * Otherwise, returns the standard effectiveValue / 100.
+ */
+function getDisplayValue(benefit: {
+  stickerValue: number;
+  userDeclaredValue?: number | null;
+  claimingCadence?: string | null;
+  claimingAmount?: number | null;
+  claimedAt?: string | null;
+}): number {
+  const effectiveValue = benefit.userDeclaredValue ?? benefit.stickerValue;
+
+  // Check if pro-rata eligible (requires claimingAmount and claimingCadence)
+  if (benefit.claimingAmount != null && benefit.claimingAmount > 0 && benefit.claimingCadence != null) {
+    const proRataInput = {
+      stickerValue: effectiveValue,
+      claimingCadence: benefit.claimingCadence,
+      claimingAmount: benefit.claimingAmount,
+      name: '',
+    };
+
+    if (isProRataEligible(proRataInput)) {
+      const claimedAt = benefit.claimedAt ? new Date(benefit.claimedAt) : null;
+      const result = calculateProRata(proRataInput, claimedAt);
+      return result.proRataValue / 100;
+    }
+  }
+
+  return effectiveValue / 100;
 }
 
 /**
@@ -327,7 +367,7 @@ export default function DashboardPage() {
           : 'pending' as const,
         expirationDate: b.expirationDate,
         description: b.description || '',
-        value: (b.userDeclaredValue ?? b.stickerValue) / 100,
+        value: getDisplayValue(b),
         usage: calculateYearlyUsage(b, apiCard.benefits || []),
         isUsed: b.isUsed ?? false,
         periodStart: b.periodStart ?? null,
@@ -335,6 +375,8 @@ export default function DashboardPage() {
         periodStatus: b.periodStatus ?? null,
         masterBenefitId: b.masterBenefitId ?? null,
         claimingCadence: b.claimingCadence ?? null,
+        claimedAt: b.claimedAt ?? null,
+        claimingAmount: b.claimingAmount ?? null,
       })),
     }));
   };
@@ -690,6 +732,8 @@ export default function DashboardPage() {
             periodStatus: string;
             masterBenefitId: string | null;
             claimingCadence: string | null;
+            claimedAt?: string | null;
+            claimingAmount?: number | null;
           }) => ({
             id: b.id,
             name: b.name,
@@ -699,7 +743,7 @@ export default function DashboardPage() {
             resetCadence: b.resetCadence,
             status: 'expired' as const,
             isUsed: b.isUsed,
-            value: (b.userDeclaredValue ?? b.stickerValue) / 100,
+            value: getDisplayValue(b),
             usage: (() => {
               // H-1 fix: Preserve null for unlimited/multiplier benefits
               const effectiveValue = b.userDeclaredValue ?? b.stickerValue;
@@ -711,6 +755,8 @@ export default function DashboardPage() {
             periodStatus: b.periodStatus,
             masterBenefitId: b.masterBenefitId,
             claimingCadence: b.claimingCadence,
+            claimedAt: b.claimedAt ?? null,
+            claimingAmount: b.claimingAmount ?? null,
           }));
           setHistoryBenefits(mapped);
         }
@@ -885,11 +931,18 @@ export default function DashboardPage() {
         setBenefits(prev => {
           const updated = prev.map((b) =>
             b.id === benefitId
-              ? {
-                  ...b,
-                  isUsed: data.benefit.isUsed,
-                  claimedAt: data.benefit.claimedAt ?? null,
-                }
+              ? (() => {
+                  const updatedClaimedAt = data.benefit.claimedAt ?? b.claimedAt ?? null;
+                  const updated = {
+                    ...b,
+                    isUsed: data.benefit.isUsed,
+                    claimedAt: updatedClaimedAt,
+                  };
+                  return {
+                    ...updated,
+                    value: getDisplayValue(updated),
+                  };
+                })()
               : b
           );
           // Recalculate usage for sibling benefits sharing same masterBenefitId
@@ -955,7 +1008,19 @@ export default function DashboardPage() {
                   setBenefits(prev => {
                     const updated = prev.map((b) =>
                       b.id === benefitId
-                        ? { ...b, ...undoData.benefit, isUsed: false, claimedAt: null }
+                        ? (() => {
+                            const updatedClaimedAt = undoData.benefit.claimedAt ?? b.claimedAt ?? null;
+                            const updated = {
+                              ...b,
+                              ...undoData.benefit,
+                              isUsed: false,
+                              claimedAt: updatedClaimedAt,
+                            };
+                            return {
+                              ...updated,
+                              value: getDisplayValue(updated),
+                            };
+                          })()
                         : b
                     );
                     // Recalculate usage for sibling benefits

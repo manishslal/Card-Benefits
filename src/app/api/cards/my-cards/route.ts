@@ -51,6 +51,9 @@ interface BenefitDisplay {
   periodStatus?: string | null;
   masterBenefitId?: string | null;
   claimingCadence?: string | null;
+  // Pro-rata fields (Sprint 22)
+  claimedAt?: string | null;
+  claimingAmount?: number | null;
 }
 
 interface CardDisplay {
@@ -225,11 +228,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
                 periodEnd: true,
                 periodStatus: true,
                 masterBenefitId: true,
-                // JOIN masterBenefit for claimingCadence
+                claimedAt: true,
+                // JOIN masterBenefit for claimingCadence + claimingAmount
                 masterBenefit: {
                   select: {
                     id: true,
                     claimingCadence: true,
+                    claimingAmount: true,
                   },
                 },
               },
@@ -307,6 +312,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         ...(benefit.masterBenefit?.claimingCadence != null && {
           claimingCadence: benefit.masterBenefit.claimingCadence,
         }),
+        // Pro-rata fields (Sprint 22)
+        ...(benefit.claimedAt != null && {
+          claimedAt: benefit.claimedAt.toISOString(),
+        }),
+        ...(benefit.masterBenefit?.claimingAmount != null && {
+          claimingAmount: benefit.masterBenefit.claimingAmount,
+        }),
       }));
 
       return {
@@ -341,6 +353,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         (sum, card) => sum + (card.actualAnnualFee ?? card.masterCard.defaultAnnualFee),
         0
       ),
+      // NOTE: totalBenefitValue is the full face value (not pro-rated).
+      // Pro-rata adjustments are applied client-side via getDisplayValue().
       totalBenefitValue: allUserCards.reduce(
         (sum, card) =>
           sum +

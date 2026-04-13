@@ -1580,7 +1580,7 @@ export default function DashboardPage() {
               <div ref={carouselSentinelRef} aria-hidden="true" style={{ height: '1px', marginBottom: '-1px', overflow: 'hidden' }} />
 
               {/* Sticky carousel container */}
-              <div className="sticky z-30 -mx-4 md:-mx-8 px-0 md:px-8 bg-[var(--color-bg)]" style={{ top: 'calc(var(--height-header, 52px) + env(safe-area-inset-top, 0px))' }}>
+              <div className="sticky z-30 -mx-4 md:-mx-8 px-0 md:px-8 bg-[var(--color-bg)] relative" data-sticky-carousel style={{ top: 'calc(var(--height-header, 52px) + env(safe-area-inset-top, 0px))' }}>
                 {/* Expanded carousel */}
                 <div
                   className="carousel-collapse-transition"

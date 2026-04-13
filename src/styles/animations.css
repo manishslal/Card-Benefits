@@ -317,6 +317,19 @@
   will-change: opacity;
 }
 
+/* ========================================
+   PROGRESS RING COMPLETION GLOW (Sprint 33B)
+   ======================================== */
+@keyframes ringGlow {
+  0%, 100% { filter: drop-shadow(0 0 3px var(--color-primary)); }
+  50% { filter: drop-shadow(0 0 6px var(--color-primary)); }
+}
+
+[data-ring-complete] {
+  filter: drop-shadow(0 0 3px var(--color-primary));
+  animation: ringGlow 2s ease-in-out 1;
+}
+
 /* ── Reduced Motion ── */
 @media (prefers-reduced-motion: reduce) {
   *,

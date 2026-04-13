@@ -266,6 +266,7 @@ function ProgressRing({
         viewBox={`0 0 ${size} ${size}`}
         className="progress-ring-svg"
         style={{ transform: 'rotate(-90deg)' }}
+        {...(pct >= 100 ? { 'data-ring-complete': '' } as Record<string, string> : {})}
       >
         {/* Background track */}
         <circle
@@ -641,10 +642,10 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                     opacity: isUsed ? 0.85 : 1,
                     animation: celebratingIds?.has(benefit.id)
                       ? undefined
-                      : `scaleIn 0.3s ease-out both`,
+                      : `slideUp 0.3s ease-out both`,
                     animationDelay: celebratingIds?.has(benefit.id)
                       ? undefined
-                      : `${Math.min(animIndex * 50, 500)}ms`,
+                      : `${Math.min(animIndex * 60, 500)}ms`,
                     borderColor: 'color-mix(in srgb, var(--color-border) 50%, transparent)',
                     borderLeft: `3px solid ${getLeftBorderColor()}`,
                   }}
@@ -662,7 +663,16 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                       <div className="flex items-start gap-2 flex-1 min-w-0">
                         <div
                           className="flex-shrink-0"
-                          style={{ color: 'var(--color-primary)' }}
+                          style={{
+                            color: 'var(--color-primary)',
+                            width: 28,
+                            height: 28,
+                            borderRadius: '50%',
+                            background: 'var(--color-bg-secondary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
                         >
                           {getBenefitTypeIcon(benefit.type, benefit.name)}
                         </div>

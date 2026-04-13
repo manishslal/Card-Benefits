@@ -227,6 +227,9 @@
   --carousel-dot-active-color: var(--color-primary);
   --carousel-arrow-opacity: 0.85;
 
+  /* Card carousel inset glow — active card "lit from above" edge (Sprint 33B) */
+  --carousel-inset-glow: inset 0 1px 0 0 rgba(255,255,255,0.15);
+
   /* ========================================
      CAROUSEL COLLAPSE TOKENS
      ======================================== */
@@ -334,6 +337,7 @@
     /* Card Carousel - Dark Mode Shadows */
     --carousel-active-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
     --carousel-inactive-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --carousel-inset-glow: inset 0 1px 0 0 rgba(255,255,255,0.08);
     --carousel-arrow-opacity: 0.85;
     --compact-chip-height: 36px;
     --height-header: 52px;
@@ -436,6 +440,7 @@
   /* Card Carousel - Dark Mode Shadows */
   --carousel-active-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
   --carousel-inactive-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --carousel-inset-glow: inset 0 1px 0 0 rgba(255,255,255,0.08);
   --carousel-arrow-opacity: 0.85;
   --compact-chip-height: 36px;
   --height-header: 52px;

@@ -322,7 +322,7 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
           {!isSingleCard && (
             <button
               onClick={goLeft}
-              className="hidden sm:flex absolute -left-1 z-10 items-center justify-center rounded-full border carousel-arrow transition-transform duration-200 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] hover:scale-105"
+              className="hidden sm:flex absolute -left-1 z-10 items-center justify-center rounded-full border carousel-arrow transition-transform duration-200 active:scale-95 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] hover:scale-105"
               style={{
                 width: 44,
                 height: 44,
@@ -420,6 +420,7 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
                   tabIndex={isActive ? 0 : -1}
                   onClick={() => scrollToIndex(index)}
                   className="flex-shrink-0 relative rounded-xl overflow-hidden cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2"
+                  {...(isActive ? { 'data-active-card': '' } as Record<string, string> : {})}
                   style={{
                     width: 'var(--carousel-card-width)',
                     height: 'var(--carousel-card-height)',
@@ -432,7 +433,7 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
                         : 'scale(var(--carousel-inactive-scale))',
                     willChange: 'transform, opacity',
                     boxShadow: isActive
-                      ? 'var(--carousel-active-shadow)'
+                      ? 'var(--carousel-active-shadow), var(--carousel-inset-glow)'
                       : 'var(--carousel-inactive-shadow)',
                     transitionProperty: 'transform, opacity, box-shadow',
                     transitionDuration: 'var(--carousel-transition-duration)',
@@ -599,7 +600,7 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
           {!isSingleCard && (
             <button
               onClick={goRight}
-              className="hidden sm:flex absolute -right-1 z-10 items-center justify-center rounded-full border carousel-arrow transition-transform duration-200 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] hover:scale-105"
+              className="hidden sm:flex absolute -right-1 z-10 items-center justify-center rounded-full border carousel-arrow transition-transform duration-200 active:scale-95 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] hover:scale-105"
               style={{
                 width: 44,
                 height: 44,
@@ -629,7 +630,7 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
                   onClick={() => scrollToIndex(index)}
                   aria-label={`Go to card ${index + 1}`}
                   tabIndex={-1}
-                  className="carousel-dot rounded-full transition-[width,background-color] duration-200 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+                  className="carousel-dot rounded-full transition-[width,background-color] duration-300 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
                   style={{
                     width:
                       index === activeIndex
@@ -645,6 +646,7 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
                     backgroundClip: 'content-box',
                     boxSizing: 'content-box',
                     cursor: 'pointer',
+                    transitionTimingFunction: 'var(--ease-bounce)',
                   }}
                 />
               ))

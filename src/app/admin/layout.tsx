@@ -50,6 +50,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     fetchUserRole();
   }, []);
 
+  const getPageTitle = (path: string): string => {
+    if (path === '/admin') return 'Dashboard';
+    if (path.startsWith('/admin/cards/')) return 'Card Detail';
+    if (path === '/admin/cards') return 'Cards';
+    if (path === '/admin/benefits') return 'Benefits';
+    if (path === '/admin/users') return 'Users';
+    if (path === '/admin/audit') return 'Audit Log';
+    return 'Admin';
+  };
+
   return (
     <div className="flex h-screen" style={{ backgroundColor: 'var(--color-bg)' }}>
       {/* Sidebar Navigation */}
@@ -128,9 +138,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             boxShadow: 'var(--header-shadow)',
           }}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between max-w-7xl mx-auto w-full">
             <h1 className="text-xl font-bold text-[var(--color-text)]">
-              Admin Dashboard
+              {getPageTitle(pathname)}
             </h1>
             {/* Mobile back button */}
             <Link
@@ -147,7 +157,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
         {/* Page Content */}
         <main className="flex-1 overflow-auto">
-          <div className="max-w-7xl mx-auto p-6">
+          <div className="max-w-7xl mx-auto px-4 py-6 md:px-8">
             {children}
           </div>
         </main>

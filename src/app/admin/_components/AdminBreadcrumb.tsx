@@ -29,7 +29,7 @@ export function AdminBreadcrumb({ currentPage, cardName }: AdminBreadcrumbProps)
   };
 
   return (
-    <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] mb-6">
+    <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
       <Link
         href="/admin"
         className="hover:text-[var(--color-primary)] flex items-center gap-1 transition-colors"

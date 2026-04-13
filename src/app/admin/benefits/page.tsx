@@ -24,7 +24,7 @@ import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import { AdminBreadcrumb } from '../_components/AdminBreadcrumb';
 import { CardFilterDropdown } from '../_components/CardFilterDropdown';
 import { EditBenefitModal } from '../_components/EditBenefitModal';
-import { Gift } from 'lucide-react';
+import { Gift, X } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import Skeleton from '@/shared/components/ui/Skeleton';
 import EmptyState from '@/shared/components/ui/EmptyState';
@@ -305,14 +305,28 @@ export default function BenefitsPage() {
       </div>
 
       {error && (
-        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-error-light)', color: 'var(--color-error)', borderColor: 'var(--color-error)' }}>
-          {error}
+        <div className="flex items-center p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-error-light)', color: 'var(--color-error)', borderColor: 'var(--color-error)' }}>
+          <span>{error}</span>
+          <button
+            onClick={() => setError(null)}
+            className="ml-auto p-1 rounded hover:bg-red-200/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+            aria-label="Dismiss error"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
       {success && (
-        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-success-light)', color: 'var(--color-success)', borderColor: 'var(--color-success)' }}>
-          {success}
+        <div className="flex items-center p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-success-light)', color: 'var(--color-success)', borderColor: 'var(--color-success)' }}>
+          <span>{success}</span>
+          <button
+            onClick={() => setSuccess(null)}
+            className="ml-auto p-1 rounded hover:bg-green-200/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+            aria-label="Dismiss success"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
@@ -329,7 +343,7 @@ export default function BenefitsPage() {
             disabled={isLoading}
           />
         </div>
-         <div className="flex-1">
+         <div className="flex-1" role="search">
           <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
             Search
           </label>
@@ -342,6 +356,7 @@ export default function BenefitsPage() {
               // debouncedSearch effect handles reset to page 1
             }}
             disabled={isLoading}
+            aria-label="Search benefits"
             className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] disabled:opacity-50"
             title="Type to search benefits by name, type, reset cadence, or card name. Search debounces to reduce API calls."
           />
@@ -381,8 +396,9 @@ export default function BenefitsPage() {
                     <th className="px-6 py-3 text-left text-sm font-semibold text-[var(--color-text)]">
                       <button
                         onClick={() => handleSort('name')}
-                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors"
+                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-1"
                         title="Click to sort by name"
+                        aria-sort={sortBy === 'name' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
                       >
                         Name
                         <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
@@ -394,8 +410,9 @@ export default function BenefitsPage() {
                     <th className="px-6 py-3 text-left text-sm font-semibold text-[var(--color-text)]">
                       <button
                         onClick={() => handleSort('card')}
-                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors"
+                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-1"
                         title="Click to sort by card"
+                        aria-sort={sortBy === 'card' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
                       >
                         Card
                         <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
@@ -406,8 +423,9 @@ export default function BenefitsPage() {
                     <th className="px-6 py-3 text-left text-sm font-semibold text-[var(--color-text)]">
                       <button
                         onClick={() => handleSort('type')}
-                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors"
+                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-1"
                         title="Click to sort by type"
+                        aria-sort={sortBy === 'type' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
                       >
                         Type
                         <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
@@ -418,8 +436,9 @@ export default function BenefitsPage() {
                     <th className="px-6 py-3 text-left text-sm font-semibold text-[var(--color-text)]">
                       <button
                         onClick={() => handleSort('stickerValue')}
-                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors"
+                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-1"
                         title="Click to sort by value"
+                        aria-sort={sortBy === 'stickerValue' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
                       >
                         Value
                         <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">

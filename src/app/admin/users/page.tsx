@@ -18,7 +18,7 @@ import useSWR from 'swr';
 import { apiClient } from '@/features/admin/lib/api-client';
 import { AdminBreadcrumb } from '../_components/AdminBreadcrumb';
 import { EditUserModal } from '../_components/EditUserModal';
-import { Users as UsersIcon } from 'lucide-react';
+import { Users as UsersIcon, X } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import Skeleton from '@/shared/components/ui/Skeleton';
 import EmptyState from '@/shared/components/ui/EmptyState';
@@ -191,18 +191,32 @@ export default function UsersPage() {
       </div>
 
       {error && (
-        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-error-light)', color: 'var(--color-error)', borderColor: 'var(--color-error)' }}>
-          {error}
+        <div className="flex items-center p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-error-light)', color: 'var(--color-error)', borderColor: 'var(--color-error)' }}>
+          <span>{error}</span>
+          <button
+            onClick={() => setError(null)}
+            className="ml-auto p-1 rounded hover:bg-red-200/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+            aria-label="Dismiss error"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
       {success && (
-        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-success-light)', color: 'var(--color-success)', borderColor: 'var(--color-success)' }}>
-          {success}
+        <div className="flex items-center p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-success-light)', color: 'var(--color-success)', borderColor: 'var(--color-success)' }}>
+          <span>{success}</span>
+          <button
+            onClick={() => setSuccess(null)}
+            className="ml-auto p-1 rounded hover:bg-green-200/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+            aria-label="Dismiss success"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
-      <div className="flex gap-4">
+      <div className="flex gap-4" role="search">
         <input
           type="text"
           placeholder="Search users..."
@@ -211,6 +225,7 @@ export default function UsersPage() {
             setSearch(e.target.value);
             setPage(1);
           }}
+          aria-label="Search users"
           className="flex-1 px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
         />
       </div>
@@ -247,8 +262,9 @@ export default function UsersPage() {
                     <th className="px-6 py-3 text-left text-sm font-semibold text-[var(--color-text)]">
                       <button
                         onClick={() => handleSort('name')}
-                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors"
+                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-1"
                         title="Click to sort by name"
+                        aria-sort={sortBy === 'name' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
                       >
                         Name
                         <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
@@ -259,8 +275,9 @@ export default function UsersPage() {
                     <th className="px-6 py-3 text-left text-sm font-semibold text-[var(--color-text)]">
                       <button
                         onClick={() => handleSort('email')}
-                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors"
+                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-1"
                         title="Click to sort by email"
+                        aria-sort={sortBy === 'email' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
                       >
                         Email
                         <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
@@ -271,8 +288,9 @@ export default function UsersPage() {
                     <th className="px-6 py-3 text-left text-sm font-semibold text-[var(--color-text)]">
                       <button
                         onClick={() => handleSort('role')}
-                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors"
+                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-1"
                         title="Click to sort by role"
+                        aria-sort={sortBy === 'role' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
                       >
                         Role
                         <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">

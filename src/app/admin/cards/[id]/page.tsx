@@ -18,7 +18,7 @@ import { formatCurrency } from '@/shared/lib/format-currency';
 import type { Card, Benefit } from '@/features/admin/types/admin';
 import { AdminBreadcrumb } from '../../_components/AdminBreadcrumb';
 import { EditBenefitModal } from '../../_components/EditBenefitModal';
-import { Plus, Gift } from 'lucide-react';
+import { Plus, Gift, X } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import Skeleton from '@/shared/components/ui/Skeleton';
 import EmptyState from '@/shared/components/ui/EmptyState';
@@ -319,14 +319,28 @@ export default function CardDetailPage() {
       </div>
 
       {error && (
-        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-error-light)', color: 'var(--color-error)', borderColor: 'var(--color-error)' }}>
-          {error}
+        <div className="flex items-center p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-error-light)', color: 'var(--color-error)', borderColor: 'var(--color-error)' }}>
+          <span>{error}</span>
+          <button
+            onClick={() => setError(null)}
+            className="ml-auto p-1 rounded hover:bg-red-200/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+            aria-label="Dismiss error"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
       {success && (
-        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-success-light)', color: 'var(--color-success)', borderColor: 'var(--color-success)' }}>
-          {success}
+        <div className="flex items-center p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-success-light)', color: 'var(--color-success)', borderColor: 'var(--color-success)' }}>
+          <span>{success}</span>
+          <button
+            onClick={() => setSuccess(null)}
+            className="ml-auto p-1 rounded hover:bg-green-200/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+            aria-label="Dismiss success"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 

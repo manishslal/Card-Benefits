@@ -62,8 +62,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <div className="flex h-screen" style={{ backgroundColor: 'var(--color-bg)' }}>
+      {/* Skip to main content link for keyboard/screen-reader users */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:rounded-lg focus:bg-[var(--color-primary)] focus:text-white focus:outline-none"
+      >
+        Skip to main content
+      </a>
+
       {/* Sidebar Navigation */}
-      <aside className="hidden md:flex md:w-64 flex-col border-r" style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }}>
+      <aside className="hidden md:flex md:w-64 flex-col border-r" role="complementary" aria-label="Admin navigation" style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }}>
         <div className="flex items-center gap-3 px-6 py-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
           <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white" style={{ backgroundColor: 'var(--color-primary)' }}>
             <CreditCard size={20} />
@@ -73,7 +81,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </h1>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-2">
+        <nav aria-label="Admin navigation" className="flex-1 px-4 py-6 space-y-2">
           {([
             { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
             { href: '/admin/cards', label: 'Cards', icon: CreditCard },
@@ -156,7 +164,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto">
+        <main id="main-content" className="flex-1 overflow-auto bg-[var(--color-bg)]">
           <div className="max-w-7xl mx-auto px-4 py-6 md:px-8">
             {children}
           </div>

@@ -144,16 +144,19 @@ export default function AuditPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <input
-          type="text"
-          placeholder="Search by resource..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          className="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-        />
+        <div role="search">
+          <input
+            type="text"
+            placeholder="Search by resource..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            aria-label="Search audit logs"
+            className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+          />
+        </div>
 
         <select
           value={actionFilter}
@@ -216,8 +219,9 @@ export default function AuditPage() {
               <div className="bg-[var(--color-bg-secondary)] px-6 py-3 grid grid-cols-3 gap-4 text-sm font-semibold text-[var(--color-text)]">
                 <button
                   onClick={() => handleSort('timestamp')}
-                  className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors text-left"
+                  className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors text-left rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-1"
                   title="Click to sort by timestamp"
+                  aria-sort={sortBy === 'timestamp' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
                 >
                   Timestamp
                   <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
@@ -226,8 +230,9 @@ export default function AuditPage() {
                 </button>
                 <button
                   onClick={() => handleSort('action')}
-                  className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors text-left"
+                  className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors text-left rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-1"
                   title="Click to sort by action"
+                  aria-sort={sortBy === 'action' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
                 >
                   Action
                   <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
@@ -236,8 +241,9 @@ export default function AuditPage() {
                 </button>
                 <button
                   onClick={() => handleSort('resource')}
-                  className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors text-left"
+                  className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors text-left rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-1"
                   title="Click to sort by resource"
+                  aria-sort={sortBy === 'resource' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
                 >
                   Resource
                   <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
@@ -250,7 +256,8 @@ export default function AuditPage() {
                 <div key={log.id || idx}>
                   <button
                     onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}
-                    className="w-full px-6 py-4 hover:bg-[var(--color-bg-secondary)] transition-colors text-left grid grid-cols-3 gap-4 items-center"
+                    className="w-full px-6 py-4 hover:bg-[var(--color-bg-secondary)] transition-colors text-left grid grid-cols-3 gap-4 items-center rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-1"
+                    aria-expanded={expandedId === log.id}
                   >
                     <div className="flex items-center gap-3">
                       <span className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0" style={{ backgroundColor: 'var(--color-primary-bg-subtle)', color: 'var(--color-primary)' }}>

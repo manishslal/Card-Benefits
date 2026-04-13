@@ -18,7 +18,7 @@ import Link from 'next/link';
 import useSWR from 'swr';
 import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import { AdminBreadcrumb } from '../_components/AdminBreadcrumb';
-import { Plus, CreditCard } from 'lucide-react';
+import { Plus, CreditCard, X } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import Skeleton from '@/shared/components/ui/Skeleton';
 import EmptyState from '@/shared/components/ui/EmptyState';
@@ -415,20 +415,34 @@ export default function CardsPage() {
 
       {/* Notifications */}
       {error && (
-        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-error-light)', color: 'var(--color-error)', borderColor: 'var(--color-error)' }}>
-          {error}
+        <div className="flex items-center p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-error-light)', color: 'var(--color-error)', borderColor: 'var(--color-error)' }}>
+          <span>{error}</span>
+          <button
+            onClick={() => setError(null)}
+            className="ml-auto p-1 rounded hover:bg-red-200/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+            aria-label="Dismiss error"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
       {success && (
-        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-success-light)', color: 'var(--color-success)', borderColor: 'var(--color-success)' }}>
-          {success}
+        <div className="flex items-center p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-success-light)', color: 'var(--color-success)', borderColor: 'var(--color-success)' }}>
+          <span>{success}</span>
+          <button
+            onClick={() => setSuccess(null)}
+            className="ml-auto p-1 rounded hover:bg-green-200/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+            aria-label="Dismiss success"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
       {/* Search and Filters */}
       <div className="space-y-4">
-        <div className="flex gap-4">
+        <div className="flex gap-4" role="search">
           <input
             type="text"
             placeholder="Search cards..."
@@ -437,6 +451,7 @@ export default function CardsPage() {
               setSearch(e.target.value);
               setPage(1);
             }}
+            aria-label="Search cards"
             className="flex-1 px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
           />
         </div>
@@ -512,8 +527,9 @@ export default function CardsPage() {
                     <th className="px-6 py-3 text-left text-sm font-semibold text-[var(--color-text)]">
                       <button
                         onClick={() => handleSort('issuer')}
-                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors"
+                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-1"
                         title="Click to sort by issuer"
+                        aria-sort={sortBy === 'issuer' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
                       >
                         Issuer
                         <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
@@ -524,8 +540,9 @@ export default function CardsPage() {
                     <th className="px-6 py-3 text-left text-sm font-semibold text-[var(--color-text)]">
                       <button
                         onClick={() => handleSort('cardName')}
-                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors"
+                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-1"
                         title="Click to sort by card name"
+                        aria-sort={sortBy === 'cardName' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
                       >
                         Card Name
                         <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">
@@ -536,8 +553,9 @@ export default function CardsPage() {
                     <th className="px-6 py-3 text-left text-sm font-semibold text-[var(--color-text)]">
                       <button
                         onClick={() => handleSort('defaultAnnualFee')}
-                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors"
+                        className="group flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-1"
                         title="Click to sort by annual fee"
+                        aria-sort={sortBy === 'defaultAnnualFee' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
                       >
                         Annual Fee
                         <span className="inline-block opacity-0 group-hover:opacity-100 transition-opacity">

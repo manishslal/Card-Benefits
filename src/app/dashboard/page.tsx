@@ -1499,9 +1499,7 @@ export default function DashboardPage() {
               >
                 Welcome, {userName}! 👋
               </h1>
-              <p className="text-sm mt-0.5 text-[var(--color-text-secondary)]">
-                You have {apiTotalCards ?? cards.length} card{(apiTotalCards ?? cards.length) !== 1 ? 's' : ''} and {apiTotalBenefits ?? totalBenefitsAcrossCards} total benefits
-              </p>
+
             </div>
 
             <Button
@@ -1522,18 +1520,21 @@ export default function DashboardPage() {
         <div className="max-w-6xl mx-auto px-4 md:px-8 py-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Card 1: Total Cards & Benefits */}
-            <div role="group" aria-label="Cards and Benefits summary" className="rounded-xl p-4 border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+            <div role="group" aria-label="Cards and Benefits summary" className="rounded-xl p-4 border border-[var(--color-border)] bg-[var(--color-bg-secondary)] flex flex-col items-center justify-center text-center">
               <div className="flex items-center gap-2 mb-2">
                 <CreditCard size={20} style={{ color: 'var(--color-text-secondary)' }} />
                 <span className="text-sm text-[var(--color-text-secondary)]">Cards &amp; Benefits</span>
               </div>
               <p className="text-xl font-bold text-[var(--color-text)]">
-                {apiTotalCards ?? cards.length} card{(apiTotalCards ?? cards.length) !== 1 ? 's' : ''} · {apiTotalBenefits ?? totalBenefitsAcrossCards} benefits
+                {apiTotalCards ?? cards.length} card{(apiTotalCards ?? cards.length) !== 1 ? 's' : ''}
+              </p>
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                {apiTotalBenefits ?? totalBenefitsAcrossCards} benefit{(apiTotalBenefits ?? totalBenefitsAcrossCards) !== 1 ? 's' : ''} tracked
               </p>
             </div>
 
             {/* Card 2: Net Savings */}
-            <div role="group" aria-label="Net savings summary" className="rounded-xl p-4 border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+            <div role="group" aria-label="Net savings summary" className="rounded-xl p-4 border border-[var(--color-border)] bg-[var(--color-bg-secondary)] flex flex-col items-center justify-center text-center">
               <div className="flex items-center gap-2 mb-2">
                 <Sparkles size={20} style={{ color: 'var(--color-text-secondary)' }} />
                 <span className="text-sm text-[var(--color-text-secondary)]">Net Savings</span>

@@ -92,6 +92,7 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
     const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
     const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isProgrammaticScrollRef = useRef(false);
+    const isInternalScrollRef = useRef(false);
 
     // ---- State ----
     const [activeIndex, setActiveIndex] = useState(() =>
@@ -137,6 +138,10 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
 
     // ---- Programmatic scroll when selectedCardId changes externally ----
     useEffect(() => {
+      if (isInternalScrollRef.current) {
+        isInternalScrollRef.current = false;
+        return;
+      }
       const idx = cards.findIndex((c) => c.id === selectedCardId);
       if (idx === -1) return;
       setActiveIndex(idx);
@@ -225,6 +230,7 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
 
       const observer = new IntersectionObserver(
         (entries) => {
+          if (isProgrammaticScrollRef.current) return;
           entries.forEach((entry) => {
             if (entry.intersectionRatio >= 0.75) {
               const id = entry.target.getAttribute('data-card-id');
@@ -248,6 +254,7 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
         const card = cards[index];
         if (!card) return;
         setActiveIndex(index);
+        isInternalScrollRef.current = true;
         onSelectCard(card.id);
         announceCard(index);
 
@@ -299,12 +306,6 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
       },
       [activeIndex, cards, scrollToIndex],
     );
-
-    // ---- Selected card info for label ----
-    const selectedCard = cards[activeIndex] ?? cards[0];
-    const selectedBenefitCount = selectedCard
-      ? benefitCounts?.[selectedCard.id]
-      : undefined;
 
     // ---- Render ----
     return (
@@ -573,31 +574,6 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
           )}
         </div>
 
-        {/* Card label below carousel */}
-        {selectedCard && (
-          <div className="text-center mt-2 px-4">
-            <p
-              className="font-semibold truncate"
-              style={{
-                fontSize: 'var(--text-body-md)',
-                color: 'var(--color-text)',
-              }}
-            >
-              {selectedCard.name}
-            </p>
-            {selectedBenefitCount != null && (
-              <p
-                className="text-sm mt-0.5"
-                style={{ color: 'var(--color-text-secondary)' }}
-              >
-                {selectedBenefitCount}{' '}
-                {'benefit' + (selectedBenefitCount !== 1 ? 's' : '')}{' '}
-                tracked
-              </p>
-            )}
-          </div>
-        )}
-
         {/* Dot indicators / card counter */}
         {!isSingleCard && (
           <div
@@ -625,6 +601,8 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
                     border: 'none',
                     padding: 0,
                     cursor: 'pointer',
+                    minWidth: 'auto',
+                    minHeight: 'auto',
                   }}
                 />
               ))

@@ -9,15 +9,15 @@
      COLORS - LIGHT MODE (Default)
      ======================================== */
 
-  /* Primary Blue - Darkened for WCAG AA contrast (4.5:1 minimum) */
-  --color-primary: #3356D0;
-  --color-primary-light: #e0ecff;
-  --color-primary-dark: #2844a0;
+  /* Primary Blue - Warm blue for WCAG AA contrast (4.5:1 minimum) */
+  --color-primary: #2563EB;
+  --color-primary-light: #EFF6FF;
+  --color-primary-dark: #1D4ED8;
 
-  /* Secondary / Accent Orange */
-  --color-secondary: #f59e0b;
-  --color-secondary-light: #fef3c7;
-  --color-secondary-dark: #7c2d12;
+  /* Secondary / Accent Orange — WCAG AA compliant (amber-700) */
+  --color-secondary: #B45309;
+  --color-secondary-light: #FFFBEB;
+  --color-secondary-dark: #92400E;
 
   /* Success Green - Darkened for 3:1 contrast requirement */
   --color-success: #0a7d57;
@@ -29,10 +29,10 @@
   --color-error-light: #fee2e2;
   --color-error-dark: #7f1d1d;
 
-  /* Warning Yellow - Changed to Amber for better contrast */
-  --color-warning: #d97706;
+  /* Warning — matches secondary for WCAG AA compliance */
+  --color-warning: #B45309;
   --color-warning-light: #fef08a;
-  --color-warning-dark: #7c2d12;
+  --color-warning-dark: #92400E;
 
   /* Info Cyan */
   --color-info: #0891b2;
@@ -60,7 +60,7 @@
 
   /* Semantic Colors */
   --color-bg: #ffffff;
-  --color-bg-secondary: #f9fafb;
+  --color-bg-secondary: #F8FAFC;
   --color-text: #111827;
   --color-text-secondary: #6b7280;
   --color-text-inverse: #ffffff;
@@ -93,6 +93,19 @@
   --font-weight-500: 500;
   --font-weight-600: 600;
   --font-weight-700: 700;
+
+  /* Letter Spacing */
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.02em;
+  --tracking-wider: 0.04em;
+
+  /* Line Heights */
+  --leading-tight: 1.15;
+  --leading-snug: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  --leading-compact: 1.35;
 
   /* ========================================
      SPACING (8px base unit with 1.5x scale)
@@ -228,19 +241,20 @@
   --color-danger-500: #ef4444;
   --color-danger-600: #dc2626;
   --color-alert-50: #fffbeb;
-  --color-alert-500: #f59e0b;
-  --color-alert-600: #d97706;
+  --color-alert-500: #B45309;
+  --color-alert-600: #92400E;
   --color-success-50: #f0fdf4;
   --color-success-500: #0a7d57;
   --color-success-600: #059669;
-  --color-primary-500: #3356D0;
-  --color-bg-tertiary: #f3f4f6;
-  --color-focus-ring: rgba(51, 86, 208, 0.15);
-  --color-primary-bg-muted: rgba(51, 86, 208, 0.12);
-  --color-primary-bg-subtle: rgba(51, 86, 208, 0.08);
+  --color-primary-500: #2563EB;
+  --color-bg-tertiary: #F1F5F9;
+  --color-focus-ring: rgba(37, 99, 235, 0.15);
+  --color-primary-bg-muted: rgba(37, 99, 235, 0.12);
+  --color-primary-bg-subtle: rgba(37, 99, 235, 0.08);
   --color-success-bg-muted: rgba(10, 125, 87, 0.1);
-  --color-warning-bg-muted: rgba(217, 119, 6, 0.1);
+  --color-warning-bg-muted: rgba(180, 83, 9, 0.1);
   --color-error-bg-muted: rgba(239, 68, 68, 0.1);
+  --color-status-used: #64748B;
 }
 
 /* ========================================
@@ -320,6 +334,7 @@
     --compact-bar-height: 52px;
     --carousel-collapse-duration: 300ms;
     --carousel-collapse-easing: cubic-bezier(0.4, 0, 0.2, 1);
+    --color-danger-50: #450a0a;
     --color-danger-500: #f87171;
     --color-danger-600: #fb7185;
     --color-alert-50: #451a03;
@@ -329,13 +344,14 @@
     --color-success-500: #10b981;
     --color-success-600: #34d399;
     --color-primary-500: #4F94FF;
-    --color-bg-tertiary: #1a2332;
+    --color-bg-tertiary: #253347;
     --color-focus-ring: rgba(100, 140, 230, 0.2);
     --color-primary-bg-muted: rgba(79, 148, 255, 0.15);
     --color-primary-bg-subtle: rgba(79, 148, 255, 0.1);
     --color-success-bg-muted: rgba(16, 185, 129, 0.15);
     --color-warning-bg-muted: rgba(251, 191, 36, 0.12);
     --color-error-bg-muted: rgba(248, 113, 113, 0.12);
+    --color-status-used: #94A3B8;
   }
 }
 
@@ -427,13 +443,14 @@
   --color-success-500: #10b981;
   --color-success-600: #34d399;
   --color-primary-500: #4F94FF;
-  --color-bg-tertiary: #1a2332;
+  --color-bg-tertiary: #253347;
   --color-focus-ring: rgba(100, 140, 230, 0.2);
   --color-primary-bg-muted: rgba(79, 148, 255, 0.15);
   --color-primary-bg-subtle: rgba(79, 148, 255, 0.1);
   --color-success-bg-muted: rgba(16, 185, 129, 0.15);
   --color-warning-bg-muted: rgba(251, 191, 36, 0.12);
   --color-error-bg-muted: rgba(248, 113, 113, 0.12);
+  --color-status-used: #94A3B8;
 }
 
 /* ========================================
@@ -480,13 +497,13 @@ body {
    ======================================== */
 @media (max-width: 767px) {
   :root {
-    --text-h1: 38.4px;
-    --text-h2: 33.6px;
-    --text-h3: 29.6px;
-    --text-h4: 26.4px;
-    --text-body-lg: 14.4px;
-    --text-body-md: 13px;
-    --text-body-sm: 11.5px;
+    --text-h1: 32px;
+    --text-h2: 28px;
+    --text-h3: 24px;
+    --text-h4: 21px;
+    --text-body-lg: 16px;
+    --text-body-md: 15px;
+    --text-body-sm: 13px;
   }
 }
 

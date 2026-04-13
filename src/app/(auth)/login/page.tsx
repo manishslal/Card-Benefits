@@ -145,7 +145,7 @@ export default function LoginPage() {
               className="mb-6 p-4 border-l-4 rounded"
               style={{
                 backgroundColor: 'var(--color-bg)',
-                borderColor: '#f59e0b',
+                borderColor: '#B45309',
               }}
             >
               <div className="flex gap-3">
@@ -153,7 +153,7 @@ export default function LoginPage() {
                   {/* Alert icon */}
                   <svg
                     className="h-5 w-5"
-                    style={{ color: '#f59e0b' }}
+                    style={{ color: '#B45309' }}
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >

@@ -104,16 +104,16 @@ module.exports = {
 
       // Typography sizes as utility classes
       fontSize: {
-        h1: ['var(--text-h1)', { lineHeight: '1.2', fontWeight: 'var(--font-weight-700)' }],
-        h2: ['var(--text-h2)', { lineHeight: '1.2', fontWeight: 'var(--font-weight-700)' }],
-        h3: ['var(--text-h3)', { lineHeight: '1.25', fontWeight: 'var(--font-weight-600)' }],
-        h4: ['var(--text-h4)', { lineHeight: '1.3', fontWeight: 'var(--font-weight-600)' }],
-        h5: ['var(--text-h5)', { lineHeight: '1.35', fontWeight: 'var(--font-weight-600)' }],
-        h6: ['var(--text-h6)', { lineHeight: '1.4', fontWeight: 'var(--font-weight-500)' }],
+        h1: ['var(--text-h1)', { lineHeight: 'var(--leading-tight)', fontWeight: 'var(--font-weight-700)' }],
+        h2: ['var(--text-h2)', { lineHeight: 'var(--leading-tight)', fontWeight: 'var(--font-weight-700)' }],
+        h3: ['var(--text-h3)', { lineHeight: 'var(--leading-snug)', fontWeight: 'var(--font-weight-600)' }],
+        h4: ['var(--text-h4)', { lineHeight: 'var(--leading-snug)', fontWeight: 'var(--font-weight-600)' }],
+        h5: ['var(--text-h5)', { lineHeight: 'var(--leading-compact)', fontWeight: 'var(--font-weight-600)' }],
+        h6: ['var(--text-h6)', { lineHeight: 'var(--leading-compact)', fontWeight: 'var(--font-weight-500)' }],
         'body-lg': ['var(--text-body-lg)', { lineHeight: '1.6' }],
         'body-md': ['var(--text-body-md)', { lineHeight: '1.6' }],
         'body-sm': ['var(--text-body-sm)', { lineHeight: '1.5' }],
-        caption: ['var(--text-caption)', { lineHeight: '1.4', letterSpacing: '0.005em' }],
+        caption: ['var(--text-caption)', { lineHeight: '1.4', letterSpacing: 'var(--tracking-wide)' }],
         label: ['var(--text-label)', { lineHeight: '1.4', fontWeight: 'var(--font-weight-600)', letterSpacing: '0.01em' }],
         'mono-md': ['var(--text-mono-md)', { lineHeight: '1.6' }],
         'mono-sm': ['var(--text-mono-sm)', { lineHeight: '1.5', letterSpacing: '0.01em' }],

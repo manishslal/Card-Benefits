@@ -52,12 +52,12 @@ export const statusColors: Record<BenefitStatus, StatusColorConfig> = {
   used: {
     icon: '✓',
     label: 'Used',
-    bgClass: 'bg-gray-100 dark:bg-gray-800',
-    textClass: 'text-gray-700 dark:text-gray-300',
-    badgeClass: 'bg-gray-100 dark:bg-gray-900/30',
-    progressClass: 'bg-gray-500 dark:bg-gray-400',
-    borderClass: 'border-gray-200 dark:border-gray-700',
-    style: { color: 'var(--color-text-secondary)' },
+    bgClass: 'bg-slate-100 dark:bg-slate-800',
+    textClass: 'text-slate-600 dark:text-slate-300',
+    badgeClass: 'bg-slate-100 dark:bg-slate-800/30',
+    progressClass: 'bg-slate-500 dark:bg-slate-400',
+    borderClass: 'border-slate-200 dark:border-slate-700',
+    style: { color: 'var(--color-status-used)' },
   },
   expired: {
     icon: '🔴',

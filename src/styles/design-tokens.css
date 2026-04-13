@@ -265,110 +265,6 @@
 }
 
 /* ========================================
-   DARK MODE - Color scheme preference
-   ======================================== */
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Primary - Brightened for dark mode */
-    --color-primary: #4F94FF;
-    --color-primary-light: #1e3a8a;
-    --color-primary-dark: #3d6fd4;
-
-    /* Secondary - Brightened */
-    --color-secondary: #fbbf24;
-    --color-secondary-light: #78350f;
-    --color-secondary-dark: #fed7aa;
-
-    /* Success - Brightened for dark mode */
-    --color-success: #10b981;
-    --color-success-light: #064e3b;
-    --color-success-dark: #6ee7b7;
-
-    /* Error - Brightened */
-    --color-error: #f87171;
-    --color-error-light: #7f1d1d;
-    --color-error-dark: #fecaca;
-
-    /* Warning - Brightened (Orange/Amber for better contrast) */
-    --color-warning: #fb923c;
-    --color-warning-light: #713f12;
-    --color-warning-dark: #fed7aa;
-
-    /* Info - Teal (Sprint 28D) */
-    --color-info: #2dd4bf;
-    --color-info-light: #134e4a;
-    --color-info-dark: #99f6e4;
-
-    /* Toast variant semantic colors - Dark Mode */
-    --color-success-bg: #064e3b;
-    --color-success-text: #6ee7b7;
-    --color-error-bg: #7f1d1d;
-    --color-error-text: #fca5a5;
-    --color-info-bg: #042f2e;
-    --color-info-text: #5eead4;
-
-    /* Neutral Grays - Dark Mode */
-    --color-gray-50: #0f172a;
-    --color-gray-100: #1e293b;
-    --color-gray-200: #334155;
-    --color-gray-300: #475569;
-    --color-gray-400: #64748b;
-    --color-gray-500: #a8b5c8;
-    --color-gray-600: #cbd5e1;
-    --color-gray-700: #d1d5db;
-    --color-gray-900: #f1f5f9;
-
-    /* Semantic Colors - Dark Mode */
-    --color-bg: #0f172a;
-    --color-bg-secondary: #1e293b;
-    --color-text: #f1f5f9;
-    --color-text-secondary: #a8b5c8;
-    --color-text-tertiary: #64748b;
-    --color-text-inverse: #ffffff;
-    --color-border: #334155;
-
-    /* Shadows - Dark Mode (higher opacity) */
-    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
-    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.4);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
-    --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.6);
-
-    /* Card Carousel - Dark Mode Shadows */
-    --carousel-active-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
-    --carousel-inactive-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    --carousel-inset-glow: inset 0 1px 0 0 rgba(255,255,255,0.08);
-    --carousel-arrow-opacity: 0.85;
-    --compact-chip-height: 36px;
-    --height-header: 52px;
-    --compact-bar-height: 65px;
-    --carousel-collapse-duration: 300ms;
-    --carousel-collapse-easing: cubic-bezier(0.4, 0, 0.2, 1);
-    --color-danger-50: #450a0a;
-    --color-danger-500: #f87171;
-    --color-danger-600: #fb7185;
-    --color-alert-50: #451a03;
-    --color-alert-500: #fbbf24;
-    --color-alert-600: #fcd34d;
-    --color-success-50: #052e16;
-    --color-success-500: #10b981;
-    --color-success-600: #34d399;
-    --color-primary-500: #4F94FF;
-    --color-bg-tertiary: #253347;
-    --color-focus-ring: rgba(100, 140, 230, 0.2);
-    --color-primary-bg-muted: rgba(79, 148, 255, 0.15);
-    --color-primary-bg-subtle: rgba(79, 148, 255, 0.1);
-    --color-success-bg-muted: rgba(16, 185, 129, 0.15);
-    --color-warning-bg-muted: rgba(251, 191, 36, 0.12);
-    --color-error-bg-muted: rgba(248, 113, 113, 0.12);
-    --color-status-used: #94A3B8;
-    --header-shadow: 0 1px 0 var(--color-border), 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-benefit-card: 0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 8px rgba(0, 0, 0, 0.15);
-    --shadow-benefit-card-hover: 0 2px 4px rgba(0, 0, 0, 0.3), 0 8px 16px rgba(0, 0, 0, 0.25);
-  }
-}
-
-/* ========================================
    DARK MODE - Class-based toggle (for manual dark mode switch)
    ======================================== */
 .dark {
@@ -551,19 +447,6 @@ a:focus,
   outline: 3px solid var(--color-primary);
   outline-offset: 2px;
   border-radius: 4px;
-}
-
-/* Dark mode - brighter focus outline */
-@media (prefers-color-scheme: dark) {
-  .focus-ring:focus,
-  button:focus,
-  input:focus,
-  a:focus,
-  [role="button"]:focus,
-  [role="link"]:focus,
-  [role="menuitem"]:focus {
-    outline: 3px solid var(--color-primary);
-  }
 }
 
 /* Dark mode - brighter focus outline (class-based toggle) */

@@ -9,8 +9,7 @@
  * - Border radius tokens
  * - Transition durations and easing
  * 
- * Dark mode is supported via @media (prefers-color-scheme: dark)
- * and manual class-based override via .dark class on root element
+ * Dark mode is supported via .dark class on the root element
  */
 
 :root {
@@ -193,74 +192,6 @@
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-/* ============================================================
-   DARK MODE - CSS Variables Override
-   ============================================================ */
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Brand Colors - Dark Mode */
-    --color-primary: #3b82f6;
-    --color-primary-light: #60a5fa;
-    --color-primary-dark: #2563eb;
-    --color-primary-lighter: #1e3a8a;
-    
-    --color-secondary: #a78bfa;
-    --color-secondary-light: #c4b5fd;
-    --color-secondary-lighter: #5b21b6;
-    
-    /* Semantic Colors - Dark Mode */
-    --color-success: #10b981;
-    --color-success-light: #064e3b;
-    
-    --color-error: #f87171;
-    --color-error-light: #7f1d1d;
-    
-    --color-warning: #fbbf24;
-    --color-warning-light: #78350f;
-    
-    --color-info: #38bdf8;
-    --color-info-light: #0c4a6e;
-    
-    /* Neutral Colors - Dark Mode Gray Scale */
-    --color-gray-50: #f9fafb;
-    --color-gray-100: #111827;
-    --color-gray-200: #1f2937;
-    --color-gray-300: #374151;
-    --color-gray-400: #4b5563;
-    --color-gray-500: #6b7280;
-    --color-gray-600: #9ca3af;
-    --color-gray-700: #d1d5db;
-    --color-gray-800: #e5e7eb;
-    --color-gray-900: #f9fafb;
-    
-    /* Background Colors - Dark Mode */
-    --color-bg: #111827;
-    --color-bg-secondary: #1f2937;
-    --color-bg-tertiary: #374151;
-    --color-bg-hover: #4b5563;
-    
-    /* Text Colors - Dark Mode */
-    --color-text: #f9fafb;
-    --color-text-secondary: #d1d5db;
-    --color-text-tertiary: #9ca3af;
-    --color-text-disabled: #6b7280;
-    
-    /* Border Colors - Dark Mode */
-    --color-border: #374151;
-    --color-border-light: #4b5563;
-    --color-border-dark: #1f2937;
-    
-    /* Interactive States - Dark Mode */
-    --color-interactive-bg-hover: #374151;
-    --color-interactive-bg-active: #4b5563;
-    --color-interactive-bg-disabled: #1f2937;
-    
-    /* Focus Ring - Dark Mode */
-    --focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 0 0 1px rgb(59, 130, 246);
-  }
 }
 
 /* ============================================================

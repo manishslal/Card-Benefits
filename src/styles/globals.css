@@ -620,11 +620,7 @@ form:focus-within,
   background: linear-gradient(to bottom, rgba(0,0,0,0.06), transparent);
   pointer-events: none;
 }
-@media (prefers-color-scheme: dark) {
-  [data-sticky-carousel]::after {
-    background: linear-gradient(to bottom, rgba(0,0,0,0.15), transparent);
-  }
-}
+/* Dark mode override for sticky carousel shadow (class-based) */
 .dark [data-sticky-carousel]::after {
   background: linear-gradient(to bottom, rgba(0,0,0,0.15), transparent);
 }

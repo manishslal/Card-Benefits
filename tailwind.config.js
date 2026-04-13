@@ -3,7 +3,7 @@ module.exports = {
   content: [
     './src/**/*.{js,ts,jsx,tsx,mdx}',
   ],
-  darkMode: ['class', 'media'], // Support both class and system preference
+  darkMode: 'class', // Class-based dark mode — .dark on <html> is the single source of truth
   theme: {
     extend: {
       // Custom colors using CSS variables from design-tokens.css

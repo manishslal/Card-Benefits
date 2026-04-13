@@ -301,23 +301,8 @@
   }
 }
 
-@keyframes toastSlideOut {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(100%);
-  }
-}
-
 .animate-toast-in {
   animation: toastSlideIn 0.3s var(--ease-out) both;
-}
-
-.animate-toast-out {
-  animation: toastSlideOut 0.2s var(--ease-in, ease-in) both;
 }
 
 /* ── Reduced Motion ── */

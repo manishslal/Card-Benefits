@@ -511,9 +511,6 @@ form:focus-within,
 /* ========================================
    BUTTON PRESS FEEDBACK (Sprint 28D)
    ======================================== */
-.press-feedback {
-  transition: transform 0.1s ease;
-}
 .press-feedback:active {
   transform: scale(0.95);
 }

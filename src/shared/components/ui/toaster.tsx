@@ -102,7 +102,7 @@ function variantBg(variant: Toast['variant']): string {
   switch (variant) {
     case 'success': return 'var(--color-success-bg, #ecfdf5)';
     case 'error':   return 'var(--color-error-bg, #fef2f2)';
-    case 'info':    return 'var(--color-info-bg, #eff6ff)';
+    case 'info':    return 'var(--color-info-bg, #f0fdfa)';
     default:        return 'var(--color-bg-secondary, #f9fafb)';
   }
 }
@@ -111,7 +111,7 @@ function variantBorder(variant: Toast['variant']): string {
   switch (variant) {
     case 'success': return 'var(--color-success, #22c55e)';
     case 'error':   return 'var(--color-error, #ef4444)';
-    case 'info':    return 'var(--color-info, #3b82f6)';
+    case 'info':    return 'var(--color-info, #0d9488)';
     default:        return 'var(--color-border, #e5e7eb)';
   }
 }
@@ -120,7 +120,7 @@ function variantText(variant: Toast['variant']): string {
   switch (variant) {
     case 'success': return 'var(--color-success-text, #166534)';
     case 'error':   return 'var(--color-error-text, #991b1b)';
-    case 'info':    return 'var(--color-info-text, #1e40af)';
+    case 'info':    return 'var(--color-info-text, #115e59)';
     default:        return 'var(--color-text, #111827)';
   }
 }

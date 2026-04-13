@@ -1883,14 +1883,19 @@ export default function DashboardPage() {
       />
 
       {/* Sprint 28D: Mobile FAB — Add Benefit */}
-      <button
-        onClick={() => setIsAddBenefitOpen(true)}
-        className="fixed bottom-6 right-6 z-30 md:hidden w-14 h-14 rounded-full shadow-lg flex items-center justify-center press-feedback safe-area-bottom"
-        style={{ background: 'var(--color-primary)' }}
-        aria-label="Add benefit"
-      >
-        <Plus className="w-6 h-6 text-white" />
-      </button>
+      {cards.length > 0 && (
+        <button
+          onClick={() => setIsAddBenefitOpen(true)}
+          className="fixed right-6 z-30 md:hidden w-14 h-14 rounded-full shadow-lg flex items-center justify-center press-feedback"
+          style={{
+            background: 'var(--color-primary)',
+            bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
+          }}
+          aria-label="Add benefit"
+        >
+          <Plus className="w-6 h-6 text-white" />
+        </button>
+      )}
     </div>
   );
 }

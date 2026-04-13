@@ -37,7 +37,7 @@
   /* Info Teal (Sprint 28D: shifted from cyan to warmer teal) */
   --color-info: #0d9488;
   --color-info-light: #ccfbf1;
-  --color-info-dark: #1e40af;
+  --color-info-dark: #0f766e;
 
   /* Toast variant semantic colors */
   --color-success-bg: #ecfdf5;
@@ -290,7 +290,7 @@
     /* Info - Teal (Sprint 28D) */
     --color-info: #2dd4bf;
     --color-info-light: #134e4a;
-    --color-info-dark: #93c5fd;
+    --color-info-dark: #99f6e4;
 
     /* Toast variant semantic colors - Dark Mode */
     --color-success-bg: #064e3b;
@@ -387,7 +387,7 @@
   /* Info - Teal (Sprint 28D) */
   --color-info: #2dd4bf;
   --color-info-light: #134e4a;
-  --color-info-dark: #93c5fd;
+  --color-info-dark: #99f6e4;
 
   /* Toast variant semantic colors - Dark Mode */
   --color-success-bg: #064e3b;

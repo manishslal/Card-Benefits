@@ -838,7 +838,7 @@ export default function DashboardPage() {
 
           setCards(transformedCards);
           if (transformedCards.length > 0) {
-            const newCard = transformedCards[transformedCards.length - 1];
+            const newCard = transformedCards[0];
             setSelectedCardId(newCard.id);
             setBenefits(() => newCard.benefits || []);
           }
@@ -1046,6 +1046,9 @@ export default function DashboardPage() {
                     ...b,
                     isUsed: data.benefit.isUsed,
                     claimedAt: updatedClaimedAt,
+                    claimingAmount: data.benefit.claimingAmount ?? b.claimingAmount,
+                    claimingCadence: data.benefit.claimingCadence ?? b.claimingCadence,
+                    stickerValue: data.benefit.stickerValue ?? b.stickerValue,
                   };
                   return {
                     ...updated,

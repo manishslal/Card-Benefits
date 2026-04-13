@@ -449,7 +449,7 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
                     aria-hidden="true"
                     style={{
                       position: 'absolute',
-                      top: '20%',
+                      top: '38%',
                       left: '8%',
                       width: 36,
                       height: 26,

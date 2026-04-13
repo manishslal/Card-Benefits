@@ -24,6 +24,9 @@ interface ToggleUsedResponse {
     timesUsed: number;
     updatedAt: string;
     claimedAt: string | null;
+    claimingAmount: number | null;
+    claimingCadence: string | null;
+    stickerValue: number | null;
   };
 }
 
@@ -137,6 +140,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
         timesUsed: isUsed && !benefit.isUsed ? benefit.timesUsed + 1 : benefit.timesUsed,
         claimedAt: isUsed ? new Date() : benefit.claimedAt,
       },
+      include: { masterBenefit: true },
     });
 
     return NextResponse.json(
@@ -148,6 +152,9 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
           timesUsed: updatedBenefit.timesUsed,
           updatedAt: updatedBenefit.updatedAt.toISOString(),
           claimedAt: updatedBenefit.claimedAt?.toISOString() ?? null,
+          claimingAmount: updatedBenefit.masterBenefit?.claimingAmount ?? null,
+          claimingCadence: updatedBenefit.masterBenefit?.claimingCadence ?? null,
+          stickerValue: updatedBenefit.stickerValue,
         },
       } as ToggleUsedResponse,
       { status: 200 }

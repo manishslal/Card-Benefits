@@ -63,6 +63,7 @@
   --color-bg-secondary: #F8FAFC;
   --color-text: #111827;
   --color-text-secondary: #6b7280;
+  --color-text-tertiary: #9ca3af;
   --color-text-inverse: #ffffff;
   --color-border: #e5e7eb;
 
@@ -316,6 +317,7 @@
     --color-bg-secondary: #1e293b;
     --color-text: #f1f5f9;
     --color-text-secondary: #a8b5c8;
+    --color-text-tertiary: #64748b;
     --color-text-inverse: #ffffff;
     --color-border: #334155;
 
@@ -413,6 +415,7 @@
   --color-bg-secondary: #1e293b;
   --color-text: #f1f5f9;
   --color-text-secondary: #a8b5c8;
+  --color-text-tertiary: #64748b;
   --color-text-inverse: #ffffff;
   --color-border: #334155;
 

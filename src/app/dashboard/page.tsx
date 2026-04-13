@@ -1547,7 +1547,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 px-4 md:px-8 pt-2 pb-6">
+      <main id="main-content" className="flex-1 px-4 md:px-8 pt-2 pb-6">
         <div className="max-w-6xl mx-auto">
           {/* Empty State: No Cards — DASH-026 Rich Onboarding */}
           {cards.length === 0 ? (
@@ -1745,7 +1745,7 @@ export default function DashboardPage() {
                 )}
 
                 {/* Empty State for Current Filtered Results */}
-                {viewMode === 'current' && deduplicatedBenefits.length === 0 && benefits.length > 0 && (
+                {viewMode === 'current' && displayBenefits.length === 0 && benefits.length > 0 && (
                   <div
                     className="text-center py-12 rounded-lg bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)]"
                   >
@@ -1755,10 +1755,13 @@ export default function DashboardPage() {
                     <button
                       onClick={() => {
                         setSelectedPeriodId('all-time');
+                        setSearchQuery('');
+                        setActiveSort('default');
+                        setSmartView('all');
                       }}
                       className="text-sm underline mt-2 transition-colors text-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
                     >
-                      Clear filters
+                      Clear all filters
                     </button>
                   </div>
                 )}

@@ -624,7 +624,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit?.(benefit.id); } }}
                   className={`rounded-lg border shadow-sm overflow-hidden transition-all duration-200 bg-[var(--color-bg)] hover:border-[var(--color-primary)] hover:shadow-lg hover:-translate-y-1 flex flex-col cursor-pointer${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
                   style={{
-                    opacity: isUsed ? 0.7 : 1,
+                    opacity: isUsed ? 0.85 : 1,
                     animation: celebratingIds?.has(benefit.id)
                       ? undefined
                       : `scaleIn 0.3s ease-out both`,
@@ -747,7 +747,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                             <button
                               type="button"
                               disabled
-                              className={`w-9 h-9 rounded-full flex items-center justify-center text-[var(--color-text-tertiary)] opacity-50 cursor-not-allowed${celebratingIds?.has(benefit.id) ? ' animate-toggle-check' : ''}`}
+                              className={`w-11 h-11 rounded-full flex items-center justify-center text-[var(--color-text-tertiary)] opacity-50 cursor-not-allowed${celebratingIds?.has(benefit.id) ? ' animate-toggle-check' : ''}`}
                               aria-label={`${benefit.name} has been used${
                                 periodMonth ? ` for ${periodMonth}` : ''
                               }`}
@@ -761,7 +761,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                                 e.stopPropagation();
                                 onMarkUsed(benefit.id);
                               }}
-                              className="w-9 h-9 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors press-feedback"
+                              className="w-11 h-11 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors press-feedback"
                               aria-label={`Mark ${benefit.name} as used${
                                 periodMonth ? ` for ${periodMonth}` : ''
                               }`}
@@ -777,7 +777,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                               e.stopPropagation();
                               onEdit(benefit.id);
                             }}
-                            className="w-9 h-9 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors press-feedback"
+                            className="w-11 h-11 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors press-feedback"
                             aria-label={`Edit ${benefit.name}`}
                           >
                             <Pencil size={14} aria-hidden="true" />

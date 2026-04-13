@@ -2,7 +2,6 @@
 
 import React from 'react';
 import Link from 'next/link';
-import Button from '@/shared/components/ui/button';
 import { CreditCard, Settings, ArrowLeft } from 'lucide-react';
 
 /**
@@ -55,18 +54,28 @@ export function AppHeader({
           {/* Right: Settings or Back button + optional slot */}
           <div className="flex items-center gap-3">
             {backHref ? (
-              <Link href={backHref}>
-                <Button variant="outline" size="sm">
-                  <ArrowLeft size={16} className="mr-2" />
-                  {backLabel}
-                </Button>
+              <Link
+                href={backHref}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium border transition-colors hover:bg-[var(--color-bg-secondary)]"
+                style={{
+                  color: 'var(--color-text)',
+                  borderColor: 'var(--color-border)',
+                }}
+              >
+                <ArrowLeft size={16} />
+                {backLabel}
               </Link>
             ) : (
-              <Link href="/settings">
-                <Button variant="outline" size="sm">
-                  <Settings size={16} className="mr-2" />
-                  Settings
-                </Button>
+              <Link
+                href="/settings"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium border transition-colors hover:bg-[var(--color-bg-secondary)]"
+                style={{
+                  color: 'var(--color-text)',
+                  borderColor: 'var(--color-border)',
+                }}
+              >
+                <Settings size={16} />
+                Settings
               </Link>
             )}
             {rightSlot}

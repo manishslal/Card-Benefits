@@ -149,9 +149,10 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
           inline: 'center',
           block: 'nearest',
         });
-        setTimeout(() => {
+        const timerId = setTimeout(() => {
           isProgrammaticScrollRef.current = false;
         }, 500);
+        return () => clearTimeout(timerId);
       }
     }, [selectedCardId, cards, prefersReducedMotion]);
 

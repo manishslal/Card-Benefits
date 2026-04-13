@@ -76,8 +76,10 @@ function validatePatchCardRequest(body: PatchCardRequest): {
   }
 
   if (body.actualAnnualFee !== undefined && body.actualAnnualFee !== null) {
-    if (typeof body.actualAnnualFee !== 'number' || body.actualAnnualFee < 0) {
+    if (typeof body.actualAnnualFee !== 'number' || !Number.isFinite(body.actualAnnualFee) || body.actualAnnualFee < 0) {
       errors.actualAnnualFee = 'Annual fee must be a non-negative number';
+    } else if (body.actualAnnualFee > 1_000_000) {
+      errors.actualAnnualFee = 'Annual fee cannot exceed $10,000';
     }
   }
 

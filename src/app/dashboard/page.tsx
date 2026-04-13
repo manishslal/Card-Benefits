@@ -8,9 +8,11 @@ import { AppHeader } from '@/shared/components/layout';
 import { CardCarousel, DashboardSummary } from '@/shared/components/features';
 import { BenefitsGrid, AddBenefitModal, EditBenefitModal, DeleteBenefitConfirmationDialog } from '@/features/benefits';
 import { AddCardModal } from '@/features/cards/components/modals/AddCardModal';
+import { CardEditModal } from '@/features/cards/components/MyCardsSection/CardEditModal';
+import type { Card as EditableCard } from '@/features/cards/components/MyCardsSection/types';
 import { deduplicateBenefits } from '@/lib/benefit-utils';
 import { calculateProRata, isProRataEligible } from '@/lib/benefit-engine/pro-rata';
-import { Plus, CreditCard, AlertCircle, Sparkles } from 'lucide-react';
+import { Plus, CreditCard, AlertCircle, Sparkles, Pencil } from 'lucide-react';
 import { SkeletonCard } from '@/shared/components/loaders';
 import { type PeriodOption } from './new/components/PeriodSelector';
 
@@ -53,6 +55,9 @@ interface CardData {
   lastFour?: string;
   issuer: string;
   customName?: string | null;
+  actualAnnualFee?: number | null;
+  renewalDate?: string | null;
+  createdAt?: string;
   benefits?: BenefitData[];
 }
 
@@ -90,6 +95,9 @@ interface ApiCard {
   customName?: string | null;
   type?: string;
   lastFour?: string;
+  actualAnnualFee?: number | null;
+  renewalDate?: string;
+  createdAt?: string;
   benefits?: ApiBenefit[];
 }
 
@@ -325,6 +333,8 @@ export default function DashboardPage() {
   const [isEditBenefitOpen, setIsEditBenefitOpen] = useState(false);
   const [isDeleteBenefitOpen, setIsDeleteBenefitOpen] = useState(false);
   const [selectedBenefit, setSelectedBenefit] = useState<BenefitData | null>(null);
+  // Sprint 25: Card edit modal on dashboard
+  const [editingCard, setEditingCard] = useState<string | null>(null);
 
   // ============================================================
   // State Management - Filtering
@@ -355,6 +365,9 @@ export default function DashboardPage() {
       lastFour: apiCard.lastFour || undefined,
       issuer: apiCard.issuer,
       customName: apiCard.customName,
+      actualAnnualFee: apiCard.actualAnnualFee ?? null,
+      renewalDate: apiCard.renewalDate ?? null,
+      createdAt: apiCard.createdAt,
       benefits: (apiCard.benefits || []).map((b: ApiBenefit) => ({
         id: b.id,
         name: b.name,
@@ -812,9 +825,66 @@ export default function DashboardPage() {
   };
 
   // ============================================================
-  // Handler: Edit Benefit - Opens edit modal with selected benefit
-  // Following the pattern from card detail page
+  // Handler: Edit Card — refresh cards after CardEditModal save
+  // Sprint 25: Defense-in-depth — keeps dashboard in sync
   // ============================================================
+
+  const toEditableCard = (cd: CardData): EditableCard => ({
+    id: cd.id,
+    userId: '',
+    name: cd.name,
+    lastFourDigits: cd.lastFour || '****',
+    cardNetwork: (cd.issuer === 'Amex' ? 'Amex'
+      : cd.issuer === 'Mastercard' ? 'Mastercard'
+      : cd.issuer === 'Discover' ? 'Discover'
+      : 'Visa') as EditableCard['cardNetwork'],
+    cardType: 'Credit',
+    isActive: true,
+    createdAt: cd.createdAt || new Date().toISOString(),
+    actualAnnualFee: cd.actualAnnualFee ?? null,
+    renewalDate: cd.renewalDate ?? null,
+  });
+
+  const editableCardForModal = useMemo(() => {
+    if (!editingCard) return null;
+    const found = cards.find((c) => c.id === editingCard);
+    return found ? toEditableCard(found) : null;
+  }, [editingCard, cards]);
+
+  const handleCardEdited = async () => {
+    setEditingCard(null);
+    try {
+      const response = await fetch('/api/cards/my-cards', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.cards) {
+          const apiResponse = data as ApiCardsResponse;
+          const transformedCards = transformApiCards(apiResponse);
+
+          if (apiResponse.summary) {
+            setApiTotalCards(apiResponse.summary.totalCards);
+            setApiTotalBenefits(apiResponse.summary.totalBenefits);
+            setApiTotalFees(apiResponse.summary.totalAnnualFees ?? 0);
+          }
+
+          setCards(transformedCards);
+          // Re-sync benefits for the currently-selected card
+          const current = transformedCards.find((c) => c.id === selectedCardId);
+          if (current) {
+            setBenefits(() => current.benefits || []);
+          }
+        }
+      }
+    } catch (err) {
+      toast({ title: 'Card saved, but refresh failed. Reload to see changes.', variant: 'error' });
+      console.warn('Card saved but failed to refresh dashboard data:', err);
+    }
+  };
 
   const handleEditBenefitClick = (benefitId: string) => {
     const benefit = benefits.find((b) => b.id === benefitId);
@@ -1536,6 +1606,22 @@ export default function DashboardPage() {
                   onSelectCard={setSelectedCardId}
                   benefitCounts={benefitCounts}
                 />
+                {/* Sprint 25: Edit card from dashboard */}
+                {selectedCardId && (
+                  <div className="flex justify-end mt-1 mr-1">
+                    <button
+                      type="button"
+                      onClick={() => setEditingCard(selectedCardId)}
+                      className="inline-flex items-center gap-1 text-xs font-medium rounded-md px-2 py-1 transition-colors
+                        text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-secondary)]
+                        focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                      aria-label="Edit card settings"
+                    >
+                      <Pencil size={14} aria-hidden="true" />
+                      Edit
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* DISC-010: Filter controls landmark */}
@@ -1769,6 +1855,14 @@ export default function DashboardPage() {
           setSelectedBenefit(null);
         }}
         onConfirm={handleBenefitDeleted}
+      />
+
+      {/* Sprint 25: Card Edit Modal on Dashboard */}
+      <CardEditModal
+        card={editableCardForModal}
+        isOpen={!!editingCard}
+        onClose={() => setEditingCard(null)}
+        onCardUpdated={handleCardEdited}
       />
     </div>
   );

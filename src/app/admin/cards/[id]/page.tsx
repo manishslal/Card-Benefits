@@ -11,10 +11,12 @@
 
 import { useParams } from 'next/navigation';
 import { useState, useCallback, useEffect } from 'react';
+import Link from 'next/link';
 import useSWR from 'swr';
 import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import { formatCurrency } from '@/shared/lib/format-currency';
 import type { Card, Benefit } from '@/features/admin/types/admin';
+import { AdminBreadcrumb } from '../../_components/AdminBreadcrumb';
 import { EditBenefitModal } from '../../_components/EditBenefitModal';
 import { Loader2 } from 'lucide-react';
 
@@ -290,17 +292,20 @@ export default function CardDetailPage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb Navigation */}
+      <AdminBreadcrumb currentPage="card-detail" cardName={card.cardName} />
+
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold text-[var(--color-text)]">{card.cardName}</h1>
           <p className="text-[var(--color-text-secondary)] mt-2">{card.issuer}</p>
         </div>
-        <a
+        <Link
           href="/admin/cards"
           className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]"
         >
           ← Back
-        </a>
+        </Link>
       </div>
 
       {error && (
@@ -335,7 +340,7 @@ export default function CardDetailPage() {
             {[...Array(3)].map((_, idx) => (
               <div
                 key={idx}
-                className="h-16 bg-[var(--color-bg-secondary)] rounded-lg animate-pulse"
+                className="h-16 bg-[var(--color-bg-secondary)] rounded-lg shimmer"
               />
             ))}
           </div>

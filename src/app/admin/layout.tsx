@@ -140,7 +140,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
         {/* Page Content */}
         <main className="flex-1 overflow-auto">
-          <div className="p-6">
+          <div className="max-w-7xl mx-auto p-6">
             {children}
           </div>
         </main>

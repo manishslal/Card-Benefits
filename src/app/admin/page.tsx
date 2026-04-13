@@ -6,6 +6,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { apiClient } from '@/features/admin/lib/api-client';
 import type { AuditLog } from '@/features/admin/types/admin';
 
@@ -115,7 +116,7 @@ export default function AdminDashboard() {
 
       {/* Error Message */}
       {error && (
-        <div className="px-4 py-3 rounded-lg border" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'var(--color-error)' }}>
+        <div className="px-4 py-3 rounded-lg border" style={{ backgroundColor: 'var(--color-error-light)', borderColor: 'var(--color-error)' }}>
           <p style={{ color: 'var(--color-error)' }}>{error}</p>
         </div>
       )}
@@ -150,8 +151,8 @@ export default function AdminDashboard() {
         ].map((stat, idx) => (
           <div
             key={idx}
-            className={`rounded-lg border p-6 ${
-              stat.loading ? 'animate-pulse' : ''
+            className={`rounded-xl border p-6 shadow-sm hover:shadow-md transition-shadow ${
+              stat.loading ? 'shimmer' : ''
             }`}
             style={{
               backgroundColor: 'var(--color-bg)',
@@ -185,17 +186,17 @@ export default function AdminDashboard() {
             { label: 'User Roles', href: '/admin/users' },
             { label: 'View Audit Log', href: '/admin/audit' },
           ].map((action, idx) => (
-            <a
+            <Link
               key={idx}
               href={action.href}
               className="flex items-center justify-center px-4 py-3 rounded-lg font-medium transition-colors hover:opacity-80"
               style={{
-                backgroundColor: 'rgba(51, 86, 208, 0.1)',
+                backgroundColor: 'var(--color-primary-bg-subtle)',
                 color: 'var(--color-primary)',
               }}
             >
               {action.label}
-            </a>
+            </Link>
           ))}
         </div>
       </div>
@@ -211,7 +212,7 @@ export default function AdminDashboard() {
             {[...Array(5)].map((_, idx) => (
               <div
                 key={idx}
-                className="h-16 rounded-lg animate-pulse"
+                className="h-16 rounded-lg shimmer"
                 style={{ backgroundColor: 'var(--color-border)' }}
               />
             ))}
@@ -235,7 +236,7 @@ export default function AdminDashboard() {
                   className="flex items-center gap-4 p-4 rounded-lg"
                   style={{ backgroundColor: 'var(--color-bg-secondary)' }}
                 >
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm" style={{ backgroundColor: 'rgba(51, 86, 208, 0.15)', color: 'var(--color-primary)' }}>
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm" style={{ backgroundColor: 'var(--color-primary-bg-muted)', color: 'var(--color-primary)' }}>
                     {(log.actionType?.[0] || '—').toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -258,13 +259,13 @@ export default function AdminDashboard() {
         )}
 
         <div className="mt-4">
-          <a
+          <Link
             href="/admin/audit"
             className="text-sm font-medium hover:underline transition-colors"
             style={{ color: 'var(--color-primary)' }}
           >
             View all activity →
-          </a>
+          </Link>
         </div>
       </div>
     </div>

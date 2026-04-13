@@ -14,6 +14,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import useSWR from 'swr';
 import { apiClient, getErrorMessage } from '@/features/admin/lib/api-client';
 import { AdminBreadcrumb } from '../_components/AdminBreadcrumb';
@@ -570,13 +571,13 @@ export default function CardsPage() {
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           {!card.id.startsWith('temp-') && (
-                            <a
+                            <Link
                               href={`/admin/cards/${card.id}`}
                               className="px-3 py-1 rounded text-sm hover:opacity-80 transition-colors"
                               style={{ backgroundColor: 'var(--color-primary-bg-subtle)', color: 'var(--color-primary)' }}
                             >
                               View
-                            </a>
+                            </Link>
                           )}
                           <button
                             onClick={() => handleDeleteCard(card.id)}

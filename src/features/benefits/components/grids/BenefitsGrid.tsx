@@ -311,7 +311,7 @@ function inferBenefitCategory(type?: string, name?: string): string {
   if (/entertain|spotify|audible|disney|hulu|peacock|sirius/.test(nameLower)) return 'entertainment';
   if (/stream|netflix|hbo|paramount|apple\s*tv/.test(nameLower)) return 'streaming';
   if (/shop|saks|nordstrom|walmart|dell|best buy/.test(nameLower)) return 'shopping';
-  if (/fitness|gym|equinox|wellness|peloton/.test(nameLower)) return 'wellness';
+  if (/fitness|gym|equinox|wellness|peloton|oura/.test(nameLower)) return 'wellness';
   if (/insur|protect|luggage|cancel|delay|medical|dental/.test(nameLower)) return 'insurance';
   if (/point|reward|bonus|earn|multiplier|\dx\b/.test(nameLower)) return 'points';
   if (/cash\s*back|statement\s*credit|annual\s+credit|monthly\s+credit/.test(nameLower)) return 'cashback';

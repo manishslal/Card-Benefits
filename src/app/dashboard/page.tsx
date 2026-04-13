@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/shared/components/ui/use-toast';
 import Button from '@/shared/components/ui/button';
 import { AppHeader } from '@/shared/components/layout';
-import { CardSwitcher, DashboardSummary } from '@/shared/components/features';
+import { CardCarousel, DashboardSummary } from '@/shared/components/features';
 import { BenefitsGrid, AddBenefitModal, EditBenefitModal, DeleteBenefitConfirmationDialog } from '@/features/benefits';
 import { AddCardModal } from '@/features/cards/components/modals/AddCardModal';
 import { deduplicateBenefits } from '@/lib/benefit-utils';
@@ -20,7 +20,6 @@ import { SearchSortBar } from './new/components/SearchSortBar';
 import type { SortKey } from './new/components/SearchSortBar';
 import { SmartViewChips } from './new/components/SmartViewChips';
 import type { SmartViewKey } from './new/components/SmartViewChips';
-import { CardArt, getCardGradient } from './new/components/CardArt';
 import {
   getCurrentMonthDisplay,
   getCurrentQuarterInfo,
@@ -1253,7 +1252,7 @@ export default function DashboardPage() {
   const netSavings = totalUsedValue - (apiTotalFees / 100);
 
   // ============================================================
-  // Benefit counts per card — for CardSwitcher badges (Sprint 8)
+  // Benefit counts per card — for CardCarousel badges (Sprint 8)
   // ============================================================
 
   const benefitCounts = useMemo(() => {
@@ -1529,52 +1528,15 @@ export default function DashboardPage() {
             </div>
           ) : (
             <>
-              {/* DISC-010: Card switcher is navigation between cards */}
-              <nav
-                aria-label="Card selection"
-                className="sticky top-16 z-20 -mx-4 px-4 py-2 bg-[var(--color-bg)]"
-              >
-                <CardSwitcher
+              {/* Unified Card Carousel (Sprint 24 — replaces CardSwitcher + Hero Card) */}
+              <div className="sticky top-16 z-20 -mx-4 px-4 py-2 bg-[var(--color-bg)]">
+                <CardCarousel
                   cards={cards}
                   selectedCardId={selectedCardId}
                   onSelectCard={setSelectedCardId}
                   benefitCounts={benefitCounts}
                 />
-              </nav>
-
-              {/* DASH-G02: Hero Card Visualization */}
-              {(() => {
-                const heroCard = cards.find((c) => c.id === selectedCardId);
-                if (!heroCard) return null;
-                const heroGradient = getCardGradient(heroCard.productName, heroCard.issuer);
-                return (
-                  <div
-                    className="mt-4 relative overflow-hidden rounded-xl p-5 flex items-center gap-5 border"
-                    style={{
-                      borderColor: 'var(--color-border)',
-                      background: `linear-gradient(135deg, ${heroGradient.from}18, ${heroGradient.to}0C)`,
-                    }}
-                  >
-                    <CardArt
-                      cardName={heroCard.productName}
-                      issuer={heroCard.issuer}
-                      type={heroCard.type}
-                      size="lg"
-                    />
-                    <div>
-                      <p
-                        className="font-bold"
-                        style={{ fontSize: 'var(--text-body-lg)', color: 'var(--color-text)' }}
-                      >
-                        {heroCard.name}
-                      </p>
-                      <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                        {deduplicateBenefits(heroCard.benefits || [], benefitEngineEnabled).length} benefits tracked
-                      </p>
-                    </div>
-                  </div>
-                );
-              })()}
+              </div>
 
               {/* DISC-010: Filter controls landmark */}
               {benefits.length > 0 && (

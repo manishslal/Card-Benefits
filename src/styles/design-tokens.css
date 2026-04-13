@@ -195,6 +195,25 @@
   --duration-normal: 300ms;
 
   /* ========================================
+     CARD CAROUSEL TOKENS
+     ======================================== */
+  --carousel-card-width: 280px;
+  --carousel-card-height: 176px;
+  --carousel-card-gap: 16px;
+  --carousel-active-scale: 1.0;
+  --carousel-inactive-scale: 0.88;
+  --carousel-inactive-opacity: 0.55;
+  --carousel-transition-duration: 360ms;
+  --carousel-transition-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --carousel-active-shadow: 0 8px 32px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
+  --carousel-inactive-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --carousel-dot-size: 8px;
+  --carousel-dot-active-width: 24px;
+  --carousel-dot-color: var(--color-border);
+  --carousel-dot-active-color: var(--color-primary);
+  --carousel-arrow-opacity: 0.85;
+
+  /* ========================================
      MISSING SEMANTIC TOKENS - LIGHT MODE
      ======================================== */
   --color-danger-50: #fef2f2;
@@ -285,8 +304,10 @@
     --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
     --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.6);
 
-    /* Missing semantic tokens - Dark Mode */
-    --color-danger-50: #450a0a;
+    /* Card Carousel - Dark Mode Shadows */
+    --carousel-active-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+    --carousel-inactive-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --carousel-arrow-opacity: 0.85;
     --color-danger-500: #f87171;
     --color-danger-600: #fb7185;
     --color-alert-50: #451a03;
@@ -373,6 +394,11 @@
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
   --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.6);
+
+  /* Card Carousel - Dark Mode Shadows */
+  --carousel-active-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --carousel-inactive-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --carousel-arrow-opacity: 0.85;
 
   /* Missing semantic tokens - Dark Mode */
   --color-danger-50: #450a0a;

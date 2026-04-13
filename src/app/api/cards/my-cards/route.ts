@@ -313,12 +313,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           claimingCadence: benefit.masterBenefit.claimingCadence,
         }),
         // Pro-rata fields (Sprint 22)
-        ...(benefit.claimedAt != null && {
-          claimedAt: benefit.claimedAt.toISOString(),
-        }),
-        ...(benefit.masterBenefit?.claimingAmount != null && {
-          claimingAmount: benefit.masterBenefit.claimingAmount,
-        }),
+        claimedAt: benefit.claimedAt?.toISOString() ?? null,
+        claimingAmount: benefit.masterBenefit?.claimingAmount ?? null,
       }));
 
       return {

@@ -281,7 +281,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
 
       // Step 3: Generate benefits (same for both paths)
-      console.log('[ADD CARD] BENEFIT_ENGINE_ENABLED env:', process.env.BENEFIT_ENGINE_ENABLED, '| flag:', featureFlags.BENEFIT_ENGINE_ENABLED);
       if (featureFlags.BENEFIT_ENGINE_ENABLED) {
         // New path: auto-generate benefits with period tracking via the benefit engine
         const generated = await generateBenefitsForCard(
@@ -301,6 +300,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           where: {
             masterCardId,
             isActive: true,
+            isDefault: true,
           },
           orderBy: {
             createdAt: 'asc',

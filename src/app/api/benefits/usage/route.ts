@@ -356,7 +356,18 @@ export async function GET(request: NextRequest) {
       where.benefitId = userBenefitId;
     }
 
-    // Get total count
+    // Phase 6C / C-4: Move cadence filter into Prisma where clause
+    // so pagination counts reflect the filtered result set
+    if (cadenceFilter) {
+      where.userBenefit = {
+        ...where.userBenefit,
+        masterBenefit: {
+          claimingCadence: cadenceFilter,
+        },
+      };
+    }
+
+    // Get total count (now includes cadence filter)
     const total = await prisma.benefitUsageRecord.count({ where });
 
     // Fetch records with pagination and benefitIncludes
@@ -446,14 +457,16 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    // Phase 6C: Filter by cadence and urgency if provided
+    // Phase 6C: Filter by urgency if provided (must remain post-query since urgency is computed)
+    // Cadence filter is now applied in the Prisma where clause above
     let filteredRecords = enrichedRecords;
-    if (cadenceFilter) {
-      filteredRecords = filteredRecords.filter(r => r.claimingCadence === cadenceFilter);
-    }
     if (urgencyFilter) {
       filteredRecords = filteredRecords.filter(r => r.urgencyLevel === urgencyFilter);
     }
+
+    // C-4: When post-query filtering is applied, use filtered count for accurate pagination
+    const filteredTotal = urgencyFilter ? filteredRecords.length : total;
+    const filteredTotalPages = urgencyFilter ? Math.ceil(filteredTotal / limit) : totalPages;
 
     return NextResponse.json(
       {
@@ -462,8 +475,8 @@ export async function GET(request: NextRequest) {
         pagination: {
           page,
           limit,
-          total,
-          totalPages,
+          total: filteredTotal,
+          totalPages: filteredTotalPages,
         },
       },
       { status: 200 }

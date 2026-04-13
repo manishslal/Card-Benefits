@@ -319,7 +319,7 @@ function validateAddBenefitRequest(body: AddBenefitRequest): {
   if (body.userDeclaredValue !== undefined && body.userDeclaredValue !== null) {
     if (typeof body.userDeclaredValue !== 'number' || body.userDeclaredValue < 0) {
       errors.userDeclaredValue = 'User declared value must be a non-negative number';
-    } else if (body.stickerValue && body.userDeclaredValue > body.stickerValue) {
+    } else if (!featureFlags.BENEFIT_ENGINE_ENABLED && body.stickerValue && body.userDeclaredValue > body.stickerValue) {
       errors.userDeclaredValue = 'User declared value cannot exceed sticker value';
     }
   }

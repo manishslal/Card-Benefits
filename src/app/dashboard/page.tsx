@@ -184,6 +184,53 @@ function calculateYearlyUsage(
 }
 
 /**
+ * Recalculate sibling usage (progress ring %) for all benefits sharing the same
+ * masterBenefitId after an isUsed toggle. Falls back to per-benefit usage when
+ * no masterId is present.
+ *
+ * C-6: Extracted from 6 duplicated inline blocks across optimistic / revert /
+ * success / undo handlers.
+ */
+function recalcSiblingUsage(
+  updated: BenefitData[],
+  masterId: string | null | undefined,
+  targetId: string,
+): BenefitData[] {
+  if (masterId) {
+    return updated.map(b => {
+      if (b.masterBenefitId === masterId) {
+        // Preserve null for unlimited/multiplier benefits
+        if (b.usage === null) return { ...b, usage: null };
+        const cadence = (b.claimingCadence || b.resetCadence || '').toUpperCase();
+        const totalPeriods = cadence === 'MONTHLY' ? 12
+          : cadence === 'QUARTERLY' ? 4
+          : cadence === 'SEMI_ANNUAL' ? 2
+          : 1;
+        const periodStart = b.periodStart;
+        const currentYear = periodStart
+          ? new Date(periodStart).getUTCFullYear()
+          : new Date().getFullYear();
+        const siblings = updated.filter(s =>
+          s.masterBenefitId === masterId &&
+          s.periodStart &&
+          new Date(s.periodStart).getUTCFullYear() === currentYear
+        );
+        const usedCount = siblings.filter(s => s.isUsed).length;
+        const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR' || cadence === 'FLEXIBLE_ANNUAL')
+          ? (b.isUsed ? 100 : 0)
+          : Math.round((usedCount / totalPeriods) * 100);
+        return { ...b, usage };
+      }
+      return b;
+    });
+  }
+  // Single benefit (no masterBenefitId) — set usage directly, preserving null
+  return updated.map(b =>
+    b.id === targetId ? { ...b, usage: b.usage === null ? null : (b.isUsed ? 100 : 0) } : b
+  );
+}
+
+/**
  * Compute the per-period display value for a benefit card.
  * Returns value in DOLLARS (divided by 100).
  *
@@ -490,23 +537,32 @@ export default function DashboardPage() {
         if (periodOption) {
           const { start: rangeStart, end: rangeEnd } = periodOption.getDateRange();
 
-          // Use createdDate if available, otherwise expirationDate, otherwise current date
-          const benefitDate = benefit.createdDate
-            ? new Date(benefit.createdDate)
-            : benefit.expirationDate
-            ? new Date(benefit.expirationDate)
-            : new Date();
+          // C-1: When engine is ON and period fields exist, use overlap checking
+          if (benefitEngineEnabled && benefit.periodStart && benefit.periodEnd) {
+            const pStart = new Date(benefit.periodStart);
+            const pEnd = new Date(benefit.periodEnd);
+            // Period overlaps filter range if NOT (pEnd < rangeStart || pStart > rangeEnd)
+            if (pEnd < rangeStart || pStart > rangeEnd) {
+              return false;
+            }
+          } else {
+            // Legacy fallback: use createdDate for engine OFF or missing period fields
+            const benefitDate = benefit.createdDate
+              ? new Date(benefit.createdDate)
+              : benefit.expirationDate
+              ? new Date(benefit.expirationDate)
+              : new Date();
 
-          // Check if benefit date falls within the selected period
-          if (benefitDate < rangeStart || benefitDate > rangeEnd) {
-            return false;
+            if (benefitDate < rangeStart || benefitDate > rangeEnd) {
+              return false;
+            }
           }
         }
       }
 
       return true;
     });
-  }, [benefits, selectedPeriodId, periodOptions]);
+  }, [benefits, selectedPeriodId, periodOptions, benefitEngineEnabled]);
 
   // ============================================================
   // Deduplication — collapse multi-period rows when engine is ON
@@ -930,38 +986,7 @@ export default function DashboardPage() {
             : b
         );
         const target = updated.find(b => b.id === benefitId);
-        const masterId = target?.masterBenefitId;
-        if (masterId) {
-          return updated.map(b => {
-            if (b.masterBenefitId === masterId) {
-              // C-1 fix: Preserve null for unlimited/multiplier benefits
-              if (b.usage === null) return { ...b, usage: null };
-              const cadence = (b.claimingCadence || b.resetCadence || '').toUpperCase();
-              const totalPeriods = cadence === 'MONTHLY' ? 12
-                : cadence === 'QUARTERLY' ? 4
-                : cadence === 'SEMI_ANNUAL' ? 2
-                : 1;
-              const periodStart = b.periodStart;
-              const currentYear = periodStart
-                ? new Date(periodStart).getUTCFullYear()
-                : new Date().getFullYear();
-              const siblings = updated.filter(s =>
-                s.masterBenefitId === masterId &&
-                s.periodStart &&
-                new Date(s.periodStart).getUTCFullYear() === currentYear
-              );
-              const usedCount = siblings.filter(s => s.isUsed).length;
-              const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR' || cadence === 'FLEXIBLE_ANNUAL')
-                ? (b.isUsed ? 100 : 0)
-                : Math.round((usedCount / totalPeriods) * 100);
-              return { ...b, usage };
-            }
-            return b;
-          });
-        }
-        return updated.map(b =>
-          b.id === benefitId ? { ...b, usage: b.usage === null ? null : (b.isUsed ? 100 : 0) } : b
-        );
+        return recalcSiblingUsage(updated, target?.masterBenefitId, benefitId);
       });
 
       // Call the toggle-used API endpoint
@@ -981,38 +1006,7 @@ export default function DashboardPage() {
               : b
           );
           const target = updated.find(b => b.id === benefitId);
-          const masterId = target?.masterBenefitId;
-          if (masterId) {
-            return updated.map(b => {
-              if (b.masterBenefitId === masterId) {
-                // C-1 fix: Preserve null for unlimited/multiplier benefits
-                if (b.usage === null) return { ...b, usage: null };
-                const cadence = (b.claimingCadence || b.resetCadence || '').toUpperCase();
-                const totalPeriods = cadence === 'MONTHLY' ? 12
-                  : cadence === 'QUARTERLY' ? 4
-                  : cadence === 'SEMI_ANNUAL' ? 2
-                  : 1;
-                const periodStart = b.periodStart;
-                const currentYear = periodStart
-                  ? new Date(periodStart).getUTCFullYear()
-                  : new Date().getFullYear();
-                const siblings = updated.filter(s =>
-                  s.masterBenefitId === masterId &&
-                  s.periodStart &&
-                  new Date(s.periodStart).getUTCFullYear() === currentYear
-                );
-                const usedCount = siblings.filter(s => s.isUsed).length;
-                const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR' || cadence === 'FLEXIBLE_ANNUAL')
-                  ? (b.isUsed ? 100 : 0)
-                  : Math.round((usedCount / totalPeriods) * 100);
-                return { ...b, usage };
-              }
-              return b;
-            });
-          }
-          return updated.map(b =>
-            b.id === benefitId ? { ...b, usage: b.usage === null ? null : (b.isUsed ? 100 : 0) } : b
-          );
+          return recalcSiblingUsage(updated, target?.masterBenefitId, benefitId);
         });
 
         const errorData = await response.json();
@@ -1046,38 +1040,7 @@ export default function DashboardPage() {
           );
           // Recalculate usage for sibling benefits sharing same masterBenefitId
           const changedBenefit = updated.find(b => b.id === benefitId);
-          const masterId = changedBenefit?.masterBenefitId;
-          if (masterId) {
-            return updated.map(b => {
-              if (b.masterBenefitId === masterId) {
-                // C-1 fix: Preserve null for unlimited/multiplier benefits
-                if (b.usage === null) return { ...b, usage: null };
-                const cadence = (b.claimingCadence || b.resetCadence || '').toUpperCase();
-                const totalPeriods = cadence === 'MONTHLY' ? 12
-                  : cadence === 'QUARTERLY' ? 4
-                  : cadence === 'SEMI_ANNUAL' ? 2
-                  : 1;
-                const periodStart = b.periodStart;
-                const currentYear = periodStart
-                  ? new Date(periodStart).getUTCFullYear()
-                  : new Date().getFullYear();
-                const siblings = updated.filter(s =>
-                  s.masterBenefitId === masterId &&
-                  s.periodStart &&
-                  new Date(s.periodStart).getUTCFullYear() === currentYear
-                );
-                const usedCount = siblings.filter(s => s.isUsed).length;
-                const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR' || cadence === 'FLEXIBLE_ANNUAL')
-                  ? (b.isUsed ? 100 : 0)
-                  : Math.round((usedCount / totalPeriods) * 100);
-                return { ...b, usage };
-              }
-              return b;
-            });
-          }
-          return updated.map(b =>
-            b.id === benefitId ? { ...b, usage: b.usage === null ? null : (b.isUsed ? 100 : 0) } : b
-          );
+          return recalcSiblingUsage(updated, changedBenefit?.masterBenefitId, benefitId);
         });
         // Trigger celebration animation
         setCelebratingIds(prev => new Set(prev).add(benefitId));
@@ -1124,39 +1087,7 @@ export default function DashboardPage() {
                     );
                     // Recalculate usage for sibling benefits
                     const changedBenefit = updated.find(b => b.id === benefitId);
-                    const masterId = changedBenefit?.masterBenefitId;
-                    if (masterId) {
-                      return updated.map(b => {
-                        if (b.masterBenefitId === masterId) {
-                          // C-1 fix: Preserve null for unlimited/multiplier benefits
-                          if (b.usage === null) return { ...b, usage: null };
-                          const cadence = (b.claimingCadence || b.resetCadence || '').toUpperCase();
-                          const totalPeriods = cadence === 'MONTHLY' ? 12
-                            : cadence === 'QUARTERLY' ? 4
-                            : cadence === 'SEMI_ANNUAL' ? 2
-                            : 1;
-                          const periodStart = b.periodStart;
-                          const currentYear = periodStart
-                            ? new Date(periodStart).getUTCFullYear()
-                            : new Date().getFullYear();
-                          const siblings = updated.filter(s =>
-                            s.masterBenefitId === masterId &&
-                            s.periodStart &&
-                            new Date(s.periodStart).getUTCFullYear() === currentYear
-                          );
-                          const usedCount = siblings.filter(s => s.isUsed).length;
-                          const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR' || cadence === 'FLEXIBLE_ANNUAL')
-                            ? (b.isUsed ? 100 : 0)
-                            : Math.round((usedCount / totalPeriods) * 100);
-                          return { ...b, usage };
-                        }
-                        return b;
-                      });
-                    }
-                    // Single benefit — set usage directly (preserve null for unlimited)
-                    return updated.map(b =>
-                      b.id === benefitId ? { ...b, usage: b.usage === null ? null : 0 } : b
-                    );
+                    return recalcSiblingUsage(updated, changedBenefit?.masterBenefitId, benefitId);
                   });
                   toast({ title: 'Undo successful', variant: 'info', duration: 2000 });
                 } else {
@@ -1179,38 +1110,7 @@ export default function DashboardPage() {
             : b
         );
         const target = updated.find(b => b.id === benefitId);
-        const masterId = target?.masterBenefitId;
-        if (masterId) {
-          return updated.map(b => {
-            if (b.masterBenefitId === masterId) {
-              // C-1 fix: Preserve null for unlimited/multiplier benefits
-              if (b.usage === null) return { ...b, usage: null };
-              const cadence = (b.claimingCadence || b.resetCadence || '').toUpperCase();
-              const totalPeriods = cadence === 'MONTHLY' ? 12
-                : cadence === 'QUARTERLY' ? 4
-                : cadence === 'SEMI_ANNUAL' ? 2
-                : 1;
-              const periodStart = b.periodStart;
-              const currentYear = periodStart
-                ? new Date(periodStart).getUTCFullYear()
-                : new Date().getFullYear();
-              const siblings = updated.filter(s =>
-                s.masterBenefitId === masterId &&
-                s.periodStart &&
-                new Date(s.periodStart).getUTCFullYear() === currentYear
-              );
-              const usedCount = siblings.filter(s => s.isUsed).length;
-              const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR' || cadence === 'FLEXIBLE_ANNUAL')
-                ? (b.isUsed ? 100 : 0)
-                : Math.round((usedCount / totalPeriods) * 100);
-              return { ...b, usage };
-            }
-            return b;
-          });
-        }
-        return updated.map(b =>
-          b.id === benefitId ? { ...b, usage: b.usage === null ? null : (b.isUsed ? 100 : 0) } : b
-        );
+        return recalcSiblingUsage(updated, target?.masterBenefitId, benefitId);
       });
       toast({ title: 'Failed to mark benefit as used. Please try again.', variant: 'error' });
     }
@@ -1228,43 +1128,7 @@ export default function DashboardPage() {
       // when isUsed changes, since calculateYearlyUsage counts sibling used states
       if ('isUsed' in updatedFields) {
         const changedBenefit = updated.find(b => b.id === updatedFields.id);
-        const masterId = changedBenefit?.masterBenefitId;
-        if (masterId) {
-          return updated.map(b => {
-            if (b.masterBenefitId === masterId) {
-              // C-1 fix: Preserve null for unlimited/multiplier benefits
-              if (b.usage === null) return { ...b, usage: null };
-              const cadence = (b.claimingCadence || b.resetCadence || '').toUpperCase();
-              const totalPeriods = cadence === 'MONTHLY' ? 12
-                : cadence === 'QUARTERLY' ? 4
-                : cadence === 'SEMI_ANNUAL' ? 2
-                : 1;
-              const periodStart = b.periodStart;
-              const currentYear = periodStart
-                ? new Date(periodStart).getUTCFullYear()
-                : new Date().getFullYear();
-              const siblings = updated.filter(s =>
-                s.masterBenefitId === masterId &&
-                s.periodStart &&
-                new Date(s.periodStart).getUTCFullYear() === currentYear
-              );
-              const usedCount = siblings.filter(s => s.isUsed).length;
-              const usage = (cadence === 'ANNUAL' || cadence === 'ONE_TIME' || cadence === 'CALENDARYEAR' || cadence === 'CARDMEMBERYEAR' || cadence === 'FLEXIBLE_ANNUAL')
-                ? (b.isUsed ? 100 : 0)
-                : Math.round((usedCount / totalPeriods) * 100);
-              return { ...b, usage };
-            }
-            return b;
-          });
-        }
-        // Single benefit (no masterBenefitId) — just set usage directly
-        return updated.map(b => {
-          if (b.id === updatedFields.id) {
-            // C-1 fix: Preserve null for unlimited/multiplier benefits
-            return { ...b, usage: b.usage === null ? null : (b.isUsed ? 100 : 0) };
-          }
-          return b;
-        });
+        return recalcSiblingUsage(updated, changedBenefit?.masterBenefitId, updatedFields.id);
       }
       return updated;
     });
@@ -1394,7 +1258,7 @@ export default function DashboardPage() {
       variant: 'default' as const,
     },
     {
-      label: viewMode === 'history' ? 'Past Value' : 'Total Value',
+      label: viewMode === 'history' ? 'Past Value' : benefitEngineEnabled ? "This Period's Value" : 'Total Value',
       value: `$${displayBenefits.reduce((sum, b) => sum + (b.value || 0), 0).toLocaleString()}`,
       icon: 'DollarSign',
       variant: 'default' as const,

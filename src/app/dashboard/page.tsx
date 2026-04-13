@@ -326,6 +326,126 @@ function transformBenefitForModal(benefit: BenefitData | null): {
   };
 }
 
+// ============================================================
+// E-2: useCountAnimation — animates a number from previous to current
+// Respects prefers-reduced-motion; handles NaN, negatives, initial render.
+// ============================================================
+
+function useCountAnimation(target: number, duration: number = 400): number {
+  const [displayValue, setDisplayValue] = useState(0);
+  const prevTargetRef = useRef(0);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    // Guard: NaN / non-finite → set directly
+    if (!Number.isFinite(target)) {
+      setDisplayValue(0);
+      return;
+    }
+
+    // Respect prefers-reduced-motion — set value instantly
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setDisplayValue(target);
+      prevTargetRef.current = target;
+      return;
+    }
+
+    const from = prevTargetRef.current;
+    const to = target;
+    prevTargetRef.current = to;
+
+    // Nothing to animate
+    if (from === to) {
+      setDisplayValue(to);
+      return;
+    }
+
+    const startTime = performance.now();
+
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = from + (to - from) * eased;
+      setDisplayValue(Math.round(current));
+
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
+  }, [target, duration]);
+
+  return displayValue;
+}
+
+// ============================================================
+// E-3: Keyboard Shortcut Help Overlay
+// ============================================================
+
+function ShortcutHelpOverlay({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  if (!visible) return null;
+
+  const shortcuts = [
+    { keys: '← / →', description: 'Switch card' },
+    { keys: '/', description: 'Focus search' },
+    { keys: '?', description: 'Toggle this help' },
+  ];
+
+  return (
+    <div
+      role="dialog"
+      aria-label="Keyboard shortcuts"
+      className="fixed bottom-6 right-6 rounded-xl border p-4 shadow-lg animate-slide-up"
+      style={{
+        backgroundColor: 'var(--color-bg)',
+        borderColor: 'var(--color-border)',
+        zIndex: 'var(--z-modal)',
+        minWidth: 220,
+      }}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+          Keyboard Shortcuts
+        </h3>
+        <button
+          onClick={onClose}
+          className="text-xs px-1.5 py-0.5 rounded"
+          style={{ color: 'var(--color-text-secondary)' }}
+          aria-label="Close shortcut help"
+        >
+          ✕
+        </button>
+      </div>
+      <ul className="space-y-2">
+        {shortcuts.map((s) => (
+          <li key={s.keys} className="flex items-center justify-between gap-4 text-sm">
+            <kbd
+              className="font-mono text-xs px-1.5 py-0.5 rounded border"
+              style={{
+                backgroundColor: 'var(--color-bg-secondary)',
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-text)',
+              }}
+            >
+              {s.keys}
+            </kbd>
+            <span style={{ color: 'var(--color-text-secondary)' }}>{s.description}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -383,6 +503,9 @@ export default function DashboardPage() {
   const [activeSort, setActiveSort] = useState<SortKey>('default');
   const [smartView, setSmartView] = useState<SmartViewKey>('all');
   const [celebratingIds, setCelebratingIds] = useState<Set<string>>(new Set());
+
+  // E-3: Keyboard shortcut help overlay visibility
+  const [showShortcutHelp, setShowShortcutHelp] = useState(false);
 
   // ============================================================
   // DISC-008: Shared card transformation to prevent copy-paste divergence
@@ -755,6 +878,42 @@ export default function DashboardPage() {
     setActiveSort('default');
     setSmartView('all');
   }, [selectedCardId]);
+
+  // ============================================================
+  // E-3: Keyboard shortcuts for power users
+  // ← / → — switch card | / — focus search | ? — toggle help
+  // ============================================================
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Guard: don't capture when focus is in an INPUT or TEXTAREA
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+      if (e.key === 'ArrowLeft') {
+        // Switch to previous card
+        if (cards.length <= 1) return;
+        const idx = cards.findIndex((c) => c.id === selectedCardId);
+        const prevIdx = idx <= 0 ? cards.length - 1 : idx - 1;
+        setSelectedCardId(cards[prevIdx].id);
+      } else if (e.key === 'ArrowRight') {
+        // Switch to next card
+        if (cards.length <= 1) return;
+        const idx = cards.findIndex((c) => c.id === selectedCardId);
+        const nextIdx = idx >= cards.length - 1 ? 0 : idx + 1;
+        setSelectedCardId(cards[nextIdx].id);
+      } else if (e.key === '/') {
+        // Focus the search input
+        e.preventDefault();
+        const searchInput = document.querySelector<HTMLInputElement>('[data-search-input]');
+        searchInput?.focus();
+      } else if (e.key === '?') {
+        setShowShortcutHelp((prev) => !prev);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [cards, selectedCardId]);
 
   // Sprint 27: IntersectionObserver for carousel collapse on scroll
   // BUG FIX: The sentinel <div> is conditionally rendered (only when cards.length > 0).
@@ -1250,36 +1409,63 @@ export default function DashboardPage() {
   // already only include ACTIVE-period benefits (filtered at API level).
   // ============================================================
 
+  // E-1: Capture progress bar — compute aggregate capture rate
+  // Values are in DOLLARS (benefit.value is already dollars from getDisplayValue)
+  const captureStats = useMemo(() => {
+    // Sum all benefit values for the selected card (in dollars)
+    const totalAnnualValue = displayBenefits.reduce((sum, b) => sum + (b.value || 0), 0);
+    // Sum used benefit values
+    const totalUsedVal = displayBenefits
+      .filter((b) => b.isUsed)
+      .reduce((sum, b) => sum + (b.value || 0), 0);
+    const capturePercent = totalAnnualValue > 0
+      ? Math.round((totalUsedVal / totalAnnualValue) * 100)
+      : 0;
+    return { totalAnnualValue, totalUsedVal, capturePercent };
+  }, [displayBenefits]);
+
+  // E-2: Animated summary stat values
+  const animatedBenefitCount = useCountAnimation(displayBenefits.length);
+  const animatedTotalValue = useCountAnimation(
+    Math.round(displayBenefits.reduce((sum, b) => sum + (b.value || 0), 0))
+  );
+  const animatedCapturedValue = useCountAnimation(
+    Math.round(displayBenefits.filter((b) => b.isUsed).reduce((sum, b) => sum + (b.value || 0), 0))
+  );
+  const animatedExpiringSoon = useCountAnimation(
+    viewMode === 'history'
+      ? displayBenefits.filter((b) => b.isUsed).length
+      : displayBenefits.filter((b) => {
+          if (!b.periodEnd) return false;
+          const end = new Date(b.periodEnd);
+          const now = new Date();
+          const daysUntilExpiry = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          return daysUntilExpiry >= 0 && daysUntilExpiry <= 7;
+        }).length
+  );
+
   const summaryStats = [
     {
       label: viewMode === 'history' ? 'Past Benefits' : 'Total Benefits',
-      value: displayBenefits.length,
+      value: animatedBenefitCount,
       icon: 'CreditCard',
       variant: 'default' as const,
     },
     {
       label: viewMode === 'history' ? 'Past Value' : benefitEngineEnabled ? "This Period's Value" : 'Total Value',
-      value: `$${displayBenefits.reduce((sum, b) => sum + (b.value || 0), 0).toLocaleString()}`,
+      value: `$${animatedTotalValue.toLocaleString()}`,
       icon: 'DollarSign',
       variant: 'default' as const,
     },
     {
       label: 'Value Captured',
-      value: `$${displayBenefits.filter(b => b.isUsed).reduce((sum, b) => sum + (b.value || 0), 0).toLocaleString()}`,
+      value: `$${animatedCapturedValue.toLocaleString()}`,
       icon: 'TrendingUp',
       variant: 'default' as const,
     },
     {
       label: viewMode === 'history' ? 'Used' : 'Expiring Soon',
-      value: viewMode === 'history'
-        ? displayBenefits.filter((b) => b.isUsed).length
-        : displayBenefits.filter((b) => {
-            if (!b.periodEnd) return false;
-            const end = new Date(b.periodEnd);
-            const now = new Date();
-            const daysUntilExpiry = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-            return daysUntilExpiry >= 0 && daysUntilExpiry <= 7;
-          }).length,
+      value: animatedExpiringSoon,
       icon: 'Clock',
       variant: 'default' as const,
     },
@@ -1552,6 +1738,68 @@ export default function DashboardPage() {
                 <DashboardSummary stats={summaryStats} />
               </div>
 
+              {/* E-1: Annual Benefit Capture Progress Bar */}
+              {displayBenefits.length > 0 && (
+                <div
+                  className="mt-4 p-4 rounded-xl border"
+                  style={{
+                    backgroundColor: 'var(--color-bg)',
+                    borderColor: 'var(--color-border)',
+                  }}
+                  role="region"
+                  aria-label="Benefit capture progress"
+                >
+                  {captureStats.totalAnnualValue === 0 ? (
+                    <p
+                      className="text-sm text-center"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      No benefits tracked yet
+                    </p>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between mb-2">
+                        <span
+                          className="text-sm font-medium"
+                          style={{ color: 'var(--color-text)' }}
+                        >
+                          Benefit Capture Rate
+                        </span>
+                        <span
+                          className="text-sm font-semibold"
+                          style={{ color: 'var(--color-text)' }}
+                        >
+                          {captureStats.capturePercent}%
+                        </span>
+                      </div>
+                      <div
+                        className="w-full h-3 rounded-full overflow-hidden"
+                        style={{ backgroundColor: 'var(--color-gray-200)' }}
+                      >
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${Math.min(captureStats.capturePercent, 100)}%`,
+                            backgroundColor: 'var(--color-success)',
+                          }}
+                          role="progressbar"
+                          aria-valuenow={captureStats.capturePercent}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-label={`${captureStats.capturePercent}% of benefits captured`}
+                        />
+                      </div>
+                      <p
+                        className="text-xs mt-2"
+                        style={{ color: 'var(--color-text-secondary)' }}
+                      >
+                        You&#39;ve captured {formatCurrency(Math.round(captureStats.totalUsedVal * 100))} of {formatCurrency(Math.round(captureStats.totalAnnualValue * 100))} ({captureStats.capturePercent}%)
+                      </p>
+                    </>
+                  )}
+                </div>
+              )}
+
               {/* Benefits Section */}
               {/* DISC-010: Section landmark with aria-label */}
               <section className="mt-6" aria-label="Benefits">
@@ -1812,6 +2060,12 @@ export default function DashboardPage() {
           <Plus className="w-6 h-6 text-white" />
         </button>
       )}
+
+      {/* E-3: Keyboard shortcut help overlay */}
+      <ShortcutHelpOverlay
+        visible={showShortcutHelp}
+        onClose={() => setShowShortcutHelp(false)}
+      />
     </div>
   );
 }

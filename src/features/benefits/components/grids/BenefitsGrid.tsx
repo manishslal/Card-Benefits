@@ -356,6 +356,35 @@ function extractMultiplier(name?: string): number | null {
   return match ? parseFloat(match[1]) : null;
 }
 
+// ---------------------------------------------------------------------------
+// E-4: Format benefit type name for display
+// "STATEMENT_CREDIT" → "Statement Credits", "TRAVEL" → "Travel", etc.
+// ---------------------------------------------------------------------------
+function formatBenefitTypeName(type: string): string {
+  const typeLower = type.toLowerCase();
+  // Common DB types
+  const typeMap: Record<string, string> = {
+    insurance: 'Insurance',
+    cashback: 'Cashback',
+    travel: 'Travel',
+    banking: 'Banking',
+    points: 'Points',
+    other: 'Other',
+    statementcredit: 'Statement Credits',
+    travelperk: 'Travel Perks',
+    usageperk: 'Usage Perks',
+    rewards: 'Rewards',
+  };
+
+  if (typeMap[typeLower]) return typeMap[typeLower];
+
+  // Fallback: convert UPPER_SNAKE or camelCase to Title Case
+  return type
+    .replace(/_/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 /**
  * BenefitsGrid Component - Grid View of Benefits
  *
@@ -439,6 +468,39 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
 
       return Array.from(groupMap.values());
     }, [sortedBenefits]);
+
+    // E-4: Detect if type grouping headers should be shown
+    // Only show type headers when 2+ different types exist
+    const distinctTypes = useMemo(() => {
+      const types = new Set<string>();
+      for (const b of benefits) {
+        if (b.type) types.add(b.type);
+      }
+      return types;
+    }, [benefits]);
+    const showTypeHeaders = distinctTypes.size >= 2;
+
+    // E-4: Sub-group benefits within each group by type
+    // Returns an ordered list of { typeLabel, benefits } for a given benefit list
+    const getTypeSubgroups = useMemo(() => {
+      if (!showTypeHeaders) return null;
+      return (groupBenefits: Benefit[]) => {
+        const typeMap = new Map<string, Benefit[]>();
+        for (const b of groupBenefits) {
+          const typeKey = b.type || 'Other';
+          const existing = typeMap.get(typeKey);
+          if (existing) {
+            existing.push(b);
+          } else {
+            typeMap.set(typeKey, [b]);
+          }
+        }
+        return Array.from(typeMap.entries()).map(([typeKey, typeBenefits]) => ({
+          typeLabel: formatBenefitTypeName(typeKey),
+          benefits: typeBenefits,
+        }));
+      };
+    }, [showTypeHeaders]);
 
     // Pre-compute animation indices across groups for staggered entry
     const cardAnimationIndices = useMemo(() => {
@@ -791,6 +853,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
           }
 
           // ── Regular period groups → render as before ──
+          // E-4: Optionally sub-group by benefit type within each period group
           return (
             <React.Fragment key={`group-${groupIndex}`}>
               {/* DASH-G03: Shared period header for consecutive same-period cards */}
@@ -828,36 +891,86 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                 </div>
               )}
 
-              {group.benefits.map((benefit) => {
-                const isUsed = benefit.isUsed === true;
-                const animIndex = cardAnimationIndices.get(benefit.id) ?? 0;
+              {/* E-4: Render with or without type sub-grouping */}
+              {getTypeSubgroups ? (
+                getTypeSubgroups(group.benefits).map((typeGroup, typeIdx) => (
+                  <React.Fragment key={`type-${groupIndex}-${typeIdx}`}>
+                    {/* Type section header */}
+                    <div
+                      className="col-span-full flex items-center gap-2 px-2 py-1.5 text-xs font-medium"
+                      style={{
+                        color: 'var(--color-text-tertiary)',
+                      }}
+                    >
+                      <span>{typeGroup.typeLabel}</span>
+                      <span
+                        className="flex-1 border-b"
+                        style={{ borderColor: 'var(--color-border)' }}
+                        aria-hidden="true"
+                      />
+                    </div>
+                    {typeGroup.benefits.map((benefit) => {
+                      const isUsed = benefit.isUsed === true;
+                      const animIndex = cardAnimationIndices.get(benefit.id) ?? 0;
+                      return (
+                        <div
+                          key={benefit.id}
+                          data-benefit-card
+                          onClick={() => onEdit?.(benefit.id)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit?.(benefit.id); } }}
+                          className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] hover:border-[var(--color-primary)] flex flex-col cursor-pointer${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
+                          style={{
+                            opacity: isUsed ? 0.85 : 1,
+                            animation: celebratingIds?.has(benefit.id)
+                              ? undefined
+                              : `slideUp 0.3s ease-out both`,
+                            animationDelay: celebratingIds?.has(benefit.id)
+                              ? undefined
+                              : `${Math.min(animIndex * 60, 500)}ms`,
+                            borderColor: 'color-mix(in srgb, var(--color-border) 50%, transparent)',
+                            borderLeft: `3px solid ${getLeftBorderColor()}`,
+                          }}
+                        >
+                          {renderCardBody(benefit)}
+                        </div>
+                      );
+                    })}
+                  </React.Fragment>
+                ))
+              ) : (
+                group.benefits.map((benefit) => {
+                  const isUsed = benefit.isUsed === true;
+                  const animIndex = cardAnimationIndices.get(benefit.id) ?? 0;
 
-                return (
-                  <div
-                    key={benefit.id}
-                    data-benefit-card
-                    onClick={() => onEdit?.(benefit.id)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit?.(benefit.id); } }}
-                    className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] hover:border-[var(--color-primary)] flex flex-col cursor-pointer${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
-                    style={{
-                      opacity: isUsed ? 0.85 : 1,
-                      animation: celebratingIds?.has(benefit.id)
-                        ? undefined
-                        : `slideUp 0.3s ease-out both`,
-                      animationDelay: celebratingIds?.has(benefit.id)
-                        ? undefined
-                        : `${Math.min(animIndex * 60, 500)}ms`,
-                      borderColor: 'color-mix(in srgb, var(--color-border) 50%, transparent)',
-                      borderLeft: `3px solid ${getLeftBorderColor()}`,
-                    }}
-                  >
-                    {/* Card body — shared with accordion rendering */}
-                    {renderCardBody(benefit)}
-                  </div>
-                );
-              })}
+                  return (
+                    <div
+                      key={benefit.id}
+                      data-benefit-card
+                      onClick={() => onEdit?.(benefit.id)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit?.(benefit.id); } }}
+                      className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] hover:border-[var(--color-primary)] flex flex-col cursor-pointer${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
+                      style={{
+                        opacity: isUsed ? 0.85 : 1,
+                        animation: celebratingIds?.has(benefit.id)
+                          ? undefined
+                          : `slideUp 0.3s ease-out both`,
+                        animationDelay: celebratingIds?.has(benefit.id)
+                          ? undefined
+                          : `${Math.min(animIndex * 60, 500)}ms`,
+                        borderColor: 'color-mix(in srgb, var(--color-border) 50%, transparent)',
+                        borderLeft: `3px solid ${getLeftBorderColor()}`,
+                      }}
+                    >
+                      {/* Card body — shared with accordion rendering */}
+                      {renderCardBody(benefit)}
+                    </div>
+                  );
+                })
+              )}
             </React.Fragment>
           );
         })}

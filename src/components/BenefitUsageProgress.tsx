@@ -8,6 +8,7 @@
  * - Responsive width
  * - Full ARIA support for accessibility
  * - Dark mode support
+ * - E-5: Color-blind safe text labels and optional stripe patterns
  *
  * @example
  * <BenefitUsageProgress
@@ -38,10 +39,13 @@ interface ProgressStyle {
   bgColor: string;
   textColor: string;
   status: string;
+  /** E-5: Optional CSS background-image for stripe pattern (color-blind indicator) */
+  stripePattern?: string;
 }
 
 /**
  * Get styling based on percentage used
+ * E-5: Includes text status labels and optional stripe patterns for color-blind safety
  */
 function getProgressStyle(percent: number): ProgressStyle {
   if (percent >= 100) {
@@ -50,6 +54,8 @@ function getProgressStyle(percent: number): ProgressStyle {
       bgColor: 'bg-red-50 dark:bg-red-900/20',
       textColor: 'text-red-700 dark:text-red-300',
       status: 'Over limit',
+      stripePattern:
+        'repeating-linear-gradient(135deg, transparent, transparent 3px, rgba(255,255,255,0.25) 3px, rgba(255,255,255,0.25) 6px)',
     };
   }
   if (percent >= 80) {
@@ -58,6 +64,8 @@ function getProgressStyle(percent: number): ProgressStyle {
       bgColor: 'bg-orange-50 dark:bg-orange-900/20',
       textColor: 'text-orange-700 dark:text-orange-300',
       status: 'Nearly full',
+      stripePattern:
+        'repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(255,255,255,0.18) 4px, rgba(255,255,255,0.18) 8px)',
     };
   }
   if (percent >= 50) {
@@ -72,7 +80,7 @@ function getProgressStyle(percent: number): ProgressStyle {
     barColor: 'bg-green-500',
     bgColor: 'bg-green-50 dark:bg-green-900/20',
     textColor: 'text-green-700 dark:text-green-300',
-    status: 'Available',
+    status: 'On Track',
   };
 }
 
@@ -123,7 +131,7 @@ export function BenefitUsageProgress({
 
   return (
     <div className={`w-full ${className || ''}`}>
-      {/* Header with label and percentage */}
+      {/* Header with label, percentage, and E-5 status label */}
       {(showLabel || showPercentage) && (
         <div className="flex items-center justify-between mb-2">
           {showLabel && (
@@ -131,11 +139,29 @@ export function BenefitUsageProgress({
               Usage
             </span>
           )}
-          {showPercentage && (
-            <span className="text-sm font-semibold text-gray-900 dark:text-white">
-              {Math.round(displayPercentage)}%
+          <div className="flex items-center gap-2">
+            {/* E-5: Color-blind safe text status label */}
+            <span
+              className={`text-xs font-semibold px-1.5 py-0.5 rounded ${style.textColor}`}
+              style={{
+                backgroundColor:
+                  percentage >= 100
+                    ? 'rgba(239, 68, 68, 0.1)'
+                    : percentage >= 80
+                      ? 'rgba(249, 115, 22, 0.1)'
+                      : percentage >= 50
+                        ? 'rgba(234, 179, 8, 0.1)'
+                        : 'rgba(34, 197, 94, 0.1)',
+              }}
+            >
+              {style.status}
             </span>
-          )}
+            {showPercentage && (
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                {Math.round(displayPercentage)}%
+              </span>
+            )}
+          </div>
         </div>
       )}
 
@@ -147,7 +173,7 @@ export function BenefitUsageProgress({
           transition-all duration-300
         `}
       >
-        {/* Progress bar fill */}
+        {/* Progress bar fill — E-5: optional stripe pattern for warning/danger */}
         <div
           className={`
             h-full ${style.barColor} transition-all duration-300
@@ -159,9 +185,12 @@ export function BenefitUsageProgress({
           aria-valuemax={100}
           aria-label={
             ariaLabel ||
-            `${Math.round(percentage)}% of ${formatCurrency(limit)} claimed. ${formatCurrency(used)} used.`
+            `${Math.round(percentage)}% of ${formatCurrency(limit)} claimed. ${formatCurrency(used)} used. Status: ${style.status}.`
           }
-          style={{ width: `${displayPercentage}%` }}
+          style={{
+            width: `${displayPercentage}%`,
+            ...(style.stripePattern ? { backgroundImage: style.stripePattern } : {}),
+          }}
         />
       </div>
 

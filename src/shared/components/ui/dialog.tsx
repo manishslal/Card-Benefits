@@ -7,9 +7,34 @@ import { cn } from "@/shared/lib"
 import { Button } from "@/shared/components/ui/button"
 import { XIcon } from "lucide-react"
 
+/**
+ * E-6: Hook to set `inert` on #main-content when a dialog is open.
+ * Prevents background interaction and ensures cleanup on unmount.
+ */
+function useInertMainContent(open: boolean) {
+  React.useEffect(() => {
+    const mainEl = document.getElementById('main-content');
+    if (!mainEl) return;
+
+    if (open) {
+      mainEl.setAttribute('inert', '');
+    } else {
+      mainEl.removeAttribute('inert');
+    }
+
+    // Cleanup: always remove inert on unmount to prevent stuck state
+    return () => {
+      mainEl.removeAttribute('inert');
+    };
+  }, [open]);
+}
+
 function Dialog({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {
+  // E-6: Manage inert attribute on #main-content
+  useInertMainContent(!!props.open);
+
   return <DialogPrimitive.Root data-slot="dialog" {...props} />
 }
 

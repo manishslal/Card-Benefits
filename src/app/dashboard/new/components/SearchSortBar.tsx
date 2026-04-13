@@ -184,6 +184,7 @@ const SearchInput = memo(function SearchInput({
       <input
         ref={inputRef}
         type="search"
+        data-search-input
         value={localValue}
         onChange={handleChange}
         onKeyDown={handleKeyDown}

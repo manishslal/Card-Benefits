@@ -833,11 +833,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                   return (
                     <div
                       data-benefit-card
-                      onClick={() => onEdit?.(benefit.id)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit?.(benefit.id); } }}
-                      className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] hover:border-[var(--color-primary)] flex flex-col cursor-pointer${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
+                      className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] hover:border-[var(--color-primary)] flex flex-col${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
                       style={{
                         opacity: 0.85,
                         borderColor: 'color-mix(in srgb, var(--color-border) 50%, transparent)',
@@ -923,11 +919,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                         >
                         <div
                           data-benefit-card
-                          onClick={() => onEdit?.(benefit.id)}
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit?.(benefit.id); } }}
-                          className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] hover:border-[var(--color-primary)] flex flex-col cursor-pointer${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
+                          className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] hover:border-[var(--color-primary)] flex flex-col${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
                           style={{
                             opacity: isUsed ? 0.85 : 1,
                             animation: celebratingIds?.has(benefit.id)
@@ -962,11 +954,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                     >
                     <div
                       data-benefit-card
-                      onClick={() => onEdit?.(benefit.id)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit?.(benefit.id); } }}
-                      className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] hover:border-[var(--color-primary)] flex flex-col cursor-pointer${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
+                      className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] hover:border-[var(--color-primary)] flex flex-col${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
                       style={{
                         opacity: isUsed ? 0.85 : 1,
                         animation: celebratingIds?.has(benefit.id)

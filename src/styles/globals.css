@@ -517,7 +517,6 @@ select:focus-visible {
 }
 
 /* For nested interactive elements, ensure outline isn't clipped */
-nav:focus-within,
 form:focus-within,
 [role="region"]:focus-within {
   /* Allow focus outlines to overflow visible bounds */

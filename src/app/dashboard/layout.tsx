@@ -7,7 +7,7 @@ export default function DashboardLayout({
 }) {
   return (
     <>
-      <div className="min-h-screen pb-14 md:pb-0">{children}</div>
+      <div className="min-h-screen md:pb-0" style={{ paddingBottom: 'calc(3.5rem + env(safe-area-inset-bottom, 0px))' }}>{children}</div>
       <BottomNav />
     </>
   );

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Button from '@/shared/components/ui/button';
 import { AppHeader } from '@/shared/components/layout';
@@ -73,6 +74,20 @@ export default function SettingsPage() {
   }, []);
 
   const isAdmin = user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN');
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+
+    if (tab === 'profile' || tab === 'preferences' || tab === 'account') {
+      setActiveTab(tab);
+      return;
+    }
+
+    if (tab === 'admin' && isAdmin) {
+      setActiveTab('admin');
+    }
+  }, [searchParams, isAdmin]);
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();

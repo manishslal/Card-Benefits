@@ -535,7 +535,8 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
                       style={{
                         position: 'absolute',
                         bottom: 14,
-            fontSize: 12,
+                        right: 14,
+                        fontSize: 12,
                         fontWeight: 700,
                         letterSpacing: '0.06em',
                         color: light

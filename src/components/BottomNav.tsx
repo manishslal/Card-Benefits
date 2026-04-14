@@ -44,18 +44,21 @@ export function BottomNav() {
     {
       label: 'Profile',
       icon: <UserRound size={20} />,
-      href: '/dashboard/settings?tab=profile',
-      isActive: pathname === '/dashboard/settings',
+      href: '/settings?tab=profile',
+      isActive: pathname === '/settings' || pathname === '/dashboard/settings',
     },
   ];
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t"
+      data-bottom-nav
+      className="left-0 right-0 bottom-0 z-40 md:hidden border-t"
       style={{
+        position: 'fixed',
         backgroundColor: 'var(--color-bg)',
         borderColor: 'var(--color-border)',
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        transform: 'translateZ(0)',
       }}
       aria-label="Mobile navigation"
     >

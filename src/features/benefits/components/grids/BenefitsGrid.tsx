@@ -301,7 +301,7 @@ function ProgressRing({
       </svg>
       {/* Center percentage */}
       <span
-        className="absolute inset-0 flex items-center justify-center font-mono leading-none"
+        className="absolute inset-0 flex items-center justify-center font-mono tabular-nums leading-none"
         style={{
           fontSize: '10px',
           fontWeight: 600,
@@ -672,7 +672,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                 <div className="flex items-center gap-1.5 min-w-0">
                   {multiplier !== null ? (
                     <span
-                      className="font-mono font-bold text-base px-2 py-0.5 rounded flex-shrink-0"
+                      className="font-mono tabular-nums font-bold text-base px-2 py-0.5 rounded flex-shrink-0"
                       style={{
                         color: 'var(--color-accent, var(--color-primary))',
                         backgroundColor: 'var(--color-accent-subtle, rgba(59, 130, 246, 0.1))',
@@ -682,7 +682,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                     </span>
                   ) : hasMonetaryValue ? (
                     <span
-                      className="font-mono font-semibold text-base flex-shrink-0"
+                      className="font-mono tabular-nums font-semibold text-base flex-shrink-0"
                       style={{ color: 'var(--color-text)' }}
                     >
                       ${(benefit.value ?? 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}

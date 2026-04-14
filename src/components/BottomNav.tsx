@@ -1,16 +1,11 @@
 'use client';
 
 import React from 'react';
-import { Home, CreditCard, Settings } from 'lucide-react';
+import { Home, Armchair, Bot, UserRound } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 
 /**
- * F-5: Mobile Bottom Navigation Bar
- *
- * Sticky bottom bar with three navigation items:
- * - Home (dashboard)
- * - Cards (scroll to cards section)
- * - Settings
+ * Mobile Bottom Navigation Bar
  *
  * Only visible on mobile viewports (hidden on md: and above).
  * Includes safe-area-bottom padding for notch devices.
@@ -19,16 +14,11 @@ import { useRouter, usePathname } from 'next/navigation';
 interface BottomNavItem {
   label: string;
   icon: React.ReactNode;
-  action: () => void;
+  href: string;
   isActive: boolean;
 }
 
-interface BottomNavProps {
-  /** Callback to scroll to the cards section on the dashboard */
-  onScrollToCards?: () => void;
-}
-
-export function BottomNav({ onScrollToCards }: BottomNavProps) {
+export function BottomNav() {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -36,27 +26,26 @@ export function BottomNav({ onScrollToCards }: BottomNavProps) {
     {
       label: 'Home',
       icon: <Home size={20} />,
-      action: () => router.push('/dashboard'),
+      href: '/dashboard',
       isActive: pathname === '/dashboard',
     },
     {
-      label: 'Cards',
-      icon: <CreditCard size={20} />,
-      action: () => {
-        if (onScrollToCards) {
-          onScrollToCards();
-        } else {
-          // Fallback: scroll to top where cards are shown
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      },
-      isActive: false,
+      label: 'Lounges',
+      icon: <Armchair size={20} />,
+      href: '/dashboard/lounges',
+      isActive: pathname === '/dashboard/lounges',
     },
     {
-      label: 'Settings',
-      icon: <Settings size={20} />,
-      action: () => router.push('/dashboard/settings'),
-      isActive: pathname === '/dashboard/settings' || pathname === '/settings',
+      label: 'Assistant',
+      icon: <Bot size={20} />,
+      href: '/dashboard/assistant',
+      isActive: pathname === '/dashboard/assistant',
+    },
+    {
+      label: 'Profile',
+      icon: <UserRound size={20} />,
+      href: '/dashboard/settings?tab=profile',
+      isActive: pathname === '/dashboard/settings',
     },
   ];
 
@@ -74,7 +63,7 @@ export function BottomNav({ onScrollToCards }: BottomNavProps) {
         {items.map((item) => (
           <button
             key={item.label}
-            onClick={item.action}
+            onClick={() => router.push(item.href)}
             className="flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors"
             style={{
               color: item.isActive

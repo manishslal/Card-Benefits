@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
-import { Check, ChevronRight } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 /**
  * SwipeToBenefitUsed — swipe-right gesture wrapper for benefit cards (mobile)
@@ -322,21 +322,6 @@ export function SwipeToBenefitUsed({
         {children}
       </div>
 
-      {/* ── Swipe hint — subtle left-edge chevron for discoverability ── */}
-      {isSwipeEnabled && displayOffset === 0 && phase === 'idle' && (
-        <div
-          className="absolute inset-y-0 left-0 w-5 flex items-center justify-center pointer-events-none"
-          aria-hidden="true"
-        >
-          <ChevronRight
-            size={12}
-            style={{
-              color: 'var(--color-success)',
-              opacity: 0.4,
-            }}
-          />
-        </div>
-      )}
     </div>
   );
 }

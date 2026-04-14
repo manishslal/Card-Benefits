@@ -16,7 +16,6 @@ import { formatCurrency } from '@/shared/lib/format-currency';
 import { Plus, CreditCard, AlertCircle, Sparkles, Loader2 } from 'lucide-react';
 import { SkeletonCard } from '@/shared/components/loaders';
 import { type PeriodOption } from './new/components/PeriodSelector';
-import { BottomNav } from '@/components/BottomNav';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
 import { UnifiedFilterBar } from './new/components/UnifiedFilterBar';
@@ -509,9 +508,6 @@ export default function DashboardPage() {
   // E-3: Keyboard shortcut help overlay visibility
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
 
-  // F-5: Ref for scrolling to cards section from BottomNav
-  const cardsSectionRef = useRef<HTMLDivElement>(null);
-
   // F-4: Pull-to-refresh for mobile
   const handlePullRefresh = useCallback(async () => {
     try {
@@ -965,6 +961,22 @@ export default function DashboardPage() {
   // sentinel ref is null. With `[]` deps the effect never re-ran after cards loaded.
   // Fix: depend on `cards.length > 0` so the observer attaches once the sentinel exists.
   const hasCards = cards.length > 0;
+  const [headerHeightOffset, setHeaderHeightOffset] = useState(0);
+
+  useEffect(() => {
+    const updateHeaderHeightOffset = () => {
+      const rootStyles = getComputedStyle(document.documentElement);
+      const headerHeightVar = rootStyles.getPropertyValue('--height-header').trim();
+      const parsed = Number.parseFloat(headerHeightVar);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        setHeaderHeightOffset(parsed);
+      }
+    };
+
+    updateHeaderHeightOffset();
+    window.addEventListener('resize', updateHeaderHeightOffset);
+    return () => window.removeEventListener('resize', updateHeaderHeightOffset);
+  }, []);
   useEffect(() => {
     const sentinel = carouselSentinelRef.current;
     if (!sentinel) return;
@@ -974,14 +986,14 @@ export default function DashboardPage() {
         setIsCarouselCollapsed(!entry.isIntersecting);
       },
       {
-        rootMargin: '-52px 0px 0px 0px',
+        rootMargin: '-' + headerHeightOffset + 'px 0px 0px 0px',
         threshold: 0,
       }
     );
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasCards]);
+  }, [hasCards, headerHeightOffset]);
 
   // ============================================================
   // Effect: Load history benefits when viewMode switches to "history"
@@ -1611,7 +1623,7 @@ export default function DashboardPage() {
   // ============================================================
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--color-bg)] safe-area-bottom pb-14 md:pb-0">
+    <div className="min-h-screen flex flex-col bg-[var(--color-bg)] safe-area-bottom">
       {/* F-4: Pull-to-refresh indicator for mobile */}
       {(pullOffset > 0 || isPullRefreshing) && (
         <div
@@ -1655,7 +1667,7 @@ export default function DashboardPage() {
                 Welcome, {userName}! 👋
               </h1>
               <p className="text-sm mt-1 text-[var(--color-text-secondary)]">
-                You have {apiTotalCards ?? cards.length} card{(apiTotalCards ?? cards.length) !== 1 ? 's' : ''} and {apiTotalBenefits ?? totalBenefitsAcrossCards} benefit{(apiTotalBenefits ?? totalBenefitsAcrossCards) !== 1 ? 's' : ''} tracked
+                You have <span className="font-mono tabular-nums">{apiTotalCards ?? cards.length}</span> card{(apiTotalCards ?? cards.length) !== 1 ? 's' : ''} and <span className="font-mono tabular-nums">{apiTotalBenefits ?? totalBenefitsAcrossCards}</span> benefit{(apiTotalBenefits ?? totalBenefitsAcrossCards) !== 1 ? 's' : ''} tracked
               </p>
             </div>
 
@@ -1673,7 +1685,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Main Content */}
-      <main id="main-content" className="flex-1 px-4 md:px-8 pt-2 pb-6">
+      <main id="main-content" className="flex-1 overflow-visible px-4 md:px-8 pt-2 pb-6">
         <div className="max-w-6xl mx-auto">
           {/* Empty State: No Cards — DASH-026 Rich Onboarding */}
           {cards.length === 0 ? (
@@ -1718,10 +1730,8 @@ export default function DashboardPage() {
               {/* Sentinel for collapse detection — 1px tall for reliable IntersectionObserver across browsers */}
               <div ref={carouselSentinelRef} aria-hidden="true" style={{ height: '1px', marginBottom: '-1px', overflow: 'hidden' }} />
 
-              {/* F-5: Ref for BottomNav "Cards" button scroll target */}
-              <div ref={cardsSectionRef}>
               {/* Sticky carousel container */}
-              <div className="sticky z-30 -mx-4 md:-mx-8 px-0 md:px-8 relative" data-sticky-carousel style={{ top: 'calc(var(--height-header, 52px) + env(safe-area-inset-top, 0px))', backgroundColor: 'color-mix(in srgb, var(--color-bg) 80%, transparent)', backdropFilter: 'blur(12px) saturate(180%)', WebkitBackdropFilter: 'blur(12px) saturate(180%)', boxShadow: 'var(--header-shadow)' }}>
+              <div className="sticky z-30 -mx-4 md:-mx-8 px-0 md:px-8 relative" data-sticky-carousel style={{ top: 'calc(var(--height-header) + env(safe-area-inset-top, 0px))', backgroundColor: 'color-mix(in srgb, var(--color-bg) 80%, transparent)', backdropFilter: 'blur(12px) saturate(180%)', WebkitBackdropFilter: 'blur(12px) saturate(180%)', boxShadow: 'var(--header-shadow)' }}>
                 {/* Expanded carousel */}
                 <div
                   className="carousel-collapse-transition"
@@ -1764,7 +1774,6 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
-              </div>{/* End F-5 cardsSectionRef */}
 
               {/* DISC-010: Filter controls landmark */}
               {benefits.length > 0 && (
@@ -1841,7 +1850,7 @@ export default function DashboardPage() {
                           Benefit Capture Rate
                         </span>
                         <span
-                          className="text-sm font-semibold"
+                          className="text-sm font-semibold font-mono tabular-nums"
                           style={{ color: 'var(--color-text)' }}
                         >
                           {captureStats.capturePercent}%
@@ -1868,7 +1877,7 @@ export default function DashboardPage() {
                         className="text-xs mt-2"
                         style={{ color: 'var(--color-text-secondary)' }}
                       >
-                        You&#39;ve captured {formatCurrency(Math.round(captureStats.totalUsedVal * 100))} of {formatCurrency(Math.round(captureStats.totalAnnualValue * 100))} ({captureStats.capturePercent}%)
+                        You&#39;ve captured <span className="font-mono tabular-nums">{formatCurrency(Math.round(captureStats.totalUsedVal * 100))}</span> of <span className="font-mono tabular-nums">{formatCurrency(Math.round(captureStats.totalAnnualValue * 100))}</span> (<span className="font-mono tabular-nums">{captureStats.capturePercent}%</span>)
                       </p>
                     </>
                   )}
@@ -1893,7 +1902,7 @@ export default function DashboardPage() {
                   >
                     <AlertCircle size={18} aria-hidden="true" />
                     <span className="text-sm font-medium flex-1 text-left">
-                      {expiringBenefits.length} benefit{expiringBenefits.length > 1 ? 's' : ''} expiring within 7 days
+                      <span className="font-mono tabular-nums">{expiringBenefits.length}</span> benefit{expiringBenefits.length > 1 ? 's' : ''} expiring within <span className="font-mono tabular-nums">7</span> days
                     </span>
                     <span className="text-sm font-semibold whitespace-nowrap" aria-hidden="true">View them →</span>
                   </button>
@@ -1907,7 +1916,7 @@ export default function DashboardPage() {
                       {viewMode === 'history' ? 'Past ' : ''}Benefits on {cards.find((c) => c.id === selectedCardId)?.name || 'Selected Card'}
                       {viewMode === 'current' && deduplicatedBenefits.length !== benefits.length && (
                         <span
-                          className="ml-2 text-sm font-normal"
+                          className="ml-2 text-sm font-normal font-mono tabular-nums"
                           style={{ color: 'var(--color-text-secondary)' }}
                         >
                           ({deduplicatedBenefits.length} of {deduplicateBenefits(benefits, benefitEngineEnabled).length})
@@ -1915,7 +1924,7 @@ export default function DashboardPage() {
                       )}
                       {viewMode === 'history' && (
                         <span
-                          className="ml-2 text-sm font-normal"
+                          className="ml-2 text-sm font-normal font-mono tabular-nums"
                           style={{ color: 'var(--color-text-secondary)' }}
                         >
                           ({displayBenefits.length})
@@ -1926,7 +1935,7 @@ export default function DashboardPage() {
                     {viewMode === 'current' && selectedCardRoi && (
                       selectedCardRoi.type === 'free' ? (
                         <span
-                          className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full"
+                          className="inline-flex items-center text-xs font-medium font-mono tabular-nums px-2 py-0.5 rounded-full"
                           style={{
                             backgroundColor: 'var(--color-success-bg-muted, rgba(10,125,87,0.1))',
                             color: 'var(--color-success)',
@@ -1936,7 +1945,7 @@ export default function DashboardPage() {
                         </span>
                       ) : (
                         <span
-                          className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full"
+                          className="inline-flex items-center text-xs font-medium font-mono tabular-nums px-2 py-0.5 rounded-full"
                           style={{
                             backgroundColor: selectedCardRoi.pct >= 100
                               ? 'var(--color-success-bg-muted, rgba(10,125,87,0.1))'
@@ -2142,12 +2151,6 @@ export default function DashboardPage() {
         onClose={() => setShowShortcutHelp(false)}
       />
 
-      {/* F-5: Mobile Bottom Navigation Bar */}
-      <BottomNav
-        onScrollToCards={() => {
-          cardsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }}
-      />
     </div>
   );
 }

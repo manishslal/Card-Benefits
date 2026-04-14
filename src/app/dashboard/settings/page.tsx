@@ -63,6 +63,20 @@ export default function SettingsPage() {
 
   const isAdmin = user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN');
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const tab = new URLSearchParams(window.location.search).get('tab');
+    if (tab === 'profile' || tab === 'preferences' || tab === 'account') {
+      setActiveTab(tab);
+      return;
+    }
+
+    if (tab === 'admin' && isAdmin) {
+      setActiveTab('admin');
+    }
+  }, [isAdmin]);
+
   const tabs: Array<{ id: ActiveTab; label: string }> = [
     { id: 'profile', label: 'Profile' },
     { id: 'preferences', label: 'Preferences' },

@@ -464,6 +464,7 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
                   {benefitCount != null && (
                     <span
                       aria-hidden="true"
+                      className="font-mono tabular-nums"
                       style={{
                         position: 'absolute',
                         top: 12,
@@ -511,6 +512,7 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
                   {/* Last four digits — bottom-left below card name */}
                   {card.lastFour && card.lastFour !== '0000' && (
                     <span
+                      className="tabular-nums"
                       style={{
                         position: 'absolute',
                         bottom: 14,
@@ -533,8 +535,7 @@ const CardCarousel = React.forwardRef<HTMLDivElement, CardCarouselProps>(
                       style={{
                         position: 'absolute',
                         bottom: 14,
-                        right: 14,
-                        fontSize: 12,
+            fontSize: 12,
                         fontWeight: 700,
                         letterSpacing: '0.06em',
                         color: light

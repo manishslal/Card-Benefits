@@ -163,7 +163,7 @@ export default function CompactCardChips({
               {/* Benefit count */}
               {count != null && (
                 <span
-                  className="flex-shrink-0 rounded-full text-[10px] font-bold flex items-center justify-center"
+                  className="flex-shrink-0 rounded-full text-[10px] font-bold font-mono tabular-nums flex items-center justify-center"
                   style={{
                     width: 18,
                     height: 18,

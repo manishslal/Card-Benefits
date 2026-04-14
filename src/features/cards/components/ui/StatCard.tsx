@@ -57,14 +57,14 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
 
         <div className="flex items-end justify-between">
           <span
-            className="font-bold text-[var(--color-text)]"
+            className="font-bold font-mono tabular-nums text-[var(--color-text)]"
             style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-h4)' }}
           >
             {value}
           </span>
           {change && (
             <span
-              className={`text-xs font-medium ${
+              className={`text-xs font-medium tabular-nums ${
                 change.isPositive
                   ? 'text-[var(--color-success)]'
                   : 'text-[var(--color-error)]'

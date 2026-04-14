@@ -27,7 +27,8 @@ export function MobileSummaryStats({ stats }: MobileSummaryStatsProps) {
           }}
           aria-label={`${stat.value} ${stat.label}`}
         >
-          {stat.value} {stat.label}
+          <span className="font-mono tabular-nums">{stat.value}</span>{' '}
+          <span>{stat.label}</span>
         </span>
       ))}
     </div>

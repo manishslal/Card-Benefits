@@ -126,7 +126,7 @@ export function UsedBenefitsAccordion<T extends BaseBenefit>({
           >
             Used Benefits
             <span
-              className="font-normal ml-1 inline-flex items-center justify-center rounded-full"
+              className="font-normal ml-1 inline-flex items-center justify-center rounded-full font-mono tabular-nums"
               style={{
                 opacity: 0.7,
                 marginLeft: 'var(--space-xs, 4px)',
@@ -145,7 +145,7 @@ export function UsedBenefitsAccordion<T extends BaseBenefit>({
         >
           {totalValueCents > 0 && (
             <span
-              className="font-mono text-xs font-medium hidden sm:inline"
+              className="font-mono tabular-nums text-xs font-medium hidden sm:inline"
               style={{ color: 'var(--color-success)' }}
             >
               {formatCurrency(totalValueCents)} captured

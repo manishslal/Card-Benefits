@@ -43,7 +43,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib/prisma';
-import { verifyToken } from '@/features/auth/lib/jwt';
 import { featureFlags } from '@/lib/feature-flags';
 import { generateBenefitsForCard } from '@/lib/benefit-engine';
 
@@ -103,40 +102,10 @@ interface ErrorResponse {
  * @returns NextResponse with created card or error
  */
 
-/**
- * Extracts userId from request session cookie.
- * Used in API routes where AsyncLocalStorage context is unavailable.
- * 
- * @param request - NextRequest to read session cookie from
- * @returns userId if authenticated, null if not
- */
-function getUserIdFromRequest(request: NextRequest): string | null {
-  try {
-    const sessionToken = request.cookies.get('session')?.value;
-    if (!sessionToken) {
-      return null;
-    }
-
-    // Verify JWT signature and extract payload
-    const payload = verifyToken(sessionToken);
-    
-    // Validate payload structure
-    if (!payload || typeof payload !== 'object') {
-      return null;
-    }
-    
-    const userId = (payload as Record<string, any>).userId;
-    return userId && typeof userId === 'string' ? userId : null;
-  } catch (error) {
-    console.error('[getUserIdFromRequest] Token verification failed:', error);
-    return null;
-  }
-}
-
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    // Get authenticated user ID from request session cookie
-    const userId = getUserIdFromRequest(request);
+    // F-1: Get authenticated user ID from middleware-set header (standardized auth pattern)
+    const userId = request.headers.get('x-user-id');
 
     if (!userId) {
       return NextResponse.json(
@@ -243,15 +212,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       let card;
 
       if (isReactivation) {
-        // ── REACTIVATION PATH ──────────────────────────────────────────────
-        // Step 1: Hard-delete all old UserBenefits (stale data from prior era)
-        // Cascade will also clean up BenefitUsageRecord, BenefitPeriod,
-        // and BenefitRecommendation rows.
-        await tx.userBenefit.deleteMany({
-          where: { userCardId: existingCard.id },
-        });
+        // ── REACTIVATION PATH (F-2: Soft-delete preservation) ────────────
+        // Keep existing archived benefits (status='ARCHIVED') for history.
+        // Only generate new current-period rows below (Step 3).
+        // Previously this hard-deleted all old UserBenefits, losing history.
 
-        // Step 2: Reactivate the UserCard
+        // Step 1: Reactivate the UserCard
         card = await tx.userCard.update({
           where: { id: existingCard.id },
           data: {

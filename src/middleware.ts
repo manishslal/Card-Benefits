@@ -77,6 +77,8 @@ const PROTECTED_API_PREFIXES = [
   '/api/user',       // POST /api/user/profile, GET /api/user/profile
   '/api/admin',      // Admin endpoints (Phase 1)
   '/api/dashboard',  // Dashboard API endpoints (Phase 3+)
+  '/api/mobile',     // Mobile sync endpoints (F-1)
+  '/api/onboarding', // Onboarding endpoints (F-1)
 ];
 
 /** Check if route is public API (matches prefix) */
@@ -314,9 +316,12 @@ export async function middleware(request: NextRequest) {
 
   if (isPublic) {
     // Public routes don't need authentication
+    // SECURITY (F-1): Strip any client-supplied x-user-id on public routes too
+    const publicHeaders = new Headers(request.headers);
+    publicHeaders.delete('x-user-id');
     return await runWithAuthContext(
       { userId: undefined },
-      async () => NextResponse.next()
+      async () => NextResponse.next({ request: { headers: publicHeaders } })
     );
   }
 
@@ -363,7 +368,12 @@ export async function middleware(request: NextRequest) {
     // we must set it on the REQUEST headers (not response headers).
     // NextResponse.next({ request: { headers } }) forwards modified request headers
     // to the downstream route handler.
+    //
+    // SECURITY (F-1): Strip any client-supplied x-user-id header before setting
+    // the verified value. This prevents header forgery where a malicious client
+    // sends a crafted x-user-id to impersonate another user.
     const requestHeaders = new Headers(request.headers);
+    requestHeaders.delete('x-user-id');
     if (userId) {
       requestHeaders.set('x-user-id', userId);
     }
@@ -386,9 +396,12 @@ export async function middleware(request: NextRequest) {
 
   // For any other routes, proceed without authentication
   // This handles: /api/* (unprotected), /_next/*, /public/*, etc.
+  // SECURITY (F-1): Strip any client-supplied x-user-id on unclassified routes
+  const defaultHeaders = new Headers(request.headers);
+  defaultHeaders.delete('x-user-id');
   return await runWithAuthContext(
     { userId: undefined },
-    async () => NextResponse.next()
+    async () => NextResponse.next({ request: { headers: defaultHeaders } })
   );
 }
 

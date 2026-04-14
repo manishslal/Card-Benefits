@@ -18,8 +18,7 @@
  * - 401 if user is not authenticated
  */
 
-import { NextResponse } from 'next/server';
-import { getAuthUserId } from '@/features/auth/context/auth-context';
+import { NextRequest, NextResponse } from 'next/server';
 import {
   checkAdminStatus,
   unauthorizedResponse,
@@ -28,9 +27,10 @@ import {
 
 export const runtime = 'nodejs';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const userId = getAuthUserId();
+    // F-1: Use middleware-set x-user-id header (standardized auth pattern)
+    const userId = request.headers.get('x-user-id');
 
     // Check if user is authenticated
     if (!userId) {

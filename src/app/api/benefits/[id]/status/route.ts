@@ -9,7 +9,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthUserId } from '@/features/auth/context/auth-context';
 import { prisma } from '@/shared/lib/prisma';
 import { logSafeError } from '@/lib/error-logging';
 import {
@@ -27,7 +26,8 @@ export async function GET(
   { params }: { params: Params }
 ) {
   try {
-    const userId = getAuthUserId();
+    // F-1: Use middleware-set x-user-id header (standardized auth pattern)
+    const userId = request.headers.get('x-user-id');
     if (!userId) {
       return NextResponse.json(
         { success: false, error: 'UNAUTHORIZED', message: 'Authentication required', statusCode: 401 },

@@ -7,7 +7,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthUserId } from '@/features/auth/context/auth-context';
 import { prisma } from '@/shared/lib/prisma';
 import { buildBenefitWhereClause, filterByStatus, FilterCriteria } from '@/lib/filters';
 
@@ -15,7 +14,8 @@ const MAX_PAGE_SIZE = 100;
 
 export async function POST(request: NextRequest) {
   try {
-    const userId = getAuthUserId();
+    // F-1: Use middleware-set x-user-id header (standardized auth pattern)
+    const userId = request.headers.get('x-user-id');
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

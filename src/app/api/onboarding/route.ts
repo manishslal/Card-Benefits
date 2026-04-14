@@ -4,12 +4,12 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthUserId } from '@/features/auth/context/auth-context';
 import { prisma } from '@/shared/lib/prisma';
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const userId = getAuthUserId();
+    // F-1: Use middleware-set x-user-id header (standardized auth pattern)
+    const userId = request.headers.get('x-user-id');
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -55,9 +55,10 @@ export async function GET(_request: NextRequest) {
   }
 }
 
-export async function POST(_request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const userId = getAuthUserId();
+    // F-1: Use middleware-set x-user-id header (standardized auth pattern)
+    const userId = request.headers.get('x-user-id');
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -71,7 +72,7 @@ export async function POST(_request: NextRequest) {
     }
 
     const playerId = player.id;
-    const body = await _request.json();
+    const body = await request.json();
     const { action } = body;
 
     if (!action) {

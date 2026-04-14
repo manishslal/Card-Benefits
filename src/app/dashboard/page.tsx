@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/shared/components/ui/use-toast';
 import Button from '@/shared/components/ui/button';
@@ -13,9 +13,11 @@ import { CardEditModal } from '@/features/cards/components/MyCardsSection/CardEd
 import type { Card as EditableCard } from '@/features/cards/components/MyCardsSection/types';
 import { deduplicateBenefits } from '@/lib/benefit-utils';
 import { formatCurrency } from '@/shared/lib/format-currency';
-import { Plus, CreditCard, AlertCircle, Sparkles } from 'lucide-react';
+import { Plus, CreditCard, AlertCircle, Sparkles, Loader2 } from 'lucide-react';
 import { SkeletonCard } from '@/shared/components/loaders';
 import { type PeriodOption } from './new/components/PeriodSelector';
+import { BottomNav } from '@/components/BottomNav';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
 import { UnifiedFilterBar } from './new/components/UnifiedFilterBar';
 import { MobileSummaryStats } from './new/components/MobileSummaryStats';
@@ -506,6 +508,48 @@ export default function DashboardPage() {
 
   // E-3: Keyboard shortcut help overlay visibility
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
+
+  // F-5: Ref for scrolling to cards section from BottomNav
+  const cardsSectionRef = useRef<HTMLDivElement>(null);
+
+  // F-4: Pull-to-refresh for mobile
+  const handlePullRefresh = useCallback(async () => {
+    try {
+      const response = await fetch('/api/cards/my-cards', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          const apiResponse = data as ApiCardsResponse;
+          const transformedCards = transformApiCards(apiResponse);
+
+          if (apiResponse.summary) {
+            setApiTotalCards(apiResponse.summary.totalCards);
+            setApiTotalBenefits(apiResponse.summary.totalBenefits);
+            setApiTotalFees(apiResponse.summary.totalAnnualFees ?? 0);
+          }
+
+          setCards(transformedCards);
+          if (selectedCardId) {
+            const current = transformedCards.find((c) => c.id === selectedCardId);
+            if (current) {
+              setBenefits(() => current.benefits || []);
+            }
+          }
+        }
+      }
+    } catch {
+      // Silent fail on pull-to-refresh — user can retry
+    }
+  }, [selectedCardId]);
+
+  const { isRefreshing: isPullRefreshing, pullOffset, pullProgress } = usePullToRefresh({
+    onRefresh: handlePullRefresh,
+  });
 
   // ============================================================
   // DISC-008: Shared card transformation to prevent copy-paste divergence
@@ -1567,7 +1611,35 @@ export default function DashboardPage() {
   // ============================================================
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--color-bg)] safe-area-bottom">
+    <div className="min-h-screen flex flex-col bg-[var(--color-bg)] safe-area-bottom pb-14 md:pb-0">
+      {/* F-4: Pull-to-refresh indicator for mobile */}
+      {(pullOffset > 0 || isPullRefreshing) && (
+        <div
+          className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center pointer-events-none md:hidden"
+          style={{
+            height: `${pullOffset}px`,
+            transition: pullOffset === 0 ? 'height 0.2s ease' : 'none',
+          }}
+        >
+          <div
+            className="flex items-center justify-center w-8 h-8 rounded-full shadow-md"
+            style={{
+              backgroundColor: 'var(--color-bg)',
+              borderColor: 'var(--color-border)',
+              borderWidth: 1,
+              opacity: Math.min(pullProgress, 1),
+              transform: `rotate(${isPullRefreshing ? 0 : pullProgress * 360}deg)`,
+            }}
+          >
+            <Loader2
+              size={16}
+              className={isPullRefreshing ? 'animate-spin' : ''}
+              style={{ color: 'var(--color-primary)' }}
+            />
+          </div>
+        </div>
+      )}
+
       <AppHeader />
 
       {/* Welcome section below header — compact layout */}
@@ -1646,6 +1718,8 @@ export default function DashboardPage() {
               {/* Sentinel for collapse detection — 1px tall for reliable IntersectionObserver across browsers */}
               <div ref={carouselSentinelRef} aria-hidden="true" style={{ height: '1px', marginBottom: '-1px', overflow: 'hidden' }} />
 
+              {/* F-5: Ref for BottomNav "Cards" button scroll target */}
+              <div ref={cardsSectionRef}>
               {/* Sticky carousel container */}
               <div className="sticky z-30 -mx-4 md:-mx-8 px-0 md:px-8 relative" data-sticky-carousel style={{ top: 'calc(var(--height-header, 52px) + env(safe-area-inset-top, 0px))', backgroundColor: 'color-mix(in srgb, var(--color-bg) 80%, transparent)', backdropFilter: 'blur(12px) saturate(180%)', WebkitBackdropFilter: 'blur(12px) saturate(180%)', boxShadow: 'var(--header-shadow)' }}>
                 {/* Expanded carousel */}
@@ -1690,6 +1764,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
+              </div>{/* End F-5 cardsSectionRef */}
 
               {/* DISC-010: Filter controls landmark */}
               {benefits.length > 0 && (
@@ -2046,14 +2121,14 @@ export default function DashboardPage() {
         onCardUpdated={handleCardEdited}
       />
 
-      {/* Sprint 28D: Mobile FAB — Add Benefit */}
+      {/* Sprint 28D: Mobile FAB — Add Benefit (adjusted for bottom nav) */}
       {cards.length > 0 && (
         <button
           onClick={() => setIsAddBenefitOpen(true)}
           className="fixed right-6 z-30 md:hidden w-14 h-14 rounded-full shadow-lg flex items-center justify-center press-feedback"
           style={{
             background: 'var(--color-primary)',
-            bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
+            bottom: 'calc(4.5rem + env(safe-area-inset-bottom, 0px))',
           }}
           aria-label="Add benefit"
         >
@@ -2065,6 +2140,13 @@ export default function DashboardPage() {
       <ShortcutHelpOverlay
         visible={showShortcutHelp}
         onClose={() => setShowShortcutHelp(false)}
+      />
+
+      {/* F-5: Mobile Bottom Navigation Bar */}
+      <BottomNav
+        onScrollToCards={() => {
+          cardsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }}
       />
     </div>
   );

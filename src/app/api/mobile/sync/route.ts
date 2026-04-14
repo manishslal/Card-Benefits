@@ -4,14 +4,14 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthUserId } from '@/features/auth/context/auth-context';
 import { prisma } from '@/shared/lib/prisma';
 import { featureFlags } from '@/lib/feature-flags';
 import type { Prisma } from '@prisma/client';
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const userId = getAuthUserId();
+    // F-1: Use middleware-set x-user-id header (standardized auth pattern)
+    const userId = request.headers.get('x-user-id');
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -78,7 +78,8 @@ export async function GET(_request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const userId = getAuthUserId();
+    // F-1: Use middleware-set x-user-id header (standardized auth pattern)
+    const userId = request.headers.get('x-user-id');
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

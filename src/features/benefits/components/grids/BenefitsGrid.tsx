@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { formatPeriodRange } from '@/lib/format-period-range';
 import { UsedBenefitsAccordion } from './UsedBenefitsAccordion';
+import { SwipeToBenefitUsed } from '@/components/SwipeToBenefitUsed';
 
 interface Benefit {
   id: string;
@@ -913,8 +914,14 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                       const isUsed = benefit.isUsed === true;
                       const animIndex = cardAnimationIndices.get(benefit.id) ?? 0;
                       return (
-                        <div
+                        <SwipeToBenefitUsed
                           key={benefit.id}
+                          benefitId={benefit.id}
+                          isUsed={isUsed}
+                          onMarkUsed={onMarkUsed}
+                          disabled={benefit.status !== 'active'}
+                        >
+                        <div
                           data-benefit-card
                           onClick={() => onEdit?.(benefit.id)}
                           role="button"
@@ -935,6 +942,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                         >
                           {renderCardBody(benefit)}
                         </div>
+                        </SwipeToBenefitUsed>
                       );
                     })}
                   </React.Fragment>
@@ -945,8 +953,14 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                   const animIndex = cardAnimationIndices.get(benefit.id) ?? 0;
 
                   return (
-                    <div
+                    <SwipeToBenefitUsed
                       key={benefit.id}
+                      benefitId={benefit.id}
+                      isUsed={isUsed}
+                      onMarkUsed={onMarkUsed}
+                      disabled={benefit.status !== 'active'}
+                    >
+                    <div
                       data-benefit-card
                       onClick={() => onEdit?.(benefit.id)}
                       role="button"
@@ -968,6 +982,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                       {/* Card body — shared with accordion rendering */}
                       {renderCardBody(benefit)}
                     </div>
+                    </SwipeToBenefitUsed>
                   );
                 })
               )}

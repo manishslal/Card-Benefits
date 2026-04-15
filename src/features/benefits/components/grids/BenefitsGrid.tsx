@@ -19,6 +19,7 @@ interface Benefit {
   expirationDate?: Date | string;
   value?: number;
   usage?: number | null; // 0-100 percentage, null = unlimited/multiplier benefit
+  unlimitedUseCount?: number | null;
   type?: string; // travel, shopping, dining, cashback, other
   // Period-based fields (present when benefit engine is enabled)
   periodStart?: string | null;
@@ -35,6 +36,8 @@ interface BenefitsGridProps {
   benefits: Benefit[];
   onEdit?: (benefitId: string) => void;
   onMarkUsed?: (benefitId: string) => void;
+  onAdjustUnlimitedUsage?: (benefitId: string, direction: 1 | -1) => void;
+  unlimitedUsageLoadingIds?: Set<string>;
   loading?: boolean;
   emptyMessage?: string;
   gridColumns?: 'auto' | 2 | 3 | 4;
@@ -409,6 +412,8 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
       benefits,
       onEdit,
       onMarkUsed,
+      onAdjustUnlimitedUsage,
+      unlimitedUsageLoadingIds,
       loading = false,
       emptyMessage = 'No benefits found',
       gridColumns = 3,
@@ -724,6 +729,11 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
               >
                 {progressText}
               </span>
+              {benefit.usage === null && (
+                <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                  Uses: {Math.max(0, benefit.unlimitedUseCount ?? 0)}
+                </span>
+              )}
               {benefit.expirationDate && (
                 <span
                   className="text-xs flex-shrink-0"
@@ -735,7 +745,34 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
               {onMarkUsed && benefit.status === 'active' && (
-                isUsed ? (
+                benefit.usage === null && onAdjustUnlimitedUsage ? (
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAdjustUnlimitedUsage(benefit.id, -1);
+                      }}
+                      disabled={(benefit.unlimitedUseCount ?? 0) <= 0 || unlimitedUsageLoadingIds?.has(benefit.id)}
+                      className="w-11 h-11 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors press-feedback disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-label={`Remove one use from ${benefit.name}`}
+                    >
+                      <span aria-hidden="true" className="text-base font-bold">−</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAdjustUnlimitedUsage(benefit.id, 1);
+                      }}
+                      disabled={unlimitedUsageLoadingIds?.has(benefit.id)}
+                      className="w-11 h-11 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors press-feedback disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-label={`Add one use to ${benefit.name}`}
+                    >
+                      <span aria-hidden="true" className="text-base font-bold">+</span>
+                    </button>
+                  </div>
+                ) : isUsed ? (
                   <button
                     type="button"
                     disabled

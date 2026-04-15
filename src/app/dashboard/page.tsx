@@ -75,6 +75,7 @@ interface BenefitData {
   description?: string;
   value?: number;
   usage?: number | null;
+  unlimitedUseCount?: number | null;
   isUsed?: boolean;
   createdDate?: Date | string;
   // Period-based fields (benefit engine)
@@ -113,6 +114,7 @@ interface ApiBenefit {
   status?: string;
   expirationDate?: string | null;
   description?: string;
+  usage?: number | null;
   isUsed?: boolean;
   claimedAt?: string | null;
   claimingAmount?: number | null;
@@ -148,9 +150,8 @@ function calculateYearlyUsage(
   benefit: ApiBenefit,
   allBenefits: ApiBenefit[]
 ): number | null {
-  // Unlimited/multiplier benefits (stickerValue=0, no user override) don't track percentage usage
-  const effectiveValue = benefit.userDeclaredValue ?? benefit.stickerValue;
-  if (effectiveValue === 0) {
+  // Authoritative unlimited rule: unlimited iff usage is explicitly null.
+  if (benefit.usage === null) {
     return null;
   }
 
@@ -262,6 +263,7 @@ function transformBenefitForGrid(benefit: BenefitData): {
   expirationDate?: Date | string;
   value?: number;
   usage?: number | null;
+  unlimitedUseCount?: number | null;
   type?: string;
   periodStart?: string | null;
   periodEnd?: string | null;
@@ -280,6 +282,7 @@ function transformBenefitForGrid(benefit: BenefitData): {
     expirationDate: benefit.expirationDate || undefined,
     value: benefit.value,
     usage: benefit.usage,
+    unlimitedUseCount: benefit.unlimitedUseCount ?? null,
     type: benefit.type,
     // Pass period data through for display in BenefitsGrid
     periodStart: benefit.periodStart,
@@ -309,6 +312,8 @@ function transformBenefitForModal(benefit: BenefitData | null): {
   periodEnd?: string | null;
   isUsed?: boolean;
   claimedAt?: string | null;
+  usage?: number | null;
+  unlimitedUseCount?: number | null;
 } | null {
   if (!benefit) return null;
   return {
@@ -324,6 +329,8 @@ function transformBenefitForModal(benefit: BenefitData | null): {
     periodEnd: benefit.periodEnd ?? null,
     isUsed: benefit.isUsed ?? false,
     claimedAt: benefit.claimedAt ?? null,
+    usage: benefit.usage,
+    unlimitedUseCount: benefit.unlimitedUseCount ?? null,
   };
 }
 
@@ -504,6 +511,7 @@ export default function DashboardPage() {
   const [activeSort, setActiveSort] = useState<SortKey>('default');
   const [smartView, setSmartView] = useState<SmartViewKey>('all');
   const [celebratingIds, setCelebratingIds] = useState<Set<string>>(new Set());
+  const [unlimitedLoadingIds, setUnlimitedLoadingIds] = useState<Set<string>>(new Set());
 
   // E-3: Keyboard shortcut help overlay visibility
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
@@ -580,6 +588,7 @@ export default function DashboardPage() {
         description: b.description || '',
         value: getDisplayValue(b),
         usage: calculateYearlyUsage(b, apiCard.benefits || []),
+        unlimitedUseCount: null,
         isUsed: b.isUsed ?? false,
         periodStart: b.periodStart ?? null,
         periodEnd: b.periodEnd ?? null,
@@ -591,6 +600,75 @@ export default function DashboardPage() {
       })),
     }));
   };
+
+  const syncUnlimitedBenefitsFromTrackerState = useCallback(async (benefitsSnapshot: BenefitData[]) => {
+    const unlimitedBenefits = benefitsSnapshot.filter((benefit) => benefit.usage === null);
+    if (unlimitedBenefits.length === 0) return;
+
+    const trackerEntries = await Promise.all(
+      unlimitedBenefits.map(async (benefit) => {
+        try {
+          const response = await fetch(
+            `/api/benefits/tracker-state?userBenefitId=${encodeURIComponent(benefit.id)}`,
+            {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+            }
+          );
+
+          if (!response.ok) return null;
+          const data = await response.json();
+          const unlimitedNetCount = Number(data?.trackerState?.unlimitedNetCount ?? 0);
+          if (!Number.isFinite(unlimitedNetCount)) return null;
+
+          return {
+            id: benefit.id,
+            unlimitedUseCount: Math.max(0, unlimitedNetCount),
+            isUsed: unlimitedNetCount > 0,
+          };
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    const byId = new Map(
+      trackerEntries
+        .filter((entry): entry is { id: string; unlimitedUseCount: number; isUsed: boolean } => entry !== null)
+        .map((entry) => [entry.id, entry])
+    );
+
+    if (byId.size === 0) return;
+
+    setBenefits((prev) => {
+      let changed = false;
+      const next = prev.map((benefit) => {
+        const tracker = byId.get(benefit.id);
+        if (!tracker) return benefit;
+
+        if (
+          benefit.unlimitedUseCount === tracker.unlimitedUseCount &&
+          benefit.isUsed === tracker.isUsed
+        ) {
+          return benefit;
+        }
+
+        changed = true;
+        return {
+          ...benefit,
+          unlimitedUseCount: tracker.unlimitedUseCount,
+          isUsed: tracker.isUsed,
+        };
+      });
+
+      return changed ? next : prev;
+    });
+  }, []);
+
+  useEffect(() => {
+    void syncUnlimitedBenefitsFromTrackerState(benefits);
+  }, [benefits, syncUnlimitedBenefitsFromTrackerState]);
 
   // ============================================================
   // Effect: Load user cards from API (BLOCKER #7 implementation)
@@ -1173,6 +1251,93 @@ export default function DashboardPage() {
     if (benefit) {
       setSelectedBenefit(benefit);
       setIsEditBenefitOpen(true);
+    }
+  };
+
+  const handleAdjustUnlimitedUsage = async (benefitId: string, direction: 1 | -1) => {
+    const target = benefits.find((b) => b.id === benefitId);
+    if (!target || target.usage !== null || !selectedCardId) return;
+
+    const previousCount = Math.max(0, target.unlimitedUseCount ?? 0);
+    const optimisticCount = Math.max(0, previousCount + direction);
+
+    setUnlimitedLoadingIds((prev) => new Set(prev).add(benefitId));
+    setBenefits((prev) =>
+      prev.map((benefit) =>
+        benefit.id === benefitId
+          ? {
+              ...benefit,
+              unlimitedUseCount: optimisticCount,
+              isUsed: optimisticCount > 0,
+            }
+          : benefit
+      )
+    );
+
+    try {
+      const response = await fetch('/api/benefits/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          userBenefitId: benefitId,
+          userCardId: selectedCardId,
+          eventFamily: 'UNLIMITED_USE',
+          eventType: direction > 0 ? 'USAGE_ADD' : 'USAGE_REMOVE',
+          quantity: 1,
+          source: 'dashboard:unlimited-controls',
+        }),
+      });
+
+      if (!response.ok) {
+        setBenefits((prev) =>
+          prev.map((benefit) =>
+            benefit.id === benefitId
+              ? {
+                  ...benefit,
+                  unlimitedUseCount: previousCount,
+                  isUsed: previousCount > 0,
+                }
+              : benefit
+          )
+        );
+        const errorData = await response.json().catch(() => ({}));
+        toast({ title: errorData.error || 'Failed to update unlimited usage', variant: 'error' });
+        return;
+      }
+
+      const data = await response.json();
+      const syncedCount = Math.max(0, Number(data?.projection?.unlimitedNetCount ?? optimisticCount));
+      setBenefits((prev) =>
+        prev.map((benefit) =>
+          benefit.id === benefitId
+            ? {
+                ...benefit,
+                unlimitedUseCount: syncedCount,
+                isUsed: syncedCount > 0,
+              }
+            : benefit
+        )
+      );
+    } catch {
+      setBenefits((prev) =>
+        prev.map((benefit) =>
+          benefit.id === benefitId
+            ? {
+                ...benefit,
+                unlimitedUseCount: previousCount,
+                isUsed: previousCount > 0,
+              }
+            : benefit
+        )
+      );
+      toast({ title: 'Failed to update unlimited usage', variant: 'error' });
+    } finally {
+      setUnlimitedLoadingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(benefitId);
+        return next;
+      });
     }
   };
 
@@ -2064,6 +2229,8 @@ export default function DashboardPage() {
                     benefits={displayBenefits.map(transformBenefitForGrid)}
                     onEdit={viewMode === 'current' ? handleEditBenefitClick : undefined}
                     onMarkUsed={viewMode === 'current' ? handleMarkUsed : undefined}
+                    onAdjustUnlimitedUsage={viewMode === 'current' ? handleAdjustUnlimitedUsage : undefined}
+                    unlimitedUsageLoadingIds={unlimitedLoadingIds}
                     gridColumns={3}
                     celebratingIds={celebratingIds}
                   />
@@ -2102,6 +2269,7 @@ export default function DashboardPage() {
       {/* Edit Benefit Modal */}
       <EditBenefitModal
         benefit={transformBenefitForModal(selectedBenefit)}
+        userCardId={selectedCardId || undefined}
         isOpen={isEditBenefitOpen}
         onClose={() => {
           setIsEditBenefitOpen(false);

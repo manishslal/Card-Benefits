@@ -41,10 +41,13 @@ interface UserBenefit {
   periodEnd?: string | null;
   isUsed?: boolean;
   claimedAt?: string | null;
+  usage?: number | null;
+  unlimitedUseCount?: number | null;
 }
 
 interface EditBenefitModalProps {
   benefit: UserBenefit | null;
+  userCardId?: string;
   isOpen: boolean;
   onClose: () => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Callback receives partial API response merged into state
@@ -54,6 +57,7 @@ interface EditBenefitModalProps {
 
 export function EditBenefitModal({
   benefit,
+  userCardId,
   isOpen,
   onClose,
   onBenefitUpdated,
@@ -72,6 +76,15 @@ export function EditBenefitModal({
   const [isMarkingUnused, setIsMarkingUnused] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [message, setMessage] = useState('');
+  const [unlimitedEvents, setUnlimitedEvents] = useState<Array<{
+    id: string;
+    eventType: 'USAGE_ADD' | 'USAGE_REMOVE';
+    eventDate: string;
+    quantity: number | null;
+  }>>([]);
+  const [isLoadingUnlimitedEvents, setIsLoadingUnlimitedEvents] = useState(false);
+  const [isUpdatingUnlimitedUsage, setIsUpdatingUnlimitedUsage] = useState(false);
+  const [trackerUnlimitedCount, setTrackerUnlimitedCount] = useState(0);
 
   // Pre-fill form when benefit data arrives
   useEffect(() => {
@@ -110,6 +123,76 @@ export function EditBenefitModal({
       setShowDeleteConfirm(false);
     }
   }, [isOpen, benefit]);
+
+  const isUnlimitedBenefit = benefit?.usage === null;
+
+  useEffect(() => {
+    if (!isOpen || !benefit || !userCardId || !isUnlimitedBenefit) {
+      setUnlimitedEvents([]);
+      setTrackerUnlimitedCount(0);
+      return;
+    }
+
+    const loadUnlimitedState = async () => {
+      setIsLoadingUnlimitedEvents(true);
+
+      try {
+        const [eventsResponse, trackerResponse] = await Promise.all([
+          fetch(
+            `/api/benefits/events?userBenefitId=${encodeURIComponent(benefit.id)}&userCardId=${encodeURIComponent(userCardId)}&eventFamily=UNLIMITED_USE&limit=10`,
+            {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+            }
+          ),
+          fetch(
+            `/api/benefits/tracker-state?userBenefitId=${encodeURIComponent(benefit.id)}`,
+            {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+            }
+          ),
+        ]);
+
+        if (eventsResponse.ok) {
+          const eventsData = await eventsResponse.json();
+          const parsedEvents = Array.isArray(eventsData?.events)
+            ? eventsData.events
+                .filter((event: { eventType?: string }) => event.eventType === 'USAGE_ADD' || event.eventType === 'USAGE_REMOVE')
+                .map((event: { id: string; eventType: 'USAGE_ADD' | 'USAGE_REMOVE'; eventDate: string; quantity: number | null }) => ({
+                  id: event.id,
+                  eventType: event.eventType,
+                  eventDate: event.eventDate,
+                  quantity: event.quantity,
+                }))
+            : [];
+          setUnlimitedEvents(parsedEvents);
+        }
+
+        if (trackerResponse.ok) {
+          const trackerData = await trackerResponse.json();
+          const nextCount = Math.max(0, Number(trackerData?.trackerState?.unlimitedNetCount ?? 0));
+          setTrackerUnlimitedCount(nextCount);
+          if (onBenefitUpdated) {
+            onBenefitUpdated({
+              id: benefit.id,
+              usage: null,
+              unlimitedUseCount: nextCount,
+              isUsed: nextCount > 0,
+            });
+          }
+        }
+      } catch {
+        // Non-blocking: form remains usable even if event history fails to load.
+      } finally {
+        setIsLoadingUnlimitedEvents(false);
+      }
+    };
+
+    void loadUnlimitedState();
+  }, [isOpen, benefit, userCardId, isUnlimitedBenefit, onBenefitUpdated]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -303,6 +386,75 @@ export function EditBenefitModal({
       setMessage('Failed to mark as unused. Please try again.');
     } finally {
       setIsMarkingUnused(false);
+    }
+  };
+
+  const handleUnlimitedEvent = async (eventType: 'USAGE_ADD' | 'USAGE_REMOVE', compensatingEventId?: string) => {
+    if (!benefit || !userCardId) return;
+
+    setIsUpdatingUnlimitedUsage(true);
+    setMessage('');
+
+    try {
+      const response = await fetch('/api/benefits/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          userBenefitId: benefit.id,
+          userCardId,
+          eventFamily: 'UNLIMITED_USE',
+          eventType,
+          quantity: 1,
+          source: 'edit-modal:unlimited-history',
+          metadata: compensatingEventId ? { compensatingEventId } : undefined,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessage(data.error || 'Failed to update unlimited usage');
+        return;
+      }
+
+      const latestCount = Math.max(0, Number(data?.projection?.unlimitedNetCount ?? trackerUnlimitedCount));
+      setTrackerUnlimitedCount(latestCount);
+
+      if (onBenefitUpdated) {
+        onBenefitUpdated({
+          id: benefit.id,
+          usage: null,
+          unlimitedUseCount: latestCount,
+          isUsed: latestCount > 0,
+        });
+      }
+
+      const refreshEventsResponse = await fetch(
+        `/api/benefits/events?userBenefitId=${encodeURIComponent(benefit.id)}&userCardId=${encodeURIComponent(userCardId)}&eventFamily=UNLIMITED_USE&limit=10`,
+        {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        }
+      );
+      if (refreshEventsResponse.ok) {
+        const refreshData = await refreshEventsResponse.json();
+        const parsedEvents = Array.isArray(refreshData?.events)
+          ? refreshData.events
+              .filter((event: { eventType?: string }) => event.eventType === 'USAGE_ADD' || event.eventType === 'USAGE_REMOVE')
+              .map((event: { id: string; eventType: 'USAGE_ADD' | 'USAGE_REMOVE'; eventDate: string; quantity: number | null }) => ({
+                id: event.id,
+                eventType: event.eventType,
+                eventDate: event.eventDate,
+                quantity: event.quantity,
+              }))
+          : [];
+        setUnlimitedEvents(parsedEvents);
+      }
+    } catch {
+      setMessage('Failed to update unlimited usage');
+    } finally {
+      setIsUpdatingUnlimitedUsage(false);
     }
   };
 
@@ -566,8 +718,83 @@ export function EditBenefitModal({
               </div>
             )}
 
-            {/* Mark as Unused — only when benefit is currently used */}
-            {benefit.isUsed && (
+            {/* Unlimited usage controls/history */}
+            {isUnlimitedBenefit && (
+              <div
+                className="space-y-3 p-3 rounded-md border"
+                style={{
+                  backgroundColor: 'var(--color-bg-secondary)',
+                  borderColor: 'var(--color-border)',
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-[var(--color-text)]">
+                      Unlimited Usage
+                    </p>
+                    <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                      Current count from tracker state: {trackerUnlimitedCount}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleUnlimitedEvent('USAGE_REMOVE')}
+                      disabled={isUpdatingUnlimitedUsage || trackerUnlimitedCount <= 0}
+                      aria-label="Remove one unlimited use"
+                    >
+                      −1
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleUnlimitedEvent('USAGE_ADD')}
+                      disabled={isUpdatingUnlimitedUsage}
+                      aria-label="Add one unlimited use"
+                    >
+                      +1
+                    </Button>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+                    Recent usage events
+                  </p>
+                  {isLoadingUnlimitedEvents ? (
+                    <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>Loading…</p>
+                  ) : unlimitedEvents.length === 0 ? (
+                    <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>No usage events yet.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {unlimitedEvents.slice(0, 5).map((event) => (
+                        <li key={event.id} className="flex items-center justify-between gap-3">
+                          <span className="text-xs text-[var(--color-text)]">
+                            {event.eventType === 'USAGE_ADD' ? '+1 use' : '-1 use'} · {new Date(event.eventDate).toLocaleString()}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleUnlimitedEvent(event.eventType === 'USAGE_ADD' ? 'USAGE_REMOVE' : 'USAGE_ADD', event.id)}
+                            disabled={isUpdatingUnlimitedUsage}
+                            aria-label="Create compensating event"
+                          >
+                            Compensate
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Mark as Unused — only when non-unlimited benefit is currently used */}
+            {!isUnlimitedBenefit && benefit.isUsed && (
               <div
                 className="flex items-center justify-between p-3 rounded-md border"
                 style={{
@@ -604,7 +831,7 @@ export function EditBenefitModal({
                 variant="primary"
                 fullWidth
                 isLoading={isLoading}
-                disabled={isLoading || isDeleting || isMarkingUnused}
+                disabled={isLoading || isDeleting || isMarkingUnused || isUpdatingUnlimitedUsage}
               >
                 {isLoading ? 'Saving...' : 'Save Changes'}
               </Button>
@@ -613,7 +840,7 @@ export function EditBenefitModal({
                   type="button"
                   variant="outline"
                   fullWidth
-                  disabled={isLoading || isDeleting || isMarkingUnused}
+                  disabled={isLoading || isDeleting || isMarkingUnused || isUpdatingUnlimitedUsage}
                 >
                   Cancel
                 </Button>
@@ -635,8 +862,8 @@ export function EditBenefitModal({
                       type="button"
                       variant="danger"
                       fullWidth
-                      onClick={handleDelete}
-                      disabled={isDeleting || isLoading || isMarkingUnused}
+                       onClick={handleDelete}
+                       disabled={isDeleting || isLoading || isMarkingUnused || isUpdatingUnlimitedUsage}
                       aria-label="Confirm delete this benefit permanently"
                     >
                       <Trash2 size={14} className="mr-1.5" aria-hidden="true" />
@@ -658,8 +885,8 @@ export function EditBenefitModal({
                   type="button"
                   variant="outline"
                   fullWidth
-                  onClick={() => setShowDeleteConfirm(true)}
-                  disabled={isDeleting || isLoading || isMarkingUnused}
+                   onClick={() => setShowDeleteConfirm(true)}
+                   disabled={isDeleting || isLoading || isMarkingUnused || isUpdatingUnlimitedUsage}
                   className="!text-[var(--color-error)] !border-[var(--color-error)] hover:!bg-[var(--color-error-light)]"
                   aria-label="Delete this benefit permanently"
                 >

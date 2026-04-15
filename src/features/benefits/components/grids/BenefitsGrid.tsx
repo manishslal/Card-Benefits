@@ -3,6 +3,11 @@
 import React, { useMemo } from 'react';
 import Badge from '@/shared/components/ui/Badge';
 import {
+  extractMultiplierFromName,
+  isMultiplierBenefit,
+  formatSpendCents,
+} from '@/features/benefits/lib/multiplier-benefits';
+import {
   Plane, Tag, Utensils, DollarSign, Zap, Calendar, CheckCircle2,
   Shield, Music, Tv, Star, Armchair, Hotel, Heart, Car, Landmark,
   Pencil,
@@ -20,6 +25,8 @@ interface Benefit {
   value?: number;
   usage?: number | null; // 0-100 percentage, null = unlimited/multiplier benefit
   unlimitedUseCount?: number | null;
+  multiplierSpendCentsTotal?: number | null;
+  multiplierPointsTotal?: number | null;
   type?: string; // travel, shopping, dining, cashback, other
   // Period-based fields (present when benefit engine is enabled)
   periodStart?: string | null;
@@ -37,6 +44,7 @@ interface BenefitsGridProps {
   onEdit?: (benefitId: string) => void;
   onMarkUsed?: (benefitId: string) => void;
   onAdjustUnlimitedUsage?: (benefitId: string, direction: 1 | -1) => void;
+  onOpenMultiplierEntry?: (benefitId: string) => void;
   unlimitedUsageLoadingIds?: Set<string>;
   loading?: boolean;
   emptyMessage?: string;
@@ -352,15 +360,6 @@ function inferBenefitCategory(type?: string, name?: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: Extract point multiplier from benefit name (e.g., "5x Points on Hotels" → 5)
-// ---------------------------------------------------------------------------
-function extractMultiplier(name?: string): number | null {
-  if (!name) return null;
-  const match = name.match(/(\d+\.?\d*)x\b/i);
-  return match ? parseFloat(match[1]) : null;
-}
-
-// ---------------------------------------------------------------------------
 // E-4: Format benefit type name for display
 // "STATEMENT_CREDIT" → "Statement Credits", "TRAVEL" → "Travel", etc.
 // ---------------------------------------------------------------------------
@@ -413,6 +412,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
       onEdit,
       onMarkUsed,
       onAdjustUnlimitedUsage,
+      onOpenMultiplierEntry,
       unlimitedUsageLoadingIds,
       loading = false,
       emptyMessage = 'No benefits found',
@@ -665,7 +665,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
 
           {/* ── Row 2: Value · Cadence + Progress Ring (merged, Sprint 28B) ── */}
           {(() => {
-            const multiplier = extractMultiplier(benefit.name);
+            const multiplier = extractMultiplierFromName(benefit.name);
             const isUnlimited = benefit.usage === null;
             const hasMonetaryValue = benefit.value != null && benefit.value > 0;
             const showRow = hasMonetaryValue || isUnlimited || multiplier !== null || !!cadenceText;
@@ -731,7 +731,9 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
               </span>
               {benefit.usage === null && (
                 <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
-                  Uses: {Math.max(0, benefit.unlimitedUseCount ?? 0)}
+                  {isMultiplierBenefit(benefit)
+                    ? `Spend: ${formatSpendCents(benefit.multiplierSpendCentsTotal ?? 0)} · Points: ${Math.max(0, benefit.multiplierPointsTotal ?? 0).toLocaleString('en-US')}`
+                    : `Uses: ${Math.max(0, benefit.unlimitedUseCount ?? 0)}`}
                 </span>
               )}
               {benefit.expirationDate && (
@@ -745,7 +747,21 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
               {onMarkUsed && benefit.status === 'active' && (
-                benefit.usage === null && onAdjustUnlimitedUsage ? (
+                isMultiplierBenefit(benefit) && onOpenMultiplierEntry ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenMultiplierEntry(benefit.id);
+                    }}
+                    disabled={unlimitedUsageLoadingIds?.has(benefit.id)}
+                    className="h-10 px-3 rounded-full inline-flex items-center justify-center gap-1 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors press-feedback"
+                    aria-label={`Add multiplier spend entry for ${benefit.name}`}
+                  >
+                    <DollarSign size={14} aria-hidden="true" />
+                    Add Spend
+                  </button>
+                ) : benefit.usage === null && onAdjustUnlimitedUsage ? (
                   <div className="flex items-center gap-1">
                     <button
                       type="button"

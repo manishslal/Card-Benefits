@@ -12,6 +12,10 @@ import { AddCardModal } from '@/features/cards/components/modals/AddCardModal';
 import { CardEditModal } from '@/features/cards/components/MyCardsSection/CardEditModal';
 import type { Card as EditableCard } from '@/features/cards/components/MyCardsSection/types';
 import { deduplicateBenefits } from '@/lib/benefit-utils';
+import {
+  isMultiplierBenefit,
+  formatSpendCents,
+} from '@/features/benefits/lib/multiplier-benefits';
 import { formatCurrency } from '@/shared/lib/format-currency';
 import { Plus, CreditCard, AlertCircle, Sparkles, Loader2 } from 'lucide-react';
 import { SkeletonCard } from '@/shared/components/loaders';
@@ -76,6 +80,8 @@ interface BenefitData {
   value?: number;
   usage?: number | null;
   unlimitedUseCount?: number | null;
+  multiplierSpendCentsTotal?: number | null;
+  multiplierPointsTotal?: number | null;
   isUsed?: boolean;
   createdDate?: Date | string;
   // Period-based fields (benefit engine)
@@ -264,6 +270,8 @@ function transformBenefitForGrid(benefit: BenefitData): {
   value?: number;
   usage?: number | null;
   unlimitedUseCount?: number | null;
+  multiplierSpendCentsTotal?: number | null;
+  multiplierPointsTotal?: number | null;
   type?: string;
   periodStart?: string | null;
   periodEnd?: string | null;
@@ -283,6 +291,8 @@ function transformBenefitForGrid(benefit: BenefitData): {
     value: benefit.value,
     usage: benefit.usage,
     unlimitedUseCount: benefit.unlimitedUseCount ?? null,
+    multiplierSpendCentsTotal: benefit.multiplierSpendCentsTotal ?? null,
+    multiplierPointsTotal: benefit.multiplierPointsTotal ?? null,
     type: benefit.type,
     // Pass period data through for display in BenefitsGrid
     periodStart: benefit.periodStart,
@@ -314,6 +324,8 @@ function transformBenefitForModal(benefit: BenefitData | null): {
   claimedAt?: string | null;
   usage?: number | null;
   unlimitedUseCount?: number | null;
+  multiplierSpendCentsTotal?: number | null;
+  multiplierPointsTotal?: number | null;
 } | null {
   if (!benefit) return null;
   return {
@@ -331,6 +343,8 @@ function transformBenefitForModal(benefit: BenefitData | null): {
     claimedAt: benefit.claimedAt ?? null,
     usage: benefit.usage,
     unlimitedUseCount: benefit.unlimitedUseCount ?? null,
+    multiplierSpendCentsTotal: benefit.multiplierSpendCentsTotal ?? null,
+    multiplierPointsTotal: benefit.multiplierPointsTotal ?? null,
   };
 }
 
@@ -512,6 +526,7 @@ export default function DashboardPage() {
   const [smartView, setSmartView] = useState<SmartViewKey>('all');
   const [celebratingIds, setCelebratingIds] = useState<Set<string>>(new Set());
   const [unlimitedLoadingIds, setUnlimitedLoadingIds] = useState<Set<string>>(new Set());
+  const [multiplierLoadingIds, setMultiplierLoadingIds] = useState<Set<string>>(new Set());
 
   // E-3: Keyboard shortcut help overlay visibility
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
@@ -589,6 +604,8 @@ export default function DashboardPage() {
         value: getDisplayValue(b),
         usage: calculateYearlyUsage(b, apiCard.benefits || []),
         unlimitedUseCount: null,
+        multiplierSpendCentsTotal: null,
+        multiplierPointsTotal: null,
         isUsed: b.isUsed ?? false,
         periodStart: b.periodStart ?? null,
         periodEnd: b.periodEnd ?? null,
@@ -601,12 +618,12 @@ export default function DashboardPage() {
     }));
   };
 
-  const syncUnlimitedBenefitsFromTrackerState = useCallback(async (benefitsSnapshot: BenefitData[]) => {
-    const unlimitedBenefits = benefitsSnapshot.filter((benefit) => benefit.usage === null);
-    if (unlimitedBenefits.length === 0) return;
+  const syncLedgerBenefitsFromTrackerState = useCallback(async (benefitsSnapshot: BenefitData[]) => {
+    const ledgerTrackedBenefits = benefitsSnapshot.filter((benefit) => benefit.usage === null);
+    if (ledgerTrackedBenefits.length === 0) return;
 
     const trackerEntries = await Promise.all(
-      unlimitedBenefits.map(async (benefit) => {
+      ledgerTrackedBenefits.map(async (benefit) => {
         try {
           const response = await fetch(
             `/api/benefits/tracker-state?userBenefitId=${encodeURIComponent(benefit.id)}`,
@@ -620,12 +637,16 @@ export default function DashboardPage() {
           if (!response.ok) return null;
           const data = await response.json();
           const unlimitedNetCount = Number(data?.trackerState?.unlimitedNetCount ?? 0);
+          const spendCentsTotal = Number(data?.trackerState?.spendCentsTotal ?? 0);
+          const pointsTotal = Number(data?.trackerState?.pointsTotal ?? 0);
           if (!Number.isFinite(unlimitedNetCount)) return null;
 
           return {
             id: benefit.id,
             unlimitedUseCount: Math.max(0, unlimitedNetCount),
-            isUsed: unlimitedNetCount > 0,
+            isUsed: isMultiplierBenefit(benefit) ? (benefit.isUsed ?? false) : unlimitedNetCount > 0,
+            multiplierSpendCentsTotal: Number.isFinite(spendCentsTotal) ? Math.max(0, spendCentsTotal) : 0,
+            multiplierPointsTotal: Number.isFinite(pointsTotal) ? Math.max(0, pointsTotal) : 0,
           };
         } catch {
           return null;
@@ -635,7 +656,13 @@ export default function DashboardPage() {
 
     const byId = new Map(
       trackerEntries
-        .filter((entry): entry is { id: string; unlimitedUseCount: number; isUsed: boolean } => entry !== null)
+        .filter((entry): entry is {
+          id: string;
+          unlimitedUseCount: number;
+          isUsed: boolean;
+          multiplierSpendCentsTotal: number;
+          multiplierPointsTotal: number;
+        } => entry !== null)
         .map((entry) => [entry.id, entry])
     );
 
@@ -649,7 +676,9 @@ export default function DashboardPage() {
 
         if (
           benefit.unlimitedUseCount === tracker.unlimitedUseCount &&
-          benefit.isUsed === tracker.isUsed
+          benefit.isUsed === tracker.isUsed &&
+          benefit.multiplierSpendCentsTotal === tracker.multiplierSpendCentsTotal &&
+          benefit.multiplierPointsTotal === tracker.multiplierPointsTotal
         ) {
           return benefit;
         }
@@ -659,6 +688,8 @@ export default function DashboardPage() {
           ...benefit,
           unlimitedUseCount: tracker.unlimitedUseCount,
           isUsed: tracker.isUsed,
+          multiplierSpendCentsTotal: tracker.multiplierSpendCentsTotal,
+          multiplierPointsTotal: tracker.multiplierPointsTotal,
         };
       });
 
@@ -667,8 +698,8 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    void syncUnlimitedBenefitsFromTrackerState(benefits);
-  }, [benefits, syncUnlimitedBenefitsFromTrackerState]);
+    void syncLedgerBenefitsFromTrackerState(benefits);
+  }, [benefits, syncLedgerBenefitsFromTrackerState]);
 
   // ============================================================
   // Effect: Load user cards from API (BLOCKER #7 implementation)
@@ -1334,6 +1365,109 @@ export default function DashboardPage() {
       toast({ title: 'Failed to update unlimited usage', variant: 'error' });
     } finally {
       setUnlimitedLoadingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(benefitId);
+        return next;
+      });
+    }
+  };
+
+  const handleOpenMultiplierEntry = async (benefitId: string) => {
+    const target = benefits.find((b) => b.id === benefitId);
+    if (!target || !selectedCardId || !isMultiplierBenefit(target)) return;
+
+    const spendInput = window.prompt('Enter spend amount in dollars (positive add, negative remove):', '0');
+    if (spendInput === null) return;
+    const spendDollars = Number.parseFloat(spendInput);
+    if (!Number.isFinite(spendDollars) || spendDollars === 0) {
+      toast({ title: 'Please enter a non-zero spend amount.', variant: 'error' });
+      return;
+    }
+
+    const pointsInput = window.prompt('Enter points delta (optional, positive add, negative remove):', '0');
+    if (pointsInput === null) return;
+    const pointsDelta = Number.parseInt(pointsInput, 10);
+    if (!Number.isFinite(pointsDelta)) {
+      toast({ title: 'Points must be a valid whole number.', variant: 'error' });
+      return;
+    }
+
+    const spendDeltaCents = Math.round(spendDollars * 100);
+    const previousSpend = Math.max(0, target.multiplierSpendCentsTotal ?? 0);
+    const previousPoints = Math.max(0, target.multiplierPointsTotal ?? 0);
+    const optimisticSpend = Math.max(0, previousSpend + spendDeltaCents);
+    const optimisticPoints = Math.max(0, previousPoints + pointsDelta);
+
+    setMultiplierLoadingIds((prev) => new Set(prev).add(benefitId));
+    setBenefits((prev) => prev.map((b) => (
+      b.id === benefitId
+        ? { ...b, multiplierSpendCentsTotal: optimisticSpend, multiplierPointsTotal: optimisticPoints }
+        : b
+    )));
+
+    const postEvent = async (payload: {
+      eventType: 'SPEND_ADD' | 'SPEND_REMOVE' | 'POINTS_ADD' | 'POINTS_REMOVE';
+      amountCents?: number;
+      points?: number;
+    }) => {
+      const response = await fetch('/api/benefits/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          userBenefitId: benefitId,
+          userCardId: selectedCardId,
+          eventFamily: 'MULTIPLIER_SPEND',
+          source: 'dashboard:multiplier-quick-entry',
+          ...payload,
+        }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to record multiplier event');
+      }
+      return response.json();
+    };
+
+    try {
+      const responses: Array<{ projection?: { spendCentsTotal?: number; pointsTotal?: number } }> = [];
+      responses.push(await postEvent({
+        eventType: spendDeltaCents >= 0 ? 'SPEND_ADD' : 'SPEND_REMOVE',
+        amountCents: Math.abs(spendDeltaCents),
+      }));
+
+      if (pointsDelta !== 0) {
+        responses.push(await postEvent({
+          eventType: pointsDelta >= 0 ? 'POINTS_ADD' : 'POINTS_REMOVE',
+          points: Math.abs(pointsDelta),
+        }));
+      }
+
+      const latestProjection = responses[responses.length - 1]?.projection;
+      const syncedSpend = Math.max(0, Number(latestProjection?.spendCentsTotal ?? optimisticSpend));
+      const syncedPoints = Math.max(0, Number(latestProjection?.pointsTotal ?? optimisticPoints));
+      setBenefits((prev) => prev.map((b) => (
+        b.id === benefitId
+          ? { ...b, multiplierSpendCentsTotal: syncedSpend, multiplierPointsTotal: syncedPoints }
+          : b
+      )));
+
+      toast({
+        title: `Multiplier tracked: ${formatSpendCents(Math.abs(spendDeltaCents))}${pointsDelta !== 0 ? ` · ${Math.abs(pointsDelta).toLocaleString('en-US')} pts` : ''}`,
+        variant: 'success',
+      });
+    } catch (error) {
+      setBenefits((prev) => prev.map((b) => (
+        b.id === benefitId
+          ? { ...b, multiplierSpendCentsTotal: previousSpend, multiplierPointsTotal: previousPoints }
+          : b
+      )));
+      toast({
+        title: error instanceof Error ? error.message : 'Failed to record multiplier entry',
+        variant: 'error',
+      });
+    } finally {
+      setMultiplierLoadingIds((prev) => {
         const next = new Set(prev);
         next.delete(benefitId);
         return next;
@@ -2230,7 +2364,8 @@ export default function DashboardPage() {
                     onEdit={viewMode === 'current' ? handleEditBenefitClick : undefined}
                     onMarkUsed={viewMode === 'current' ? handleMarkUsed : undefined}
                     onAdjustUnlimitedUsage={viewMode === 'current' ? handleAdjustUnlimitedUsage : undefined}
-                    unlimitedUsageLoadingIds={unlimitedLoadingIds}
+                    onOpenMultiplierEntry={viewMode === 'current' ? handleOpenMultiplierEntry : undefined}
+                    unlimitedUsageLoadingIds={new Set([...unlimitedLoadingIds, ...multiplierLoadingIds])}
                     gridColumns={3}
                     celebratingIds={celebratingIds}
                   />

@@ -57,13 +57,63 @@ export async function GET(request: NextRequest) {
 
     let readShadow = null;
     if (featureFlags.EVENT_LEDGER_READ_SHADOW_ENABLED) {
-      const usageRecordCount = await prisma.benefitUsageRecord.count({
-        where: { benefitId: userBenefitId, userId },
+      const usageRecords = await prisma.benefitUsageRecord.findMany({
+        where: {
+          benefitId: userBenefitId,
+          userId,
+          usageDate: {
+            gte: projection.periodStart,
+            lte: projection.periodEnd,
+          },
+        },
+        select: {
+          usageAmount: true,
+          usageDate: true,
+        },
       });
+      const usageRecordCount = usageRecords.length;
+      const usageAmountCentsTotal = usageRecords.reduce((sum, record) => {
+        const amount = Number(record.usageAmount);
+        if (!Number.isFinite(amount)) return sum;
+        return sum + Math.round(amount * 100);
+      }, 0);
+
+      const unlimitedDelta = Number(benefit.timesUsed ?? 0) - Number(projection.unlimitedNetCount ?? 0);
+      const spendDeltaCents = usageAmountCentsTotal - Number(projection.spendCentsTotal ?? 0);
+
       readShadow = {
-        usageRecordCount,
-        benefitIsUsed: benefit.isUsed,
-        benefitTimesUsed: benefit.timesUsed,
+        enabled: true,
+        legacy: {
+          usageRecordCount,
+          usageAmountCentsTotal,
+          benefitIsUsed: benefit.isUsed,
+          benefitTimesUsed: benefit.timesUsed,
+        },
+        projection: {
+          unlimitedNetCount: projection.unlimitedNetCount,
+          spendCentsTotal: projection.spendCentsTotal,
+          pointsTotal: projection.pointsTotal,
+        },
+        parity: {
+          unlimited: {
+            legacyTimesUsed: benefit.timesUsed,
+            projectionUnlimitedNetCount: projection.unlimitedNetCount,
+            delta: unlimitedDelta,
+            isMatch: unlimitedDelta === 0,
+          },
+          multiplierSpend: {
+            legacySpendCentsTotal: usageAmountCentsTotal,
+            projectionSpendCentsTotal: projection.spendCentsTotal,
+            deltaCents: spendDeltaCents,
+            isMatch: spendDeltaCents === 0,
+          },
+          multiplierPoints: {
+            projectionPointsTotal: projection.pointsTotal,
+            legacyComparableSource: null,
+            isEvaluated: false,
+            note: 'Legacy usage records do not persist points totals; spend parity only.',
+          },
+        },
       };
     }
 

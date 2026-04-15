@@ -5,6 +5,10 @@ import Button from '@/shared/components/ui/button';
 import Input from '@/shared/components/ui/Input';
 import { UnifiedSelect } from '@/shared/components/ui/select-unified';
 import { FormError } from '@/shared/components/forms';
+import {
+  isMultiplierBenefit,
+  formatSpendCents,
+} from '@/features/benefits/lib/multiplier-benefits';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X, Lock, Info, Trash2, Undo2 } from 'lucide-react';
 
@@ -43,6 +47,8 @@ interface UserBenefit {
   claimedAt?: string | null;
   usage?: number | null;
   unlimitedUseCount?: number | null;
+  multiplierSpendCentsTotal?: number | null;
+  multiplierPointsTotal?: number | null;
 }
 
 interface EditBenefitModalProps {
@@ -85,6 +91,16 @@ export function EditBenefitModal({
   const [isLoadingUnlimitedEvents, setIsLoadingUnlimitedEvents] = useState(false);
   const [isUpdatingUnlimitedUsage, setIsUpdatingUnlimitedUsage] = useState(false);
   const [trackerUnlimitedCount, setTrackerUnlimitedCount] = useState(0);
+  const [multiplierEvents, setMultiplierEvents] = useState<Array<{
+    id: string;
+    eventType: 'SPEND_ADD' | 'SPEND_REMOVE' | 'POINTS_ADD' | 'POINTS_REMOVE';
+    eventDate: string;
+    amountCents: number | null;
+    points: number | null;
+  }>>([]);
+  const [trackerSpendCents, setTrackerSpendCents] = useState(0);
+  const [trackerPoints, setTrackerPoints] = useState(0);
+  const [multiplierEntry, setMultiplierEntry] = useState({ spendDollars: '', points: '' });
 
   // Pre-fill form when benefit data arrives
   useEffect(() => {
@@ -121,25 +137,32 @@ export function EditBenefitModal({
       setErrors({});
       setMessage('');
       setShowDeleteConfirm(false);
+      setMultiplierEntry({ spendDollars: '', points: '' });
     }
   }, [isOpen, benefit]);
 
-  const isUnlimitedBenefit = benefit?.usage === null;
+  const isMultiplierTrackedBenefit = !!benefit && isMultiplierBenefit(benefit);
+  const isUnlimitedBenefit = benefit?.usage === null && !isMultiplierTrackedBenefit;
 
   useEffect(() => {
-    if (!isOpen || !benefit || !userCardId || !isUnlimitedBenefit) {
+    if (!isOpen || !benefit || !userCardId || benefit.usage !== null) {
       setUnlimitedEvents([]);
+      setMultiplierEvents([]);
       setTrackerUnlimitedCount(0);
+      setTrackerSpendCents(0);
+      setTrackerPoints(0);
       return;
     }
 
-    const loadUnlimitedState = async () => {
+    const eventFamily = isMultiplierTrackedBenefit ? 'MULTIPLIER_SPEND' : 'UNLIMITED_USE';
+
+    const loadLedgerState = async () => {
       setIsLoadingUnlimitedEvents(true);
 
       try {
         const [eventsResponse, trackerResponse] = await Promise.all([
           fetch(
-            `/api/benefits/events?userBenefitId=${encodeURIComponent(benefit.id)}&userCardId=${encodeURIComponent(userCardId)}&eventFamily=UNLIMITED_USE&limit=10`,
+            `/api/benefits/events?userBenefitId=${encodeURIComponent(benefit.id)}&userCardId=${encodeURIComponent(userCardId)}&eventFamily=${eventFamily}&limit=10`,
             {
               method: 'GET',
               headers: { 'Content-Type': 'application/json' },
@@ -158,29 +181,64 @@ export function EditBenefitModal({
 
         if (eventsResponse.ok) {
           const eventsData = await eventsResponse.json();
-          const parsedEvents = Array.isArray(eventsData?.events)
-            ? eventsData.events
-                .filter((event: { eventType?: string }) => event.eventType === 'USAGE_ADD' || event.eventType === 'USAGE_REMOVE')
-                .map((event: { id: string; eventType: 'USAGE_ADD' | 'USAGE_REMOVE'; eventDate: string; quantity: number | null }) => ({
-                  id: event.id,
-                  eventType: event.eventType,
-                  eventDate: event.eventDate,
-                  quantity: event.quantity,
-                }))
-            : [];
-          setUnlimitedEvents(parsedEvents);
+          if (isMultiplierTrackedBenefit) {
+            const parsedMultiplierEvents = Array.isArray(eventsData?.events)
+              ? eventsData.events
+                  .filter((event: { eventType?: string }) =>
+                    event.eventType === 'SPEND_ADD'
+                    || event.eventType === 'SPEND_REMOVE'
+                    || event.eventType === 'POINTS_ADD'
+                    || event.eventType === 'POINTS_REMOVE')
+                  .map((event: {
+                    id: string;
+                    eventType: 'SPEND_ADD' | 'SPEND_REMOVE' | 'POINTS_ADD' | 'POINTS_REMOVE';
+                    eventDate: string;
+                    amountCents: number | null;
+                    points: number | null;
+                  }) => ({
+                    id: event.id,
+                    eventType: event.eventType,
+                    eventDate: event.eventDate,
+                    amountCents: event.amountCents ?? null,
+                    points: event.points ?? null,
+                  }))
+              : [];
+            setMultiplierEvents(parsedMultiplierEvents);
+            setUnlimitedEvents([]);
+          } else {
+            const parsedEvents = Array.isArray(eventsData?.events)
+              ? eventsData.events
+                  .filter((event: { eventType?: string }) => event.eventType === 'USAGE_ADD' || event.eventType === 'USAGE_REMOVE')
+                  .map((event: { id: string; eventType: 'USAGE_ADD' | 'USAGE_REMOVE'; eventDate: string; quantity: number | null }) => ({
+                    id: event.id,
+                    eventType: event.eventType,
+                    eventDate: event.eventDate,
+                    quantity: event.quantity,
+                  }))
+              : [];
+            setUnlimitedEvents(parsedEvents);
+            setMultiplierEvents([]);
+          }
         }
 
         if (trackerResponse.ok) {
           const trackerData = await trackerResponse.json();
           const nextCount = Math.max(0, Number(trackerData?.trackerState?.unlimitedNetCount ?? 0));
+          const nextSpend = Math.max(0, Number(trackerData?.trackerState?.spendCentsTotal ?? 0));
+          const nextPoints = Math.max(0, Number(trackerData?.trackerState?.pointsTotal ?? 0));
+
           setTrackerUnlimitedCount(nextCount);
+          setTrackerSpendCents(nextSpend);
+          setTrackerPoints(nextPoints);
+
           if (onBenefitUpdated) {
             onBenefitUpdated({
               id: benefit.id,
               usage: null,
               unlimitedUseCount: nextCount,
-              isUsed: nextCount > 0,
+              multiplierSpendCentsTotal: nextSpend,
+              multiplierPointsTotal: nextPoints,
+              ...(isMultiplierTrackedBenefit ? {} : { isUsed: nextCount > 0 }),
             });
           }
         }
@@ -191,8 +249,8 @@ export function EditBenefitModal({
       }
     };
 
-    void loadUnlimitedState();
-  }, [isOpen, benefit, userCardId, isUnlimitedBenefit, onBenefitUpdated]);
+    void loadLedgerState();
+  }, [isOpen, benefit, userCardId, isMultiplierTrackedBenefit, onBenefitUpdated]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -458,6 +516,116 @@ export function EditBenefitModal({
     }
   };
 
+  const handleMultiplierEvent = async (
+    spendDeltaCents: number,
+    pointsDelta: number,
+    compensatingEventId?: string
+  ) => {
+    if (!benefit || !userCardId) return;
+    if (spendDeltaCents === 0 && pointsDelta === 0) return;
+
+    setIsUpdatingUnlimitedUsage(true);
+    setMessage('');
+
+    const postEvent = async (payload: {
+      eventType: 'SPEND_ADD' | 'SPEND_REMOVE' | 'POINTS_ADD' | 'POINTS_REMOVE';
+      amountCents?: number;
+      points?: number;
+      metadata?: Record<string, unknown>;
+    }) => {
+      const response = await fetch('/api/benefits/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          userBenefitId: benefit.id,
+          userCardId,
+          eventFamily: 'MULTIPLIER_SPEND',
+          source: 'edit-modal:multiplier-history',
+          ...payload,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update multiplier tracking');
+      }
+      return data;
+    };
+
+    try {
+      const responses: Array<{ projection?: { spendCentsTotal?: number; pointsTotal?: number } }> = [];
+      if (spendDeltaCents !== 0) {
+        responses.push(await postEvent({
+          eventType: spendDeltaCents > 0 ? 'SPEND_ADD' : 'SPEND_REMOVE',
+          amountCents: Math.abs(spendDeltaCents),
+          metadata: compensatingEventId ? { compensatingEventId } : undefined,
+        }));
+      }
+
+      if (pointsDelta !== 0) {
+        responses.push(await postEvent({
+          eventType: pointsDelta > 0 ? 'POINTS_ADD' : 'POINTS_REMOVE',
+          points: Math.abs(pointsDelta),
+          metadata: compensatingEventId ? { compensatingEventId } : undefined,
+        }));
+      }
+
+      const latestProjection = responses[responses.length - 1]?.projection;
+      const latestSpend = Math.max(0, Number(latestProjection?.spendCentsTotal ?? trackerSpendCents));
+      const latestPoints = Math.max(0, Number(latestProjection?.pointsTotal ?? trackerPoints));
+      setTrackerSpendCents(latestSpend);
+      setTrackerPoints(latestPoints);
+
+      if (onBenefitUpdated) {
+        onBenefitUpdated({
+          id: benefit.id,
+          usage: null,
+          multiplierSpendCentsTotal: latestSpend,
+          multiplierPointsTotal: latestPoints,
+        });
+      }
+
+      const refreshEventsResponse = await fetch(
+        `/api/benefits/events?userBenefitId=${encodeURIComponent(benefit.id)}&userCardId=${encodeURIComponent(userCardId)}&eventFamily=MULTIPLIER_SPEND&limit=10`,
+        {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        }
+      );
+      if (refreshEventsResponse.ok) {
+        const refreshData = await refreshEventsResponse.json();
+        const parsedEvents = Array.isArray(refreshData?.events)
+          ? refreshData.events
+              .filter((event: { eventType?: string }) =>
+                event.eventType === 'SPEND_ADD'
+                || event.eventType === 'SPEND_REMOVE'
+                || event.eventType === 'POINTS_ADD'
+                || event.eventType === 'POINTS_REMOVE')
+              .map((event: {
+                id: string;
+                eventType: 'SPEND_ADD' | 'SPEND_REMOVE' | 'POINTS_ADD' | 'POINTS_REMOVE';
+                eventDate: string;
+                amountCents: number | null;
+                points: number | null;
+              }) => ({
+                id: event.id,
+                eventType: event.eventType,
+                eventDate: event.eventDate,
+                amountCents: event.amountCents ?? null,
+                points: event.points ?? null,
+              }))
+          : [];
+        setMultiplierEvents(parsedEvents);
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Failed to update multiplier tracking');
+    } finally {
+      setIsUpdatingUnlimitedUsage(false);
+    }
+  };
+
   if (!isOpen || !benefit) return null;
 
   const isEngineManaged = !!benefit.masterBenefitId;
@@ -718,7 +886,113 @@ export function EditBenefitModal({
               </div>
             )}
 
-            {/* Unlimited usage controls/history */}
+            {/* Unlimited and multiplier ledger controls/history */}
+            {benefit.usage === null && isMultiplierTrackedBenefit && (
+              <div
+                className="space-y-3 p-3 rounded-md border"
+                style={{
+                  backgroundColor: 'var(--color-bg-secondary)',
+                  borderColor: 'var(--color-border)',
+                }}
+              >
+                <div>
+                  <p className="text-sm font-medium text-[var(--color-text)]">
+                    Multiplier Spend Tracker
+                  </p>
+                  <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                    Cumulative from projection: {formatSpendCents(trackerSpendCents)} · {trackerPoints.toLocaleString('en-US')} points
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <Input
+                    id="multiplier-spend-entry"
+                    label="Spend Δ ($)"
+                    type="number"
+                    name="multiplierSpendEntry"
+                    value={multiplierEntry.spendDollars}
+                    onChange={(event) => setMultiplierEntry((prev) => ({ ...prev, spendDollars: event.target.value }))}
+                    step="0.01"
+                    placeholder="e.g. 120.50 or -50"
+                    disabled={isUpdatingUnlimitedUsage}
+                  />
+                  <Input
+                    id="multiplier-points-entry"
+                    label="Points Δ (optional)"
+                    type="number"
+                    name="multiplierPointsEntry"
+                    value={multiplierEntry.points}
+                    onChange={(event) => setMultiplierEntry((prev) => ({ ...prev, points: event.target.value }))}
+                    placeholder="e.g. 600 or -200"
+                    disabled={isUpdatingUnlimitedUsage}
+                  />
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const spendDeltaCents = Math.round(Number.parseFloat(multiplierEntry.spendDollars || '0') * 100);
+                    const pointsDelta = Math.round(Number.parseFloat(multiplierEntry.points || '0'));
+                    if (!Number.isFinite(spendDeltaCents) || !Number.isFinite(pointsDelta) || (spendDeltaCents === 0 && pointsDelta === 0)) {
+                      setMessage('Enter a non-zero spend or points delta for multiplier tracking');
+                      return;
+                    }
+                    void handleMultiplierEvent(spendDeltaCents, pointsDelta);
+                    setMultiplierEntry({ spendDollars: '', points: '' });
+                  }}
+                  disabled={isUpdatingUnlimitedUsage}
+                >
+                  Save Multiplier Entry
+                </Button>
+
+                <div>
+                  <p className="text-xs font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+                    Recent multiplier events
+                  </p>
+                  {isLoadingUnlimitedEvents ? (
+                    <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>Loading…</p>
+                  ) : multiplierEvents.length === 0 ? (
+                    <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>No multiplier events yet.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {multiplierEvents.slice(0, 5).map((event) => {
+                        const spendDelta = event.eventType === 'SPEND_REMOVE'
+                          ? -Math.max(0, event.amountCents ?? 0)
+                          : Math.max(0, event.amountCents ?? 0);
+                        const pointsDelta = event.eventType === 'POINTS_REMOVE'
+                          ? -Math.max(0, event.points ?? 0)
+                          : Math.max(0, event.points ?? 0);
+                        const summary = event.eventType.startsWith('SPEND')
+                          ? `${event.eventType === 'SPEND_REMOVE' ? '−' : '+'}${formatSpendCents(Math.max(0, event.amountCents ?? 0))}`
+                          : `${event.eventType === 'POINTS_REMOVE' ? '−' : '+'}${Math.max(0, event.points ?? 0).toLocaleString('en-US')} pts`;
+                        return (
+                          <li key={event.id} className="flex items-center justify-between gap-3">
+                            <span className="text-xs text-[var(--color-text)]">
+                              {summary} · {new Date(event.eventDate).toLocaleString()}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                void handleMultiplierEvent(-spendDelta, -pointsDelta, event.id);
+                              }}
+                              disabled={isUpdatingUnlimitedUsage}
+                              aria-label="Create compensating multiplier event"
+                            >
+                              Remove / Correct
+                            </Button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            )}
+
             {isUnlimitedBenefit && (
               <div
                 className="space-y-3 p-3 rounded-md border"

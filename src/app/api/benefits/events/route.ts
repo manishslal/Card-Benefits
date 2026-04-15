@@ -28,6 +28,22 @@ function parseEventType(value: unknown): BenefitEventType | null {
   return null;
 }
 
+function isValidEventTypeForFamily(
+  eventFamily: BenefitEventFamily,
+  eventType: BenefitEventType
+): boolean {
+  if (eventFamily === 'UNLIMITED_USE') {
+    return eventType === 'USAGE_ADD' || eventType === 'USAGE_REMOVE' || eventType === 'ADJUSTMENT';
+  }
+  return (
+    eventType === 'SPEND_ADD'
+    || eventType === 'SPEND_REMOVE'
+    || eventType === 'POINTS_ADD'
+    || eventType === 'POINTS_REMOVE'
+    || eventType === 'ADJUSTMENT'
+  );
+}
+
 export async function POST(request: NextRequest) {
   try {
     const userId = request.headers.get('x-user-id');
@@ -55,6 +71,17 @@ export async function POST(request: NextRequest) {
     if (!userBenefitId || !userCardId || !eventFamily || !eventType || Number.isNaN(eventDate.getTime())) {
       return NextResponse.json(
         { success: false, error: 'VALIDATION_ERROR', message: 'Invalid event payload' },
+        { status: 400 }
+      );
+    }
+
+    if (!isValidEventTypeForFamily(eventFamily, eventType)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'VALIDATION_ERROR',
+          message: `eventType ${eventType} is not allowed for eventFamily ${eventFamily}`,
+        },
         { status: 400 }
       );
     }

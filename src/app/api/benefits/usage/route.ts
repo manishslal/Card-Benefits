@@ -14,6 +14,8 @@ import { prisma } from '@/shared/lib/prisma';
 import { logSafeError } from '@/lib/error-logging';
 import { validateClaimingRequest, getClaimingLimitsInfo } from '@/lib/claiming-validation';
 import { getUrgencyLevel } from '@/lib/benefit-period-utils';
+import { featureFlags } from '@/lib/feature-flags';
+import { createBenefitEventWithProjection } from '@/lib/benefit-event-ledger';
 
 /**
  * POST /api/benefits/usage
@@ -49,15 +51,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { userBenefitId, userCardId, usageAmount, notes, usageDate } = body;
+    const userBenefitId = body.userBenefitId || body.benefitId;
+    const userCardId = body.userCardId;
+    const usageAmount = body.usageAmount ?? body.amount;
+    const notes = body.notes ?? body.description;
+    const usageDate = body.usageDate ?? body.date;
 
     // ========== Validation ==========
-    if (!userBenefitId || !userCardId) {
+    if (!userBenefitId) {
       return NextResponse.json(
         {
           success: false,
           error: 'VALIDATION_ERROR',
-          message: 'Missing required fields: userBenefitId, userCardId',
+          message: 'Missing required fields: userBenefitId',
           statusCode: 400,
         },
         { status: 400 }
@@ -113,7 +119,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (!userBenefit || userBenefit.userCardId !== userCardId) {
+    if (!userBenefit || (userCardId && userBenefit.userCardId !== userCardId)) {
       return NextResponse.json(
         {
           success: false,
@@ -238,6 +244,33 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      if (featureFlags.EVENT_LEDGER_DUAL_WRITE_ENABLED) {
+        try {
+          await prisma.$transaction((tx) =>
+            createBenefitEventWithProjection(tx, {
+              userId,
+              userCardId: userBenefit.userCardId,
+              userBenefitId,
+              eventFamily: 'MULTIPLIER_SPEND',
+              eventType: 'SPEND_ADD',
+              amountCents: claimAmountCents,
+              eventDate: claimDate,
+              endpointScope: '/api/benefits/usage',
+              idempotencyKey: `usage-record:${record.id}`,
+              source: 'dual-write:/api/benefits/usage',
+              notes: typeof notes === 'string' ? notes : null,
+              metadata: {
+                usageRecordId: record.id,
+                usageAmount: Number(record.usageAmount),
+              },
+            })
+          );
+        } catch (dualWriteError) {
+          // Legacy write is source-of-truth while dual-write rolls out.
+          logSafeError('Dual-write failure on /api/benefits/usage', dualWriteError);
+        }
+      }
+
       // Get claiming limits info for response (if configured)
       let claimingInfo: any = null;
       if (masterBenefit?.claimingCadence) {
@@ -341,8 +374,8 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20')));
-    const userBenefitId = searchParams.get('userBenefitId') || undefined;
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || searchParams.get('pageSize') || '20')));
+    const userBenefitId = searchParams.get('userBenefitId') || searchParams.get('benefitId') || undefined;
     const cadenceFilter = searchParams.get('cadence') || undefined; // Phase 6C: Cadence filter
     const urgencyFilter = searchParams.get('urgency') || undefined; // Phase 6C: Urgency filter
     const sortBy = searchParams.get('sortBy') || 'usageDate';
@@ -490,4 +523,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

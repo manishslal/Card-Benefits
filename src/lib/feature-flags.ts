@@ -114,6 +114,26 @@ export const featureFlags = {
   PHASE2B_API_PAGINATION: isEnabled('PHASE2B_API_PAGINATION'),
 
   // ─────────────────────────────────────────────────────────────────
+  // EVENT LEDGER ROLLOUT FLAGS (default OFF)
+  // ─────────────────────────────────────────────────────────────────
+
+  EVENT_LEDGER_WRITE_ENABLED:
+    process.env.EVENT_LEDGER_WRITE_ENABLED?.toLowerCase() === 'true'
+    || isEnabled('EVENT_LEDGER_WRITE_ENABLED'),
+
+  EVENT_LEDGER_DUAL_WRITE_ENABLED:
+    process.env.EVENT_LEDGER_DUAL_WRITE_ENABLED?.toLowerCase() === 'true'
+    || isEnabled('EVENT_LEDGER_DUAL_WRITE_ENABLED'),
+
+  EVENT_LEDGER_READ_SHADOW_ENABLED:
+    process.env.EVENT_LEDGER_READ_SHADOW_ENABLED?.toLowerCase() === 'true'
+    || isEnabled('EVENT_LEDGER_READ_SHADOW_ENABLED'),
+
+  CANONICAL_ANNUAL_BOUNDARY_ENABLED:
+    process.env.CANONICAL_ANNUAL_BOUNDARY_ENABLED?.toLowerCase() === 'true'
+    || isEnabled('CANONICAL_ANNUAL_BOUNDARY_ENABLED'),
+
+  // ─────────────────────────────────────────────────────────────────
   // DEVELOPMENT & TESTING FLAGS
   // ─────────────────────────────────────────────────────────────────
 
@@ -166,6 +186,12 @@ export const featureFlags = {
       analytics: featureFlags.PHASE2B_ANALYTICS,
       usageUI: featureFlags.PHASE2B_USAGE_UI,
       apiPagination: featureFlags.PHASE2B_API_PAGINATION,
+    },
+    eventLedger: {
+      write: featureFlags.EVENT_LEDGER_WRITE_ENABLED,
+      dualWrite: featureFlags.EVENT_LEDGER_DUAL_WRITE_ENABLED,
+      readShadow: featureFlags.EVENT_LEDGER_READ_SHADOW_ENABLED,
+      canonicalAnnualBoundary: featureFlags.CANONICAL_ANNUAL_BOUNDARY_ENABLED,
     },
     development: {
       debug: featureFlags.DEBUG,

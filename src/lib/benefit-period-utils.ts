@@ -1,3 +1,5 @@
+import { featureFlags } from '@/lib/feature-flags';
+
 /**
  * benefit-period-utils.ts
  * 
@@ -38,6 +40,39 @@ export type UrgencyLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 export interface PeriodBoundaries {
   start: Date;
   end: Date;
+}
+
+/**
+ * Canonical annual boundary helper.
+ * Uses an anchor month/day and always builds the same annual window semantics:
+ * period starts on anchor day and ends one day before next anchor.
+ */
+export function getCanonicalAnnualBoundaries(
+  referenceDate: Date,
+  anchorMonth: number,
+  anchorDay: number
+): PeriodBoundaries {
+  const ref = new Date(Date.UTC(
+    referenceDate.getUTCFullYear(),
+    referenceDate.getUTCMonth(),
+    referenceDate.getUTCDate()
+  ));
+
+  const safeAnchorForYear = (year: number) => {
+    const lastDay = new Date(Date.UTC(year, anchorMonth + 1, 0)).getUTCDate();
+    const day = Math.min(anchorDay, lastDay);
+    return new Date(Date.UTC(year, anchorMonth, day));
+  };
+
+  const anchorThisYear = safeAnchorForYear(ref.getUTCFullYear());
+  const start = ref < anchorThisYear
+    ? safeAnchorForYear(ref.getUTCFullYear() - 1)
+    : anchorThisYear;
+  const nextAnchor = safeAnchorForYear(start.getUTCFullYear() + 1);
+  const end = new Date(nextAnchor.getTime() - 1);
+  end.setUTCHours(23, 59, 59, 999);
+
+  return { start, end };
 }
 
 /**
@@ -97,6 +132,10 @@ export function getPeriodBoundaries(
     }
 
     case 'ANNUAL': {
+      if (featureFlags.CANONICAL_ANNUAL_BOUNDARY_ENABLED) {
+        return getCanonicalAnnualBoundaries(referenceDate, cardAddedDate.getUTCMonth(), cardAddedDate.getUTCDate());
+      }
+
       // Card anniversary date (month/day of card added date)
       const cardMonth = cardAddedDate.getUTCMonth();
       const cardDay = cardAddedDate.getUTCDate();
@@ -550,6 +589,20 @@ export function getClaimingWindowBoundaries(
     }
 
     case 'FLEXIBLE_ANNUAL': {
+      if (featureFlags.CANONICAL_ANNUAL_BOUNDARY_ENABLED && claimingWindowEnd) {
+        const annualMarker = claimingWindowEnd.match(/^(\d{2})(\d{2})$/);
+        if (annualMarker) {
+          const markerMonth = Math.max(1, Math.min(12, parseInt(annualMarker[1], 10))) - 1;
+          const markerDay = Math.max(1, Math.min(31, parseInt(annualMarker[2], 10)));
+          const canonical = getCanonicalAnnualBoundaries(ref, markerMonth, markerDay);
+          return {
+            periodStart: canonical.start,
+            periodEnd: canonical.end,
+            periodLabel: `Annual window ending ${String(markerMonth + 1).padStart(2, '0')}/${String(markerDay).padStart(2, '0')}`,
+          };
+        }
+      }
+
       // Full calendar year: Jan 1 - Dec 31
       const year = ref.getUTCFullYear();
       const start = new Date(Date.UTC(year, 0, 1));
@@ -933,4 +986,3 @@ export function validateClaimingAmount(
     alreadyClaimed,
   };
 }
-

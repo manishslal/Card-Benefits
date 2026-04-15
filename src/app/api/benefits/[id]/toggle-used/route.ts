@@ -11,6 +11,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib';
 import { featureFlags } from '@/lib/feature-flags';
+import { createBenefitEventWithProjection } from '@/lib/benefit-event-ledger';
+import { logSafeError } from '@/lib/error-logging';
 
 interface ToggleUsedRequest {
   isUsed: boolean;
@@ -49,7 +51,11 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
 
     const benefitId = request.nextUrl.pathname.split('/')[3];
     const body = (await request.json().catch(() => ({}))) as ToggleUsedRequest;
-    const isUsed = Boolean(body.isUsed);
+    const isUsed = typeof body.isUsed === 'boolean'
+      ? body.isUsed
+      : typeof (body as any).used === 'boolean'
+      ? Boolean((body as any).used)
+      : Boolean((body as any).markUsed);
 
     const benefit = await prisma.userBenefit.findUnique({
       where: { id: benefitId },
@@ -143,6 +149,34 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
       include: { masterBenefit: true },
     });
 
+    if (featureFlags.EVENT_LEDGER_DUAL_WRITE_ENABLED && benefit.isUsed !== isUsed) {
+      try {
+        await prisma.$transaction((tx) =>
+          createBenefitEventWithProjection(tx, {
+            userId,
+            userCardId: benefit.userCardId,
+            userBenefitId: benefit.id,
+            eventFamily: 'UNLIMITED_USE',
+            eventType: isUsed ? 'USAGE_ADD' : 'USAGE_REMOVE',
+            quantity: 1,
+            eventDate: new Date(),
+            endpointScope: '/api/benefits/[id]/toggle-used',
+            idempotencyKey: `toggle:${benefit.id}:${isUsed}:${updatedBenefit.updatedAt.getTime()}`,
+            source: 'dual-write:/api/benefits/[id]/toggle-used',
+            metadata: {
+              previousIsUsed: benefit.isUsed,
+              resultingIsUsed: updatedBenefit.isUsed,
+              previousTimesUsed: benefit.timesUsed,
+              resultingTimesUsed: updatedBenefit.timesUsed,
+            },
+          })
+        );
+      } catch (dualWriteError) {
+        // Keep existing API behavior even if dual-write fails during rollout.
+        logSafeError('Dual-write failure on /api/benefits/[id]/toggle-used', dualWriteError);
+      }
+    }
+
     return NextResponse.json(
       {
         success: true,
@@ -160,7 +194,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
       { status: 200 }
     );
   } catch (error) {
-    console.error('[Toggle Used Error]', error);
+    logSafeError('[Toggle Used Error]', error);
     return NextResponse.json(
       { success: false, error: 'Failed to update benefit' } as ErrorResponse,
       { status: 500 }

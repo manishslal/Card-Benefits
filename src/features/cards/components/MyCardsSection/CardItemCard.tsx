@@ -41,9 +41,10 @@ export function CardItemCard({
       }}
     >
       {/* Header with icon and network name */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3 flex-1">
+      <div className="flex items-start justify-between gap-2 mb-3 min-w-0">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
           <CreditCard
+            className="shrink-0"
             size={24}
             style={{ color: 'var(--color-primary)' }}
             aria-hidden="true"
@@ -67,7 +68,7 @@ export function CardItemCard({
 
         {/* Active status indicator */}
         <div
-          className="px-2 py-1 rounded text-xs font-medium whitespace-nowrap ml-2"
+          className="px-2 py-1 rounded text-xs font-medium whitespace-nowrap ml-2 shrink-0"
           style={{
             backgroundColor: card.isActive
               ? 'var(--color-success-light)'

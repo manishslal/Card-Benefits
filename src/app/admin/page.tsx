@@ -124,7 +124,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         {[
           {
             label: 'Total Cards',
@@ -153,7 +153,7 @@ export default function AdminDashboard() {
         ].map((stat, idx) => (
           <div
             key={idx}
-            className={`rounded-xl border p-6 shadow-sm hover:shadow-md transition-shadow ${
+            className={`rounded-xl border p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow min-w-0 ${
               stat.loading ? 'shimmer' : ''
             }`}
             style={{
@@ -163,14 +163,14 @@ export default function AdminDashboard() {
           >
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-[var(--color-text-secondary)]">
+                <p className="text-xs sm:text-sm font-medium text-[var(--color-text-secondary)]">
                   {stat.label}
                 </p>
-                <p className="text-3xl font-bold text-[var(--color-text)] mt-2">
+                <p className="text-2xl sm:text-3xl font-bold text-[var(--color-text)] mt-1.5 sm:mt-2">
                   {stat.value}
                 </p>
               </div>
-              <stat.icon size={24} style={{ color: 'var(--color-primary)' }} />
+              <stat.icon size={20} className="shrink-0 sm:w-6 sm:h-6" style={{ color: 'var(--color-primary)' }} />
             </div>
           </div>
         ))}

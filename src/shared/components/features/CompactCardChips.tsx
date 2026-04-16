@@ -128,11 +128,11 @@ export default function CompactCardChips({
                 flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5
                 rounded-full text-xs font-medium
                 transition-all duration-200 ease-in-out
-                outline-none
+                outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-secondary)]
                 press-feedback
                 ${isSelected
-                  ? 'bg-[var(--color-bg-secondary)] text-[var(--color-text)]'
-                  : 'bg-[var(--color-bg-tertiary,var(--color-bg-secondary))] text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-secondary)]'
+                  ? 'bg-[var(--color-bg-secondary)] text-[var(--color-text)] ring-2 ring-[var(--color-primary)] border border-[var(--color-primary)]'
+                  : 'bg-[var(--color-bg-tertiary,var(--color-bg-secondary))] text-[var(--color-text-secondary)] border border-transparent hover:text-[var(--color-text)] hover:bg-[var(--color-bg-secondary)]'
                 }
               `}
               style={{

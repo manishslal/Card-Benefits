@@ -24,9 +24,21 @@ export function useFocusManagement() {
       // Make main element focusable
       mainElement.setAttribute('tabIndex', '-1');
       // Focus the main element
-      mainElement.focus();
+      mainElement.classList.add('scroll-mt-header-safe');
+
+      // Focus without forcing an immediate scroll jump under sticky headers
+      mainElement.focus({ preventScroll: true });
       // Optional: also call skipToMain if you have that function
-      mainElement.scrollIntoView({ behavior: 'auto', block: 'start' });
+      requestAnimationFrame(() => {
+        const rect = mainElement.getBoundingClientRect();
+        const safeAreaTop = window.visualViewport?.offsetTop ?? 0;
+        const headerHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--height-header')) || 0;
+        const minVisibleTop = headerHeight + safeAreaTop;
+
+        if (rect.top < minVisibleTop || rect.top > window.innerHeight) {
+          mainElement.scrollIntoView({ behavior: 'auto', block: 'start' });
+        }
+      });
     }
   }, [pathname]);
 }

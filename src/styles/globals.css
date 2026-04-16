@@ -560,6 +560,12 @@ form:focus-within,
   }
 }
 
+/* Route-change focus target offset for sticky headers */
+.scroll-mt-header-safe,
+main#main-content {
+  scroll-margin-top: calc(var(--height-header) + env(safe-area-inset-top, 0px));
+}
+
 /* ========================================
    TOUCH ACTION UTILITIES
    ======================================== */

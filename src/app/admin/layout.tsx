@@ -138,7 +138,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
         <header
-          className="sticky top-0 z-30 px-[max(1rem,env(safe-area-inset-right))] py-4 pt-[env(safe-area-inset-top)]"
+          className="sticky top-0 z-30 safe-area-top safe-area-x"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--color-bg) 80%, transparent)',
             backdropFilter: 'blur(12px) saturate(180%)',
@@ -146,7 +146,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             boxShadow: 'var(--header-shadow)',
           }}
         >
-          <div className="flex items-center justify-between max-w-7xl mx-auto w-full">
+          <div className="py-2.5">
+            <div className="flex items-center justify-between max-w-7xl mx-auto w-full px-4 md:px-8">
             <h1 className="text-xl font-bold text-[var(--color-text)]">
               {getPageTitle(pathname)}
             </h1>
@@ -160,11 +161,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             >
               <ArrowLeft size={14} /> <span>Back</span>
             </Link>
+            </div>
           </div>
         </header>
 
         {/* Page Content */}
-        <main id="main-content" className="flex-1 overflow-auto bg-[var(--color-bg)]">
+        <main id="main-content" className="flex-1 overflow-auto bg-[var(--color-bg)] scroll-mt-header-safe">
           <div className="max-w-7xl mx-auto px-4 py-6 md:px-8">
             {children}
           </div>

@@ -19,7 +19,8 @@
     "db:push": "node scripts/validate-db-connection.js && prisma db push",
     "db:reset": "node scripts/validate-db-connection.js && prisma db push --force-reset && npm run prisma:seed",
     "db:generate": "prisma generate",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "seed:lounges": "npx tsx scripts/seed-lounge-data.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.8.0",

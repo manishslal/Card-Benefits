@@ -2,8 +2,10 @@
 """CLI entry point for the Star Alliance lounge scraper.
 
 Usage:
-    python scrapers/run_star_alliance.py              # full run (scrape + DB upserts)
-    python scrapers/run_star_alliance.py --dry-run    # scrape only, skip DB writes
+    python scrapers/run_star_alliance.py                          # Full run, all airports
+    python scrapers/run_star_alliance.py --dry-run                # Scrape only, no DB writes
+    python scrapers/run_star_alliance.py --airports JFK LAX ORD   # Specific airports only
+    python scrapers/run_star_alliance.py --airports JFK --dry-run # Combine flags
 """
 
 import argparse
@@ -22,7 +24,7 @@ from scrapers.star_alliance_scraper import StarAllianceScraper
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="run_star_alliance",
-        description="Scrape Star Alliance lounge finder for US airport lounges.",
+        description="Scrape Star Alliance lounge data for US airport lounges.",
     )
     parser.add_argument(
         "--dry-run",
@@ -35,6 +37,13 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         default=False,
         help="Enable DEBUG-level logging.",
+    )
+    parser.add_argument(
+        "--airports",
+        nargs="+",
+        metavar="IATA",
+        default=None,
+        help="Space-separated list of IATA codes to process. If omitted, processes all airports.",
     )
     return parser
 
@@ -53,28 +62,37 @@ def main(argv: list[str] | None = None) -> int:
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
 
-    scraper = StarAllianceScraper()
+    scraper = StarAllianceScraper(airports=args.airports)
     result = asyncio.run(scraper.run(dry_run=args.dry_run))
 
-    print(f"\n{'=' * 60}")
-    print(f"Star Alliance Scrape Complete")
-    print(f"  Records scraped : {len(result.records)}")
-    print(f"  Errors          : {len(result.errors)}")
-    if args.dry_run:
-        print("  Mode            : DRY RUN (no DB writes)")
-    print(f"{'=' * 60}")
+    # Collect unique airports from results
+    airports_seen = {r.get("airport_iata", "???") for r in result.records}
 
-    if result.errors:
-        print("\nErrors:")
-        for err in result.errors:
-            print(f"  - {err}")
+    # Summary
+    mode = "(DRY RUN) " if args.dry_run else ""
+    print(f"\n{'=' * 50}")
+    print(f"Star Alliance Scrape {mode}Complete")
+    print(f"Airports processed: {len(airports_seen)}")
+    print(f"Records found: {len(result.records)}")
+    print(f"Errors: {len(result.errors)}")
 
     if args.dry_run and result.records:
-        print(f"\nFirst 5 records (of {len(result.records)}):")
-        for rec in result.records[:5]:
-            print(f"  [{rec.get('airport_iata', '???')}] {rec.get('lounge_name', 'Unknown')}")
-            for rule in rec.get("access_rules", []):
-                print(f"        → {rule['access_method']}")
+        print(f"\nWould upsert the following lounges:")
+        for rec in result.records:
+            iata = rec.get("airport_iata", "???")
+            name = rec.get("lounge_name", "?")
+            terminal = rec.get("terminal_name", "")
+            # Show first access method
+            rules = rec.get("access_rules", [])
+            access_label = rules[0]["access_method"] if rules else "Star Alliance"
+            print(f"  [{iata}] {name} — {terminal} — {access_label}")
+
+    if result.errors:
+        print(f"\nErrors encountered:")
+        for err in result.errors:
+            print(f"  ⚠  {err}")
+
+    print(f"{'=' * 50}")
 
     return 1 if result.errors and not result.records else 0
 

@@ -63,3 +63,4 @@ backups/*.sql
 backups/*.sql.gz
 backups/*.dump
 backups/*.bak
+__pycache__/

@@ -39,6 +39,8 @@ interface LoungeResult {
   venue_type: string;
   operating_hours: Record<string, unknown> | null;
   amenities: Record<string, unknown> | null;
+  detail_amenities: Record<string, unknown> | null;
+  detail_last_fetched_at: string | null;
   source_url: string | null;
   image_url: string | null;
   may_deny_entry: boolean;
@@ -67,6 +69,8 @@ type LoungeRow = {
   venue_type: string;
   operating_hours: unknown;
   amenities: unknown;
+  detail_amenities: unknown;
+  detail_last_fetched_at: string | null;
   source_url: string | null;
   image_url: string | null;
   may_deny_entry: boolean;
@@ -110,6 +114,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         { status: 400 },
       );
     }
+
+    // ── Step 0: Get airport info (timezone, name) ────────
+    const airportInfo = await prisma.$queryRawUnsafe<{ timezone: string; name: string }[]>(
+      `SELECT timezone, name FROM lounge_airports WHERE iata_code = $1`,
+      airport,
+    );
 
     // ── Step 1: Get user's active card IDs ───────────────
     const userCards = await prisma.userCard.findMany({
@@ -197,6 +207,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         l.venue_type,
         l.operating_hours,
         l.amenities,
+        l.detail_amenities,
+        l.detail_last_fetched_at,
         l.source_url,
         l.image_url,
         l.may_deny_entry,
@@ -274,6 +286,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           venue_type: row.venue_type,
           operating_hours: row.operating_hours as Record<string, unknown> | null,
           amenities: row.amenities as Record<string, unknown> | null,
+          detail_amenities: row.detail_amenities as Record<string, unknown> | null,
+          detail_last_fetched_at: row.detail_last_fetched_at,
           source_url: row.source_url,
           image_url: row.image_url,
           may_deny_entry: row.may_deny_entry ?? false,
@@ -319,6 +333,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({
       success: true,
       airport,
+      airport_name: airportInfo[0]?.name ?? null,
+      airport_timezone: airportInfo[0]?.timezone ?? null,
       total_lounges: lounges.length,
       free_access: freeCount,
       day_pass_available: dayPassCount,

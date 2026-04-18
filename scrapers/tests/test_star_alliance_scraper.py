@@ -1,4 +1,16 @@
-"""Unit tests for scrapers.star_alliance_scraper — pure logic only, no live scraping."""
+"""Unit tests for scrapers.star_alliance_scraper — pure logic only, no live scraping.
+
+Tests cover:
+  - Class structure and imports
+  - airports constructor parameter
+  - _build_records_for_airport() method
+  - build_access_rules() logic
+  - _extract_iata() helper
+  - US_AIRPORTS lookup integrity
+  - Reference data integrity
+  - --airports CLI flag parsing
+  - requires_same_day_flight on all access rules
+"""
 
 import sys
 import os
@@ -11,9 +23,10 @@ from scrapers.star_alliance_scraper import (
     StarAllianceScraper,
     build_access_rules,
     _extract_iata,
-    US_AIRPORTS,
+    _REFERENCE_LOUNGES,
+    _USER_AGENT,
 )
-from scrapers.us_airports import US_AIRPORTS as SHARED_US_AIRPORTS
+from scrapers.us_airports import US_AIRPORTS
 from scrapers.base_scraper import BaseScraper, ScrapeResult
 
 
@@ -36,15 +49,25 @@ class TestStarAllianceScraperClass:
         scraper = StarAllianceScraper()
         assert scraper.source_name == "star_alliance"
 
-    def test_nav_delay(self):
-        """NAV_DELAY is at least 2 seconds (rate-limiting requirement)."""
-        scraper = StarAllianceScraper()
-        assert scraper.NAV_DELAY >= 2.0
-
     def test_has_scrape_method(self):
         """scrape() exists and is async."""
         import asyncio
         assert asyncio.iscoroutinefunction(StarAllianceScraper.scrape)
+
+    def test_default_airports_is_none(self):
+        """When no airports are passed, _airports is None."""
+        scraper = StarAllianceScraper()
+        assert scraper._airports is None
+
+    def test_airports_parameter_uppercased(self):
+        """Airport codes passed to constructor are uppercased."""
+        scraper = StarAllianceScraper(airports=["jfk", "lax", "ord"])
+        assert scraper._airports == ["JFK", "LAX", "ORD"]
+
+    def test_airports_parameter_stored(self):
+        """Airport codes are stored verbatim (after uppercasing)."""
+        scraper = StarAllianceScraper(airports=["MIA", "ATL"])
+        assert scraper._airports == ["MIA", "ATL"]
 
 
 # ---------------------------------------------------------------------------
@@ -147,6 +170,119 @@ class TestBuildAccessRules:
 
 
 # ---------------------------------------------------------------------------
+# Reference data
+# ---------------------------------------------------------------------------
+
+
+class TestReferenceData:
+    def test_reference_lounges_not_empty(self):
+        """Reference data has entries for at least one airport."""
+        non_empty = {k: v for k, v in _REFERENCE_LOUNGES.items() if v}
+        assert len(non_empty) >= 5
+
+    def test_jfk_has_lounges(self):
+        """JFK has reference lounges."""
+        assert len(_REFERENCE_LOUNGES.get("JFK", [])) > 0
+
+    def test_empty_airports_present(self):
+        """Airports known to have no Star Alliance lounges are listed with empty lists."""
+        assert "MCO" in _REFERENCE_LOUNGES
+        assert _REFERENCE_LOUNGES["MCO"] == []
+
+    def test_reference_entries_have_required_keys(self):
+        """Each reference entry has name, terminal, operator, access_text."""
+        for iata, entries in _REFERENCE_LOUNGES.items():
+            for entry in entries:
+                assert "name" in entry, f"{iata} entry missing 'name'"
+                assert "terminal" in entry, f"{iata} entry missing 'terminal'"
+                assert "operator" in entry, f"{iata} entry missing 'operator'"
+                assert "access_text" in entry, f"{iata} entry missing 'access_text'"
+
+
+# ---------------------------------------------------------------------------
+# _build_records_for_airport
+# ---------------------------------------------------------------------------
+
+
+class TestBuildRecordsForAirport:
+    def setup_method(self):
+        self.scraper = StarAllianceScraper()
+
+    def test_known_airport_returns_records(self):
+        """JFK returns non-empty list of records."""
+        records = self.scraper._build_records_for_airport("JFK")
+        assert len(records) > 0
+
+    def test_unknown_airport_returns_empty(self):
+        """Airport not in reference data returns empty list."""
+        records = self.scraper._build_records_for_airport("ZZZ")
+        assert records == []
+
+    def test_empty_airport_returns_empty(self):
+        """Airport with empty reference list returns empty list."""
+        records = self.scraper._build_records_for_airport("MCO")
+        assert records == []
+
+    def test_record_has_all_required_fields(self):
+        """Each record has all fields expected by _upsert_lounge_record."""
+        records = self.scraper._build_records_for_airport("JFK")
+        required_fields = [
+            "airport_iata", "airport_name", "airport_city", "airport_timezone",
+            "terminal_name", "lounge_name", "lounge_operator",
+            "venue_type", "source_url", "image_url", "operating_hours",
+            "access_rules",
+        ]
+        for rec in records:
+            for field in required_fields:
+                assert field in rec, f"Record missing field '{field}': {rec.get('lounge_name')}"
+
+    def test_venue_type_is_lounge(self):
+        """All records have venue_type 'lounge'."""
+        records = self.scraper._build_records_for_airport("JFK")
+        for rec in records:
+            assert rec["venue_type"] == "lounge"
+
+    def test_source_url_is_empty(self):
+        """source_url is empty since there's no live page."""
+        records = self.scraper._build_records_for_airport("JFK")
+        for rec in records:
+            assert rec["source_url"] == ""
+
+    def test_image_url_is_empty(self):
+        """image_url is empty since there are no images from reference data."""
+        records = self.scraper._build_records_for_airport("JFK")
+        for rec in records:
+            assert rec["image_url"] == ""
+
+    def test_operating_hours_is_none(self):
+        """operating_hours is None since reference data has no hours."""
+        records = self.scraper._build_records_for_airport("JFK")
+        for rec in records:
+            assert rec["operating_hours"] is None
+
+    def test_access_rules_require_same_day_flight(self):
+        """Every access rule on every record requires same-day flight."""
+        records = self.scraper._build_records_for_airport("JFK")
+        for rec in records:
+            for rule in rec["access_rules"]:
+                assert rule["conditions"]["requires_same_day_flight"] is True
+
+    def test_airport_metadata_populated(self):
+        """Airport name, city, timezone come from US_AIRPORTS."""
+        records = self.scraper._build_records_for_airport("JFK")
+        rec = records[0]
+        assert rec["airport_iata"] == "JFK"
+        assert "Kennedy" in rec["airport_name"]
+        assert rec["airport_city"] == "New York"
+        assert rec["airport_timezone"] == "America/New_York"
+
+    def test_ord_records(self):
+        """ORD returns the expected number of lounges."""
+        records = self.scraper._build_records_for_airport("ORD")
+        assert len(records) == len(_REFERENCE_LOUNGES["ORD"])
+
+
+# ---------------------------------------------------------------------------
 # US airports lookup
 # ---------------------------------------------------------------------------
 
@@ -162,10 +298,6 @@ class TestUSAirports:
         for code, meta in US_AIRPORTS.items():
             assert meta["name"], f"{code} missing name"
             assert meta["city"], f"{code} missing city"
-
-    def test_shared_module_import(self):
-        """US_AIRPORTS is imported from the shared us_airports module."""
-        assert US_AIRPORTS is SHARED_US_AIRPORTS
 
     def test_entries_have_timezone(self):
         """Every entry has a timezone field."""
@@ -200,45 +332,44 @@ class TestTimezones:
 
 
 # ---------------------------------------------------------------------------
-# Pagination deduplication
+# CLI argument parsing
 # ---------------------------------------------------------------------------
 
 
-class TestDeduplication:
-    def test_duplicate_records_deduplicated(self):
-        """Simulating pagination: same (iata, lounge_name) seen twice → only one kept."""
-        seen: set[tuple[str, str]] = set()
-        records: list[dict] = []
+class TestCLIParsing:
+    def test_airports_flag_parsed(self):
+        """--airports flag is parsed correctly by the run script."""
+        from scrapers.run_star_alliance import _build_parser
+        parser = _build_parser()
+        args = parser.parse_args(["--airports", "JFK", "ORD", "LAX"])
+        assert args.airports == ["JFK", "ORD", "LAX"]
 
-        # Simulate two pages returning the same lounge
-        pages = [
-            [{"airport_iata": "JFK", "lounge_name": "United Club", "terminal_name": "T7"}],
-            [{"airport_iata": "JFK", "lounge_name": "United Club", "terminal_name": "T7"}],
-        ]
+    def test_airports_flag_omitted(self):
+        """When --airports is not given, it defaults to None."""
+        from scrapers.run_star_alliance import _build_parser
+        parser = _build_parser()
+        args = parser.parse_args([])
+        assert args.airports is None
 
-        for page_records in pages:
-            for record in page_records:
-                key = (record["airport_iata"], record["lounge_name"])
-                if key not in seen:
-                    seen.add(key)
-                    records.append(record)
+    def test_dry_run_flag(self):
+        """--dry-run is parsed correctly."""
+        from scrapers.run_star_alliance import _build_parser
+        parser = _build_parser()
+        args = parser.parse_args(["--dry-run"])
+        assert args.dry_run is True
 
-        assert len(records) == 1
+    def test_verbose_flag(self):
+        """-v flag is parsed correctly."""
+        from scrapers.run_star_alliance import _build_parser
+        parser = _build_parser()
+        args = parser.parse_args(["-v"])
+        assert args.verbose is True
 
-    def test_different_lounges_not_deduplicated(self):
-        """Different lounges at same airport are not deduplicated."""
-        seen: set[tuple[str, str]] = set()
-        records: list[dict] = []
-
-        page_records = [
-            {"airport_iata": "JFK", "lounge_name": "United Club"},
-            {"airport_iata": "JFK", "lounge_name": "Polaris Lounge"},
-        ]
-
-        for record in page_records:
-            key = (record["airport_iata"], record["lounge_name"])
-            if key not in seen:
-                seen.add(key)
-                records.append(record)
-
-        assert len(records) == 2
+    def test_combined_flags(self):
+        """--dry-run, --airports, and -v can be combined."""
+        from scrapers.run_star_alliance import _build_parser
+        parser = _build_parser()
+        args = parser.parse_args(["--dry-run", "--airports", "JFK", "-v"])
+        assert args.dry_run is True
+        assert args.airports == ["JFK"]
+        assert args.verbose is True

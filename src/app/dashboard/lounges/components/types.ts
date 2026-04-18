@@ -79,31 +79,76 @@ export function isLoungeOpen(
     return { isOpen: false, statusText: 'Hours not available' };
   }
 
-  // operating_hours may be stored as a JSON object or a string
-  let hoursStr: string | null = null;
+  // If the whole thing is a string (legacy format), parse it directly
   if (typeof operatingHours === 'string') {
-    hoursStr = operatingHours;
-  } else if (typeof operatingHours === 'object') {
-    // Try common shapes: { text: "..." } or { daily: "..." } or first value
-    const val = (operatingHours as Record<string, unknown>).text
-      ?? (operatingHours as Record<string, unknown>).daily
-      ?? Object.values(operatingHours)[0];
-    if (typeof val === 'string') hoursStr = val;
+    return parseTimeString(operatingHours as string, timezone);
+  }
+
+  const hours = operatingHours as Record<string, unknown>;
+
+  // Determine today's day key in the airport timezone
+  const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+  let todayKey: string;
+  try {
+    const now = new Date();
+    const dayStr = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      weekday: 'short',
+    }).format(now).toLowerCase().slice(0, 3);
+    todayKey = dayStr;
+  } catch {
+    todayKey = DAY_KEYS[new Date().getDay()];
+  }
+
+  // Look up today's hours, falling back to "daily"
+  let todayHours: unknown = hours[todayKey] ?? hours['daily'] ?? null;
+
+  // If still nothing, check for "text" key (some legacy data)
+  if (!todayHours && hours['text']) {
+    todayHours = hours['text'];
+  }
+
+  // If still nothing, try the first available value
+  if (!todayHours) {
+    const vals = Object.values(hours);
+    if (vals.length > 0) todayHours = vals[0];
+  }
+
+  if (!todayHours) {
+    return { isOpen: false, statusText: 'Hours not available' };
+  }
+
+  // Normalize to string
+  let hoursStr: string;
+  if (Array.isArray(todayHours)) {
+    hoursStr = todayHours[0] as string;  // e.g. ["06:00-22:00"] → "06:00-22:00"
+  } else if (typeof todayHours === 'string') {
+    hoursStr = todayHours;
+  } else {
+    return { isOpen: false, statusText: 'Hours not available' };
   }
 
   if (!hoursStr) {
     return { isOpen: false, statusText: 'Hours not available' };
   }
 
-  // Parse time patterns like "5:00am-11:00pm", "05:00-23:00", "24 hours"
+  return parseTimeString(hoursStr, timezone);
+}
+
+function parseTimeString(
+  hoursStr: string,
+  timezone: string,
+): { isOpen: boolean; statusText: string } {
+  // Handle 24 hours
   if (/24\s*hours?/i.test(hoursStr)) {
     return { isOpen: true, statusText: 'Open 24 hours' };
   }
 
-  // Match HH:MMam/pm – HH:MMam/pm patterns
-  const timePattern = /(\d{1,2}):(\d{2})\s*(am|pm)?[\s–\-]+(\d{1,2}):(\d{2})\s*(am|pm)?/i;
+  // Match time patterns: "6:00am-11:00pm", "06:00-23:00", "5:00am – 11:00pm"
+  const timePattern = /(\d{1,2}):(\d{2})\s*(am|pm)?[\s–\-—]+(\d{1,2}):(\d{2})\s*(am|pm)?/i;
   const match = hoursStr.match(timePattern);
   if (!match) {
+    // Can't parse but we have the raw string — show it
     return { isOpen: false, statusText: hoursStr };
   }
 
@@ -129,24 +174,30 @@ export function isLoungeOpen(
   );
 
   // Get current time in the airport's timezone
-  const now = new Date();
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone,
-    hour: 'numeric',
-    minute: 'numeric',
-    hour12: false,
-  })
-    .formatToParts(now);
+  let currentMinutes: number;
+  try {
+    const now = new Date();
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: false,
+    }).formatToParts(now);
 
-  const currentHour = parseInt(
-    parts.find((p) => p.type === 'hour')?.value ?? '0',
-    10,
-  );
-  const currentMinute = parseInt(
-    parts.find((p) => p.type === 'minute')?.value ?? '0',
-    10,
-  );
-  const currentMinutes = currentHour * 60 + currentMinute;
+    const currentHour = parseInt(
+      parts.find((p) => p.type === 'hour')?.value ?? '0',
+      10,
+    );
+    const currentMinute = parseInt(
+      parts.find((p) => p.type === 'minute')?.value ?? '0',
+      10,
+    );
+    currentMinutes = currentHour * 60 + currentMinute;
+  } catch {
+    // Timezone invalid — fall back to local time
+    const now = new Date();
+    currentMinutes = now.getHours() * 60 + now.getMinutes();
+  }
 
   // Handle overnight hours (e.g., 10pm – 6am)
   let isOpen: boolean;
@@ -156,7 +207,7 @@ export function isLoungeOpen(
     isOpen = currentMinutes >= openMinutes || currentMinutes < closeMinutes;
   }
 
-  // Format a friendly close time
+  // Format friendly times
   const formatTime = (mins: number) => {
     let h = Math.floor(mins / 60);
     const m = mins % 60;

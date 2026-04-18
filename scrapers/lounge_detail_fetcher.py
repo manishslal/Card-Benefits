@@ -35,12 +35,13 @@ USER_AGENT = (
 CACHE_TTL_DAYS = 7
 
 
-async def fetch_lounge_detail(lounge_id: str, force_refresh: bool = False) -> Optional[dict]:
+async def fetch_lounge_detail(lounge_id: str, force_refresh: bool = False, debug: bool = False) -> Optional[dict]:
     """Fetch detailed lounge data, using 7-day cache.
 
     Args:
         lounge_id: The lounge ID to fetch details for.
         force_refresh: If True, bypass cache and always fetch from source.
+        debug: If True, emit verbose diagnostic output.
 
     Returns:
         Dict with detail fields, or None if lounge not found.
@@ -75,7 +76,7 @@ async def fetch_lounge_detail(lounge_id: str, force_refresh: bool = False) -> Op
 
     # Fetch from source
     logger.info(f"Fetching detail for lounge {lounge_id} from {source_url}")
-    detail = await _scrape_detail_page(source_url)
+    detail = await _scrape_detail_page(source_url, debug=debug)
 
     if detail:
         update_lounge_detail(
@@ -90,7 +91,7 @@ async def fetch_lounge_detail(lounge_id: str, force_refresh: bool = False) -> Op
     return detail
 
 
-async def _scrape_detail_page(url: str) -> Optional[dict]:
+async def _scrape_detail_page(url: str, debug: bool = False) -> Optional[dict]:
     """Scrape a lounge detail page for rich data."""
     try:
         async with async_playwright() as p:
@@ -105,6 +106,11 @@ async def _scrape_detail_page(url: str) -> Optional[dict]:
                 await page.goto(url, wait_until="domcontentloaded", timeout=60000)
                 await page.wait_for_timeout(3000)
 
+                if debug:
+                    title = await page.title()
+                    print(f"[DEBUG] Page URL: {url}")
+                    print(f"[DEBUG] Page title: {title}")
+
                 detail = {
                     "is_airside": None,
                     "gate_proximity": None,
@@ -115,6 +121,10 @@ async def _scrape_detail_page(url: str) -> Optional[dict]:
                 page_text = await page.text_content("body") or ""
                 page_text_lower = page_text.lower()
 
+                if debug:
+                    print(f"[DEBUG] Body text length: {len(page_text)} chars")
+                    print(f"[DEBUG] Body preview: {page_text[:500]!r}")
+
                 # Extract is_airside
                 detail["is_airside"] = _detect_airside(page_text_lower)
 
@@ -122,7 +132,7 @@ async def _scrape_detail_page(url: str) -> Optional[dict]:
                 detail["gate_proximity"] = _extract_gate_proximity(page_text)
 
                 # Extract detail_amenities
-                detail["detail_amenities"] = await _extract_detail_amenities(page)
+                detail["detail_amenities"] = await _extract_detail_amenities(page, debug=debug)
 
                 # Extract access_conditions
                 detail["access_conditions"] = _extract_access_conditions(page_text, page_text_lower)
@@ -162,54 +172,148 @@ def _extract_gate_proximity(text: str) -> Optional[str]:
     return None
 
 
-async def _extract_detail_amenities(page) -> dict:
-    """Extract full amenity list from detail page."""
-    amenities = {}
+AMENITY_TEXT_MAP: dict[str, str] = {
+    "wi-fi": "has_wifi",
+    "wifi": "has_wifi",
+    "wireless": "has_wifi",
+    "internet": "has_wifi",
+    "shower": "has_showers",
+    "showers": "has_showers",
+    "hot food": "has_hot_food",
+    "hot meal": "has_hot_food",
+    "buffet": "has_hot_food",
+    "cooked food": "has_hot_food",
+    "bar": "has_bar",
+    "alcoholic": "has_bar",
+    "cocktail": "has_bar",
+    "spirits": "has_bar",
+    "beer": "has_bar",
+    "wine": "has_bar",
+    "spa": "has_spa",
+    "massage": "has_spa",
+    "tv": "has_tv",
+    "television": "has_tv",
+    "quiet zone": "has_quiet_zone",
+    "quiet area": "has_quiet_zone",
+    "rest zone": "has_quiet_zone",
+    "business center": "has_business_center",
+    "business centre": "has_business_center",
+    "workstation": "has_business_center",
+    "prayer room": "has_prayer_room",
+    "prayer area": "has_prayer_room",
+    "children": "has_kids_area",
+    "kids area": "has_kids_area",
+    "play area": "has_kids_area",
+    "smoking area": "has_smoking_area",
+    "smoking room": "has_smoking_area",
+    "disabled access": "has_disabled_access",
+    "wheelchair": "has_disabled_access",
+    "accessible": "has_disabled_access",
+    "nap": "has_quiet_zone",
+    "sleep": "has_quiet_zone",
+    "newspaper": "has_newspapers",
+    "magazines": "has_newspapers",
+    "flight monitor": "has_flight_monitors",
+    "flight information": "has_flight_monitors",
+}
 
-    # Look for amenity icons/badges/lists
+
+def _map_amenity_text(raw_text: str) -> Optional[str]:
+    """Map raw amenity text scraped from a page to a canonical amenity key.
+
+    Returns the canonical key (e.g. ``has_wifi``) or *None* if no mapping is
+    found.
+    """
+    text = raw_text.lower().strip()
+    # Direct lookup
+    if text in AMENITY_TEXT_MAP:
+        return AMENITY_TEXT_MAP[text]
+    # Substring match – e.g. "Complimentary Wi-Fi" → has_wifi
+    for phrase, key in AMENITY_TEXT_MAP.items():
+        if phrase in text:
+            return key
+    return None
+
+
+def _map_amenity_keywords(page_text_lower: str) -> dict[str, bool]:
+    """Scan full page text for known amenity keywords (Strategy 2)."""
+    found: dict[str, bool] = {}
+    for phrase, key in AMENITY_TEXT_MAP.items():
+        if phrase in page_text_lower and key not in found:
+            found[key] = True
+    return found
+
+
+async def _extract_detail_amenities(page, debug: bool = False) -> dict:
+    """Extract full amenity list from detail page.
+
+    Strategy 1 – CSS selector scraping: look for structured amenity
+    elements on the page.  Strategy 2 – Keyword matching: scan full
+    body text for known amenity phrases.  Both strategies run and their
+    results are merged so that keyword matches *supplement* selector
+    matches.
+    """
+    amenities: dict[str, bool] = {}
+
+    # --- Strategy 1: CSS selector scraping ---
     selectors = [
         '[class*="amenity"]',
         '[class*="Amenity"]',
         '[class*="facility"]',
         '[class*="Facility"]',
         '[class*="feature"]',
+        '[class*="Feature"]',
         '[data-testid*="amenity"]',
         '[class*="service"]',
+        '[class*="Service"]',
+        'ul[class*="icon"] li',
+        '[class*="lounge-info"] li',
+        '[class*="LoungeInfo"] li',
+        '[class*="detail"] li',
+        '[class*="benefit"] li',
+        '[class*="perk"]',
+        '.amenities li',
+        '.facilities li',
+        '.features li',
+        '.services li',
     ]
+
+    if debug:
+        print("[DEBUG] Strategy 1: CSS selector scraping")
 
     for selector in selectors:
         els = await page.query_selector_all(selector)
-        if els:
-            for el in els:
-                text = (await el.text_content() or "").strip()
-                if text and len(text) < 100:
-                    key = re.sub(r'[^a-z0-9]+', '_', text.lower()).strip('_')
-                    amenities[key] = True
-            if amenities:
-                break
+        if debug and els:
+            print(f"[DEBUG]   Selector {selector!r} → {len(els)} elements")
+        for el in els:
+            text = (await el.text_content() or "").strip()
+            if not text or len(text) >= 100:
+                continue
+            mapped = _map_amenity_text(text)
+            if mapped:
+                amenities[mapped] = True
+                if debug:
+                    print(f"[DEBUG]     Mapped {text!r} → {mapped}")
+            elif debug:
+                print(f"[DEBUG]     Unmapped text: {text!r}")
 
-    # Fallback: check page text for common amenity keywords
-    if not amenities:
-        page_text = (await page.text_content("body") or "").lower()
-        amenity_keywords = {
-            "has_wifi": ["wi-fi", "wifi", "wireless"],
-            "has_showers": ["shower"],
-            "has_hot_food": ["hot food", "hot meal", "buffet", "cooked food"],
-            "has_bar": ["bar", "alcoholic", "cocktail", "spirits"],
-            "has_spa": ["spa", "massage"],
-            "has_tv": ["tv", "television"],
-            "has_quiet_zone": ["quiet zone", "quiet area", "rest zone"],
-            "has_business_center": ["business center", "business centre", "workstation"],
-            "has_prayer_room": ["prayer room", "prayer area"],
-            "has_kids_area": ["children", "kids area", "play area"],
-            "has_smoking_area": ["smoking area", "smoking room"],
-            "has_disabled_access": ["disabled access", "wheelchair", "accessible"],
-        }
-        for key, keywords in amenity_keywords.items():
-            for kw in keywords:
-                if kw in page_text:
-                    amenities[key] = True
-                    break
+    if debug:
+        print(f"[DEBUG] Strategy 1 result: {amenities}")
+
+    # --- Strategy 2: Keyword matching (always runs to supplement) ---
+    page_text_lower = (await page.text_content("body") or "").lower()
+    keyword_matches = _map_amenity_keywords(page_text_lower)
+
+    if debug:
+        print(f"[DEBUG] Strategy 2 keyword matches: {keyword_matches}")
+
+    # Merge – keyword matches fill in gaps
+    for key, val in keyword_matches.items():
+        if key not in amenities:
+            amenities[key] = val
+
+    if debug:
+        print(f"[DEBUG] Final merged amenities: {amenities}")
 
     return amenities
 
@@ -254,7 +358,7 @@ def _extract_access_conditions(text: str, text_lower: str) -> dict:
 # ---------------------------------------------------------------------------
 
 
-async def batch_fetch_all(batch_size: int = 10, delay: float = 3.0) -> dict:
+async def batch_fetch_all(batch_size: int = 10, delay: float = 3.0, force_refresh: bool = False) -> dict:
     """Fetch details for all lounges missing detail data.
 
     Processes sequentially with a delay between each lounge and an extra
@@ -263,19 +367,29 @@ async def batch_fetch_all(batch_size: int = 10, delay: float = 3.0) -> dict:
     Args:
         batch_size: Number of lounges per batch before an extra pause.
         delay: Seconds to wait between individual lounge fetches.
+        force_refresh: If True, re-fetch even lounges that already have detail data.
 
     Returns:
         Summary dict with total/success/failed/skipped counts.
     """
     with get_cursor() as cur:
-        cur.execute("""
-            SELECT id, name, source_url
-            FROM lounges
-            WHERE detail_last_fetched_at IS NULL
-              AND source_url IS NOT NULL
-              AND source_url != ''
-            ORDER BY name
-        """)
+        if force_refresh:
+            cur.execute("""
+                SELECT id, name, source_url
+                FROM lounges
+                WHERE source_url IS NOT NULL
+                  AND source_url != ''
+                ORDER BY name
+            """)
+        else:
+            cur.execute("""
+                SELECT id, name, source_url
+                FROM lounges
+                WHERE detail_last_fetched_at IS NULL
+                  AND source_url IS NOT NULL
+                  AND source_url != ''
+                ORDER BY name
+            """)
         lounges = cur.fetchall()
 
     total = len(lounges)
@@ -406,18 +520,40 @@ if __name__ == "__main__":
         default=3.0,
         help="Delay between fetches in seconds (default: 3.0)",
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable verbose debug output for scraping diagnostics",
+    )
+    parser.add_argument(
+        "--force-refresh",
+        action="store_true",
+        help="Bypass cache and re-fetch all lounges (batch) or the specified lounge",
+    )
 
     args = parser.parse_args()
 
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG if args.debug else logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
     )
 
     if args.batch:
-        asyncio.run(batch_fetch_all(batch_size=args.batch_size, delay=args.delay))
+        asyncio.run(
+            batch_fetch_all(
+                batch_size=args.batch_size,
+                delay=args.delay,
+                force_refresh=args.force_refresh,
+            )
+        )
     elif args.lounge_id:
-        detail = asyncio.run(fetch_lounge_detail(args.lounge_id, force_refresh=True))
+        detail = asyncio.run(
+            fetch_lounge_detail(
+                args.lounge_id,
+                force_refresh=args.force_refresh or True,
+                debug=args.debug,
+            )
+        )
         if detail:
             print(json.dumps(detail, indent=2, default=str))
         else:

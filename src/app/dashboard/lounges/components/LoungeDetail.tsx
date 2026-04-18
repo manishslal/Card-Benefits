@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ArrowLeft,
   MapPin,
@@ -13,6 +13,7 @@ import {
   Clock,
   Moon,
   Monitor,
+  ChevronDown,
 } from 'lucide-react';
 import { ShowerHead } from 'lucide-react';
 import Badge from '@/shared/components/ui/Badge';
@@ -40,6 +41,141 @@ const iconMap: Record<string, React.ReactNode> = {
   Moon: <Moon size={14} aria-hidden="true" />,
   Monitor: <Monitor size={14} aria-hidden="true" />,
 };
+
+// ── Day-key display order + labels ───────────────────────────
+const DAY_LABELS: Record<string, string> = {
+  mon: 'Monday',
+  tue: 'Tuesday',
+  wed: 'Wednesday',
+  thu: 'Thursday',
+  fri: 'Friday',
+  sat: 'Saturday',
+  sun: 'Sunday',
+};
+const DAY_ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+/** Normalize an operating-hours value (may be string or string[]) to a display string. */
+function normalizeHoursValue(val: unknown): string | null {
+  if (Array.isArray(val)) return (val[0] as string) ?? null;
+  if (typeof val === 'string') return val;
+  return null;
+}
+
+/**
+ * HoursSection — renders the open/closed badge and an expandable "See all hours" list.
+ */
+function HoursSection({
+  hoursStatus,
+  operatingHours,
+  sourceUrl,
+}: {
+  hoursStatus: { isOpen: boolean; statusText: string };
+  operatingHours: Record<string, unknown> | null;
+  sourceUrl: string | null;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  // Build per-day entries from operating_hours (only if real day keys exist)
+  const dayEntries: { label: string; hours: string }[] = [];
+  if (operatingHours && typeof operatingHours === 'object') {
+    for (const key of DAY_ORDER) {
+      const raw = (operatingHours as Record<string, unknown>)[key];
+      if (raw !== undefined) {
+        const display = normalizeHoursValue(raw);
+        if (display) dayEntries.push({ label: DAY_LABELS[key], hours: display });
+      }
+    }
+  }
+
+  // Determine today's key so we can highlight it
+  let todayLabel = '';
+  try {
+    todayLabel = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date());
+  } catch {
+    // noop
+  }
+
+  const hasPerDayData = dayEntries.length > 0;
+
+  return (
+    <section>
+      <h3
+        className="text-xs font-semibold uppercase tracking-wider mb-2"
+        style={{ color: 'var(--color-text-tertiary)' }}
+      >
+        Hours
+      </h3>
+
+      {/* Current status line */}
+      <div className="flex items-center gap-2">
+        <Clock size={16} style={{ color: 'var(--color-text-secondary)' }} aria-hidden="true" />
+        <span className="text-sm" style={{ color: 'var(--color-text)' }}>
+          {hoursStatus.statusText}
+        </span>
+        {hoursStatus.statusText !== 'Hours not available' && (
+          <Badge
+            variant={hoursStatus.isOpen ? 'success' : 'error'}
+            appearance="soft"
+            size="sm"
+          >
+            {hoursStatus.isOpen ? 'Open' : 'Closed'}
+          </Badge>
+        )}
+      </div>
+
+      {/* "Check hours on website" fallback link */}
+      {hoursStatus.statusText === 'Hours not available' && sourceUrl && (
+        <a
+          href={sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs mt-1 inline-flex items-center gap-1 underline"
+          style={{ color: 'var(--color-primary)' }}
+        >
+          Check hours on website
+          <ExternalLink size={12} aria-hidden="true" />
+        </a>
+      )}
+
+      {/* Expandable per-day hours */}
+      {hasPerDayData && (
+        <div className="mt-2">
+          <button
+            onClick={() => setExpanded((prev) => !prev)}
+            className="text-xs font-medium inline-flex items-center gap-1 transition-colors"
+            style={{ color: 'var(--color-primary)' }}
+            aria-expanded={expanded}
+          >
+            See all hours
+            <ChevronDown
+              size={14}
+              className={`transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+              aria-hidden="true"
+            />
+          </button>
+
+          {expanded && (
+            <ul className="mt-2 space-y-1 text-sm" style={{ color: 'var(--color-text)' }}>
+              {dayEntries.map(({ label, hours }) => (
+                <li
+                  key={label}
+                  className="flex justify-between pl-6"
+                  style={{
+                    fontWeight: label === todayLabel ? 600 : 400,
+                    color: label === todayLabel ? 'var(--color-text)' : 'var(--color-text-secondary)',
+                  }}
+                >
+                  <span>{label}</span>
+                  <span>{hours}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
 
 /**
  * LoungeDetail — View 3: Full detail view for a selected lounge.
@@ -170,41 +306,11 @@ export default function LoungeDetail({
           </section>
 
           {/* ── HOURS SECTION ─────────────────────────────── */}
-          <section>
-            <h3
-              className="text-xs font-semibold uppercase tracking-wider mb-2"
-              style={{ color: 'var(--color-text-tertiary)' }}
-            >
-              Hours
-            </h3>
-            <div className="flex items-center gap-2">
-              <Clock size={16} style={{ color: 'var(--color-text-secondary)' }} aria-hidden="true" />
-              <span className="text-sm" style={{ color: 'var(--color-text)' }}>
-                {hoursStatus.statusText}
-              </span>
-              {hoursStatus.statusText !== 'Hours not available' && (
-                <Badge
-                  variant={hoursStatus.isOpen ? 'success' : 'error'}
-                  appearance="soft"
-                  size="sm"
-                >
-                  {hoursStatus.isOpen ? 'Open' : 'Closed'}
-                </Badge>
-              )}
-            </div>
-            {hoursStatus.statusText === 'Hours not available' && lounge.source_url && (
-              <a
-                href={lounge.source_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs mt-1 inline-flex items-center gap-1 underline"
-                style={{ color: 'var(--color-primary)' }}
-              >
-                Check hours on website
-                <ExternalLink size={12} aria-hidden="true" />
-              </a>
-            )}
-          </section>
+          <HoursSection
+            hoursStatus={hoursStatus}
+            operatingHours={lounge.operating_hours}
+            sourceUrl={lounge.source_url}
+          />
 
           {/* ── AMENITIES SECTION ──────────────────────────── */}
           <section>

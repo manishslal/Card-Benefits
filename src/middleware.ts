@@ -79,6 +79,7 @@ const PROTECTED_API_PREFIXES = [
   '/api/dashboard',  // Dashboard API endpoints (Phase 3+)
   '/api/mobile',     // Mobile sync endpoints (F-1)
   '/api/onboarding', // Onboarding endpoints (F-1)
+  '/api/lounges',    // Lounge eligibility endpoints
 ];
 
 /** Check if route is public API (matches prefix) */

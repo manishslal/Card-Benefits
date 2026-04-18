@@ -166,7 +166,11 @@ class TestUpdateLoungeDetail:
             assert row['detail_last_fetched_at'] is not None
 
     def test_update_lounge_detail_with_none_values(self):
-        """update_lounge_detail with None values sets columns to NULL."""
+        """update_lounge_detail with None preserves existing values (COALESCE).
+
+        On a freshly-created lounge the detail columns are already NULL,
+        so passing None still results in NULL.
+        """
         aid = upsert_airport('TST', 'Test Airport', 'Testville', 'America/New_York')
         tid = upsert_terminal(aid, 'Terminal T')
         lid = upsert_lounge(tid, 'Test Detail None Lounge')
@@ -182,6 +186,32 @@ class TestUpdateLoungeDetail:
             assert row['detail_amenities'] is None
             assert row['access_conditions'] is None
             assert row['detail_last_fetched_at'] is not None  # always set
+
+    def test_update_lounge_detail_preserves_existing_on_none(self):
+        """COALESCE: calling update with None does NOT overwrite previously-set values."""
+        aid = upsert_airport('TST', 'Test Airport', 'Testville', 'America/New_York')
+        tid = upsert_terminal(aid, 'Terminal T')
+        lid = upsert_lounge(tid, 'Test Detail Preserve Lounge')
+        # First call: set real values
+        update_lounge_detail(
+            lid,
+            is_airside=True,
+            gate_proximity='Near Gate C3',
+            detail_amenities={'has_wifi': True},
+            access_conditions={'max_stay_hours': 4},
+        )
+        # Second call: pass None for every field — existing values must survive
+        update_lounge_detail(lid)
+        with get_cursor() as cur:
+            cur.execute(
+                "SELECT is_airside, gate_proximity, detail_amenities, access_conditions FROM lounges WHERE id = %s",
+                (lid,),
+            )
+            row = cur.fetchone()
+            assert row['is_airside'] is True
+            assert row['gate_proximity'] == 'Near Gate C3'
+            assert row['detail_amenities']['has_wifi'] is True
+            assert row['access_conditions']['max_stay_hours'] == 4
 
 
 class TestGetLoungeById:
@@ -286,7 +316,7 @@ def cleanup():
     yield
     with get_cursor() as cur:
         cur.execute("DELETE FROM lounge_access_rules WHERE lounge_id IN (SELECT id FROM lounges WHERE name LIKE 'Test%%' OR name LIKE '%%Test%%')")
-        cur.execute("DELETE FROM lounges WHERE name LIKE 'Test%%' OR name LIKE '%%Test%%' OR name LIKE '%%Enriched%%' OR name LIKE '%%Default%%' OR name LIKE '%%Detail%%' OR name LIKE '%%Query%%' OR name LIKE '%%Method%%'")
+        cur.execute("DELETE FROM lounges WHERE name LIKE 'Test%%' OR name LIKE '%%Test%%' OR name LIKE '%%Enriched%%' OR name LIKE '%%Default%%' OR name LIKE '%%Detail%%' OR name LIKE '%%Query%%' OR name LIKE '%%Method%%' OR name LIKE '%%Preserve%%'")
         cur.execute("DELETE FROM lounge_terminals WHERE name LIKE 'Terminal T%%'")
         cur.execute("DELETE FROM lounge_airports WHERE iata_code = 'TST'")
         cur.execute("DELETE FROM lounge_access_methods WHERE name LIKE 'Test%%'")

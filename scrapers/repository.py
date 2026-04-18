@@ -102,14 +102,18 @@ def update_lounge_detail(lounge_id: str, is_airside: Optional[bool] = None,
                          gate_proximity: Optional[str] = None,
                          detail_amenities: Optional[dict] = None,
                          access_conditions: Optional[dict] = None) -> None:
-    """Update lounge with detail-page data and set detail_last_fetched_at."""
+    """Update lounge with detail-page data and set detail_last_fetched_at.
+
+    Uses COALESCE so that passing None for a field preserves the existing
+    database value instead of overwriting it with NULL.
+    """
     with get_cursor() as cur:
         cur.execute("""
             UPDATE lounges SET
-                is_airside = %s,
-                gate_proximity = %s,
-                detail_amenities = %s,
-                access_conditions = %s,
+                is_airside = COALESCE(%s, is_airside),
+                gate_proximity = COALESCE(%s, gate_proximity),
+                detail_amenities = COALESCE(%s, detail_amenities),
+                access_conditions = COALESCE(%s, access_conditions),
                 detail_last_fetched_at = NOW()
             WHERE id = %s
         """, (is_airside, gate_proximity,
@@ -204,6 +208,14 @@ def _build_lounge_with_rules(cur, lounge: dict) -> LoungeWithRules:
         is_restaurant_credit=lounge.get('is_restaurant_credit', False),
         may_deny_entry=lounge.get('may_deny_entry', False),
         last_verified_at=lounge.get('last_verified_at'),
+        source_url=lounge.get('source_url'),
+        image_url=lounge.get('image_url'),
+        venue_type=lounge.get('venue_type', 'lounge'),
+        is_airside=lounge.get('is_airside'),
+        gate_proximity=lounge.get('gate_proximity'),
+        detail_amenities=lounge.get('detail_amenities'),
+        access_conditions=lounge.get('access_conditions'),
+        detail_last_fetched_at=lounge.get('detail_last_fetched_at'),
         airport_iata=lounge.get('airport_iata'),
         airport_name=lounge.get('airport_name'),
         terminal_name=lounge.get('terminal_name'),

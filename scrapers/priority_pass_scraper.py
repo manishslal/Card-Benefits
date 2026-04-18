@@ -22,6 +22,7 @@ import re
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Optional
+from urllib.parse import urlparse, parse_qs, unquote
 
 from playwright.async_api import Page, TimeoutError as PlaywrightTimeout
 
@@ -54,7 +55,7 @@ def _classify_venue_type(name: str) -> str:
     name_lower = name.lower()
     if any(kw in name_lower for kw in ['spa', 'massage', 'relax']):
         return 'spa'
-    if any(kw in name_lower for kw in ['sleep', 'nap', 'rest', 'snooze', 'pod']):
+    if any(kw in name_lower for kw in ['sleep', 'nap', 'rest pod', 'rest suite', 'snooze', 'pod']):
         return 'sleep'
     if any(kw in name_lower for kw in ['game', 'gaming', 'play']):
         return 'gaming'
@@ -518,31 +519,51 @@ class PriorityPassScraper(BaseScraper):
         if _RESTAURANT_RE.search(full_text):
             raw["is_restaurant_credit"] = True
 
-        # --- Source URL — from card link ---
+        # --- Source URL — from parent <a> wrapping the card ---
         source_url = ""
-        link_el = await card.query_selector("a[href]")
-        if link_el:
-            href = await link_el.get_attribute("href")
-            if href:
-                if href.startswith("/"):
-                    source_url = f"https://www.prioritypass.com{href}"
-                elif href.startswith("http"):
-                    source_url = href
+        # The <a> wraps the <article>, so check parentElement
+        parent_href = await card.evaluate(
+            'el => el.parentElement?.tagName === "A"'
+            " ? el.parentElement.href"
+            ' : (el.closest("a")?.href || "")'
+        )
+        if parent_href:
+            if parent_href.startswith("/"):
+                source_url = f"https://www.prioritypass.com{parent_href}"
+            else:
+                source_url = parent_href
+        # Fallback: also check inside the card (for any future layout changes)
+        if not source_url:
+            link_el = await card.query_selector("a[href]")
+            if link_el:
+                href = await link_el.get_attribute("href")
+                if href:
+                    source_url = (
+                        f"https://www.prioritypass.com{href}"
+                        if href.startswith("/")
+                        else href
+                    )
         raw["source_url"] = source_url
 
-        # --- Image URL — from card image ---
+        # --- Image URL — extract actual CDN URL from Next.js image wrapper ---
         image_url = ""
-        img_el = await card.query_selector("img[src], img[srcset]")
+        img_el = await card.query_selector(
+            'img[data-testid="outlet-card-image"], img[src], img[srcset]'
+        )
         if img_el:
-            # Try srcset first (larger images)
-            srcset = await img_el.get_attribute("srcset")
-            if srcset:
-                # Parse srcset, take the largest entry (last one typically)
-                entries = [e.strip().split() for e in srcset.split(",") if e.strip()]
-                if entries:
-                    image_url = entries[-1][0]  # URL of largest image
+            src = await img_el.get_attribute("src") or ""
+            # Next.js wraps images: /_next/image?url=<encoded_url>&w=...
+            # Extract the actual CDN URL.
+            if "/_next/image" in src and "url=" in src:
+                parsed = urlparse(src)
+                qs = parse_qs(parsed.query)
+                if "url" in qs:
+                    image_url = unquote(qs["url"][0])
             if not image_url:
-                image_url = await img_el.get_attribute("src") or ""
+                # Fallback: use src as-is, make absolute
+                image_url = src
+            if image_url and image_url.startswith("/"):
+                image_url = f"https://www.prioritypass.com{image_url}"
         raw["image_url"] = image_url
 
         # --- Venue type — classify from lounge name ---

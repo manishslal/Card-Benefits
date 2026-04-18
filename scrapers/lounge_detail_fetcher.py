@@ -85,39 +85,44 @@ async def _scrape_detail_page(url: str) -> Optional[dict]:
     try:
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
-            context = await browser.new_context(
-                user_agent=USER_AGENT,
-                viewport={"width": 1280, "height": 720},
-            )
-            page = await context.new_page()
+            try:
+                context = await browser.new_context(
+                    user_agent=USER_AGENT,
+                    viewport={"width": 1280, "height": 720},
+                )
+                page = await context.new_page()
 
-            await page.goto(url, wait_until="domcontentloaded", timeout=60000)
-            await page.wait_for_timeout(3000)
+                await page.goto(url, wait_until="domcontentloaded", timeout=60000)
+                await page.wait_for_timeout(3000)
 
-            detail = {
-                "is_airside": None,
-                "gate_proximity": None,
-                "detail_amenities": {},
-                "access_conditions": {},
-            }
+                detail = {
+                    "is_airside": None,
+                    "gate_proximity": None,
+                    "detail_amenities": {},
+                    "access_conditions": {},
+                }
 
-            page_text = await page.text_content("body") or ""
-            page_text_lower = page_text.lower()
+                page_text = await page.text_content("body") or ""
+                page_text_lower = page_text.lower()
 
-            # Extract is_airside
-            detail["is_airside"] = _detect_airside(page_text_lower)
+                # Extract is_airside
+                detail["is_airside"] = _detect_airside(page_text_lower)
 
-            # Extract gate_proximity
-            detail["gate_proximity"] = _extract_gate_proximity(page_text)
+                # Extract gate_proximity
+                detail["gate_proximity"] = _extract_gate_proximity(page_text)
 
-            # Extract detail_amenities
-            detail["detail_amenities"] = await _extract_detail_amenities(page)
+                # Extract detail_amenities
+                detail["detail_amenities"] = await _extract_detail_amenities(page)
 
-            # Extract access_conditions
-            detail["access_conditions"] = _extract_access_conditions(page_text, page_text_lower)
+                # Extract access_conditions
+                detail["access_conditions"] = _extract_access_conditions(page_text, page_text_lower)
 
-            await browser.close()
-            return detail
+                return detail
+            finally:
+                try:
+                    await browser.close()
+                except Exception:
+                    pass
 
     except Exception as exc:
         logger.error(f"Failed to scrape detail page {url}: {exc}")
@@ -218,15 +223,14 @@ def _extract_access_conditions(text: str, text_lower: str) -> dict:
         conditions["guest_limit"] = int(guest_match.group(1))
 
     # Guest fee
-    fee_match = re.search(r'guest[s]?.*?(?:\$|£|€|USD|GBP)[\s]*(\d+(?:\.\d{2})?)', text, re.IGNORECASE)
+    fee_match = re.search(r'guest[s]?.{0,50}(?:\$|£|€|USD|GBP)[\s]*(\d+(?:\.\d{2})?)', text, re.IGNORECASE)
     if fee_match:
         conditions["guest_fee"] = fee_match.group(1)
 
-    # Pre-booking
+    # Pre-booking — only set when True to avoid asserting False on pages
+    # that simply don't mention booking at all.
     if any(kw in text_lower for kw in ['pre-book', 'prebook', 'advance booking', 'reservation required']):
         conditions["pre_booking_required"] = True
-    else:
-        conditions["pre_booking_required"] = False
 
     # Card restrictions
     if "specific card" in text_lower or "card restriction" in text_lower:

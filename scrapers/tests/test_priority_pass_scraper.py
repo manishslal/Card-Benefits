@@ -43,6 +43,8 @@ def _make_mock_card(
     hours_text: str = "",
     amenity_texts: list[str] | None = None,
     full_text: str = "",
+    parent_href: str = "",
+    image_src: str = "",
 ):
     """Build a mock Playwright ElementHandle behaving like a lounge card."""
     card = AsyncMock()
@@ -73,6 +75,12 @@ def _make_mock_card(
                 el.text_content = AsyncMock(return_value=hours_text)
                 return el
             return None
+        # img element for image_url extraction
+        if "img" in selector:
+            if image_src:
+                el.get_attribute = AsyncMock(side_effect=lambda attr: image_src if attr == "src" else None)
+                return el
+            return None
         return None
 
     card.query_selector = AsyncMock(side_effect=_qs)
@@ -92,6 +100,9 @@ def _make_mock_card(
 
     # Full card text used for restaurant detection & terminal fallback.
     card.text_content = AsyncMock(return_value=full_text or name)
+
+    # evaluate() — used for source_url extraction from parent <a>.
+    card.evaluate = AsyncMock(return_value=parent_href)
 
     return card
 
@@ -242,6 +253,75 @@ class TestExtractLoungeData:
             "may_deny_entry",
         }
         assert expected_keys.issubset(set(record.keys()))
+
+    # --- source_url tests ---
+
+    @pytest.mark.asyncio
+    async def test_source_url_from_parent_href_absolute(self, scraper):
+        """Full URL from parent <a> is used as-is."""
+        card = _make_mock_card(
+            name="Air France Lounge",
+            parent_href="https://www.prioritypass.com/en-GB/lounges/jfk10",
+        )
+        record = await scraper.extract_lounge_data(card, "JFK")
+        assert record["source_url"] == "https://www.prioritypass.com/en-GB/lounges/jfk10"
+
+    @pytest.mark.asyncio
+    async def test_source_url_from_parent_href_relative(self, scraper):
+        """Relative path from parent <a> is prefixed with base URL."""
+        card = _make_mock_card(
+            name="Air France Lounge",
+            parent_href="/en-GB/lounges/jfk10-air-france-lounge",
+        )
+        record = await scraper.extract_lounge_data(card, "JFK")
+        assert record["source_url"] == "https://www.prioritypass.com/en-GB/lounges/jfk10-air-france-lounge"
+
+    @pytest.mark.asyncio
+    async def test_source_url_empty_when_no_link(self, scraper):
+        """No parent href and no child link → None source_url."""
+        card = _make_mock_card(name="Some Lounge", parent_href="")
+        record = await scraper.extract_lounge_data(card, "JFK")
+        assert record["source_url"] is None
+
+    # --- image_url tests ---
+
+    @pytest.mark.asyncio
+    async def test_image_url_extracts_contentful_from_nextjs_wrapper(self, scraper):
+        """Next.js /_next/image wrapper → decode the Contentful CDN URL."""
+        encoded_src = (
+            "/_next/image?url=https%3A%2F%2Fimages.ctfassets.net%2F"
+            "687qsr16btly%2Fabc%2FJFK10_Image1.jpg&w=3840&q=75"
+        )
+        card = _make_mock_card(name="Air France Lounge", image_src=encoded_src)
+        record = await scraper.extract_lounge_data(card, "JFK")
+        assert record["image_url"] == "https://images.ctfassets.net/687qsr16btly/abc/JFK10_Image1.jpg"
+
+    @pytest.mark.asyncio
+    async def test_image_url_fallback_plain_src(self, scraper):
+        """Plain absolute src without /_next/image → used as-is."""
+        card = _make_mock_card(
+            name="Sky Lounge",
+            image_src="https://cdn.example.com/img/lounge.jpg",
+        )
+        record = await scraper.extract_lounge_data(card, "JFK")
+        assert record["image_url"] == "https://cdn.example.com/img/lounge.jpg"
+
+    @pytest.mark.asyncio
+    async def test_image_url_fallback_relative_src(self, scraper):
+        """Relative src is made absolute."""
+        card = _make_mock_card(
+            name="Sky Lounge",
+            image_src="/images/lounge.jpg",
+        )
+        record = await scraper.extract_lounge_data(card, "JFK")
+        assert record["image_url"] == "https://www.prioritypass.com/images/lounge.jpg"
+
+    @pytest.mark.asyncio
+    async def test_image_url_empty_when_no_img(self, scraper):
+        """No img element → None image_url."""
+        card = _make_mock_card(name="Basic Lounge", image_src="")
+        record = await scraper.extract_lounge_data(card, "JFK")
+        assert record["image_url"] is None
 
 
 # ---------------------------------------------------------------------------

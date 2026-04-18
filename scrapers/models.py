@@ -41,6 +41,15 @@ class Lounge(BaseModel):
     may_deny_entry: bool = False
     last_verified_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
+    # Enrichment fields
+    source_url: Optional[str] = None
+    image_url: Optional[str] = None
+    venue_type: str = "lounge"
+    is_airside: Optional[bool] = None
+    gate_proximity: Optional[str] = None
+    detail_amenities: Optional[dict] = None
+    access_conditions: Optional[dict] = None
+    detail_last_fetched_at: Optional[datetime] = None
 
 
 class LoungeAccessMethod(BaseModel):
@@ -121,6 +130,15 @@ class LoungeWithRules(BaseModel):
     is_restaurant_credit: bool = False
     may_deny_entry: bool = False
     last_verified_at: Optional[datetime] = None
+    # Enrichment fields
+    source_url: Optional[str] = None
+    image_url: Optional[str] = None
+    venue_type: str = "lounge"
+    is_airside: Optional[bool] = None
+    gate_proximity: Optional[str] = None
+    detail_amenities: Optional[dict] = None
+    access_conditions: Optional[dict] = None
+    detail_last_fetched_at: Optional[datetime] = None
     # From terminal/airport join
     airport_iata: Optional[str] = None
     airport_name: Optional[str] = None

@@ -104,7 +104,7 @@ def upsert_lounge(terminal_id: str, name: str, operator: Optional[str] = None,
 
 def update_lounge_detail(lounge_id: str, is_airside: Optional[bool] = None,
                          gate_proximity: Optional[str] = None,
-                         detail_amenities: Optional[dict] = None,
+                         amenities: Optional[dict] = None,
                          access_conditions: Optional[dict] = None) -> None:
     """Update lounge with detail-page data and set detail_last_fetched_at.
 
@@ -116,21 +116,20 @@ def update_lounge_detail(lounge_id: str, is_airside: Optional[bool] = None,
             UPDATE lounges SET
                 is_airside = COALESCE(%s, is_airside),
                 gate_proximity = COALESCE(%s, gate_proximity),
-                detail_amenities = COALESCE(%s::jsonb, detail_amenities),
+                amenities = COALESCE(%s::jsonb, amenities),
                 access_conditions = COALESCE(%s::jsonb, access_conditions),
                 detail_last_fetched_at = NOW()
             WHERE id = %s
         """, (is_airside, gate_proximity,
-              json.dumps(detail_amenities) if detail_amenities is not None else None,
+              json.dumps(amenities) if amenities is not None else None,
               json.dumps(access_conditions) if access_conditions is not None else None,
               lounge_id))
 
-        # Post-write verification
         rows_affected = cur.rowcount
         logger.info(
             "update_lounge_detail %s: %d row(s) affected, amenities=%s, airside=%s",
             lounge_id, rows_affected,
-            f"{len(detail_amenities)} keys" if detail_amenities else "None",
+            f"{len(amenities)} keys" if amenities else "None",
             is_airside,
         )
 
@@ -226,7 +225,6 @@ def _build_lounge_with_rules(cur, lounge: dict) -> LoungeWithRules:
         venue_type=lounge.get('venue_type', 'lounge'),
         is_airside=lounge.get('is_airside'),
         gate_proximity=lounge.get('gate_proximity'),
-        detail_amenities=lounge.get('detail_amenities'),
         access_conditions=lounge.get('access_conditions'),
         detail_last_fetched_at=lounge.get('detail_last_fetched_at'),
         airport_iata=lounge.get('airport_iata'),

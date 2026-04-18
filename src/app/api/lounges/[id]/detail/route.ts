@@ -6,7 +6,7 @@
  *
  * Response: {
  *   success: true,
- *   lounge_id, amenities, detail_amenities, is_airside,
+ *   lounge_id, amenities, is_airside,
  *   gate_proximity, access_conditions, operating_hours,
  *   detail_last_fetched_at, needs_detail_fetch
  * }
@@ -18,7 +18,6 @@ interface LoungeDetailRow {
   id: string;
   name: string;
   amenities: unknown;
-  detail_amenities: unknown;
   is_airside: boolean | null;
   gate_proximity: string | null;
   operating_hours: unknown;
@@ -51,7 +50,7 @@ export async function GET(
 
     // ── Query lounge detail ──────────────────────────────
     const rows = await prisma.$queryRawUnsafe<LoungeDetailRow[]>(
-      `SELECT id, name, amenities, detail_amenities, is_airside,
+      `SELECT id, name, amenities, is_airside,
               gate_proximity, operating_hours, detail_last_fetched_at, source_url
        FROM lounges WHERE id = $1`,
       id,
@@ -73,7 +72,6 @@ export async function GET(
       lounge_id: lounge.id,
       name: lounge.name,
       amenities: lounge.amenities,
-      detail_amenities: lounge.detail_amenities,
       is_airside: lounge.is_airside,
       gate_proximity: lounge.gate_proximity,
       operating_hours: lounge.operating_hours,

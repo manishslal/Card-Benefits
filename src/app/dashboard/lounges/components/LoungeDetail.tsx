@@ -188,13 +188,12 @@ export default function LoungeDetail({
 }: LoungeDetailProps) {
   const hoursStatus = isLoungeOpen(lounge.operating_hours, airportTimezone);
 
-  // Merge amenities from both fields
-  const amenities = {
-    ...(typeof lounge.amenities === 'object' && lounge.amenities !== null ? lounge.amenities : {}),
-    ...(typeof lounge.detail_amenities === 'object' && lounge.detail_amenities !== null
-      ? lounge.detail_amenities
-      : {}),
-  } as Record<string, unknown>;
+  // Single source of truth for amenities (consolidated column)
+  const amenities = (
+    typeof lounge.amenities === 'object' && lounge.amenities !== null
+      ? lounge.amenities
+      : {}
+  ) as Record<string, unknown>;
 
   const activeAmenities = AMENITY_DEFS.filter((def) => amenities[def.key] === true);
   const hasAmenityData = activeAmenities.length > 0;

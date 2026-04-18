@@ -47,7 +47,6 @@ class Lounge(BaseModel):
     venue_type: str = "lounge"
     is_airside: Optional[bool] = None
     gate_proximity: Optional[str] = None
-    detail_amenities: Optional[dict] = None
     access_conditions: Optional[dict] = None
     detail_last_fetched_at: Optional[datetime] = None
 
@@ -136,7 +135,6 @@ class LoungeWithRules(BaseModel):
     venue_type: str = "lounge"
     is_airside: Optional[bool] = None
     gate_proximity: Optional[str] = None
-    detail_amenities: Optional[dict] = None
     access_conditions: Optional[dict] = None
     detail_last_fetched_at: Optional[datetime] = None
     # From terminal/airport join

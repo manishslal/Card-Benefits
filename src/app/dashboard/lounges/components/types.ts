@@ -29,7 +29,6 @@ export interface LoungeData {
   venue_type: string;
   operating_hours: Record<string, unknown> | null;
   amenities: Record<string, unknown> | null;
-  detail_amenities: Record<string, unknown> | null;
   detail_last_fetched_at: string | null;
   source_url: string | null;
   image_url: string | null;

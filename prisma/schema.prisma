@@ -668,7 +668,6 @@ model Lounge {
   venueType          String    @default("lounge") @map("venue_type")
   isAirside          Boolean?  @map("is_airside")
   gateProximity      String?   @map("gate_proximity")
-  detailAmenities    Json?     @map("detail_amenities")
   accessConditions   Json?     @map("access_conditions")
   detailLastFetchedAt DateTime? @map("detail_last_fetched_at")
   lastVerifiedAt     DateTime? @map("last_verified_at")

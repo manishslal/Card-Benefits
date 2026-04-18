@@ -64,7 +64,7 @@ async def fetch_lounge_detail(lounge_id: str, force_refresh: bool = False, debug
             return {
                 "is_airside": lounge.get("is_airside"),
                 "gate_proximity": lounge.get("gate_proximity"),
-                "detail_amenities": lounge.get("detail_amenities"),
+                "amenities": lounge.get("amenities"),
                 "access_conditions": lounge.get("access_conditions"),
                 "detail_last_fetched_at": lounge.get("detail_last_fetched_at"),
             }
@@ -82,8 +82,8 @@ async def fetch_lounge_detail(lounge_id: str, force_refresh: bool = False, debug
         logger.info(
             "Writing detail for %s: amenities=%s (%d keys), airside=%s, conditions=%s (%d keys)",
             lounge_id,
-            "present" if detail.get("detail_amenities") else "empty",
-            len(detail.get("detail_amenities") or {}),
+            "present" if detail.get("amenities") else "empty",
+            len(detail.get("amenities") or {}),
             detail.get("is_airside"),
             "present" if detail.get("access_conditions") else "empty",
             len(detail.get("access_conditions") or {}),
@@ -92,7 +92,7 @@ async def fetch_lounge_detail(lounge_id: str, force_refresh: bool = False, debug
             lounge_id=lounge_id,
             is_airside=detail.get("is_airside"),
             gate_proximity=detail.get("gate_proximity"),
-            detail_amenities=detail.get("detail_amenities"),
+            amenities=detail.get("amenities"),
             access_conditions=detail.get("access_conditions"),
         )
         detail["detail_last_fetched_at"] = datetime.now(timezone.utc).isoformat()
@@ -123,7 +123,7 @@ async def _scrape_detail_page(url: str, debug: bool = False) -> Optional[dict]:
                 detail = {
                     "is_airside": None,
                     "gate_proximity": None,
-                    "detail_amenities": None,
+                    "amenities": None,
                     "access_conditions": None,
                 }
 
@@ -140,8 +140,8 @@ async def _scrape_detail_page(url: str, debug: bool = False) -> Optional[dict]:
                 # Extract gate_proximity
                 detail["gate_proximity"] = _extract_gate_proximity(page_text)
 
-                # Extract detail_amenities
-                detail["detail_amenities"] = await _extract_detail_amenities(page, debug=debug)
+                # Extract amenities
+                detail["amenities"] = await _extract_amenities(page, debug=debug)
 
                 # Extract access_conditions
                 detail["access_conditions"] = _extract_access_conditions(page_text, page_text_lower)
@@ -253,7 +253,7 @@ def _map_amenity_keywords(page_text_lower: str) -> dict[str, bool]:
     return found
 
 
-async def _extract_detail_amenities(page, debug: bool = False) -> dict:
+async def _extract_amenities(page, debug: bool = False) -> dict:
     """Extract full amenity list from detail page.
 
     Strategy 1 – CSS selector scraping: look for structured amenity
@@ -420,7 +420,7 @@ async def batch_fetch_all(batch_size: int = 10, delay: float = 3.0, force_refres
             result = await fetch_lounge_detail(lounge_id, force_refresh=True)
             if result:
                 success += 1
-                amenity_count = len(result.get("detail_amenities") or {})
+                amenity_count = len(result.get("amenities") or {})
                 logger.info(
                     "  ✓ Success — airside=%s, amenities=%d keys, conditions=%d keys",
                     result.get("is_airside"),
@@ -460,7 +460,6 @@ async def batch_fetch_all(batch_size: int = 10, delay: float = 3.0, force_refres
             cur.execute("""
                 SELECT
                     COUNT(*) as total,
-                    COUNT(detail_amenities) as has_detail_amenities,
                     COUNT(amenities) as has_amenities,
                     COUNT(operating_hours) as has_hours,
                     COUNT(is_airside) as has_airside,

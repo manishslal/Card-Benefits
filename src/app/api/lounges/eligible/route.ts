@@ -39,7 +39,6 @@ interface LoungeResult {
   venue_type: string;
   operating_hours: Record<string, unknown> | null;
   amenities: Record<string, unknown> | null;
-  detail_amenities: Record<string, unknown> | null;
   detail_last_fetched_at: string | null;
   source_url: string | null;
   image_url: string | null;
@@ -69,7 +68,6 @@ type LoungeRow = {
   venue_type: string;
   operating_hours: unknown;
   amenities: unknown;
-  detail_amenities: unknown;
   detail_last_fetched_at: string | null;
   source_url: string | null;
   image_url: string | null;
@@ -207,7 +205,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         l.venue_type,
         l.operating_hours,
         l.amenities,
-        l.detail_amenities,
         l.detail_last_fetched_at,
         l.source_url,
         l.image_url,
@@ -286,7 +283,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           venue_type: row.venue_type,
           operating_hours: row.operating_hours as Record<string, unknown> | null,
           amenities: row.amenities as Record<string, unknown> | null,
-          detail_amenities: row.detail_amenities as Record<string, unknown> | null,
           detail_last_fetched_at: row.detail_last_fetched_at,
           source_url: row.source_url,
           image_url: row.image_url,

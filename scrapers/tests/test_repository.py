@@ -150,18 +150,18 @@ class TestUpdateLoungeDetail:
             lid,
             is_airside=True,
             gate_proximity='Near Gate B22',
-            detail_amenities={'has_wifi': True, 'has_showers': True},
+            amenities={'has_wifi': True, 'has_showers': True},
             access_conditions={'requires_boarding_pass': True, 'max_stay_hours': 3},
         )
         with get_cursor() as cur:
             cur.execute(
-                "SELECT is_airside, gate_proximity, detail_amenities, access_conditions, detail_last_fetched_at FROM lounges WHERE id = %s",
+                "SELECT is_airside, gate_proximity, amenities, access_conditions, detail_last_fetched_at FROM lounges WHERE id = %s",
                 (lid,),
             )
             row = cur.fetchone()
             assert row['is_airside'] is True
             assert row['gate_proximity'] == 'Near Gate B22'
-            assert row['detail_amenities']['has_wifi'] is True
+            assert row['amenities']['has_wifi'] is True
             assert row['access_conditions']['requires_boarding_pass'] is True
             assert row['detail_last_fetched_at'] is not None
 
@@ -177,13 +177,13 @@ class TestUpdateLoungeDetail:
         update_lounge_detail(lid)
         with get_cursor() as cur:
             cur.execute(
-                "SELECT is_airside, gate_proximity, detail_amenities, access_conditions, detail_last_fetched_at FROM lounges WHERE id = %s",
+                "SELECT is_airside, gate_proximity, amenities, access_conditions, detail_last_fetched_at FROM lounges WHERE id = %s",
                 (lid,),
             )
             row = cur.fetchone()
             assert row['is_airside'] is None
             assert row['gate_proximity'] is None
-            assert row['detail_amenities'] is None
+            assert row['amenities'] is None
             assert row['access_conditions'] is None
             assert row['detail_last_fetched_at'] is not None  # always set
 
@@ -197,20 +197,20 @@ class TestUpdateLoungeDetail:
             lid,
             is_airside=True,
             gate_proximity='Near Gate C3',
-            detail_amenities={'has_wifi': True},
+            amenities={'has_wifi': True},
             access_conditions={'max_stay_hours': 4},
         )
         # Second call: pass None for every field — existing values must survive
         update_lounge_detail(lid)
         with get_cursor() as cur:
             cur.execute(
-                "SELECT is_airside, gate_proximity, detail_amenities, access_conditions FROM lounges WHERE id = %s",
+                "SELECT is_airside, gate_proximity, amenities, access_conditions FROM lounges WHERE id = %s",
                 (lid,),
             )
             row = cur.fetchone()
             assert row['is_airside'] is True
             assert row['gate_proximity'] == 'Near Gate C3'
-            assert row['detail_amenities']['has_wifi'] is True
+            assert row['amenities']['has_wifi'] is True
             assert row['access_conditions']['max_stay_hours'] == 4
 
 

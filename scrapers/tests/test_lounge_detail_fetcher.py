@@ -275,7 +275,7 @@ class TestBatchFetchAll:
         mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
         mock_cursor.__exit__ = MagicMock(return_value=False)
 
-        fake_result = {"is_airside": True, "detail_amenities": {"has_wifi": True}}
+        fake_result = {"is_airside": True, "amenities": {"has_wifi": True}}
 
         with patch("scrapers.lounge_detail_fetcher.get_cursor", return_value=mock_cursor):
             with patch("scrapers.lounge_detail_fetcher.fetch_lounge_detail", new_callable=AsyncMock, return_value=fake_result):

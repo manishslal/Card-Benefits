@@ -90,8 +90,6 @@ def _completeness_score(lounge_row: dict) -> int:
         score += 2
     if lounge_row.get("amenities"):
         score += 1
-    if lounge_row.get("detail_amenities"):
-        score += 1
     return score
 
 

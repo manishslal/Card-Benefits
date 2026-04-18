@@ -11,9 +11,14 @@ Supports batch mode via CLI:
 import asyncio
 import json
 import logging
+import os
 import re
+import sys
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+
+# Ensure project root is on sys.path so `scrapers` resolves as a package
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from playwright.async_api import async_playwright
 

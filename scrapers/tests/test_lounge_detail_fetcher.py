@@ -144,7 +144,8 @@ class TestExtractAccessConditions:
         """A long gap between 'guest' and the currency symbol should NOT match."""
         long_text = "guest " + "x" * 60 + " $99"
         conditions = _extract_access_conditions(long_text, long_text.lower())
-        assert "guest_fee" not in conditions
+        # No conditions extracted → returns None (prevents empty {} overwriting DB)
+        assert conditions is None or "guest_fee" not in conditions
 
     def test_pre_booking_required_true(self):
         conditions = _extract_access_conditions(
@@ -166,7 +167,8 @@ class TestExtractAccessConditions:
             "A nice lounge with food",
             "a nice lounge with food",
         )
-        assert "pre_booking_required" not in conditions
+        # No conditions extracted → returns None (prevents empty {} overwriting DB)
+        assert conditions is None or "pre_booking_required" not in conditions
 
     def test_guest_limit(self):
         conditions = _extract_access_conditions(
@@ -184,8 +186,8 @@ class TestExtractAccessConditions:
 
     def test_empty_text(self):
         conditions = _extract_access_conditions("", "")
-        assert isinstance(conditions, dict)
-        assert len(conditions) == 0
+        # Empty input → no conditions → returns None (prevents empty {} overwriting DB)
+        assert conditions is None
 
 
 # ---------------------------------------------------------------------------

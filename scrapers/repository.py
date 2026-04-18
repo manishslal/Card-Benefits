@@ -1,10 +1,14 @@
-import uuid
 import json
+import logging
+import uuid
 from datetime import datetime
-from typing import Optional, List
 from decimal import Decimal
+from typing import List, Optional
+
 from .database import get_cursor
-from .models import LoungeWithRules, AccessRuleWithMethod
+from .models import AccessRuleWithMethod, LoungeWithRules
+
+logger = logging.getLogger(__name__)
 
 
 def _generate_id() -> str:
@@ -120,6 +124,15 @@ def update_lounge_detail(lounge_id: str, is_airside: Optional[bool] = None,
               json.dumps(detail_amenities) if detail_amenities is not None else None,
               json.dumps(access_conditions) if access_conditions is not None else None,
               lounge_id))
+
+        # Post-write verification
+        rows_affected = cur.rowcount
+        logger.info(
+            "update_lounge_detail %s: %d row(s) affected, amenities=%s, airside=%s",
+            lounge_id, rows_affected,
+            f"{len(detail_amenities)} keys" if detail_amenities else "None",
+            is_airside,
+        )
 
 
 def get_lounge_by_id(lounge_id: str) -> Optional[dict]:

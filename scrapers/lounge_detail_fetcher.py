@@ -123,8 +123,8 @@ async def _scrape_detail_page(url: str, debug: bool = False) -> Optional[dict]:
                 detail = {
                     "is_airside": None,
                     "gate_proximity": None,
-                    "detail_amenities": {},
-                    "access_conditions": {},
+                    "detail_amenities": None,
+                    "access_conditions": None,
                 }
 
                 page_text = await page.text_content("body") or ""
@@ -324,7 +324,7 @@ async def _extract_detail_amenities(page, debug: bool = False) -> dict:
     if debug:
         print(f"[DEBUG] Final merged amenities: {amenities}")
 
-    return amenities
+    return amenities if amenities else None
 
 
 def _extract_access_conditions(text: str, text_lower: str) -> dict:
@@ -359,7 +359,7 @@ def _extract_access_conditions(text: str, text_lower: str) -> dict:
     if "specific card" in text_lower or "card restriction" in text_lower:
         conditions["has_card_restrictions"] = True
 
-    return conditions
+    return conditions if conditions else None
 
 
 # ---------------------------------------------------------------------------
@@ -453,6 +453,26 @@ async def batch_fetch_all(batch_size: int = 10, delay: float = 3.0, force_refres
         "skipped": skipped,
         "errors": errors,
     }
+
+    # Print final DB state summary
+    try:
+        with get_cursor() as cur:
+            cur.execute("""
+                SELECT
+                    COUNT(*) as total,
+                    COUNT(detail_amenities) as has_detail_amenities,
+                    COUNT(amenities) as has_amenities,
+                    COUNT(operating_hours) as has_hours,
+                    COUNT(is_airside) as has_airside,
+                    COUNT(detail_last_fetched_at) as detail_fetched
+                FROM lounges
+            """)
+            db_state = cur.fetchone()
+            print("\n=== DB State After Batch ===")
+            for key, val in db_state.items():
+                print(f"  {key}: {val}")
+    except Exception as exc:
+        logger.warning("Could not query DB state summary: %s", exc)
 
     _log_batch_run(summary)
 

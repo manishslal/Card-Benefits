@@ -291,6 +291,117 @@ def get_lounges_by_card(card_id: str) -> List[LoungeWithRules]:
         return [_build_lounge_with_rules(cur, l) for l in lounges]
 
 
+# Eligibility engine queries
+
+
+def get_user_card_ids(user_id: str) -> list[str]:
+    """Get all MasterCard IDs for a user's active, open cards.
+    Chain: User → Player → UserCard (isOpen=true, status ACTIVE) → masterCardId
+    """
+    with get_cursor() as cur:
+        cur.execute("""
+            SELECT DISTINCT uc."masterCardId"
+            FROM "UserCard" uc
+            JOIN "Player" p ON p.id = uc."playerId"
+            WHERE p."userId" = %s
+              AND uc."isOpen" = true
+              AND (uc.status IS NULL OR UPPER(uc.status) = 'ACTIVE')
+        """, (user_id,))
+        return [row['masterCardId'] for row in cur.fetchall()]
+
+
+def get_access_methods_for_cards(card_ids: list[str]) -> list[dict]:
+    """Get all access methods for given cards, including network grants.
+
+    Uses a recursive CTE to follow the grants_network_id chain so that
+    a card linked to "Amex Platinum" (which grants "Priority Pass Select")
+    also picks up the network method.
+
+    Returns list of dicts with keys:
+        id, name, category, provider, grants_network_id,
+        source_card_id, is_network_grant
+    """
+    if not card_ids:
+        return []
+    with get_cursor() as cur:
+        cur.execute("""
+            WITH RECURSIVE access_chain AS (
+                -- Direct access methods from card_lounge_access
+                SELECT lam.id, lam.name, lam.category, lam.provider,
+                       lam.grants_network_id,
+                       cla.card_id as source_card_id,
+                       false as is_network_grant
+                FROM card_lounge_access cla
+                JOIN lounge_access_methods lam ON cla.access_method_id = lam.id
+                WHERE cla.card_id = ANY(%s)
+
+                UNION
+
+                -- Follow grants_network_id chain
+                SELECT lam2.id, lam2.name, lam2.category, lam2.provider,
+                       lam2.grants_network_id,
+                       ac.source_card_id,
+                       true as is_network_grant
+                FROM access_chain ac
+                JOIN lounge_access_methods lam2 ON ac.grants_network_id = lam2.id
+            )
+            SELECT DISTINCT ON (id, source_card_id) *
+            FROM access_chain
+        """, (card_ids,))
+        return [dict(row) for row in cur.fetchall()]
+
+
+def get_lounges_at_airport_for_methods(
+    access_method_ids: list[str],
+    iata_code: str,
+    include_paid: bool = True,
+) -> list[dict]:
+    """Get all lounges at an airport accessible via given access methods.
+
+    Returns full lounge details with access rule info.
+    When include_paid=False, excludes rows with a non-zero entry_cost.
+    """
+    if not access_method_ids:
+        return []
+    with get_cursor() as cur:
+        paid_filter = "" if include_paid else \
+            "AND (lar.entry_cost IS NULL OR lar.entry_cost = 0)"
+        cur.execute(f"""
+            SELECT
+                l.id as lounge_id,
+                l.name as lounge_name,
+                lt.name as terminal,
+                l.venue_type,
+                l.operating_hours,
+                l.amenities,
+                l.source_url,
+                l.image_url,
+                l.may_deny_entry,
+                l.is_airside,
+                l.gate_proximity,
+                lar.access_method_id,
+                lam.name as access_method_name,
+                lam.category as access_method_category,
+                lar.entry_cost,
+                lar.guest_limit,
+                lar.guest_fee,
+                lar.guest_conditions,
+                lar.conditions,
+                lar.notes,
+                lar.time_limit_hours
+            FROM lounges l
+            JOIN lounge_terminals lt ON l.terminal_id = lt.id
+            JOIN lounge_airports la ON lt.airport_id = la.id
+            JOIN lounge_access_rules lar ON lar.lounge_id = l.id
+            JOIN lounge_access_methods lam ON lar.access_method_id = lam.id
+            WHERE la.iata_code = %s
+              AND lar.access_method_id = ANY(%s)
+              {paid_filter}
+            ORDER BY l.name, lar.entry_cost NULLS FIRST
+        """, (iata_code, access_method_ids))
+        return [dict(row) for row in cur.fetchall()]
+
+
 # Scrape run tracking
 
 

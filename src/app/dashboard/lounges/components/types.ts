@@ -20,6 +20,7 @@ export interface AccessOption {
   conditions: Record<string, unknown>;
   notes: string | null;
   time_limit_hours: number | null;
+  source_url?: string | null;
 }
 
 export interface LoungeData {

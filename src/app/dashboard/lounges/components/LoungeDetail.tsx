@@ -284,7 +284,7 @@ export default function LoungeDetail({
               }}
             >
               {sortedOptions.map((opt, i) => (
-                <AccessOptionCard key={`${opt.access_method}-${i}`} option={opt} />
+                <AccessOptionCard key={`${opt.access_method}-${i}`} option={opt} sourceUrl={lounge.source_url} />
               ))}
             </div>
 

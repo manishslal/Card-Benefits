@@ -235,9 +235,9 @@ class TestExtractLoungeData:
     @pytest.mark.asyncio
     async def test_unknown_airport_empty_metadata(self, scraper):
         """IATA code not in US_AIRPORTS → empty metadata fields."""
-        card = _make_mock_card(name="LHR Lounge")
-        record = await scraper.extract_lounge_data(card, "LHR")
-        assert record["airport_iata"] == "LHR"
+        card = _make_mock_card(name="XYZ Lounge")
+        record = await scraper.extract_lounge_data(card, "XYZ")
+        assert record["airport_iata"] == "XYZ"
         assert record["airport_name"] == ""
 
     @pytest.mark.asyncio

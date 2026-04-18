@@ -1,18 +1,20 @@
 'use client';
 
 import React from 'react';
-import { CreditCard, Check } from 'lucide-react';
+import { CreditCard, Check, ExternalLink } from 'lucide-react';
 import Badge from '@/shared/components/ui/Badge';
 import type { AccessOption } from './types';
 
 interface AccessOptionCardProps {
   option: AccessOption;
+  /** Lounge-level source URL for linking guest policy details */
+  sourceUrl?: string | null;
 }
 
 /**
  * AccessOptionCard — Displays a single access method in the lounge detail view.
  */
-export default function AccessOptionCard({ option }: AccessOptionCardProps) {
+export default function AccessOptionCard({ option, sourceUrl }: AccessOptionCardProps) {
   const isFree = option.access_type === 'free';
 
   // Parse display: "Card Name → Network Name" or plain name
@@ -66,17 +68,25 @@ export default function AccessOptionCard({ option }: AccessOptionCardProps) {
           </p>
         )}
 
-        {/* Guest info */}
-        {option.guest_limit !== null && (
-          <p
-            className="text-xs mt-1"
-            style={{ color: 'var(--color-text-tertiary)' }}
-          >
-            Guests: up to {option.guest_limit}
-            {option.guest_fee != null && option.guest_fee > 0 && (
-              <> · ${option.guest_fee}/guest</>
+        {/* Guest policy disclaimer (no specific dollar amounts) */}
+        {(option.guest_limit !== null || option.guest_fee !== null) && (
+          <div className="text-xs mt-1.5" style={{ color: 'var(--color-text-tertiary)' }}>
+            <p>Guest access may be available.</p>
+            {sourceUrl ? (
+              <a
+                href={sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 mt-0.5 underline"
+                style={{ color: 'var(--color-primary)' }}
+              >
+                Check lounge website for guest policies
+                <ExternalLink size={10} aria-hidden="true" />
+              </a>
+            ) : (
+              <p className="mt-0.5">Policies and fees vary by lounge.</p>
             )}
-          </p>
+          </div>
         )}
 
         {/* Time limit */}

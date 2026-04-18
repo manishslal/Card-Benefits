@@ -1,10 +1,15 @@
 """Amex Global Lounge Collection scraper.
 
-Scrapes Centurion Lounges and Escape Lounges accessible to
-American Express Platinum and Gold cardholders.
+Scrapes ALL lounges accessible to American Express Platinum cardholders
+via the Amex Global Lounge Collection — including Centurion Lounges,
+Escape Lounges, and third-party partner lounges (e.g. Lufthansa Senator).
 
 Does NOT scrape Priority Pass or Delta Sky Club entries — those are
 handled by their own dedicated scrapers.
+
+IMPORTANT: The Amex site blocks ``eval()`` via Content Security Policy.
+All DOM interaction MUST use Playwright locators, ``query_selector()``,
+``get_attribute()``, and ``text_content()`` — never ``page.evaluate()``.
 """
 
 import asyncio
@@ -19,6 +24,7 @@ from playwright.async_api import Page
 
 from .base_scraper import BaseScraper, ScrapeResult
 from .normalizer import normalize_lounge_record
+from .priority_pass_scraper import _classify_venue_type
 from .repository import (
     get_lounges_by_airport,
     upsert_access_method,
@@ -31,22 +37,40 @@ logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-AMEX_LOUNGE_URL = (
-    "https://www.americanexpress.com/en-us/benefits/lounge-access/"
+AMEX_LOUNGE_BASE_URL = (
+    "https://www.americanexpress.com/en-us/travel/lounges/the-platinum-card/"
+)
+AMEX_AIRPORT_URL_TEMPLATE = (
+    "https://www.americanexpress.com/en-us/travel/lounges/the-platinum-card/{iata}/"
 )
 
-# Minimum delay between page navigations (seconds).
-NAV_DELAY_SECONDS = 2
+# Keep the old constant name as an alias so existing imports (tests, etc.)
+# continue to resolve.  The new canonical URL is AMEX_LOUNGE_BASE_URL.
+AMEX_LOUNGE_URL = AMEX_LOUNGE_BASE_URL
+
+# User-agent string — Amex may block default Playwright UA.
+_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/122.0.0.0 Safari/537.36"
+)
+
+# Minimum delay between airport page navigations (seconds).
+NAV_DELAY_SECONDS = 3
 
 # Default guest fee for Centurion Lounges (USD).
-# The Amex site currently lists $50 per guest.  If the scraper can verify
-# the fee from the live page it will use that value; otherwise this default.
 CENTURION_GUEST_FEE = Decimal("50.00")
 
-# Lounge types we are interested in (lowercased for matching).
-_WANTED_TYPES = {"centurion", "escape"}
+# Regex to parse terminal / concourse info from card text.
+_TERMINAL_RE = re.compile(r"(Terminal\s+\w+|Concourse\s+\w+)", re.IGNORECASE)
 
-# Lounge types we must explicitly skip.
+# Regex to extract hours text from card (e.g. "Open Now • Closes at 11:00pm").
+_HOURS_RE = re.compile(
+    r"((?:Open|Closed)\s+Now\s*[•·\-–—]\s*(?:Opens|Closes)\s+at\s+\d{1,2}:\d{2}\s*[ap]m)",
+    re.IGNORECASE,
+)
+
+# Lounge names we must explicitly skip — these belong to other scrapers.
 _SKIP_PATTERNS = re.compile(
     r"priority\s*pass|delta\s*sky\s*club|plaza\s*premium|air\s*canada",
     re.IGNORECASE,
@@ -383,75 +407,257 @@ _ESCAPE_GUEST_POLICY: dict = {
 
 
 class AmexLoungeScraper(BaseScraper):
-    """Scrape the Amex Global Lounge Collection for US lounges.
+    """Scrape the Amex Global Lounge Collection for accessible lounges.
 
-    Targets Centurion Lounges and Escape Lounges only.
-    Priority Pass and Delta Sky Club entries are intentionally excluded.
+    Navigates per-airport pages on the new Amex travel site and extracts
+    every lounge card.  Falls back to curated reference data for airports
+    where live extraction fails.
+
+    CRITICAL: No ``page.evaluate()`` — the Amex site blocks ``eval()``
+    via Content Security Policy.  Use locators/query_selector only.
     """
 
     source_name = "amex"
 
+    def __init__(self, airports: Optional[list[str]] = None) -> None:
+        super().__init__()
+        self._airports: Optional[list[str]] = (
+            [code.upper() for code in airports] if airports else None
+        )
+
     # ------------------------------------------------------------------
-    # Core scrape
+    # Core scrape — iterates airports
     # ------------------------------------------------------------------
 
     async def scrape(self) -> ScrapeResult:
-        """Scrape Amex lounge access page for US Centurion & Escape Lounges.
+        """Scrape Amex lounge pages for each target airport.
 
-        Attempts live extraction from the Amex site.  If the live page
-        yields no usable data (JavaScript rendering issues, layout
-        changes, etc.) the scraper falls back to curated reference data
-        so that downstream consumers always get a result set.
+        If ``self._airports`` is set, only those IATA codes are visited.
+        Otherwise the scraper uses reference data IATA codes (Centurion +
+        Escape locations) as the default airport list.
         """
         result = ScrapeResult(
             source_name=self.source_name,
             scraped_at=datetime.now(timezone.utc),
         )
 
-        page = await self.new_page()
-        try:
-            # Navigate with retry + mandatory delay
-            await self.navigate_with_retry(page, AMEX_LOUNGE_URL)
-            await asyncio.sleep(NAV_DELAY_SECONDS)
+        airports = self._airports or self._default_airport_codes()
+        logger.info("Scraping %d airports: %s", len(airports), airports)
 
-            # Dismiss cookie banners / modal overlays
-            await self._dismiss_overlays(page)
-
-            # Attempt live extraction
-            live_records = await self._extract_from_page(page)
-
-            if live_records:
-                logger.info(
-                    "Live extraction found %d records", len(live_records)
-                )
-                raw_records = live_records
-            else:
-                logger.warning(
-                    "Live extraction yielded 0 records; using reference data"
-                )
-                raw_records = self._build_reference_records()
-                result.errors.append(
-                    "Live extraction yielded no results; using reference data"
-                )
-
-        except Exception as exc:
-            logger.error("Page scrape failed, falling back to reference data: %s", exc)
-            raw_records = self._build_reference_records()
-            result.errors.append(
-                f"Live scrape error ({exc}); using reference data"
+        # Set user-agent on the browser context before creating pages.
+        if hasattr(self, "_context") and self._context:
+            await self._context.set_extra_http_headers(
+                {"User-Agent": _USER_AGENT}
             )
+
+        page = await self.new_page()
+        await page.set_extra_http_headers({"User-Agent": _USER_AGENT})
+        try:
+            for idx, iata_code in enumerate(airports):
+                if idx > 0:
+                    await asyncio.sleep(NAV_DELAY_SECONDS)
+
+                try:
+                    live_records = await self.scrape_airport(page, iata_code)
+
+                    if live_records:
+                        logger.info(
+                            "[%s] Live extraction found %d records",
+                            iata_code,
+                            len(live_records),
+                        )
+                        for raw in live_records:
+                            normalized = normalize_lounge_record(raw)
+                            normalized["_access_methods"] = raw.get("_access_methods", [])
+                            normalized["_guest_policy"] = raw.get("_guest_policy", {})
+                            result.records.append(normalized)
+                    else:
+                        # Fallback to reference data for this airport
+                        fallback = self._build_reference_records_for_airport(iata_code)
+                        if fallback:
+                            logger.warning(
+                                "[%s] Live extraction yielded 0 records; "
+                                "using %d reference records",
+                                iata_code,
+                                len(fallback),
+                            )
+                            result.errors.append(
+                                f"[{iata_code}] Live extraction yielded no results; "
+                                "using reference data"
+                            )
+                            for raw in fallback:
+                                normalized = normalize_lounge_record(raw)
+                                normalized["_access_methods"] = raw.get("_access_methods", [])
+                                normalized["_guest_policy"] = raw.get("_guest_policy", {})
+                                result.records.append(normalized)
+                        else:
+                            logger.warning(
+                                "[%s] No live or reference data available", iata_code
+                            )
+                            result.errors.append(
+                                f"[{iata_code}] No live or reference data available"
+                            )
+
+                except Exception as exc:
+                    logger.error(
+                        "[%s] Scrape failed, trying reference fallback: %s",
+                        iata_code,
+                        exc,
+                    )
+                    fallback = self._build_reference_records_for_airport(iata_code)
+                    if fallback:
+                        for raw in fallback:
+                            normalized = normalize_lounge_record(raw)
+                            normalized["_access_methods"] = raw.get("_access_methods", [])
+                            normalized["_guest_policy"] = raw.get("_guest_policy", {})
+                            result.records.append(normalized)
+                    result.errors.append(
+                        f"[{iata_code}] Scrape error ({exc}); "
+                        + ("used reference data" if fallback else "no reference data available")
+                    )
+
         finally:
             await page.close()
 
-        # Normalize every record and attach access-rule metadata
-        for raw in raw_records:
-            normalized = normalize_lounge_record(raw)
-            # Carry private metadata through (ignored by normalizer & upsert)
-            normalized["_access_methods"] = raw.get("_access_methods", [])
-            normalized["_guest_policy"] = raw.get("_guest_policy", {})
-            result.records.append(normalized)
-
         return result
+
+    # ------------------------------------------------------------------
+    # Per-airport scrape
+    # ------------------------------------------------------------------
+
+    async def scrape_airport(self, page: Page, iata_code: str) -> list[dict]:
+        """Scrape a single airport page and return raw record dicts.
+
+        Args:
+            page: An open Playwright page.
+            iata_code: 3-letter IATA code (e.g. ``"JFK"``).
+
+        Returns:
+            List of raw record dicts ready for normalization, or empty list.
+        """
+        url = AMEX_AIRPORT_URL_TEMPLATE.format(iata=iata_code)
+        logger.info("[%s] Navigating to %s", iata_code, url)
+
+        await page.goto(url, wait_until="domcontentloaded", timeout=60_000)
+        await page.wait_for_timeout(5_000)  # JS render time
+
+        await self._dismiss_overlays(page)
+
+        # Find lounge card links — each card is an <a> wrapping an <h3>
+        all_cards = page.locator("a:has(h3)")
+        card_count = await all_cards.count()
+        logger.debug("[%s] Found %d card candidates", iata_code, card_count)
+
+        records: list[dict] = []
+        iata_path_segment = f"/the-platinum-card/{iata_code}/".lower()
+
+        for i in range(card_count):
+            card = all_cards.nth(i)
+            try:
+                raw = await self._parse_airport_card(card, iata_code, iata_path_segment)
+                if raw is not None:
+                    records.append(raw)
+            except Exception as exc:
+                logger.debug("[%s] Card %d parse error: %s", iata_code, i, exc)
+
+        return records
+
+    # ------------------------------------------------------------------
+    # Card parsing (CSP-safe — no eval)
+    # ------------------------------------------------------------------
+
+    async def _parse_airport_card(
+        self,
+        card,
+        iata_code: str,
+        iata_path_segment: str,
+    ) -> Optional[dict]:
+        """Parse a single lounge card ``<a>`` element.
+
+        Returns a raw record dict or ``None`` if the card should be skipped.
+        """
+        # Filter: only cards whose href belongs to this airport
+        href = (await card.get_attribute("href")) or ""
+        if iata_path_segment not in href.lower():
+            return None
+
+        # Lounge name from <h3>
+        h3 = card.locator("h3").first
+        name = ((await h3.text_content()) or "").strip()
+        if not name:
+            return None
+
+        # Skip lounges from other networks
+        if _SKIP_PATTERNS.search(name):
+            return None
+
+        # Full card text for terminal / hours extraction
+        card_text = ((await card.text_content()) or "").strip()
+
+        # Terminal
+        terminal_match = _TERMINAL_RE.search(card_text)
+        terminal = terminal_match.group(1) if terminal_match else "Main Terminal"
+
+        # Hours
+        hours_match = _HOURS_RE.search(card_text)
+        hours_raw = hours_match.group(1) if hours_match else ""
+
+        # Image URL
+        image_url = ""
+        img = card.locator("img").first
+        try:
+            if await img.count() if hasattr(img, "count") else True:
+                image_url = (await img.get_attribute("src")) or ""
+        except Exception:
+            pass
+
+        # Source URL — prepend domain if relative
+        source_url = href
+        if source_url.startswith("/"):
+            source_url = f"https://www.americanexpress.com{source_url}"
+
+        # Venue type
+        venue_type = _classify_venue_type(name)
+
+        # Access methods + guest policy
+        # Check "escape" first because Escape Lounge names also contain
+        # "Centurion" (e.g. "Escape Lounge - The Centurion Studio Partner").
+        name_lower = name.lower()
+        is_escape = "escape" in name_lower
+        is_centurion = "centurion" in name_lower and not is_escape
+
+        if is_escape:
+            access_methods = _ESCAPE_ACCESS_METHODS
+            guest_policy = _ESCAPE_GUEST_POLICY
+            operator = "Escape Lounges"
+        elif is_centurion:
+            access_methods = _CENTURION_ACCESS_METHODS
+            guest_policy = _CENTURION_GUEST_POLICY
+            operator = "American Express"
+        else:
+            # Third-party partner lounge (e.g. Lufthansa Senator)
+            access_methods = _CENTURION_ACCESS_METHODS  # Amex Platinum access
+            guest_policy = _CENTURION_GUEST_POLICY
+            operator = ""  # Unknown operator — let normalizer handle
+
+        return {
+            "iata_code": iata_code,
+            "airport_iata": iata_code,
+            "airport_name": "",
+            "airport_city": "",
+            "airport_timezone": "UTC",
+            "terminal_name": terminal,
+            "lounge_name": name,
+            "lounge_operator": operator,
+            "operating_hours": hours_raw if hours_raw else None,
+            "amenities": [],
+            "is_restaurant_credit": False,
+            "source_url": source_url,
+            "image_url": image_url,
+            "venue_type": venue_type,
+            "_access_methods": access_methods,
+            "_guest_policy": guest_policy,
+        }
 
     # ------------------------------------------------------------------
     # Lifecycle override — access rule persistence
@@ -472,13 +678,12 @@ class AmexLoungeScraper(BaseScraper):
         return result
 
     # ------------------------------------------------------------------
-    # Live extraction helpers
+    # Overlay dismissal (CSP-safe)
     # ------------------------------------------------------------------
 
     async def _dismiss_overlays(self, page: Page) -> None:
         """Close cookie-consent banners and modal overlays if present."""
         dismiss_selectors = [
-            # Common Amex cookie / consent banners
             'button[id*="cookie" i]',
             'button[aria-label*="close" i]',
             'button[aria-label*="accept" i]',
@@ -496,197 +701,24 @@ class AmexLoungeScraper(BaseScraper):
             except Exception:
                 pass  # Overlay not present — move on
 
-    async def _extract_from_page(self, page: Page) -> list[dict]:
-        """Attempt to extract lounge records from the live Amex page.
+    # ------------------------------------------------------------------
+    # Default airport list
+    # ------------------------------------------------------------------
 
-        Uses multiple selector strategies to handle Amex site redesigns
-        gracefully.  Returns an empty list if no usable data is found.
+    def _default_airport_codes(self) -> list[str]:
+        """Return the default list of IATA codes to scrape.
+
+        Uses the reference data (Centurion + Escape locations) as
+        the canonical set of airports.  Returns a deduplicated,
+        sorted list.
         """
-        records: list[dict] = []
-
-        strategies = [
-            self._strategy_location_cards,
-            self._strategy_text_content,
-        ]
-        for strategy in strategies:
-            try:
-                found = await strategy(page)
-                if found:
-                    records.extend(found)
-                    break
-            except Exception as exc:
-                logger.debug(
-                    "Extraction strategy %s failed: %s",
-                    strategy.__name__,
-                    exc,
-                )
-
-        return records
-
-    async def _strategy_location_cards(self, page: Page) -> list[dict]:
-        """Extract from structured location cards / list items."""
-        records: list[dict] = []
-
-        # Wait for dynamic content
-        await page.wait_for_load_state("networkidle", timeout=15_000)
-
-        # Try several common card selectors the Amex site may use
-        card_selectors = [
-            '[class*="location-card"]',
-            '[class*="lounge-card"]',
-            '[data-module-name*="lounge"]',
-            'article[class*="card"]',
-            'div[class*="LocationCard"]',
-            'li[class*="lounge"]',
-        ]
-
-        cards = []
-        for sel in card_selectors:
-            found = await page.locator(sel).all()
-            if found:
-                cards = found
-                logger.debug(
-                    "Found %d cards with selector %s", len(found), sel
-                )
-                break
-
-        for card in cards:
-            try:
-                raw = await self._parse_location_card(card)
-                if raw and not _SKIP_PATTERNS.search(raw.get("lounge_name", "")):
-                    records.append(raw)
-            except Exception as exc:
-                logger.debug("Card parse error: %s", exc)
-
-        return records
-
-    async def _parse_location_card(self, card) -> Optional[dict]:
-        """Parse a single location card element into a raw record dict."""
-        text = (await card.inner_text()).strip()
-        if not text:
-            return None
-
-        # Try to find lounge name from heading tags
-        name = ""
-        for tag in ["h2", "h3", "h4", "[class*='title']", "[class*='name']"]:
-            try:
-                el = card.locator(tag).first
-                if await el.is_visible(timeout=500):
-                    name = (await el.inner_text()).strip()
-                    if name:
-                        break
-            except Exception:
-                continue
-
-        if not name:
-            # Fall back to first non-empty line
-            lines = [ln.strip() for ln in text.split("\n") if ln.strip()]
-            name = lines[0] if lines else ""
-
-        if not name:
-            return None
-
-        # Determine lounge type
-        name_lower = name.lower()
-        if "centurion" not in name_lower and "escape" not in name_lower:
-            return None  # Not a lounge type we want
-
-        # Try to extract airport code (3 uppercase letters matching a known IATA code)
-        known = {r["airport_iata"] for r in _CENTURION_LOUNGES + _ESCAPE_LOUNGES}
-        iata = ""
-        for m in re.finditer(r"\b([A-Z]{3})\b", text):
-            if m.group(1) in known:
-                iata = m.group(1)
-                break
-
-        # Try to find terminal info
-        terminal_match = re.search(
-            r"(Terminal\s+\w+|Concourse\s+\w+|Gate\s+\w+)", text, re.IGNORECASE
-        )
-        terminal = terminal_match.group(1) if terminal_match else "Main Terminal"
-
-        # Determine access methods
-        is_centurion = "centurion" in name_lower
-        access_methods = (
-            _CENTURION_ACCESS_METHODS if is_centurion else _ESCAPE_ACCESS_METHODS
-        )
-        guest_policy = (
-            _CENTURION_GUEST_POLICY if is_centurion else _ESCAPE_GUEST_POLICY
-        )
-
-        return {
-            "airport_iata": iata,
-            "terminal_name": terminal,
-            "lounge_name": name,
-            "lounge_operator": (
-                "American Express" if is_centurion else "Escape Lounges"
-            ),
-            "_access_methods": access_methods,
-            "_guest_policy": guest_policy,
+        codes = {r["airport_iata"] for r in _CENTURION_LOUNGES} | {
+            r["airport_iata"] for r in _ESCAPE_LOUNGES
         }
-
-    async def _strategy_text_content(self, page: Page) -> list[dict]:
-        """Fallback: scan the full page text for Centurion/Escape mentions.
-
-        This strategy is coarse but resilient to layout changes.  It
-        matches against the known reference locations to validate any
-        finds.
-        """
-        records: list[dict] = []
-        body_text = await page.inner_text("body")
-
-        if not body_text:
-            return records
-
-        known_iata_codes = {r["airport_iata"] for r in _CENTURION_LOUNGES} | {r["airport_iata"] for r in _ESCAPE_LOUNGES}
-
-        # Look for references to known airport codes near Centurion mentions
-        for match in re.finditer(r"\b([A-Z]{3})\b", body_text):
-            iata = match.group(1)
-            if iata not in known_iata_codes:
-                continue
-
-            # Check if "centurion" appears within 200 chars of this code
-            start = max(0, match.start() - 200)
-            end = min(len(body_text), match.end() + 200)
-            context = body_text[start:end].lower()
-
-            if "centurion" in context:
-                # Find the matching reference record to enrich
-                ref = next(
-                    (r for r in _CENTURION_LOUNGES if r["airport_iata"] == iata),
-                    None,
-                )
-                if ref:
-                    record = copy.deepcopy(ref)
-                    record["_access_methods"] = _CENTURION_ACCESS_METHODS
-                    record["_guest_policy"] = _CENTURION_GUEST_POLICY
-                    records.append(record)
-
-            if "escape" in context:
-                ref = next(
-                    (r for r in _ESCAPE_LOUNGES if r["airport_iata"] == iata),
-                    None,
-                )
-                if ref:
-                    record = copy.deepcopy(ref)
-                    record["_access_methods"] = _ESCAPE_ACCESS_METHODS
-                    record["_guest_policy"] = _ESCAPE_GUEST_POLICY
-                    records.append(record)
-
-        # Deduplicate by iata+name
-        seen: set[tuple[str, str]] = set()
-        deduped: list[dict] = []
-        for r in records:
-            key = (r["airport_iata"], r["lounge_name"])
-            if key not in seen:
-                seen.add(key)
-                deduped.append(r)
-
-        return deduped
+        return sorted(codes)
 
     # ------------------------------------------------------------------
-    # Reference data builder
+    # Reference data builders
     # ------------------------------------------------------------------
 
     def _build_reference_records(self) -> list[dict]:
@@ -708,6 +740,26 @@ class AmexLoungeScraper(BaseScraper):
             record["_access_methods"] = _ESCAPE_ACCESS_METHODS
             record["_guest_policy"] = _ESCAPE_GUEST_POLICY
             records.append(record)
+
+        return records
+
+    def _build_reference_records_for_airport(self, iata_code: str) -> list[dict]:
+        """Return reference records for a single airport, or empty list."""
+        records: list[dict] = []
+
+        for lounge in _CENTURION_LOUNGES:
+            if lounge["airport_iata"] == iata_code:
+                record = copy.deepcopy(lounge)
+                record["_access_methods"] = _CENTURION_ACCESS_METHODS
+                record["_guest_policy"] = _CENTURION_GUEST_POLICY
+                records.append(record)
+
+        for lounge in _ESCAPE_LOUNGES:
+            if lounge["airport_iata"] == iata_code:
+                record = copy.deepcopy(lounge)
+                record["_access_methods"] = _ESCAPE_ACCESS_METHODS
+                record["_guest_policy"] = _ESCAPE_GUEST_POLICY
+                records.append(record)
 
         return records
 

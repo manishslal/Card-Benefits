@@ -9,6 +9,8 @@ import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import FilterPills from './FilterPills';
 import TerminalFilter from './TerminalFilter';
 import LoungeCard from './LoungeCard';
+import NoCardsPrompt from './NoCardsPrompt';
+import UpgradeBanner from './UpgradeBanner';
 import { VENUE_TYPES } from './types';
 import type { LoungeData, EligibleResponse } from './types';
 
@@ -20,6 +22,7 @@ interface LoungeListProps {
   onSelectLounge: (lounge: LoungeData) => void;
   onRetry: () => void;
   selectedLoungeId?: string | null;
+  onAddCards?: () => void;
 }
 
 /**
@@ -33,6 +36,7 @@ export default function LoungeList({
   onSelectLounge,
   onRetry,
   selectedLoungeId,
+  onAddCards,
 }: LoungeListProps) {
   const [venueFilter, setVenueFilter] = useState('all');
   const [terminalFilter, setTerminalFilter] = useState('All Terminals');
@@ -167,8 +171,18 @@ export default function LoungeList({
           />
         )}
 
+        {/* No cards state */}
+        {!isLoading && !error && data && data.has_cards === false && data.lounges.length === 0 && (
+          <NoCardsPrompt
+            airportCode={data.airport}
+            airportName={data.airport_name ?? null}
+            onAddCards={onAddCards || (() => { window.location.href = '/dashboard'; })}
+            onBrowseAll={onRetry}
+          />
+        )}
+
         {/* Empty after filter */}
-        {!isLoading && !error && data && filteredLounges.length === 0 && (
+        {!isLoading && !error && data && (data.has_cards !== false || data.lounges.length > 0) && filteredLounges.length === 0 && (
           <EmptyState
             title={`No ${activeVenueLabel} venues${terminalFilter !== 'All Terminals' ? ` at ${terminalFilter}` : ''}`}
             description="Try changing your filters to see more results."
@@ -188,6 +202,11 @@ export default function LoungeList({
               />
             ))}
           </div>
+        )}
+
+        {/* What-if upgrade banner — after all lounge cards */}
+        {data && !isLoading && filteredLounges.length > 0 && (
+          <UpgradeBanner airportCode={data.airport} />
         )}
       </div>
     </div>

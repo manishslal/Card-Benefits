@@ -189,9 +189,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({
         success: true,
         airport,
+        airport_name: airportInfo[0]?.name ?? null,
+        airport_timezone: airportInfo[0]?.timezone ?? null,
         total_lounges: 0,
         free_access: 0,
         day_pass_available: 0,
+        has_cards: cardIds.length > 0,
         lounges: [],
       });
     }
@@ -334,6 +337,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       total_lounges: lounges.length,
       free_access: freeCount,
       day_pass_available: dayPassCount,
+      has_cards: cardIds.length > 0,
       lounges,
     });
   } catch (error) {

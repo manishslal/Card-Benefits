@@ -115,6 +115,7 @@ export default function LoungesPage() {
               onBack={handleBackToSearch}
               onSelectLounge={handleLoungeSelect}
               onRetry={handleRetry}
+              onAddCards={() => { window.location.href = '/dashboard'; }}
             />
           )}
 
@@ -171,6 +172,7 @@ export default function LoungesPage() {
             onSelectLounge={handleLoungeSelect}
             onRetry={handleRetry}
             selectedLoungeId={selectedLounge?.lounge_id}
+            onAddCards={() => { window.location.href = '/dashboard'; }}
           />
         </div>
 

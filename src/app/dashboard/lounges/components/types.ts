@@ -48,6 +48,7 @@ export interface EligibleResponse {
   total_lounges: number;
   free_access: number;
   day_pass_available: number;
+  has_cards?: boolean;  // true if user has any cards configured
   lounges: LoungeData[];
   error?: string;
 }

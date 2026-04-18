@@ -126,6 +126,25 @@ _AMENITY_SELECTORS = [
     '[class*="facility"] li',
 ]
 
+# -- "Show More" / "Load More" buttons on airport results pages.
+# Some airports (e.g. CDG) paginate lounge results behind these buttons.
+_SHOW_MORE_SELECTORS = [
+    'button:has-text("Show more")',
+    'button:has-text("Load more")',
+    'button:has-text("View more")',
+    'a:has-text("Show more")',
+    'a:has-text("Load more")',
+    '[data-testid*="show-more"]',
+    '[data-testid*="load-more"]',
+    '[class*="show-more"]',
+    '[class*="load-more"]',
+    '[class*="ShowMore"]',
+    '[class*="LoadMore"]',
+    'button[class*="more"]',
+]
+
+MAX_SHOW_MORE_CLICKS = 20  # Safety limit to prevent infinite loops
+
 
 class PriorityPassScraper(BaseScraper):
     """Scrape Priority Pass lounges by searching for each IATA code."""
@@ -367,6 +386,40 @@ class PriorityPassScraper(BaseScraper):
             msg = f"[{iata_code}] Unexpected redirect: {current_url}"
             self.logger.error(msg)
             return [], [msg]
+
+        # Step 5b — Expand all results: scroll + click "Show More" / "Load More"
+        show_more_clicks = 0
+        for click_num in range(MAX_SHOW_MORE_CLICKS):
+            # Scroll to bottom first to trigger lazy loading
+            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            await page.wait_for_timeout(1500)
+
+            # Try to find and click a "show more" button
+            clicked = False
+            for sm_sel in _SHOW_MORE_SELECTORS:
+                try:
+                    btn = await page.query_selector(sm_sel)
+                    if btn and await btn.is_visible():
+                        await btn.click()
+                        show_more_clicks += 1
+                        self.logger.debug(
+                            "[%s] Clicked show-more (attempt %d): %s",
+                            iata_code, show_more_clicks, sm_sel,
+                        )
+                        await page.wait_for_timeout(2000)
+                        clicked = True
+                        break
+                except Exception:
+                    continue
+
+            if not clicked:
+                break  # No more "show more" buttons — all results loaded
+
+        if show_more_clicks > 0:
+            self.logger.info(
+                "[%s] Expanded results with %d show-more click(s)",
+                iata_code, show_more_clicks,
+            )
 
         # Step 6 — Extract lounge cards.
         cards = []

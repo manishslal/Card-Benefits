@@ -2,9 +2,14 @@
 
 Fetches rich detail data from a lounge's source URL when a user opens a lounge.
 Uses a 7-day cache to avoid re-fetching unnecessarily.
+
+Supports batch mode via CLI:
+    python -m scrapers.lounge_detail_fetcher --batch
+    python -m scrapers.lounge_detail_fetcher --lounge-id <id>
 """
 
 import asyncio
+import json
 import logging
 import re
 from datetime import datetime, timedelta, timezone
@@ -237,3 +242,180 @@ def _extract_access_conditions(text: str, text_lower: str) -> dict:
         conditions["has_card_restrictions"] = True
 
     return conditions
+
+
+# ---------------------------------------------------------------------------
+# Batch mode
+# ---------------------------------------------------------------------------
+
+
+async def batch_fetch_all(batch_size: int = 10, delay: float = 3.0) -> dict:
+    """Fetch details for all lounges missing detail data.
+
+    Processes sequentially with a delay between each lounge and an extra
+    pause every *batch_size* lounges.
+
+    Args:
+        batch_size: Number of lounges per batch before an extra pause.
+        delay: Seconds to wait between individual lounge fetches.
+
+    Returns:
+        Summary dict with total/success/failed/skipped counts.
+    """
+    with get_cursor() as cur:
+        cur.execute("""
+            SELECT id, name, source_url
+            FROM lounges
+            WHERE detail_last_fetched_at IS NULL
+              AND source_url IS NOT NULL
+              AND source_url != ''
+            ORDER BY name
+        """)
+        lounges = cur.fetchall()
+
+    total = len(lounges)
+    success = 0
+    failed = 0
+    skipped = 0
+    errors: list[str] = []
+
+    logger.info("Batch detail fetch: %d lounges to process", total)
+
+    for i, lounge in enumerate(lounges, 1):
+        lounge_id = lounge["id"]
+        lounge_name = lounge["name"]
+
+        logger.info("[%d/%d] Fetching: %s...", i, total, lounge_name)
+        print(f"[{i}/{total}] Fetching: {lounge_name}...")
+
+        try:
+            result = await fetch_lounge_detail(lounge_id, force_refresh=True)
+            if result:
+                success += 1
+                logger.info(
+                    "  ✓ Success — airside=%s, amenities=%d keys",
+                    result.get("is_airside"),
+                    len(result.get("detail_amenities") or {}),
+                )
+            else:
+                skipped += 1
+                logger.warning("  ⊘ Skipped (no result)")
+        except Exception as exc:
+            failed += 1
+            error_msg = f"{lounge_name}: {exc}"
+            errors.append(error_msg)
+            logger.error("  ✗ Failed: %s", exc)
+
+        # Delay between fetches (not after the last one)
+        if i < total:
+            await asyncio.sleep(delay)
+            if i % batch_size == 0:
+                logger.info(
+                    "  --- Batch %d complete, pausing ---", i // batch_size
+                )
+                await asyncio.sleep(delay)  # Extra pause between batches
+
+    summary = {
+        "total": total,
+        "success": success,
+        "failed": failed,
+        "skipped": skipped,
+        "errors": errors,
+    }
+
+    _log_batch_run(summary)
+
+    logger.info(
+        "Batch complete: %d/%d success, %d failed, %d skipped",
+        success, total, failed, skipped,
+    )
+    print(f"\n{'=' * 50}")
+    print("Batch Detail Fetch Complete")
+    print(f"{'=' * 50}")
+    print(f"Total:   {total}")
+    print(f"Success: {success}")
+    print(f"Failed:  {failed}")
+    print(f"Skipped: {skipped}")
+    if errors:
+        print("\nErrors:")
+        for err in errors:
+            print(f"  - {err}")
+
+    return summary
+
+
+def _log_batch_run(summary: dict) -> None:
+    """Log a batch run to the ``lounge_scrape_runs`` table.
+
+    Schema:  id | source_name | started_at | completed_at |
+             records_found | records_upserted | errors | status
+    """
+    try:
+        with get_cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO lounge_scrape_runs
+                    (id, source_name, started_at, completed_at,
+                     records_found, records_upserted, errors, status)
+                VALUES (gen_random_uuid()::text, %s, NOW(), NOW(), %s, %s, %s, %s)
+                """,
+                (
+                    "batch_detail_fetcher",
+                    summary["total"],
+                    summary["success"],
+                    json.dumps(summary.get("errors", [])),
+                    "completed" if summary["failed"] == 0 else "completed_with_errors",
+                ),
+            )
+    except Exception as exc:
+        logger.error("Failed to log batch run: %s", exc)
+
+
+# ---------------------------------------------------------------------------
+# CLI entry point
+# ---------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Lounge detail fetcher")
+    parser.add_argument(
+        "--batch",
+        action="store_true",
+        help="Fetch details for all lounges missing detail data",
+    )
+    parser.add_argument(
+        "--lounge-id",
+        type=str,
+        help="Fetch details for a specific lounge by ID",
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=10,
+        help="Batch size before extra pause (default: 10)",
+    )
+    parser.add_argument(
+        "--delay",
+        type=float,
+        default=3.0,
+        help="Delay between fetches in seconds (default: 3.0)",
+    )
+
+    args = parser.parse_args()
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+    )
+
+    if args.batch:
+        asyncio.run(batch_fetch_all(batch_size=args.batch_size, delay=args.delay))
+    elif args.lounge_id:
+        detail = asyncio.run(fetch_lounge_detail(args.lounge_id, force_refresh=True))
+        if detail:
+            print(json.dumps(detail, indent=2, default=str))
+        else:
+            print("No result returned")
+    else:
+        parser.print_help()

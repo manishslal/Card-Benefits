@@ -4,8 +4,10 @@ These tests exercise the deterministic helpers without launching Playwright
 or hitting any live pages.
 """
 
+import asyncio
 import sys
 import os
+from unittest.mock import AsyncMock, patch, MagicMock
 
 import pytest
 
@@ -15,6 +17,8 @@ from scrapers.lounge_detail_fetcher import (
     _detect_airside,
     _extract_gate_proximity,
     _extract_access_conditions,
+    batch_fetch_all,
+    _log_batch_run,
 )
 from scrapers.priority_pass_scraper import _classify_venue_type
 
@@ -233,3 +237,103 @@ class TestClassifyVenueType:
     def test_rest_in_restaurant_no_false_sleep(self):
         """The word 'rest' inside 'restaurant' must not trigger 'sleep' classification."""
         assert _classify_venue_type("Airport Restaurant & Bar") == "dining"
+
+
+# ---------------------------------------------------------------------------
+# batch_fetch_all
+# ---------------------------------------------------------------------------
+
+
+class TestBatchFetchAll:
+    """Test the batch detail-fetch orchestrator with mocked DB + fetcher."""
+
+    def test_empty_queue_returns_zero_total(self):
+        """When no lounges need fetching, summary totals are all zero."""
+        mock_cursor = MagicMock()
+        mock_cursor.fetchall.return_value = []
+        mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_cursor.__exit__ = MagicMock(return_value=False)
+
+        with patch("scrapers.lounge_detail_fetcher.get_cursor", return_value=mock_cursor):
+            with patch("scrapers.lounge_detail_fetcher._log_batch_run"):
+                summary = asyncio.run(batch_fetch_all(batch_size=5, delay=0.0))
+
+        assert summary["total"] == 0
+        assert summary["success"] == 0
+        assert summary["failed"] == 0
+        assert summary["skipped"] == 0
+
+    def test_successful_fetch_increments_success(self):
+        """A successful fetch_lounge_detail result counts as success."""
+        fake_lounges = [
+            {"id": "lounge-1", "name": "Test Lounge", "source_url": "https://example.com"},
+        ]
+        mock_cursor = MagicMock()
+        mock_cursor.fetchall.return_value = fake_lounges
+        mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_cursor.__exit__ = MagicMock(return_value=False)
+
+        fake_result = {"is_airside": True, "detail_amenities": {"has_wifi": True}}
+
+        with patch("scrapers.lounge_detail_fetcher.get_cursor", return_value=mock_cursor):
+            with patch("scrapers.lounge_detail_fetcher.fetch_lounge_detail", new_callable=AsyncMock, return_value=fake_result):
+                with patch("scrapers.lounge_detail_fetcher._log_batch_run"):
+                    summary = asyncio.run(batch_fetch_all(batch_size=5, delay=0.0))
+
+        assert summary["total"] == 1
+        assert summary["success"] == 1
+        assert summary["failed"] == 0
+
+    def test_failed_fetch_increments_failed(self):
+        """An exception during fetch counts as failed."""
+        fake_lounges = [
+            {"id": "lounge-1", "name": "Bad Lounge", "source_url": "https://broken.com"},
+        ]
+        mock_cursor = MagicMock()
+        mock_cursor.fetchall.return_value = fake_lounges
+        mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_cursor.__exit__ = MagicMock(return_value=False)
+
+        async def _boom(*args, **kwargs):
+            raise RuntimeError("network error")
+
+        with patch("scrapers.lounge_detail_fetcher.get_cursor", return_value=mock_cursor):
+            with patch("scrapers.lounge_detail_fetcher.fetch_lounge_detail", side_effect=_boom):
+                with patch("scrapers.lounge_detail_fetcher._log_batch_run"):
+                    summary = asyncio.run(batch_fetch_all(batch_size=5, delay=0.0))
+
+        assert summary["total"] == 1
+        assert summary["failed"] == 1
+        assert len(summary["errors"]) == 1
+        assert "Bad Lounge" in summary["errors"][0]
+
+    def test_none_result_increments_skipped(self):
+        """A None return from fetch_lounge_detail counts as skipped."""
+        fake_lounges = [
+            {"id": "lounge-1", "name": "No URL Lounge", "source_url": "https://x.com"},
+        ]
+        mock_cursor = MagicMock()
+        mock_cursor.fetchall.return_value = fake_lounges
+        mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_cursor.__exit__ = MagicMock(return_value=False)
+
+        with patch("scrapers.lounge_detail_fetcher.get_cursor", return_value=mock_cursor):
+            with patch("scrapers.lounge_detail_fetcher.fetch_lounge_detail", new_callable=AsyncMock, return_value=None):
+                with patch("scrapers.lounge_detail_fetcher._log_batch_run"):
+                    summary = asyncio.run(batch_fetch_all(batch_size=5, delay=0.0))
+
+        assert summary["skipped"] == 1
+        assert summary["success"] == 0
+
+    def test_summary_keys(self):
+        """Summary dict always has the expected keys."""
+        mock_cursor = MagicMock()
+        mock_cursor.fetchall.return_value = []
+        mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_cursor.__exit__ = MagicMock(return_value=False)
+
+        with patch("scrapers.lounge_detail_fetcher.get_cursor", return_value=mock_cursor):
+            with patch("scrapers.lounge_detail_fetcher._log_batch_run"):
+                summary = asyncio.run(batch_fetch_all(delay=0.0))
+
+        assert set(summary.keys()) == {"total", "success", "failed", "skipped", "errors"}

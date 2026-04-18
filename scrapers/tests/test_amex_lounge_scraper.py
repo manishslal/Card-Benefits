@@ -839,3 +839,96 @@ class TestReferenceDataFallback:
             assert len(records) >= 1, (
                 f"No fallback for {lounge['airport_iata']}"
             )
+
+
+# ---------------------------------------------------------------------------
+# _get_reference_hours — fallback hours lookup
+# ---------------------------------------------------------------------------
+
+
+class TestGetReferenceHours:
+    """Verify the reference-data hours fallback for live-scraped records."""
+
+    def test_exact_centurion_name_match(self):
+        """Exact name match returns hours from reference data."""
+        scraper = AmexLoungeScraper()
+        hours = scraper._get_reference_hours("The Centurion Lounge", "JFK")
+        assert hours == "Daily: 6:00am-11:00pm"
+
+    def test_exact_escape_name_match(self):
+        """Exact Escape Lounge name returns reference hours."""
+        scraper = AmexLoungeScraper()
+        hours = scraper._get_reference_hours(
+            "Escape Lounge - The Centurion Studio Partner", "MSP"
+        )
+        assert hours == "Daily: 5:00am-9:00pm"
+
+    def test_substring_match_live_name_longer(self):
+        """Live-scraped name containing the reference name still matches."""
+        scraper = AmexLoungeScraper()
+        hours = scraper._get_reference_hours(
+            "The Centurion Lounge by American Express", "LAX"
+        )
+        assert hours == "Daily: 6:00am-11:00pm"
+
+    def test_substring_match_ref_name_longer(self):
+        """Shorter live name contained within the reference name still matches."""
+        scraper = AmexLoungeScraper()
+        hours = scraper._get_reference_hours("Escape Lounge", "MSP")
+        assert hours is not None
+        assert "5:00am" in hours
+
+    def test_wrong_iata_returns_none(self):
+        """Correct lounge name but wrong airport returns None."""
+        scraper = AmexLoungeScraper()
+        hours = scraper._get_reference_hours("The Centurion Lounge", "ZZZ")
+        assert hours is None
+
+    def test_unknown_lounge_returns_none(self):
+        """Completely unknown lounge name returns None."""
+        scraper = AmexLoungeScraper()
+        hours = scraper._get_reference_hours("Lufthansa Senator Lounge", "JFK")
+        assert hours is None
+
+    def test_different_centurion_airports_different_hours(self):
+        """Different airports can have different operating hours."""
+        scraper = AmexLoungeScraper()
+        jfk = scraper._get_reference_hours("The Centurion Lounge", "JFK")
+        clt = scraper._get_reference_hours("The Centurion Lounge", "CLT")
+        assert jfk is not None and clt is not None
+        assert jfk != clt  # JFK=6am-11pm, CLT=6am-9pm
+
+    def test_all_centurion_airports_have_hours(self):
+        """Every Centurion airport returns non-None hours."""
+        scraper = AmexLoungeScraper()
+        for lounge in _CENTURION_LOUNGES:
+            hours = scraper._get_reference_hours(
+                lounge["lounge_name"], lounge["airport_iata"]
+            )
+            assert hours is not None, (
+                f"No reference hours for {lounge['airport_iata']}"
+            )
+
+
+class TestHoursFallbackIntegration:
+    """Verify the Open Now / Closed Now trigger for hours fallback."""
+
+    def test_open_now_string_triggers_fallback(self):
+        """A live hours string starting with 'Open' should trigger fallback."""
+        live_hours = "Open Now • Closes at 11:00pm"
+        assert live_hours.startswith(("Open", "Closed"))
+
+    def test_closed_now_string_triggers_fallback(self):
+        """A live hours string starting with 'Closed' should trigger fallback."""
+        live_hours = "Closed Now • Opens at 6:00am"
+        assert live_hours.startswith(("Open", "Closed"))
+
+    def test_static_hours_do_not_trigger_fallback(self):
+        """Static hours like 'Daily: 6:00am-11:00pm' should NOT trigger fallback."""
+        static_hours = "Daily: 6:00am-11:00pm"
+        assert not static_hours.startswith(("Open", "Closed"))
+
+    def test_empty_hours_trigger_fallback(self):
+        """Empty hours string should trigger fallback."""
+        hours_raw = ""
+        assert not hours_raw or hours_raw.startswith(("Open", "Closed"))

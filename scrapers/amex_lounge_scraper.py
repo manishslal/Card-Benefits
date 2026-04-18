@@ -602,6 +602,15 @@ class AmexLoungeScraper(BaseScraper):
         hours_match = _HOURS_RE.search(card_text)
         hours_raw = hours_match.group(1) if hours_match else ""
 
+        # The live-scraped hours text is usually a real-time status string
+        # like "Open Now • Closes at 11:00pm" which the normalizer can't
+        # parse into structured operating hours.  Fall back to reference
+        # data for known Centurion / Escape lounges.
+        if not hours_raw or hours_raw.startswith(("Open", "Closed")):
+            ref_hours = self._get_reference_hours(name, iata_code)
+            if ref_hours:
+                hours_raw = ref_hours
+
         # Image URL
         image_url = ""
         img = card.locator("img").first
@@ -658,6 +667,25 @@ class AmexLoungeScraper(BaseScraper):
             "_access_methods": access_methods,
             "_guest_policy": guest_policy,
         }
+
+    # ------------------------------------------------------------------
+    # Reference hours lookup
+    # ------------------------------------------------------------------
+
+    def _get_reference_hours(self, lounge_name: str, iata_code: str) -> Optional[str]:
+        """Look up operating hours from reference data for a known lounge.
+
+        Uses substring matching to handle slight name differences between
+        the live-scraped card text and the curated reference data.
+        """
+        lounge_name_lower = lounge_name.lower()
+        for ref_lounge in _CENTURION_LOUNGES + _ESCAPE_LOUNGES:
+            if ref_lounge.get("airport_iata") != iata_code:
+                continue
+            ref_name_lower = ref_lounge.get("lounge_name", "").lower()
+            if ref_name_lower in lounge_name_lower or lounge_name_lower in ref_name_lower:
+                return ref_lounge.get("operating_hours")
+        return None
 
     # ------------------------------------------------------------------
     # Lifecycle override — access rule persistence

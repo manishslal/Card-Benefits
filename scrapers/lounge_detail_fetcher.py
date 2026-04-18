@@ -79,6 +79,15 @@ async def fetch_lounge_detail(lounge_id: str, force_refresh: bool = False, debug
     detail = await _scrape_detail_page(source_url, debug=debug)
 
     if detail:
+        logger.info(
+            "Writing detail for %s: amenities=%s (%d keys), airside=%s, conditions=%s (%d keys)",
+            lounge_id,
+            "present" if detail.get("detail_amenities") else "empty",
+            len(detail.get("detail_amenities") or {}),
+            detail.get("is_airside"),
+            "present" if detail.get("access_conditions") else "empty",
+            len(detail.get("access_conditions") or {}),
+        )
         update_lounge_detail(
             lounge_id=lounge_id,
             is_airside=detail.get("is_airside"),
@@ -411,11 +420,14 @@ async def batch_fetch_all(batch_size: int = 10, delay: float = 3.0, force_refres
             result = await fetch_lounge_detail(lounge_id, force_refresh=True)
             if result:
                 success += 1
+                amenity_count = len(result.get("detail_amenities") or {})
                 logger.info(
-                    "  ✓ Success — airside=%s, amenities=%d keys",
+                    "  ✓ Success — airside=%s, amenities=%d keys, conditions=%d keys",
                     result.get("is_airside"),
-                    len(result.get("detail_amenities") or {}),
+                    amenity_count,
+                    len(result.get("access_conditions") or {}),
                 )
+                print(f"  ✓ airside={result.get('is_airside')}, amenities={amenity_count} keys")
             else:
                 skipped += 1
                 logger.warning("  ⊘ Skipped (no result)")

@@ -70,14 +70,14 @@ def upsert_lounge(terminal_id: str, name: str, operator: Optional[str] = None,
             cur.execute("""
                 UPDATE lounges SET
                     operator = %s, location_details = %s,
-                    operating_hours = %s, amenities = %s,
+                    operating_hours = %s::jsonb, amenities = %s::jsonb,
                     is_restaurant_credit = %s, may_deny_entry = %s,
                     source_url = %s, image_url = %s, venue_type = %s,
                     last_verified_at = NOW()
                 WHERE id = %s RETURNING id
             """, (operator, location_details,
-                  json.dumps(operating_hours) if operating_hours else None,
-                  json.dumps(amenities) if amenities else None,
+                  json.dumps(operating_hours) if operating_hours is not None else None,
+                  json.dumps(amenities) if amenities is not None else None,
                   is_restaurant_credit, may_deny_entry,
                   source_url, image_url, venue_type, existing['id']))
             return cur.fetchone()['id']
@@ -88,11 +88,11 @@ def upsert_lounge(terminal_id: str, name: str, operator: Optional[str] = None,
                     operating_hours, amenities, is_restaurant_credit, may_deny_entry,
                     source_url, image_url, venue_type,
                     last_verified_at, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s, %s, %s, %s, %s, NOW(), NOW())
                 RETURNING id
             """, (new_id, terminal_id, name, operator, location_details,
-                  json.dumps(operating_hours) if operating_hours else None,
-                  json.dumps(amenities) if amenities else None,
+                  json.dumps(operating_hours) if operating_hours is not None else None,
+                  json.dumps(amenities) if amenities is not None else None,
                   is_restaurant_credit, may_deny_entry,
                   source_url, image_url, venue_type))
             return cur.fetchone()['id']
@@ -112,13 +112,13 @@ def update_lounge_detail(lounge_id: str, is_airside: Optional[bool] = None,
             UPDATE lounges SET
                 is_airside = COALESCE(%s, is_airside),
                 gate_proximity = COALESCE(%s, gate_proximity),
-                detail_amenities = COALESCE(%s, detail_amenities),
-                access_conditions = COALESCE(%s, access_conditions),
+                detail_amenities = COALESCE(%s::jsonb, detail_amenities),
+                access_conditions = COALESCE(%s::jsonb, access_conditions),
                 detail_last_fetched_at = NOW()
             WHERE id = %s
         """, (is_airside, gate_proximity,
-              json.dumps(detail_amenities) if detail_amenities else None,
-              json.dumps(access_conditions) if access_conditions else None,
+              json.dumps(detail_amenities) if detail_amenities is not None else None,
+              json.dumps(access_conditions) if access_conditions is not None else None,
               lounge_id))
 
 

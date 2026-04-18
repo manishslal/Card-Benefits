@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Seed Capital One and Chase Sapphire proprietary lounge data.
+"""Seed proprietary lounge data (Capital One, Chase Sapphire, Delta Sky Club, United Club).
 
 Idempotent — safe to run multiple times. Uses upsert functions from
 scrapers.repository so re-runs update rather than duplicate.
@@ -36,7 +36,10 @@ logger = logging.getLogger(__name__)
 # ATL, CLT, DEN, DFW, JFK, LAS, LAX, MCO, MIA, ORD are already seeded.
 # We call upsert for all referenced airports (idempotent) so the script is
 # self-contained.
-REQUIRED_AIRPORTS = ["BOS", "CLT", "DEN", "DFW", "IAD", "JFK", "LAS", "PHL", "PHX", "SEA", "SFO"]
+REQUIRED_AIRPORTS = [
+    "ATL", "BOS", "CLT", "DEN", "DFW", "DTW", "EWR", "IAD", "IAH",
+    "JFK", "LAS", "LAX", "MSP", "ORD", "PHL", "PHX", "SEA", "SFO", "SLC",
+]
 
 # ── Access methods ───────────────────────────────────────────────────────────
 ACCESS_METHODS = [
@@ -49,6 +52,14 @@ ACCESS_METHODS = [
     # Priority Pass Select is referenced by JFK; it should already exist but
     # we upsert defensively.
     {"name": "Priority Pass Select", "category": "Lounge Network", "provider": "Priority Pass"},
+    # Delta Sky Club access methods
+    {"name": "Delta Sky Club Membership", "category": "Membership", "provider": "Delta"},
+    {"name": "Delta Reserve Amex", "category": "Credit Card", "provider": "American Express"},
+    {"name": "Delta Sky Club Day Pass", "category": "Day Pass", "provider": "Delta"},
+    # United Club access methods
+    {"name": "United Club Membership", "category": "Membership", "provider": "United"},
+    {"name": "United Club Infinite Card", "category": "Credit Card", "provider": "Chase"},
+    {"name": "United Club Day Pass", "category": "Day Pass", "provider": "United"},
 ]
 
 # ── Capital One Lounges (3 locations) ────────────────────────────────────────
@@ -475,7 +486,339 @@ JFK_CHASE_SAPPHIRE = {
     ],
 }
 
-# ── Card ↔ access method links ──────────────────────────────────────────────
+# ── Delta Sky Club Lounges (10 hub locations) ────────────────────────────────
+_DELTA_ACCESS_RULES = [
+    {
+        "access_method": "Delta Sky Club Membership",
+        "entry_cost": Decimal("0.00"),
+        "guest_limit": 2,
+        "guest_fee": Decimal("50.00"),
+        "guest_conditions": "Guests must be present with member",
+        "conditions": {"requires_same_day_flight": True, "airline_must_be": ["DL", "DL Connection"]},
+    },
+    {
+        "access_method": "Delta Reserve Amex",
+        "entry_cost": Decimal("0.00"),
+        "guest_limit": 2,
+        "guest_fee": Decimal("50.00"),
+        "guest_conditions": "Guests must be present with cardholder",
+        "conditions": {"requires_same_day_flight": True, "airline_must_be": ["DL", "DL Connection"]},
+    },
+    {
+        "access_method": "Delta Sky Club Day Pass",
+        "entry_cost": Decimal("59.00"),
+        "guest_limit": 0,
+        "conditions": {"requires_same_day_flight": True, "airline_must_be": ["DL"]},
+    },
+]
+
+_DELTA_BASE_AMENITIES = {
+    "has_wifi": True,
+    "has_hot_food": True,
+    "has_premium_bar": True,
+    "has_showers": True,
+}
+
+DELTA_SKY_CLUB_LOUNGES = [
+    {
+        "iata_code": "ATL",
+        "name": "Delta Sky Club",
+        "terminal": "Concourse B",
+        "operator": "Delta",
+        "is_airside": True,
+        "operating_hours": {"daily": ["05:00-22:00"]},
+        "amenities": {**_DELTA_BASE_AMENITIES, "has_quiet_zone": True},
+        "venue_type": "lounge",
+        "source_url": "https://www.delta.com/us/en/delta-sky-club/overview",
+        "may_deny_entry": True,
+        "access_rules": _DELTA_ACCESS_RULES,
+    },
+    {
+        "iata_code": "ATL",
+        "name": "Delta Sky Club",
+        "terminal": "Concourse A",
+        "operator": "Delta",
+        "is_airside": True,
+        "operating_hours": {"daily": ["05:30-22:00"]},
+        "amenities": {**_DELTA_BASE_AMENITIES, "has_quiet_zone": True},
+        "venue_type": "lounge",
+        "source_url": "https://www.delta.com/us/en/delta-sky-club/overview",
+        "may_deny_entry": True,
+        "access_rules": _DELTA_ACCESS_RULES,
+    },
+    {
+        "iata_code": "ATL",
+        "name": "Delta Sky Club",
+        "terminal": "Concourse E (International)",
+        "operator": "Delta",
+        "is_airside": True,
+        "operating_hours": {"daily": ["05:00-22:00"]},
+        "amenities": {**_DELTA_BASE_AMENITIES, "has_quiet_zone": True},
+        "venue_type": "lounge",
+        "source_url": "https://www.delta.com/us/en/delta-sky-club/overview",
+        "may_deny_entry": True,
+        "access_rules": _DELTA_ACCESS_RULES,
+    },
+    {
+        "iata_code": "JFK",
+        "name": "Delta Sky Club",
+        "terminal": "Terminal 4",
+        "operator": "Delta",
+        "is_airside": True,
+        "operating_hours": {"daily": ["05:00-22:00"]},
+        "amenities": {**_DELTA_BASE_AMENITIES, "has_quiet_zone": True},
+        "venue_type": "lounge",
+        "source_url": "https://www.delta.com/us/en/delta-sky-club/overview",
+        "may_deny_entry": True,
+        "access_rules": _DELTA_ACCESS_RULES,
+    },
+    {
+        "iata_code": "LAX",
+        "name": "Delta Sky Club",
+        "terminal": "Terminal 2",
+        "operator": "Delta",
+        "is_airside": True,
+        "operating_hours": {"daily": ["04:30-22:00"]},
+        "amenities": {**_DELTA_BASE_AMENITIES, "has_quiet_zone": True},
+        "venue_type": "lounge",
+        "source_url": "https://www.delta.com/us/en/delta-sky-club/overview",
+        "may_deny_entry": True,
+        "access_rules": _DELTA_ACCESS_RULES,
+    },
+    {
+        "iata_code": "DTW",
+        "name": "Delta Sky Club",
+        "terminal": "McNamara Terminal",
+        "operator": "Delta",
+        "is_airside": True,
+        "operating_hours": {"daily": ["05:00-22:00"]},
+        "amenities": {**_DELTA_BASE_AMENITIES, "has_quiet_zone": True},
+        "venue_type": "lounge",
+        "source_url": "https://www.delta.com/us/en/delta-sky-club/overview",
+        "may_deny_entry": True,
+        "access_rules": _DELTA_ACCESS_RULES,
+    },
+    {
+        "iata_code": "MSP",
+        "name": "Delta Sky Club",
+        "terminal": "Terminal 1 Concourse G",
+        "operator": "Delta",
+        "is_airside": True,
+        "operating_hours": {"daily": ["05:00-22:00"]},
+        "amenities": {**_DELTA_BASE_AMENITIES, "has_quiet_zone": True},
+        "venue_type": "lounge",
+        "source_url": "https://www.delta.com/us/en/delta-sky-club/overview",
+        "may_deny_entry": True,
+        "access_rules": _DELTA_ACCESS_RULES,
+    },
+    {
+        "iata_code": "SEA",
+        "name": "Delta Sky Club",
+        "terminal": "Concourse A",
+        "operator": "Delta",
+        "is_airside": True,
+        "operating_hours": {"daily": ["05:00-22:00"]},
+        "amenities": {**_DELTA_BASE_AMENITIES},
+        "venue_type": "lounge",
+        "source_url": "https://www.delta.com/us/en/delta-sky-club/overview",
+        "may_deny_entry": True,
+        "access_rules": _DELTA_ACCESS_RULES,
+    },
+    {
+        "iata_code": "SLC",
+        "name": "Delta Sky Club",
+        "terminal": "Concourse A",
+        "operator": "Delta",
+        "is_airside": True,
+        "operating_hours": {"daily": ["05:00-22:00"]},
+        "amenities": {**_DELTA_BASE_AMENITIES},
+        "venue_type": "lounge",
+        "source_url": "https://www.delta.com/us/en/delta-sky-club/overview",
+        "may_deny_entry": True,
+        "access_rules": _DELTA_ACCESS_RULES,
+    },
+    {
+        "iata_code": "BOS",
+        "name": "Delta Sky Club",
+        "terminal": "Terminal A",
+        "operator": "Delta",
+        "is_airside": True,
+        "operating_hours": {"daily": ["05:00-21:30"]},
+        "amenities": {**_DELTA_BASE_AMENITIES},
+        "venue_type": "lounge",
+        "source_url": "https://www.delta.com/us/en/delta-sky-club/overview",
+        "may_deny_entry": True,
+        "access_rules": _DELTA_ACCESS_RULES,
+    },
+]
+
+# ── United Club Lounges (10 hub locations) ───────────────────────────────────
+_UNITED_ACCESS_RULES = [
+    {
+        "access_method": "United Club Membership",
+        "entry_cost": Decimal("0.00"),
+        "guest_limit": 2,
+        "guest_fee": Decimal("39.00"),
+        "guest_conditions": "Guests must be present with member",
+        "conditions": {"requires_same_day_flight": True},
+    },
+    {
+        "access_method": "United Club Infinite Card",
+        "entry_cost": Decimal("0.00"),
+        "guest_limit": 2,
+        "guest_fee": Decimal("39.00"),
+        "guest_conditions": "Guests must be present with cardholder",
+        "conditions": {"requires_same_day_flight": True},
+    },
+    {
+        "access_method": "United Club Day Pass",
+        "entry_cost": Decimal("59.00"),
+        "guest_limit": 0,
+        "conditions": {"requires_same_day_flight": True},
+    },
+]
+
+_UNITED_BASE_AMENITIES = {
+    "has_wifi": True,
+    "has_hot_food": True,
+    "has_premium_bar": True,
+}
+
+UNITED_CLUB_LOUNGES = [
+    {
+        "iata_code": "ORD",
+        "name": "United Club",
+        "terminal": "Terminal 1 Concourse B",
+        "operator": "United",
+        "is_airside": True,
+        "operating_hours": {"daily": ["05:00-21:00"]},
+        "amenities": {**_UNITED_BASE_AMENITIES},
+        "venue_type": "lounge",
+        "source_url": "https://www.united.com/en/us/fly/travel/airport/united-club.html",
+        "may_deny_entry": True,
+        "access_rules": _UNITED_ACCESS_RULES,
+    },
+    {
+        "iata_code": "ORD",
+        "name": "United Club",
+        "terminal": "Terminal 1 Concourse C",
+        "operator": "United",
+        "is_airside": True,
+        "operating_hours": {"daily": ["05:30-21:00"]},
+        "amenities": {**_UNITED_BASE_AMENITIES},
+        "venue_type": "lounge",
+        "source_url": "https://www.united.com/en/us/fly/travel/airport/united-club.html",
+        "may_deny_entry": True,
+        "access_rules": _UNITED_ACCESS_RULES,
+    },
+    {
+        "iata_code": "EWR",
+        "name": "United Club",
+        "terminal": "Terminal C",
+        "operator": "United",
+        "is_airside": True,
+        "operating_hours": {"daily": ["05:00-22:00"]},
+        "amenities": {**_UNITED_BASE_AMENITIES, "has_showers": True},
+        "venue_type": "lounge",
+        "source_url": "https://www.united.com/en/us/fly/travel/airport/united-club.html",
+        "may_deny_entry": True,
+        "access_rules": _UNITED_ACCESS_RULES,
+    },
+    {
+        "iata_code": "IAH",
+        "name": "United Club",
+        "terminal": "Terminal E",
+        "operator": "United",
+        "is_airside": True,
+        "operating_hours": {"daily": ["05:00-21:00"]},
+        "amenities": {**_UNITED_BASE_AMENITIES, "has_showers": True},
+        "venue_type": "lounge",
+        "source_url": "https://www.united.com/en/us/fly/travel/airport/united-club.html",
+        "may_deny_entry": True,
+        "access_rules": _UNITED_ACCESS_RULES,
+    },
+    {
+        "iata_code": "DEN",
+        "name": "United Club",
+        "terminal": "Concourse B",
+        "operator": "United",
+        "is_airside": True,
+        "operating_hours": {"daily": ["05:00-21:00"]},
+        "amenities": {**_UNITED_BASE_AMENITIES},
+        "venue_type": "lounge",
+        "source_url": "https://www.united.com/en/us/fly/travel/airport/united-club.html",
+        "may_deny_entry": True,
+        "access_rules": _UNITED_ACCESS_RULES,
+    },
+    {
+        "iata_code": "SFO",
+        "name": "United Club",
+        "terminal": "International Terminal",
+        "operator": "United",
+        "is_airside": True,
+        "operating_hours": {"daily": ["05:00-22:00"]},
+        "amenities": {**_UNITED_BASE_AMENITIES, "has_showers": True},
+        "venue_type": "lounge",
+        "source_url": "https://www.united.com/en/us/fly/travel/airport/united-club.html",
+        "may_deny_entry": True,
+        "access_rules": _UNITED_ACCESS_RULES,
+    },
+    {
+        "iata_code": "LAX",
+        "name": "United Club",
+        "terminal": "Terminal 7",
+        "operator": "United",
+        "is_airside": True,
+        "operating_hours": {"daily": ["04:30-22:00"]},
+        "amenities": {**_UNITED_BASE_AMENITIES},
+        "venue_type": "lounge",
+        "source_url": "https://www.united.com/en/us/fly/travel/airport/united-club.html",
+        "may_deny_entry": True,
+        "access_rules": _UNITED_ACCESS_RULES,
+    },
+    {
+        "iata_code": "IAD",
+        "name": "United Club",
+        "terminal": "Concourse C",
+        "operator": "United",
+        "is_airside": True,
+        "operating_hours": {"daily": ["05:30-21:30"]},
+        "amenities": {**_UNITED_BASE_AMENITIES},
+        "venue_type": "lounge",
+        "source_url": "https://www.united.com/en/us/fly/travel/airport/united-club.html",
+        "may_deny_entry": True,
+        "access_rules": _UNITED_ACCESS_RULES,
+    },
+    {
+        "iata_code": "LAS",
+        "name": "United Club",
+        "terminal": "Terminal 3",
+        "operator": "United",
+        "is_airside": True,
+        "operating_hours": {"daily": ["05:00-22:00"]},
+        "amenities": {**_UNITED_BASE_AMENITIES},
+        "venue_type": "lounge",
+        "source_url": "https://www.united.com/en/us/fly/travel/airport/united-club.html",
+        "may_deny_entry": True,
+        "access_rules": _UNITED_ACCESS_RULES,
+    },
+    {
+        "iata_code": "BOS",
+        "name": "United Club",
+        "terminal": "Terminal B",
+        "operator": "United",
+        "is_airside": True,
+        "operating_hours": {"daily": ["05:00-21:00"]},
+        "amenities": {**_UNITED_BASE_AMENITIES},
+        "venue_type": "lounge",
+        "source_url": "https://www.united.com/en/us/fly/travel/airport/united-club.html",
+        "may_deny_entry": True,
+        "access_rules": _UNITED_ACCESS_RULES,
+    },
+]
+# NOTE: Delta SkyMiles Reserve Amex card_id not yet in DB — add a link entry
+# here once the card is seeded (e.g. card_id TBD → "Delta Reserve Amex").
+# Same for United Club Infinite Card (card_id TBD → "United Club Infinite Card").
 CARD_ACCESS_LINKS = [
     # Capital One Venture X → Capital One Venture X (may already exist)
     {"card_id": "cmno60v31000yfuzhnuxn5p7y", "access_method_name": "Capital One Venture X"},
@@ -490,6 +833,8 @@ _counts = {
     "access_methods": 0,
     "capital_one_lounges": 0,
     "chase_sapphire_lounges": 0,
+    "delta_sky_club_lounges": 0,
+    "united_club_lounges": 0,
     "access_rules": 0,
     "card_links": 0,
 }
@@ -562,7 +907,7 @@ def _find_existing_lounge(iata: str, name_pattern: str) -> str | None:
 def seed_lounges(lounge_list: list[dict], label: str, method_ids: dict[str, str]) -> None:
     """Upsert lounge records and their access rules."""
     print(f"\n── Step: Seeding {label} lounges ──")
-    count_key = "capital_one_lounges" if "Capital" in label else "chase_sapphire_lounges"
+    count_key = label.lower().replace(" ", "_") + "_lounges"
     for entry in lounge_list:
         iata = entry["iata_code"]
         meta = US_AIRPORTS[iata]
@@ -715,12 +1060,14 @@ def print_summary() -> None:
     print("\n" + "=" * 60)
     print("SEED SUMMARY")
     print("=" * 60)
-    print(f"  Airports ensured:            {_counts['airports']}")
-    print(f"  Access methods ensured:       {_counts['access_methods']}")
-    print(f"  Capital One lounges upserted: {_counts['capital_one_lounges']}")
+    print(f"  Airports ensured:               {_counts['airports']}")
+    print(f"  Access methods ensured:          {_counts['access_methods']}")
+    print(f"  Capital One lounges upserted:    {_counts['capital_one_lounges']}")
     print(f"  Chase Sapphire lounges upserted: {_counts['chase_sapphire_lounges']}")
-    print(f"  Access rules created:         {_counts['access_rules']}")
-    print(f"  Card links ensured:           {_counts['card_links']}")
+    print(f"  Delta Sky Club lounges upserted: {_counts['delta_sky_club_lounges']}")
+    print(f"  United Club lounges upserted:    {_counts['united_club_lounges']}")
+    print(f"  Access rules created:            {_counts['access_rules']}")
+    print(f"  Card links ensured:              {_counts['card_links']}")
     print("=" * 60)
 
 
@@ -735,7 +1082,8 @@ def main() -> None:
     )
 
     print("=" * 60)
-    print("Proprietary Lounge Seed — Capital One & Chase Sapphire")
+    print("Proprietary Lounge Seed — Capital One, Chase Sapphire,")
+    print("                          Delta Sky Club & United Club")
     print("=" * 60)
 
     seed_airports()
@@ -743,6 +1091,8 @@ def main() -> None:
     seed_lounges(CAPITAL_ONE_LOUNGES, "Capital One", method_ids)
     seed_lounges(CHASE_SAPPHIRE_LOUNGES, "Chase Sapphire", method_ids)
     handle_jfk_chase_sapphire(method_ids)
+    seed_lounges(DELTA_SKY_CLUB_LOUNGES, "Delta Sky Club", method_ids)
+    seed_lounges(UNITED_CLUB_LOUNGES, "United Club", method_ids)
     seed_card_access_links(method_ids)
 
     print_summary()

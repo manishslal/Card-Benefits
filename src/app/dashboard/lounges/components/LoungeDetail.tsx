@@ -21,7 +21,8 @@ import { Button } from '@/shared/components/ui/button';
 import Skeleton from '@/shared/components/ui/Skeleton';
 import AccessOptionCard from './AccessOptionCard';
 import { isLoungeOpen, AMENITY_DEFS } from './types';
-import type { LoungeData } from './types';
+import type { LoungeData, AccessOption } from './types';
+import { generateAccessSteps } from './accessSteps';
 
 interface LoungeDetailProps {
   lounge: LoungeData;
@@ -69,7 +70,7 @@ function HoursSection({
   operatingHours,
   sourceUrl,
 }: {
-  hoursStatus: { isOpen: boolean; statusText: string };
+  hoursStatus: { isOpen: boolean; statusText: string; status: import('./types').LoungeStatus };
   operatingHours: Record<string, unknown> | null;
   sourceUrl: string | null;
 }) {
@@ -112,29 +113,33 @@ function HoursSection({
         <span className="text-sm" style={{ color: 'var(--color-text)' }}>
           {hoursStatus.statusText}
         </span>
-        {hoursStatus.statusText !== 'Hours not available' && (
-          <Badge
-            variant={hoursStatus.isOpen ? 'success' : 'error'}
-            appearance="soft"
-            size="sm"
-          >
-            {hoursStatus.isOpen ? 'Open' : 'Closed'}
-          </Badge>
-        )}
+        {hoursStatus.status === 'open' || hoursStatus.status === 'always_open' ? (
+          <Badge variant="success" appearance="soft" size="sm">Open</Badge>
+        ) : hoursStatus.status === 'closed' ? (
+          <Badge variant="error" appearance="soft" size="sm">Closed</Badge>
+        ) : null}
       </div>
 
-      {/* "Check hours on website" fallback link */}
-      {hoursStatus.statusText === 'Hours not available' && sourceUrl && (
-        <a
-          href={sourceUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs mt-1 inline-flex items-center gap-1 underline"
-          style={{ color: 'var(--color-primary)' }}
-        >
-          Check hours on website
-          <ExternalLink size={12} aria-hidden="true" />
-        </a>
+      {/* "Hours not available" fallback */}
+      {hoursStatus.status === 'unknown' && sourceUrl && (
+        <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+          Hours not available for this lounge.{' '}
+          <a
+            href={sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 underline"
+            style={{ color: 'var(--color-primary)' }}
+          >
+            View on website →
+            <ExternalLink size={12} aria-hidden="true" />
+          </a>
+        </p>
+      )}
+      {hoursStatus.status === 'unknown' && !sourceUrl && (
+        <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+          Hours not available. Contact the lounge directly for current operating hours.
+        </p>
       )}
 
       {/* Expandable per-day hours */}
@@ -173,6 +178,98 @@ function HoursSection({
           )}
         </div>
       )}
+    </section>
+  );
+}
+
+/**
+ * HowToAccessSection — Step-by-step instructions for accessing a lounge.
+ */
+function HowToAccessSection({ accessOptions, loungeName }: { accessOptions: AccessOption[]; loungeName: string }) {
+  // Only show free access options
+  const freeOptions = accessOptions.filter((o) => o.access_type === 'free');
+  const options = freeOptions.length > 0 ? freeOptions : accessOptions.slice(0, 1);
+  const [selectedIdx, setSelectedIdx] = useState(0);
+
+  if (options.length === 0) return null;
+
+  const selectedOption = options[selectedIdx];
+  const steps = generateAccessSteps(selectedOption, loungeName);
+  const displayName = selectedOption.access_method.split(' → ')[0];
+
+  return (
+    <section>
+      <h3
+        className="text-xs font-semibold uppercase tracking-wider mb-2"
+        style={{ color: 'var(--color-text-tertiary)' }}
+      >
+        How to Access
+      </h3>
+      <div
+        className="rounded-xl p-3"
+        style={{
+          backgroundColor: 'var(--color-bg-secondary)',
+          border: '1px solid var(--color-border)',
+        }}
+      >
+        {/* Selector for multiple options */}
+        {options.length > 1 ? (
+          <div className="mb-3">
+            <p className="text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+              Showing steps for:
+            </p>
+            <select
+              value={selectedIdx}
+              onChange={(e) => setSelectedIdx(Number(e.target.value))}
+              className="text-sm font-medium rounded-lg px-2 py-1.5 w-full"
+              style={{
+                backgroundColor: 'var(--color-bg)',
+                color: 'var(--color-text)',
+                border: '1px solid var(--color-border)',
+                fontFamily: 'var(--font-primary)',
+              }}
+            >
+              {options.map((opt, i) => (
+                <option key={i} value={i}>
+                  {opt.access_method.split(' → ')[0]}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <p className="text-xs mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+            Showing steps for: <span className="font-medium" style={{ color: 'var(--color-text)' }}>{displayName}</span>
+          </p>
+        )}
+
+        {/* Steps */}
+        <ol className="space-y-2.5">
+          {steps.map((s) => (
+            <li key={s.step} className="flex gap-3">
+              <span
+                className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
+                style={{
+                  backgroundColor: 'var(--color-primary)',
+                  color: '#fff',
+                }}
+              >
+                {s.step}
+              </span>
+              <span className="text-sm leading-snug pt-0.5" style={{ color: 'var(--color-text)' }}>
+                {s.instruction}
+              </span>
+            </li>
+          ))}
+        </ol>
+
+        {/* Disclaimer */}
+        <p
+          className="text-xs mt-3 pt-2"
+          style={{ color: 'var(--color-text-tertiary)', borderTop: '1px solid var(--color-border)' }}
+        >
+          Access policies may change. Always verify requirements at the lounge before your visit.
+        </p>
+      </div>
     </section>
   );
 }
@@ -303,6 +400,9 @@ export default function LoungeDetail({
               </div>
             )}
           </section>
+
+          {/* ── HOW TO ACCESS SECTION ──────────────────────── */}
+          <HowToAccessSection accessOptions={sortedOptions} loungeName={lounge.lounge_name} />
 
           {/* ── HOURS SECTION ─────────────────────────────── */}
           <HoursSection

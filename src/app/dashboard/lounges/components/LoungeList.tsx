@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useMemo, useState, useCallback } from 'react';
-import { ArrowLeft, RefreshCw, Loader2 } from 'lucide-react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import { ArrowLeft, RefreshCw, Loader2, Clock } from 'lucide-react';
 import Badge from '@/shared/components/ui/Badge';
 import { SkeletonCard } from '@/shared/components/loaders';
 import EmptyState from '@/shared/components/ui/EmptyState';
@@ -11,7 +11,7 @@ import TerminalFilter from './TerminalFilter';
 import LoungeCard from './LoungeCard';
 import NoCardsPrompt from './NoCardsPrompt';
 import UpgradeBanner from './UpgradeBanner';
-import { VENUE_TYPES } from './types';
+import { VENUE_TYPES, isLoungeOpen } from './types';
 import type { LoungeData, EligibleResponse } from './types';
 
 interface LoungeListProps {
@@ -40,6 +40,12 @@ export default function LoungeList({
 }: LoungeListProps) {
   const [venueFilter, setVenueFilter] = useState('all');
   const [terminalFilter, setTerminalFilter] = useState('All Terminals');
+  const [openNowFilter, setOpenNowFilter] = useState(false);
+
+  // Reset open now filter when airport changes
+  useEffect(() => {
+    setOpenNowFilter(false);
+  }, [data]);
 
   // Pull-to-refresh (mobile)
   const { isRefreshing, pullOffset, pullProgress, indicatorRef } = usePullToRefresh({
@@ -61,12 +67,41 @@ export default function LoungeList({
   // Filtered lounges
   const filteredLounges = useMemo(() => {
     if (!data?.lounges) return [];
-    return data.lounges.filter((l) => {
+    let result = data.lounges.filter((l) => {
       if (venueFilter !== 'all' && l.venue_type !== venueFilter) return false;
       if (terminalFilter !== 'All Terminals' && l.terminal !== terminalFilter) return false;
       return true;
     });
-  }, [data, venueFilter, terminalFilter]);
+
+    if (openNowFilter) {
+      const airportTz = data.airport_timezone ?? null;
+      // Separate into open/unknown, hide closed
+      const open: LoungeData[] = [];
+      const unknown: LoungeData[] = [];
+      for (const l of result) {
+        const { status } = isLoungeOpen(l.operating_hours, airportTz);
+        if (status === 'open' || status === 'always_open') {
+          open.push(l);
+        } else if (status === 'unknown') {
+          unknown.push(l);
+        }
+        // closed lounges are hidden
+      }
+      result = [...open, ...unknown];
+    }
+
+    return result;
+  }, [data, venueFilter, terminalFilter, openNowFilter]);
+
+  // Check if all visible lounges have unknown hours when filter is on
+  const allUnknownHours = useMemo(() => {
+    if (!openNowFilter || filteredLounges.length === 0) return false;
+    const airportTz = data?.airport_timezone ?? null;
+    return filteredLounges.every((l) => {
+      const { status } = isLoungeOpen(l.operating_hours, airportTz);
+      return status === 'unknown';
+    });
+  }, [openNowFilter, filteredLounges, data]);
 
   const handleVenueFilter = useCallback((key: string) => setVenueFilter(key), []);
   const handleTerminalFilter = useCallback((t: string) => setTerminalFilter(t), []);
@@ -143,7 +178,24 @@ export default function LoungeList({
         {/* Filters */}
         {!isLoading && !error && data && (
           <div className="space-y-2">
-            <FilterPills items={VENUE_TYPES} selected={venueFilter} onSelect={handleVenueFilter} />
+            <div className="flex gap-2 items-center">
+              <button
+                onClick={() => setOpenNowFilter((prev) => !prev)}
+                className="flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap inline-flex items-center gap-1.5"
+                style={{
+                  backgroundColor: openNowFilter ? 'var(--color-success)' : 'var(--color-bg-secondary)',
+                  color: openNowFilter ? '#fff' : 'var(--color-text-secondary)',
+                  border: openNowFilter ? 'none' : '1px solid var(--color-border)',
+                }}
+                aria-pressed={openNowFilter}
+              >
+                <Clock size={14} aria-hidden="true" />
+                Open now
+              </button>
+              <div className="flex-1 overflow-x-auto">
+                <FilterPills items={VENUE_TYPES} selected={venueFilter} onSelect={handleVenueFilter} />
+              </div>
+            </div>
             <TerminalFilter terminals={terminals} selected={terminalFilter} onSelect={handleTerminalFilter} />
           </div>
         )}
@@ -187,6 +239,20 @@ export default function LoungeList({
             title={`No ${activeVenueLabel} venues${terminalFilter !== 'All Terminals' ? ` at ${terminalFilter}` : ''}`}
             description="Try changing your filters to see more results."
           />
+        )}
+
+        {/* All unknown hours notice */}
+        {!isLoading && !error && openNowFilter && allUnknownHours && filteredLounges.length > 0 && (
+          <div
+            className="mt-2 px-3 py-2 rounded-lg text-xs text-center"
+            style={{
+              backgroundColor: 'var(--color-bg-secondary)',
+              color: 'var(--color-text-secondary)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            No hours data available for this airport
+          </div>
         )}
 
         {/* Lounge cards */}

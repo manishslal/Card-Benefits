@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Search, Plane, Clock } from 'lucide-react';
 import type { Airport } from './types';
 import { getRecentAirports, saveRecentAirport } from './types';
+import { AIRPORT_ALIASES } from '@/data/airportAliases';
 
 // ── Hardcoded fallback airports for instant search ──────────
 const FALLBACK_AIRPORTS: Airport[] = [
@@ -68,16 +69,81 @@ export default function AirportSearch({ onAirportSelect }: AirportSearchProps) {
     return () => clearTimeout(t);
   }, []);
 
-  // Client-side filtering
-  const filtered = useMemo(() => {
+  // Client-side filtering with alias support + priority sorting
+  const { filtered, groupLabel } = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return [];
-    return airports.filter(
-      (a) =>
-        a.iata_code.toLowerCase().includes(q) ||
-        a.name.toLowerCase().includes(q) ||
-        a.city.toLowerCase().includes(q),
-    );
+    if (!q) return { filtered: [], groupLabel: null };
+
+    // Check aliases for matching IATA codes
+    const aliasIatas = new Set<string>();
+    let matchedAlias: string | null = null;
+    for (const [alias, codes] of Object.entries(AIRPORT_ALIASES)) {
+      if (alias.includes(q) || q.includes(alias)) {
+        codes.forEach((c) => aliasIatas.add(c));
+        if (!matchedAlias) matchedAlias = alias;
+      }
+    }
+
+    // Score each airport for priority sorting
+    const scored: { airport: Airport; score: number }[] = [];
+    const seen = new Set<string>();
+
+    for (const a of airports) {
+      const iata = a.iata_code.toLowerCase();
+      const name = a.name.toLowerCase();
+      const city = a.city.toLowerCase();
+
+      let score = -1; // no match
+
+      // Exact IATA match (highest priority)
+      if (iata === q) {
+        score = 0;
+      }
+      // Alias match
+      else if (aliasIatas.has(a.iata_code)) {
+        score = 1;
+      }
+      // IATA starts with query
+      else if (iata.startsWith(q)) {
+        score = 2;
+      }
+      // City starts with query
+      else if (city.startsWith(q)) {
+        score = 3;
+      }
+      // City or name contains query
+      else if (city.includes(q) || name.includes(q)) {
+        score = 4;
+      }
+      // IATA contains query
+      else if (iata.includes(q)) {
+        score = 5;
+      }
+
+      if (score >= 0 && !seen.has(a.iata_code)) {
+        seen.add(a.iata_code);
+        scored.push({ airport: a, score });
+      }
+    }
+
+    // Sort by score, then alphabetically by city
+    scored.sort((a, b) => {
+      if (a.score !== b.score) return a.score - b.score;
+      return a.airport.city.localeCompare(b.airport.city);
+    });
+
+    const results = scored.slice(0, 8).map((s) => s.airport);
+
+    // Determine group label when 2+ airports from same alias group
+    let label: string | null = null;
+    if (matchedAlias && aliasIatas.size >= 2) {
+      const aliasCount = results.filter((a) => aliasIatas.has(a.iata_code)).length;
+      if (aliasCount >= 2) {
+        label = `${matchedAlias.toUpperCase()} AREA`;
+      }
+    }
+
+    return { filtered: results, groupLabel: label };
   }, [query, airports]);
 
   const handleSelect = useCallback(
@@ -153,6 +219,14 @@ export default function AirportSearch({ onAirportSelect }: AirportSearchProps) {
       {/* Search results */}
       {showResults && (
         <div className="w-full" role="listbox" aria-label="Airport search results">
+          {groupLabel && (
+            <p
+              className="text-xs font-semibold uppercase tracking-wide mb-1 mt-1 px-2"
+              style={{ color: 'var(--color-text-tertiary)' }}
+            >
+              {groupLabel}
+            </p>
+          )}
           {filtered.map((airport) => (
             <AirportRow key={airport.iata_code} airport={airport} onSelect={handleSelect} />
           ))}
@@ -174,7 +248,7 @@ export default function AirportSearch({ onAirportSelect }: AirportSearchProps) {
         className="text-xs mt-8 text-center"
         style={{ color: 'var(--color-text-tertiary)' }}
       >
-        We currently cover {airports.length} US airports. More coming soon.
+        We currently cover {airports.length} airports worldwide. More coming soon.
       </p>
     </div>
   );

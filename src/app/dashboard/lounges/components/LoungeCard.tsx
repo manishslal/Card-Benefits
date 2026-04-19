@@ -114,13 +114,24 @@ export default function LoungeCard({ lounge, airportTimezone, onSelect, isSelect
           )}
         </div>
 
-        {/* Hours */}
-        {hoursStatus.statusText !== 'Hours not available' && (
-          <p className="flex items-center gap-1 text-xs mt-1.5" style={{ color: 'var(--color-text-tertiary)' }}>
-            <Clock size={12} aria-hidden="true" />
-            {hoursStatus.statusText}
-          </p>
-        )}
+        {/* Hours — always shown */}
+        <p className="flex items-center gap-1 text-xs mt-1.5" style={{ color: 'var(--color-text-tertiary)' }}>
+          {hoursStatus.status === 'unknown' ? (
+            <>
+              <span
+                className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+                style={{ backgroundColor: 'var(--color-text-tertiary)' }}
+                aria-hidden="true"
+              />
+              Hours not available
+            </>
+          ) : (
+            <>
+              <Clock size={12} aria-hidden="true" />
+              {hoursStatus.statusText}
+            </>
+          )}
+        </p>
 
         {/* Conditions warning */}
         {hasConditions && (

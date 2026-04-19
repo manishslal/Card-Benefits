@@ -72,12 +72,14 @@ export const VENUE_TYPES = [
 // Open / closed status logic
 // ────────────────────────────────────────────────────────────
 
+export type LoungeStatus = 'open' | 'closed' | 'unknown' | 'always_open';
+
 export function isLoungeOpen(
   operatingHours: Record<string, unknown> | null,
   timezone: string | null,
-): { isOpen: boolean; statusText: string } {
+): { isOpen: boolean; statusText: string; status: LoungeStatus } {
   if (!operatingHours || !timezone) {
-    return { isOpen: false, statusText: 'Hours not available' };
+    return { isOpen: false, statusText: 'Hours not available', status: 'unknown' };
   }
 
   // If the whole thing is a string (legacy format), parse it directly
@@ -116,7 +118,7 @@ export function isLoungeOpen(
   }
 
   if (!todayHours) {
-    return { isOpen: false, statusText: 'Hours not available' };
+    return { isOpen: false, statusText: 'Hours not available', status: 'unknown' };
   }
 
   // Normalize to string
@@ -126,11 +128,11 @@ export function isLoungeOpen(
   } else if (typeof todayHours === 'string') {
     hoursStr = todayHours;
   } else {
-    return { isOpen: false, statusText: 'Hours not available' };
+    return { isOpen: false, statusText: 'Hours not available', status: 'unknown' };
   }
 
   if (!hoursStr) {
-    return { isOpen: false, statusText: 'Hours not available' };
+    return { isOpen: false, statusText: 'Hours not available', status: 'unknown' };
   }
 
   return parseTimeString(hoursStr, timezone);
@@ -139,10 +141,15 @@ export function isLoungeOpen(
 function parseTimeString(
   hoursStr: string,
   timezone: string,
-): { isOpen: boolean; statusText: string } {
+): { isOpen: boolean; statusText: string; status: LoungeStatus } {
   // Handle 24 hours
   if (/24\s*hours?/i.test(hoursStr)) {
-    return { isOpen: true, statusText: 'Open 24 hours' };
+    return { isOpen: true, statusText: 'Open 24 hours', status: 'always_open' };
+  }
+
+  // Handle 00:00-23:59 (effectively 24 hours)
+  if (/^0?0:00\s*[-–—]\s*23:59$/.test(hoursStr.trim())) {
+    return { isOpen: true, statusText: 'Open 24 hours', status: 'always_open' };
   }
 
   // Match time patterns: "6:00am-11:00pm", "06:00-23:00", "5:00am – 11:00pm"
@@ -150,7 +157,7 @@ function parseTimeString(
   const match = hoursStr.match(timePattern);
   if (!match) {
     // Can't parse but we have the raw string — show it
-    return { isOpen: false, statusText: hoursStr };
+    return { isOpen: false, statusText: hoursStr, status: 'unknown' };
   }
 
   const toMinutes = (h: number, m: number, ampm?: string): number => {
@@ -218,15 +225,22 @@ function parseTimeString(
     return m === 0 ? `${h}${ampm}` : `${h}:${m.toString().padStart(2, '0')}${ampm}`;
   };
 
+  // Check if this is effectively 24 hours (open=0, close=1439 i.e. 23:59)
+  if (openMinutes === 0 && closeMinutes === 1439) {
+    return { isOpen: true, statusText: 'Open 24 hours', status: 'always_open' };
+  }
+
   if (isOpen) {
     return {
       isOpen: true,
       statusText: `Open now · Closes ${formatTime(closeMinutes)}`,
+      status: 'open',
     };
   }
   return {
     isOpen: false,
     statusText: `Closed · Opens ${formatTime(openMinutes)}`,
+    status: 'closed',
   };
 }
 

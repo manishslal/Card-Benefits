@@ -1071,6 +1071,27 @@ def print_summary() -> None:
     print("=" * 60)
 
 
+def validate_seed_data() -> None:
+    """Warn about potential data quality issues in seed definitions."""
+    for label, locations in [
+        ("Delta Sky Club", DELTA_SKY_CLUB_LOUNGES),
+        ("United Club", UNITED_CLUB_LOUNGES),
+        ("Capital One", CAPITAL_ONE_LOUNGES),
+        ("Chase Sapphire", CHASE_SAPPHIRE_LOUNGES),
+    ]:
+        url_counts: dict[str, int] = {}
+        for loc in locations:
+            url = loc.get("source_url", "")
+            if url:
+                url_counts[url] = url_counts.get(url, 0) + 1
+        for url, count in url_counts.items():
+            if count > 1:
+                logger.warning(
+                    "%s: source_url '%s' shared by %d locations — consider location-specific URLs",
+                    label, url[:60], count,
+                )
+
+
 # ═════════════════════════════════════════════════════════════════════════════
 # Main
 # ═════════════════════════════════════════════════════════════════════════════
@@ -1095,6 +1116,7 @@ def main() -> None:
     seed_lounges(UNITED_CLUB_LOUNGES, "United Club", method_ids)
     seed_card_access_links(method_ids)
 
+    validate_seed_data()
     print_summary()
     print("\n✅ Seed complete!")
 

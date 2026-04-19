@@ -22,6 +22,7 @@ export default function LoungesPage() {
   const [loungeData, setLoungeData] = useState<EligibleResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [terminalFilter, setTerminalFilter] = useState('All Terminals');
 
   // Cache per-airport results in session
   const cache = useRef<Map<string, EligibleResponse>>(new Map());
@@ -116,6 +117,8 @@ export default function LoungesPage() {
               onSelectLounge={handleLoungeSelect}
               onRetry={handleRetry}
               onAddCards={() => { window.location.href = '/dashboard'; }}
+              terminalFilter={terminalFilter}
+              onTerminalChange={setTerminalFilter}
             />
           )}
 
@@ -125,6 +128,7 @@ export default function LoungesPage() {
               airportTimezone={loungeData?.airport_timezone ?? null}
               onBack={handleBackToList}
               showBackButton
+              selectedTerminal={terminalFilter}
             />
           )}
         </main>
@@ -173,6 +177,8 @@ export default function LoungesPage() {
             onRetry={handleRetry}
             selectedLoungeId={selectedLounge?.lounge_id}
             onAddCards={() => { window.location.href = '/dashboard'; }}
+            terminalFilter={terminalFilter}
+            onTerminalChange={setTerminalFilter}
           />
         </div>
 
@@ -184,6 +190,7 @@ export default function LoungesPage() {
               airportTimezone={loungeData?.airport_timezone ?? null}
               onBack={handleBackToList}
               showBackButton={false}
+              selectedTerminal={terminalFilter}
             />
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center">

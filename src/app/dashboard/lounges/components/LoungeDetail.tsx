@@ -20,6 +20,7 @@ import Badge from '@/shared/components/ui/Badge';
 import { Button } from '@/shared/components/ui/button';
 import Skeleton from '@/shared/components/ui/Skeleton';
 import AccessOptionCard from './AccessOptionCard';
+import { LoungePlaceholderImage, useLoungeImage } from './loungePlaceholders';
 import { isLoungeOpen, AMENITY_DEFS } from './types';
 import type { LoungeData, AccessOption } from './types';
 import { generateAccessSteps } from './accessSteps';
@@ -30,6 +31,7 @@ interface LoungeDetailProps {
   onBack: () => void;
   /** On desktop the back button is hidden; set isMobile=false to control header */
   showBackButton?: boolean;
+  selectedTerminal?: string;
 }
 
 // Map amenity icon names to actual components
@@ -282,8 +284,10 @@ export default function LoungeDetail({
   airportTimezone,
   onBack,
   showBackButton = true,
+  selectedTerminal,
 }: LoungeDetailProps) {
   const hoursStatus = isLoungeOpen(lounge.operating_hours, airportTimezone);
+  const { showPlaceholder, onError } = useLoungeImage(lounge.image_url, lounge.venue_type);
 
   // Single source of truth for amenities (consolidated column)
   const amenities = (
@@ -325,29 +329,42 @@ export default function LoungeDetail({
             <ArrowLeft size={18} />
           </button>
         )}
-        {lounge.image_url ? (
+        {!showPlaceholder ? (
           <img
-            src={lounge.image_url}
+            src={lounge.image_url!}
             alt={lounge.lounge_name}
             className="w-full h-full object-cover"
+            onError={onError}
           />
         ) : (
-          <div
-            className="w-full h-full flex items-center justify-center"
-            style={{
-              background: 'linear-gradient(135deg, var(--color-primary-light), var(--color-bg-secondary))',
-            }}
-          >
-            <span
-              className="text-5xl font-bold"
-              style={{ color: 'var(--color-primary)', opacity: 0.5 }}
-              aria-hidden="true"
-            >
-              {lounge.lounge_name.charAt(0)}
-            </span>
-          </div>
+          <LoungePlaceholderImage venueType={lounge.venue_type} />
         )}
       </div>
+
+      {/* Terminal mismatch warning */}
+      {selectedTerminal && selectedTerminal !== 'All Terminals' && lounge.terminal !== selectedTerminal && (
+        <div
+          className="mx-4 mt-3 p-3 rounded-xl flex items-start gap-3"
+          style={{
+            backgroundColor: 'var(--color-warning-light)',
+            border: '1px solid var(--color-warning)',
+          }}
+          role="alert"
+        >
+          <AlertTriangle size={20} className="flex-shrink-0 mt-0.5" style={{ color: 'var(--color-warning)' }} />
+          <div>
+            <p className="text-sm font-semibold" style={{ color: 'var(--color-warning)' }}>
+              Different Terminal
+            </p>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--color-text)' }}>
+              This lounge is in {lounge.terminal}. You filtered by {selectedTerminal}. You may need to exit security and re-clear to access this lounge.
+            </p>
+            <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+              Verify before your visit.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">

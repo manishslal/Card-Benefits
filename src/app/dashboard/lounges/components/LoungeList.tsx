@@ -23,6 +23,8 @@ interface LoungeListProps {
   onRetry: () => void;
   selectedLoungeId?: string | null;
   onAddCards?: () => void;
+  terminalFilter: string;
+  onTerminalChange: (terminal: string) => void;
 }
 
 /**
@@ -37,9 +39,10 @@ export default function LoungeList({
   onRetry,
   selectedLoungeId,
   onAddCards,
+  terminalFilter,
+  onTerminalChange,
 }: LoungeListProps) {
   const [venueFilter, setVenueFilter] = useState('all');
-  const [terminalFilter, setTerminalFilter] = useState('All Terminals');
   const [openNowFilter, setOpenNowFilter] = useState(false);
 
   // Reset open now filter when airport changes
@@ -104,7 +107,7 @@ export default function LoungeList({
   }, [openNowFilter, filteredLounges, data]);
 
   const handleVenueFilter = useCallback((key: string) => setVenueFilter(key), []);
-  const handleTerminalFilter = useCallback((t: string) => setTerminalFilter(t), []);
+  const handleTerminalFilter = useCallback((t: string) => onTerminalChange(t), [onTerminalChange]);
 
   // Determine active venue type label for empty-state message
   const activeVenueLabel =
@@ -265,6 +268,7 @@ export default function LoungeList({
                 airportTimezone={data?.airport_timezone ?? null}
                 onSelect={() => onSelectLounge(lounge)}
                 isSelected={lounge.lounge_id === selectedLoungeId}
+                selectedTerminal={terminalFilter}
               />
             ))}
           </div>

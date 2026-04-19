@@ -3,6 +3,7 @@
 import React from 'react';
 import Badge from '@/shared/components/ui/Badge';
 import { Check, Clock } from 'lucide-react';
+import { LoungePlaceholderImage, useLoungeImage } from './loungePlaceholders';
 import type { LoungeData } from './types';
 import { isLoungeOpen } from './types';
 
@@ -11,15 +12,17 @@ interface LoungeCardProps {
   airportTimezone: string | null;
   onSelect: () => void;
   isSelected?: boolean;
+  selectedTerminal?: string;
 }
 
 /**
  * LoungeCard — Tappable card in the lounge list. Shows image, name, access info, hours.
  */
-export default function LoungeCard({ lounge, airportTimezone, onSelect, isSelected }: LoungeCardProps) {
+export default function LoungeCard({ lounge, airportTimezone, onSelect, isSelected, selectedTerminal }: LoungeCardProps) {
   const bestOption = lounge.access_options[0];
   const isFree = lounge.best_access_type === 'free';
   const hoursStatus = isLoungeOpen(lounge.operating_hours, airportTimezone);
+  const { showPlaceholder, onError } = useLoungeImage(lounge.image_url, lounge.venue_type);
 
   // Venue type label
   const venueLabel: Record<string, string> = {
@@ -54,28 +57,16 @@ export default function LoungeCard({ lounge, airportTimezone, onSelect, isSelect
     >
       {/* Image / placeholder */}
       <div className="relative h-[140px] overflow-hidden">
-        {lounge.image_url ? (
+        {!showPlaceholder ? (
           <img
-            src={lounge.image_url}
+            src={lounge.image_url!}
             alt={lounge.lounge_name}
             className="w-full h-full object-cover"
             loading="lazy"
+            onError={onError}
           />
         ) : (
-          <div
-            className="w-full h-full flex items-center justify-center"
-            style={{
-              background: `linear-gradient(135deg, var(--color-primary-light), var(--color-bg-secondary))`,
-            }}
-          >
-            <span
-              className="text-3xl font-bold"
-              style={{ color: 'var(--color-primary)', opacity: 0.6 }}
-              aria-hidden="true"
-            >
-              {lounge.lounge_name.charAt(0)}
-            </span>
-          </div>
+          <LoungePlaceholderImage venueType={lounge.venue_type} />
         )}
       </div>
 
@@ -90,8 +81,16 @@ export default function LoungeCard({ lounge, airportTimezone, onSelect, isSelect
         </h3>
 
         {/* Terminal + Venue type */}
-        <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>
-          {lounge.terminal} · {venueLabel[lounge.venue_type] ?? lounge.venue_type}
+        <p className="text-xs mt-0.5 flex items-center gap-1.5 flex-wrap" style={{ color: 'var(--color-text-secondary)' }}>
+          <span>{lounge.terminal} · {venueLabel[lounge.venue_type] ?? lounge.venue_type}</span>
+          {selectedTerminal && selectedTerminal !== 'All Terminals' && lounge.terminal !== selectedTerminal && (
+            <span
+              className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded"
+              style={{ backgroundColor: 'var(--color-warning-light)', color: 'var(--color-warning)' }}
+            >
+              ⚠️ {lounge.terminal}
+            </span>
+          )}
         </p>
 
         {/* Access badge */}

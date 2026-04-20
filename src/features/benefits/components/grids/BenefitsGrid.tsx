@@ -324,19 +324,24 @@ function inferBenefitCategory(type?: string, name?: string): string {
   const nameLower = (name || '').toLowerCase();
   const typeLower = (type || '').toLowerCase();
 
+  // Points/multiplier earning benefits — check BEFORE category keywords
+  if (/\d+x\s*(point|mile|cash\s*back|reward)/i.test(name || '')) return 'points';
+  if (/welcome\s*bonus|sign.?up\s*bonus|intro.*bonus/i.test(nameLower)) return 'points';
+
   // Name-based inference (most specific)
-  if (/uber|lyft|ride/.test(nameLower)) return 'rideshare';
-  if (/dining|restaurant|resy|grubhub|dunkin|food/.test(nameLower)) return 'dining';
+  if (/uber|lyft|ride|via\b|\btransit\b/.test(nameLower)) return 'rideshare';
+  if (/dining|restaurant|resy|grubhub|dunkin|food|doordash|seamless|postmates|caviar|chownow|instacart/.test(nameLower)) return 'dining';
   if (/hotel|hilton|hyatt|marriott|bonvoy|ihg/.test(nameLower)) return 'hotel';
   if (/lounge|priority pass|centurion/.test(nameLower)) return 'lounge';
-  if (/travel|flight|airline|tsa|precheck|global entry/.test(nameLower)) return 'travel';
-  if (/entertain|spotify|audible|disney|hulu|peacock|sirius/.test(nameLower)) return 'entertainment';
-  if (/stream|netflix|hbo|paramount|apple\s*tv/.test(nameLower)) return 'streaming';
-  if (/shop|saks|nordstrom|walmart|dell|best buy/.test(nameLower)) return 'shopping';
-  if (/fitness|gym|equinox|wellness|peloton|oura/.test(nameLower)) return 'wellness';
+  if (/travel|flight|airline|tsa|precheck|global entry|amtrak|hertz|avis|national\s*car|rental\s*car|seat\s*upgrade/.test(nameLower)) return 'travel';
+  if (/entertain|spotify|audible|disney|hulu|peacock|sirius|youtube|apple\s*music|tidal|deezer/.test(nameLower)) return 'entertainment';
+  if (/stream|netflix|hbo|paramount|apple\s*tv|crunchyroll|discovery\+|espn\+|\bmax\b/.test(nameLower)) return 'streaming';
+  if (/shop|saks|nordstrom|walmart|dell|best buy|lululemon|athleta|gap\b|home\s*depot|rei\b|target|amazon/.test(nameLower)) return 'shopping';
+  if (/fitness|gym|equinox|wellness|peloton|oura|whoop|apple\s*fitness|classpass|soulcycle|barry|beachbody/.test(nameLower)) return 'wellness';
   if (/insur|protect|luggage|cancel|delay|medical|dental/.test(nameLower)) return 'insurance';
   if (/point|reward|bonus|earn|multiplier|\dx\b/.test(nameLower)) return 'points';
   if (/cash\s*back|statement\s*credit|annual\s+credit|monthly\s+credit/.test(nameLower)) return 'cashback';
+  if (/\bapr\b|0%\s*intro|financing|banking|fdic|\bapy\b/.test(nameLower)) return 'banking';
   if (/clear|bag|board|companion|free night/.test(nameLower)) return 'travel';
 
   // Type-based fallback

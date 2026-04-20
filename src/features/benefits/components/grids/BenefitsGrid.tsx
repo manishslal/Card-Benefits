@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Badge from '@/shared/components/ui/Badge';
 import {
   extractMultiplierFromName,
@@ -8,13 +9,17 @@ import {
   formatSpendCents,
 } from '@/features/benefits/lib/multiplier-benefits';
 import {
-  Plane, Tag, Utensils, DollarSign, Zap, Calendar, CheckCircle2,
+  Plane, Tag, Utensils, DollarSign, Zap, CheckCircle2,
   Shield, Music, Tv, Star, Armchair, Hotel, Heart, Car, Landmark,
   Pencil,
 } from 'lucide-react';
-import { formatPeriodRange } from '@/lib/format-period-range';
-import { UsedBenefitsAccordion } from './UsedBenefitsAccordion';
 import { SwipeToBenefitUsed } from '@/components/SwipeToBenefitUsed';
+import { getPeriodDisplayInfo } from '@/lib/benefit-period-display';
+import type { PeriodDisplayInfo } from '@/lib/benefit-period-display';
+import { ProgressBar } from '@/shared/components/ui/ProgressBar';
+import { groupBenefitsByCategory } from '@/lib/benefit-categories';
+import { BenefitCategoryHeader } from '../BenefitCategoryHeader';
+import { LoungeBenefitCard } from '../LoungeBenefitCard';
 
 interface Benefit {
   id: string;
@@ -36,11 +41,13 @@ interface Benefit {
   resetCadence?: string;
   claimingCadence?: string | null;
   isUsed?: boolean;
+  claimedAt?: Date | string | null;
   masterBenefitId?: string | null;
 }
 
 interface BenefitsGridProps {
   benefits: Benefit[];
+  cardId?: string;
   onEdit?: (benefitId: string) => void;
   onMarkUsed?: (benefitId: string) => void;
   onAdjustUnlimitedUsage?: (benefitId: string, direction: 1 | -1) => void;
@@ -53,29 +60,6 @@ interface BenefitsGridProps {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: Format cadence value to human-readable label
-// ---------------------------------------------------------------------------
-function getCadenceLabel(
-  resetCadence?: string,
-  claimingCadence?: string | null
-): string {
-  const cadence = (claimingCadence || resetCadence || '').toUpperCase();
-  switch (cadence) {
-    case 'MONTHLY':
-      return 'Monthly';
-    case 'QUARTERLY':
-      return 'Quarterly';
-    case 'SEMI_ANNUAL':
-      return 'Semi-Annual';
-    case 'ANNUAL':
-      return 'Annual';
-    case 'ONE_TIME':
-      return 'One-Time';
-    default:
-      return '';
-  }
-}
-
 /** Cadence sort priority — lower number = shown first */
 const CADENCE_ORDER: Record<string, number> = {
   MONTHLY: 0,
@@ -131,11 +115,17 @@ function getCadenceInfoText(
 }
 
 // ---------------------------------------------------------------------------
-// Helper: Left border color — neutral for all states (DASH-044)
-// Status signaling reduced to 2 signals: badge + progress ring
+// Helper: Left border color — based on period urgency (Item 1)
 // ---------------------------------------------------------------------------
-function getLeftBorderColor(): string {
-  return 'var(--color-border)';
+function getLeftBorderColor(urgency?: 'urgent' | 'normal' | 'done'): string {
+  switch (urgency) {
+    case 'urgent':
+      return 'var(--color-warning)';
+    case 'done':
+      return 'var(--color-success)';
+    default:
+      return 'var(--color-border)';
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -359,35 +349,6 @@ function inferBenefitCategory(type?: string, name?: string): string {
   return 'default';
 }
 
-// ---------------------------------------------------------------------------
-// E-4: Format benefit type name for display
-// "STATEMENT_CREDIT" → "Statement Credits", "TRAVEL" → "Travel", etc.
-// ---------------------------------------------------------------------------
-function formatBenefitTypeName(type: string): string {
-  const typeLower = type.toLowerCase();
-  // Common DB types
-  const typeMap: Record<string, string> = {
-    insurance: 'Insurance',
-    cashback: 'Cashback',
-    travel: 'Travel',
-    banking: 'Banking',
-    points: 'Points',
-    other: 'Other',
-    statementcredit: 'Statement Credits',
-    travelperk: 'Travel Perks',
-    usageperk: 'Usage Perks',
-    rewards: 'Rewards',
-  };
-
-  if (typeMap[typeLower]) return typeMap[typeLower];
-
-  // Fallback: convert UPPER_SNAKE or camelCase to Title Case
-  return type
-    .replace(/_/g, ' ')
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
 /**
  * BenefitsGrid Component - Grid View of Benefits
  *
@@ -409,6 +370,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
   (
     {
       benefits,
+      cardId,
       onEdit,
       onMarkUsed,
       onAdjustUnlimitedUsage,
@@ -421,14 +383,39 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
     },
     ref
   ) => {
-    // Phase 2 + Sprint 29C — sort: unused first, then by cadence priority
+    const router = useRouter();
+
+    // ── Category collapse state ──
+    const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>(() => {
+      // Initialize from localStorage if available
+      const initial: Record<string, boolean> = {};
+      if (typeof window !== 'undefined' && cardId) {
+        try {
+          const stored = localStorage.getItem(`benefit_category_collapsed_${cardId}`);
+          if (stored) Object.assign(initial, JSON.parse(stored));
+        } catch { /* ignore */ }
+      }
+      return initial;
+    });
+
+    const toggleCategory = useCallback((catType: string) => {
+      setCollapsedCategories((prev) => {
+        const next = { ...prev, [catType]: !prev[catType] };
+        if (typeof window !== 'undefined' && cardId) {
+          try {
+            localStorage.setItem(`benefit_category_collapsed_${cardId}`, JSON.stringify(next));
+          } catch { /* ignore */ }
+        }
+        return next;
+      });
+    }, [cardId]);
+
+    // Sort: unused first (by urgency desc), then used
     const sortedBenefits = useMemo(() => {
       return [...benefits].sort((a, b) => {
-        // Primary: unused before used (normalize to boolean for antisymmetry)
         const aUsed = !!a.isUsed;
         const bUsed = !!b.isUsed;
         if (aUsed !== bUsed) return aUsed ? 1 : -1;
-        // Secondary: cadence priority (Monthly first, then Quarterly, etc.)
         const cadenceA = getCadencePriority(a);
         const cadenceB = getCadencePriority(b);
         if (cadenceA !== cadenceB) return cadenceA - cadenceB;
@@ -436,89 +423,41 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
       });
     }, [benefits]);
 
-    // DASH-G03 + Sprint 29C — Map-based consolidation so same-period benefits
-    // are always grouped together regardless of sort position.
-    const benefitGroups = useMemo(() => {
-      const groupMap = new Map<string, {
-        periodKey: string;
-        periodLabel: string;
-        cadenceLabel: string;
-        benefits: Benefit[];
-      }>();
-
-      for (const benefit of sortedBenefits) {
-        // Used benefits go into a single "Used" group
-        const groupKey = benefit.isUsed
-          ? '__used__'
-          : (benefit.periodStart
-              ? formatPeriodRange(benefit.periodStart, benefit.periodEnd)
-              : '');
-
-        const existing = groupMap.get(groupKey);
-        if (existing) {
-          existing.benefits.push(benefit);
-        } else {
-          groupMap.set(groupKey, {
-            periodKey: groupKey,
-            periodLabel: groupKey === '__used__' ? 'Used' : groupKey,
-            cadenceLabel: groupKey === '__used__'
-              ? ''
-              : getCadenceLabel(
-                  benefit.resetCadence,
-                  benefit.claimingCadence
-                ),
-            benefits: [benefit],
-          });
-        }
-      }
-
-      return Array.from(groupMap.values());
+    // ── Category grouping (primary axis) ──
+    const categoryGroups = useMemo(() => {
+      return groupBenefitsByCategory(sortedBenefits, (b) =>
+        inferBenefitCategory(b.type, b.name)
+      );
     }, [sortedBenefits]);
 
-    // E-4: Detect if type grouping headers should be shown
-    // Only show type headers when 2+ different types exist
-    const distinctTypes = useMemo(() => {
-      const types = new Set<string>();
+    // Pre-compute period display info per benefit
+    const periodInfoMap = useMemo(() => {
+      const map = new Map<string, PeriodDisplayInfo>();
       for (const b of benefits) {
-        if (b.type) types.add(b.type);
-      }
-      return types;
-    }, [benefits]);
-    const showTypeHeaders = distinctTypes.size >= 2;
-
-    // E-4: Sub-group benefits within each group by type
-    // Returns an ordered list of { typeLabel, benefits } for a given benefit list
-    const getTypeSubgroups = useMemo(() => {
-      if (!showTypeHeaders) return null;
-      return (groupBenefits: Benefit[]) => {
-        const typeMap = new Map<string, Benefit[]>();
-        for (const b of groupBenefits) {
-          const typeKey = b.type || 'Other';
-          const existing = typeMap.get(typeKey);
-          if (existing) {
-            existing.push(b);
-          } else {
-            typeMap.set(typeKey, [b]);
-          }
-        }
-        return Array.from(typeMap.entries()).map(([typeKey, typeBenefits]) => ({
-          typeLabel: formatBenefitTypeName(typeKey),
-          benefits: typeBenefits,
+        map.set(b.id, getPeriodDisplayInfo({
+          isUsed: !!b.isUsed,
+          claimedAt: b.claimedAt ?? null,
+          periodStart: b.periodStart ?? null,
+          periodEnd: b.periodEnd ?? null,
+          resetCadence: b.resetCadence || '',
+          claimingCadence: b.claimingCadence ?? null,
+          stickerValue: b.value ?? 0,
         }));
-      };
-    }, [showTypeHeaders]);
+      }
+      return map;
+    }, [benefits]);
 
-    // Pre-compute animation indices across groups for staggered entry
+    // Pre-compute animation indices across all groups
     const cardAnimationIndices = useMemo(() => {
       const indices = new Map<string, number>();
       let idx = 0;
-      for (const group of benefitGroups) {
+      for (const group of categoryGroups) {
         for (const b of group.benefits) {
           indices.set(b.id, idx++);
         }
       }
       return indices;
-    }, [benefitGroups]);
+    }, [categoryGroups]);
 
     // Benefit type icons — uses inferred category from DB type + benefit name
     const getBenefitTypeIcon = (type?: string, name?: string) => {
@@ -707,6 +646,39 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
             );
           })()}
 
+          {/* ── Row 2b: Period progress bar + label (Item 1) ── */}
+          {(() => {
+            const pInfo = periodInfoMap.get(benefit.id);
+            if (!pInfo) return null;
+            return (
+              <div className="mb-1">
+                {pInfo.progressPercent != null && (
+                  <ProgressBar
+                    percent={pInfo.progressPercent}
+                    urgency={pInfo.urgency}
+                    className="mb-1"
+                  />
+                )}
+                <div className="flex items-center gap-2">
+                  <span
+                    className="text-xs truncate"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    {pInfo.label}
+                  </span>
+                  {pInfo.resetLabel && (
+                    <span
+                      className="text-[10px] truncate"
+                      style={{ color: 'var(--color-text-tertiary)' }}
+                    >
+                      {pInfo.resetLabel}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* ── Row 3: Description ── */}
           <div className="flex-1 min-h-0">
             {benefit.description && (
@@ -874,137 +846,56 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
 
     return (
       <section ref={ref} aria-label="Your benefits" className={`grid ${getGridColsClass()} gap-4`}>
-        {benefitGroups.map((group, groupIndex) => {
-          // ── Used benefits → delegate to UsedBenefitsAccordion ──
-          if (group.periodKey === '__used__') {
-            return (
-              <UsedBenefitsAccordion
-                key="used-benefits-accordion"
-                benefits={group.benefits}
-                gridColsClass={getGridColsClass()}
-                renderCard={(benefit) => {
-                  return (
-                    <div
-                      data-benefit-card
-                      className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] hover:border-[var(--color-primary)] flex flex-col${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
-                      style={{
-                        opacity: 0.85,
-                        borderColor: 'color-mix(in srgb, var(--color-border) 50%, transparent)',
-                        borderLeft: `3px solid ${getLeftBorderColor()}`,
-                      }}
-                    >
-                      {/* Card body — shared with inline rendering */}
-                      {renderCardBody(benefit as Benefit)}
-                    </div>
-                  );
-                }}
-              />
-            );
-          }
+        {categoryGroups.map((group) => {
+          const { category, benefits: catBenefits } = group;
+          const usedCount = catBenefits.filter((b) => !!b.isUsed).length;
+          const urgentCount = catBenefits.filter((b) => {
+            const pInfo = periodInfoMap.get(b.id);
+            return pInfo?.urgency === 'urgent';
+          }).length;
+          const allUsed = usedCount === catBenefits.length && catBenefits.length > 0;
 
-          // ── Regular period groups → render as before ──
-          // E-4: Optionally sub-group by benefit type within each period group
+          // Determine collapse state
+          const isCollapsed = urgentCount > 0
+            ? false // urgent categories stay expanded
+            : collapsedCategories[category.type] ?? (allUsed ? true : false);
+
           return (
-            <React.Fragment key={`group-${groupIndex}`}>
-              {/* DASH-G03: Shared period header for consecutive same-period cards */}
-              {group.periodKey && (
-                <div
-                  className="col-span-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg"
-                  style={{
-                    background: 'var(--color-bg-subtle, var(--color-bg-secondary))',
-                    color: 'var(--color-text-secondary)',
-                    borderLeft: '3px solid var(--color-primary)',
-                    paddingLeft: '0.5rem',
-                    borderTopLeftRadius: '2px',
-                    borderBottomLeftRadius: '2px',
-                  }}
-                >
-                  <Calendar
-                    size={14}
-                    className="flex-shrink-0"
-                    style={{ color: 'var(--color-text-secondary)' }}
-                    aria-hidden="true"
-                  />
-                  <span className="font-medium">{group.periodLabel}</span>
-                  {group.cadenceLabel && (
-                    <>
-                      <span
-                        className="mx-0.5"
-                        style={{ opacity: 0.4 }}
-                        aria-hidden="true"
-                      >
-                        |
-                      </span>
-                      <span>{group.cadenceLabel}</span>
-                    </>
-                  )}
-                </div>
-              )}
+            <React.Fragment key={`cat-${category.type}`}>
+              <BenefitCategoryHeader
+                category={category}
+                benefitCount={catBenefits.length}
+                usedCount={usedCount}
+                urgentCount={urgentCount}
+                isCollapsed={isCollapsed}
+                onToggle={() => toggleCategory(category.type)}
+              />
+              {!isCollapsed && catBenefits.map((benefit) => {
+                const isUsed = benefit.isUsed === true;
+                const animIndex = cardAnimationIndices.get(benefit.id) ?? 0;
+                const pInfo = periodInfoMap.get(benefit.id);
+                const urgency = pInfo?.urgency;
 
-              {/* E-4: Render with or without type sub-grouping */}
-              {getTypeSubgroups ? (
-                getTypeSubgroups(group.benefits).map((typeGroup, typeIdx) => (
-                  <React.Fragment key={`type-${groupIndex}-${typeIdx}`}>
-                    {/* Type section header */}
-                    <div
-                      className="col-span-full flex items-center gap-2 px-2 py-1.5 text-xs font-medium"
-                      style={{
-                        color: 'var(--color-text-tertiary)',
-                      }}
-                    >
-                      <span>{typeGroup.typeLabel}</span>
-                      <span
-                        className="flex-1 border-b"
-                        style={{ borderColor: 'var(--color-border)' }}
-                        aria-hidden="true"
-                      />
-                    </div>
-                    {typeGroup.benefits.map((benefit) => {
-                      const isUsed = benefit.isUsed === true;
-                      const animIndex = cardAnimationIndices.get(benefit.id) ?? 0;
-                      return (
-                        <SwipeToBenefitUsed
-                          key={benefit.id}
-                          benefitId={benefit.id}
-                          isUsed={isUsed}
-                          onMarkUsed={onMarkUsed}
-                          disabled={benefit.status !== 'active'}
-                        >
-                        <div
-                          data-benefit-card
-                          className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] hover:border-[var(--color-primary)] flex flex-col${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
-                          style={{
-                            opacity: isUsed ? 0.85 : 1,
-                            animation: celebratingIds?.has(benefit.id)
-                              ? undefined
-                              : `slideUp 0.3s ease-out both`,
-                            animationDelay: celebratingIds?.has(benefit.id)
-                              ? undefined
-                              : `${Math.min(animIndex * 60, 500)}ms`,
-                            borderColor: 'color-mix(in srgb, var(--color-border) 50%, transparent)',
-                            borderLeft: `3px solid ${getLeftBorderColor()}`,
-                          }}
-                        >
-                          {renderCardBody(benefit)}
-                        </div>
-                        </SwipeToBenefitUsed>
-                      );
-                    })}
-                  </React.Fragment>
-                ))
-              ) : (
-                group.benefits.map((benefit) => {
-                  const isUsed = benefit.isUsed === true;
-                  const animIndex = cardAnimationIndices.get(benefit.id) ?? 0;
-
+                // Item 3: Lounge benefits get a specialized card
+                const isLounge = inferBenefitCategory(benefit.type, benefit.name) === 'lounge';
+                if (isLounge) {
                   return (
-                    <SwipeToBenefitUsed
+                    <LoungeBenefitCard
                       key={benefit.id}
-                      benefitId={benefit.id}
-                      isUsed={isUsed}
-                      onMarkUsed={onMarkUsed}
-                      disabled={benefit.status !== 'active'}
-                    >
+                      benefit={benefit}
+                      onFindLounges={() => router.push('/dashboard/lounges')}
+                    />
+                  );
+                }
+
+                return (
+                  <SwipeToBenefitUsed
+                    key={benefit.id}
+                    benefitId={benefit.id}
+                    isUsed={isUsed}
+                    onMarkUsed={onMarkUsed}
+                    disabled={benefit.status !== 'active'}
+                  >
                     <div
                       data-benefit-card
                       className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] hover:border-[var(--color-primary)] flex flex-col${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
@@ -1017,16 +908,14 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                           ? undefined
                           : `${Math.min(animIndex * 60, 500)}ms`,
                         borderColor: 'color-mix(in srgb, var(--color-border) 50%, transparent)',
-                        borderLeft: `3px solid ${getLeftBorderColor()}`,
+                        borderLeft: `3px solid ${getLeftBorderColor(urgency)}`,
                       }}
                     >
-                      {/* Card body — shared with accordion rendering */}
                       {renderCardBody(benefit)}
                     </div>
-                    </SwipeToBenefitUsed>
-                  );
-                })
-              )}
+                  </SwipeToBenefitUsed>
+                );
+              })}
             </React.Fragment>
           );
         })}

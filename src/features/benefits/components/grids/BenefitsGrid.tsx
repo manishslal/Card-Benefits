@@ -415,27 +415,7 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
       });
     }, [cardId]);
 
-    // Sort: unused first (by urgency desc), then used
-    const sortedBenefits = useMemo(() => {
-      return [...benefits].sort((a, b) => {
-        const aUsed = !!a.isUsed;
-        const bUsed = !!b.isUsed;
-        if (aUsed !== bUsed) return aUsed ? 1 : -1;
-        const cadenceA = getCadencePriority(a);
-        const cadenceB = getCadencePriority(b);
-        if (cadenceA !== cadenceB) return cadenceA - cadenceB;
-        return 0;
-      });
-    }, [benefits]);
-
-    // ── Category grouping (primary axis) ──
-    const categoryGroups = useMemo(() => {
-      return groupBenefitsByCategory(sortedBenefits, (b) =>
-        inferBenefitCategory(b.type, b.name)
-      );
-    }, [sortedBenefits]);
-
-    // Pre-compute period display info per benefit
+    // Pre-compute period display info per benefit (must be before sort)
     const periodInfoMap = useMemo(() => {
       const map = new Map<string, PeriodDisplayInfo>();
       for (const b of benefits) {
@@ -451,6 +431,55 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
       }
       return map;
     }, [benefits]);
+
+    // Sort by urgency tier: urgent → normal → done, with sub-sorting within each
+    const sortedBenefits = useMemo(() => {
+      return [...benefits].sort((a, b) => {
+        const aInfo = periodInfoMap.get(a.id);
+        const bInfo = periodInfoMap.get(b.id);
+        const aUrgency = aInfo?.urgency ?? 'normal';
+        const bUrgency = bInfo?.urgency ?? 'normal';
+
+        const tierOrder = { urgent: 0, normal: 1, done: 2 } as const;
+        const aTier = tierOrder[aUrgency] ?? 1;
+        const bTier = tierOrder[bUrgency] ?? 1;
+
+        if (aTier !== bTier) return aTier - bTier;
+
+        // Within urgent: sort by days remaining ascending (most urgent first)
+        if (aUrgency === 'urgent') {
+          const aDays = aInfo?.remainingDays ?? 7;
+          const bDays = bInfo?.remainingDays ?? 7;
+          if (aDays !== bDays) return aDays - bDays;
+        }
+
+        // Within normal: sort by value descending (highest value first)
+        if (aUrgency === 'normal') {
+          const aVal = a.value ?? 0;
+          const bVal = b.value ?? 0;
+          if (aVal !== bVal) return bVal - aVal;
+        }
+
+        // Within done: sort by claimedAt descending (most recently used first)
+        if (aUrgency === 'done' && a.claimedAt && b.claimedAt) {
+          const aTime = new Date(a.claimedAt).getTime();
+          const bTime = new Date(b.claimedAt).getTime();
+          if (aTime !== bTime) return bTime - aTime;
+        }
+
+        // Fallback: cadence priority
+        const cadenceA = getCadencePriority(a);
+        const cadenceB = getCadencePriority(b);
+        return cadenceA - cadenceB;
+      });
+    }, [benefits, periodInfoMap]);
+
+    // ── Category grouping (primary axis) ──
+    const categoryGroups = useMemo(() => {
+      return groupBenefitsByCategory(sortedBenefits, (b) =>
+        inferBenefitCategory(b.type, b.name)
+      );
+    }, [sortedBenefits]);
 
     // Pre-compute animation indices across all groups
     const cardAnimationIndices = useMemo(() => {
@@ -875,52 +904,76 @@ const BenefitsGrid = React.forwardRef<HTMLDivElement, BenefitsGridProps>(
                 isCollapsed={isCollapsed}
                 onToggle={() => toggleCategory(category.type)}
               />
-              {!isCollapsed && catBenefits.map((benefit) => {
+              {!isCollapsed && (() => {
+                // Compute tier boundaries for dividers
+                const tierBoundaries = new Set<number>();
+                let prevUrgency: string | null = null;
+                catBenefits.forEach((benefit, index) => {
+                  const pInfo = periodInfoMap.get(benefit.id);
+                  const urgency = pInfo?.urgency ?? 'normal';
+                  if (prevUrgency && prevUrgency !== urgency && index > 0) {
+                    tierBoundaries.add(index);
+                  }
+                  prevUrgency = urgency;
+                });
+
+                return catBenefits.map((benefit, index) => {
                 const isUsed = benefit.isUsed === true;
                 const animIndex = cardAnimationIndices.get(benefit.id) ?? 0;
                 const pInfo = periodInfoMap.get(benefit.id);
                 const urgency = pInfo?.urgency;
 
+                const divider = tierBoundaries.has(index) ? (
+                  <div key={`divider-${benefit.id}`} className="col-span-full">
+                    <hr className="my-2 opacity-40" style={{ borderColor: 'var(--color-border)' }} />
+                  </div>
+                ) : null;
+
                 // Item 3: Lounge benefits get a specialized card
                 const isLounge = inferBenefitCategory(benefit.type, benefit.name) === 'lounge';
                 if (isLounge) {
                   return (
-                    <LoungeBenefitCard
-                      key={benefit.id}
-                      benefit={benefit}
-                      onFindLounges={() => router.push('/dashboard/lounges')}
-                    />
+                    <React.Fragment key={benefit.id}>
+                      {divider}
+                      <LoungeBenefitCard
+                        benefit={benefit}
+                        onFindLounges={() => router.push('/dashboard/lounges')}
+                      />
+                    </React.Fragment>
                   );
                 }
 
                 return (
-                  <SwipeToBenefitUsed
-                    key={benefit.id}
-                    benefitId={benefit.id}
-                    isUsed={isUsed}
-                    onMarkUsed={onMarkUsed}
-                    disabled={benefit.status !== 'active'}
-                  >
-                    <div
-                      data-benefit-card
-                      className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] hover:border-[var(--color-primary)] flex flex-col${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
-                      style={{
-                        opacity: isUsed ? 0.85 : 1,
-                        animation: celebratingIds?.has(benefit.id)
-                          ? undefined
-                          : `slideUp 0.3s ease-out both`,
-                        animationDelay: celebratingIds?.has(benefit.id)
-                          ? undefined
-                          : `${Math.min(animIndex * 60, 500)}ms`,
-                        borderColor: 'color-mix(in srgb, var(--color-border) 50%, transparent)',
-                        borderLeft: `3px solid ${getLeftBorderColor(urgency)}`,
-                      }}
+                  <React.Fragment key={benefit.id}>
+                    {divider}
+                    <SwipeToBenefitUsed
+                      benefitId={benefit.id}
+                      isUsed={isUsed}
+                      onMarkUsed={onMarkUsed}
+                      disabled={benefit.status !== 'active'}
                     >
-                      {renderCardBody(benefit)}
-                    </div>
-                  </SwipeToBenefitUsed>
+                      <div
+                        data-benefit-card
+                        className={`rounded-lg border overflow-hidden transition-all duration-200 bg-[var(--color-bg)] hover:border-[var(--color-primary)] flex flex-col${celebratingIds?.has(benefit.id) ? ' animate-celebrate-used' : ''}`}
+                        style={{
+                          opacity: isUsed ? 0.85 : 1,
+                          animation: celebratingIds?.has(benefit.id)
+                            ? undefined
+                            : `slideUp 0.3s ease-out both`,
+                          animationDelay: celebratingIds?.has(benefit.id)
+                            ? undefined
+                            : `${Math.min(animIndex * 60, 500)}ms`,
+                          borderColor: 'color-mix(in srgb, var(--color-border) 50%, transparent)',
+                          borderLeft: `3px solid ${getLeftBorderColor(urgency)}`,
+                        }}
+                      >
+                        {renderCardBody(benefit)}
+                      </div>
+                    </SwipeToBenefitUsed>
+                  </React.Fragment>
                 );
-              })}
+              });
+              })()}
             </React.Fragment>
           );
         })}

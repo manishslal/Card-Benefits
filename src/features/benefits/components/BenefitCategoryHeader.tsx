@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, AlertTriangle } from 'lucide-react';
 import type { BenefitCategory } from '@/lib/benefit-categories';
 import {
   Plane, Utensils, Armchair, Hotel, Music, Tv, Tag,
@@ -90,9 +90,18 @@ export const BenefitCategoryHeader = React.memo(function BenefitCategoryHeader({
       <span className="flex-1" />
 
       <span
-        className="text-xs"
+        className="text-xs flex items-center gap-1.5"
         style={{ color: 'var(--color-text-secondary)' }}
       >
+        {urgentCount > 0 && (
+          <>
+            <span className="flex items-center gap-1" style={{ color: 'var(--color-warning)' }}>
+              <AlertTriangle size={12} aria-hidden="true" />
+              {urgentCount} expiring soon
+            </span>
+            <span aria-hidden="true">·</span>
+          </>
+        )}
         {summary}
       </span>
 

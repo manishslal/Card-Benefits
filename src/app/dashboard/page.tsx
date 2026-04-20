@@ -34,6 +34,10 @@ import {
   getCurrentMonthDisplay,
   getCurrentQuarterInfo,
 } from './utils/period-helpers';
+import {
+  ExpiringBenefitsBanner,
+  type ExpiringBenefitItem,
+} from '@/features/benefits/components/ExpiringBenefitsBanner';
 
 /**
  * Dashboard Page - Redesigned
@@ -497,6 +501,10 @@ export default function DashboardPage() {
   // History data loaded from /api/benefits/history
   const [historyBenefits, setHistoryBenefits] = useState<BenefitData[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  // Expiring this month banner data (loaded from /api/benefits/expiring-soon)
+  const [expiringBannerBenefits, setExpiringBannerBenefits] = useState<ExpiringBenefitItem[]>([]);
+  const [isLoadingExpiring, setIsLoadingExpiring] = useState(true);
+  const [expiringTotalValue, setExpiringTotalValue] = useState(0);
 
   // ============================================================
   // State Management - Benefit Modals
@@ -1180,6 +1188,36 @@ export default function DashboardPage() {
 
     loadHistory();
   }, [viewMode, benefitEngineEnabled, selectedCardId]);
+
+  // ============================================================
+  // Effect: Load expiring-this-month benefits on mount
+  // ============================================================
+
+  useEffect(() => {
+    const loadExpiringBenefits = async () => {
+      setIsLoadingExpiring(true);
+      try {
+        const response = await fetch('/api/benefits/expiring-soon', {
+          method: 'GET',
+          credentials: 'include',
+        });
+        if (!response.ok) throw new Error('Failed to load expiring benefits');
+        const data = await response.json();
+        if (data.success && Array.isArray(data.benefits)) {
+          setExpiringBannerBenefits(data.benefits);
+          setExpiringTotalValue(data.totalValue ?? 0);
+        }
+      } catch {
+        // Fail silently — banner just won't show
+        setExpiringBannerBenefits([]);
+        setExpiringTotalValue(0);
+      } finally {
+        setIsLoadingExpiring(false);
+      }
+    };
+
+    loadExpiringBenefits();
+  }, []);
 
   // ============================================================
   // Handler: Refresh cards after adding new card
@@ -2044,6 +2082,24 @@ export default function DashboardPage() {
             <>
               {/* Sentinel for collapse detection — 1px tall for reliable IntersectionObserver across browsers */}
               <div ref={carouselSentinelRef} aria-hidden="true" style={{ height: '1px', marginBottom: '-1px', overflow: 'hidden' }} />
+
+              {/* Expiring This Month Banner — card-agnostic, above card selector */}
+              {viewMode === 'current' && (
+                <div className="mt-2">
+                  <ExpiringBenefitsBanner
+                    benefits={expiringBannerBenefits}
+                    totalValue={expiringTotalValue}
+                    isLoading={isLoadingExpiring}
+                    onBenefitClick={(benefitId) => {
+                      const benefit = expiringBannerBenefits.find((b) => b.id === benefitId);
+                      if (benefit) {
+                        setSelectedCardId(benefit.userCardId);
+                        setSmartView('all');
+                      }
+                    }}
+                  />
+                </div>
+              )}
 
               {/* Sticky carousel container */}
               <div className="sticky z-30 -mx-4 md:-mx-8 px-0 md:px-8 relative" data-sticky-carousel style={{ top: 'calc(var(--height-header) + env(safe-area-inset-top, 0px))', backgroundColor: 'color-mix(in srgb, var(--color-bg) 80%, transparent)', backdropFilter: 'blur(12px) saturate(180%)', WebkitBackdropFilter: 'blur(12px) saturate(180%)', boxShadow: 'var(--header-shadow)' }}>

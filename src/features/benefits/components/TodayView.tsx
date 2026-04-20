@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import Skeleton from '@/shared/components/ui/Skeleton';
 import { formatCurrency } from '@/shared/lib/format-currency';
+import { BenefitCalendar } from './BenefitCalendar';
+import { BenefitHistoryTimeline } from './BenefitHistoryTimeline';
 
 // ============================================================
 // Type Definitions
@@ -206,6 +208,52 @@ function SectionSkeleton() {
   );
 }
 
+function CalendarSection() {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <section
+      className="rounded-xl border overflow-hidden"
+      style={{
+        borderColor: 'var(--color-border)',
+        borderRadius: 'var(--radius-lg)',
+      }}
+      aria-label="Benefit Calendar"
+    >
+      <button
+        type="button"
+        onClick={() => setIsExpanded((prev) => !prev)}
+        className="w-full flex items-center justify-between p-4 transition-colors"
+        style={{
+          backgroundColor: 'color-mix(in srgb, var(--color-primary) 5%, var(--color-bg))',
+        }}
+        aria-expanded={isExpanded}
+        aria-controls="calendar-panel"
+      >
+        <div className="flex items-center gap-2">
+          <Calendar size={16} style={{ color: 'var(--color-primary)' }} aria-hidden="true" />
+          <h3
+            className="text-sm font-semibold"
+            style={{ color: 'var(--color-text)' }}
+          >
+            Calendar
+          </h3>
+        </div>
+        {isExpanded ? (
+          <ChevronUp size={16} style={{ color: 'var(--color-text-secondary)' }} aria-hidden="true" />
+        ) : (
+          <ChevronDown size={16} style={{ color: 'var(--color-text-secondary)' }} aria-hidden="true" />
+        )}
+      </button>
+      {isExpanded && (
+        <div id="calendar-panel" className="px-0">
+          <BenefitCalendar />
+        </div>
+      )}
+    </section>
+  );
+}
+
 // ============================================================
 // Main Component
 // ============================================================
@@ -353,6 +401,9 @@ export function TodayView({ onMarkUsed, onNavigateToBenefit }: TodayViewProps) {
   // ── Normal Render ──────────────────────────────────────────────
   return (
     <div className="space-y-4 mt-4">
+      {/* Collapsible Calendar Section */}
+      <CalendarSection />
+
       {SECTION_CONFIGS.map((config) => {
         const items = sections?.[config.key] ?? [];
 
@@ -420,6 +471,35 @@ export function TodayView({ onMarkUsed, onNavigateToBenefit }: TodayViewProps) {
           </section>
         );
       })}
+
+      {/* Section: Recent History (compact timeline showing last 5 expired benefits) */}
+      <section
+        className="p-4 rounded-xl border"
+        style={{
+          borderColor: 'var(--color-border)',
+          borderRadius: 'var(--radius-lg)',
+        }}
+        aria-label="Recent History"
+      >
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-base" role="img" aria-hidden="true">
+            📜
+          </span>
+          <h3
+            className="text-sm font-semibold"
+            style={{ color: 'var(--color-text)' }}
+          >
+            Recent History
+          </h3>
+        </div>
+        <p
+          className="text-xs mb-3"
+          style={{ color: 'var(--color-text-secondary)' }}
+        >
+          Last expired benefit periods
+        </p>
+        <BenefitHistoryTimeline compact limit={5} />
+      </section>
     </div>
   );
 }

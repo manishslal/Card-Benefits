@@ -16,6 +16,12 @@ export { default as BenefitsGrid } from './grids/BenefitsGrid';
 // Grids - named exports (internal components)
 export { UsedBenefitsAccordion } from './grids/UsedBenefitsAccordion';
 
+// Timeline
+export { BenefitHistoryTimeline } from './BenefitHistoryTimeline';
+
+// Calendar
+export { BenefitCalendar } from './BenefitCalendar';
+
 // Custom Values - named exports
 export { BenefitValueComparison } from './BenefitValueComparison';
 export { BenefitValuePresets } from './BenefitValuePresets';

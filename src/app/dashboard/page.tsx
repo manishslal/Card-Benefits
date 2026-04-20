@@ -7,7 +7,7 @@ import Button from '@/shared/components/ui/button';
 import { AppHeader } from '@/shared/components/layout';
 import { CardCarousel, DashboardSummary } from '@/shared/components/features';
 import CompactCardChips from '@/shared/components/features/CompactCardChips';
-import { BenefitsGrid, AddBenefitModal, EditBenefitModal, DeleteBenefitConfirmationDialog } from '@/features/benefits';
+import { BenefitsGrid, AddBenefitModal, EditBenefitModal, DeleteBenefitConfirmationDialog, BenefitHistoryTimeline } from '@/features/benefits';
 import { AddCardModal } from '@/features/cards/components/modals/AddCardModal';
 import { CardEditModal } from '@/features/cards/components/MyCardsSection/CardEditModal';
 import type { Card as EditableCard } from '@/features/cards/components/MyCardsSection/types';
@@ -522,9 +522,7 @@ export default function DashboardPage() {
     const newUrl = `${window.location.pathname}${query ? `?${query}` : ''}`;
     window.history.replaceState(null, '', newUrl);
   }, []);
-  // History data loaded from /api/benefits/history
-  const [historyBenefits, setHistoryBenefits] = useState<BenefitData[]>([]);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  // History is now handled by BenefitHistoryTimeline component (self-contained)
   // Expiring this month banner data (loaded from /api/benefits/expiring-soon)
   const [expiringBannerBenefits, setExpiringBannerBenefits] = useState<ExpiringBenefitItem[]>([]);
   const [isLoadingExpiring, setIsLoadingExpiring] = useState(true);
@@ -1142,76 +1140,8 @@ export default function DashboardPage() {
   }, [hasCards, headerHeightOffset]);
 
   // ============================================================
-  // Effect: Load history benefits when viewMode switches to "history"
+  // Effect: History benefits now loaded by BenefitHistoryTimeline component
   // ============================================================
-
-  useEffect(() => {
-    if (viewMode !== 'history' || !benefitEngineEnabled) return;
-
-    const loadHistory = async () => {
-      setIsLoadingHistory(true);
-      try {
-        const params = new URLSearchParams({ limit: '50' });
-        if (selectedCardId) {
-          params.set('cardId', selectedCardId);
-        }
-        const response = await fetch(`/api/benefits/history?${params.toString()}`, {
-          method: 'GET',
-          credentials: 'include',
-        });
-        if (!response.ok) throw new Error('Failed to load history');
-        const data = await response.json();
-        if (data.success && Array.isArray(data.benefits)) {
-          const mapped: BenefitData[] = data.benefits.map((b: {
-            id: string;
-            name: string;
-            type: string;
-            stickerValue: number;
-            userDeclaredValue: number | null;
-            resetCadence: string;
-            isUsed: boolean;
-            periodStart: string | null;
-            periodEnd: string | null;
-            periodStatus: string;
-            masterBenefitId: string | null;
-            claimingCadence: string | null;
-            claimedAt?: string | null;
-            claimingAmount?: number | null;
-          }) => ({
-            id: b.id,
-            name: b.name,
-            type: b.type,
-            stickerValue: b.stickerValue,
-            userDeclaredValue: b.userDeclaredValue,
-            resetCadence: b.resetCadence,
-            status: 'expired' as const,
-            isUsed: b.isUsed,
-            value: getDisplayValue(b),
-            usage: (() => {
-              // H-1 fix: Preserve null for unlimited/multiplier benefits
-              const effectiveValue = b.userDeclaredValue ?? b.stickerValue;
-              if (effectiveValue === 0) return null;
-              return b.isUsed ? 100 : 0;
-            })(),
-            periodStart: b.periodStart,
-            periodEnd: b.periodEnd,
-            periodStatus: b.periodStatus,
-            masterBenefitId: b.masterBenefitId,
-            claimingCadence: b.claimingCadence,
-            claimedAt: b.claimedAt ?? null,
-            claimingAmount: b.claimingAmount ?? null,
-          }));
-          setHistoryBenefits(mapped);
-        }
-      } catch {
-        setHistoryBenefits([]);
-      } finally {
-        setIsLoadingHistory(false);
-      }
-    };
-
-    loadHistory();
-  }, [viewMode, benefitEngineEnabled, selectedCardId]);
 
   // ============================================================
   // Effect: Reset viewMode to 'current' if benefit engine is off
@@ -1765,7 +1695,7 @@ export default function DashboardPage() {
   // Determine which benefits to display based on viewMode
   // ============================================================
 
-  const displayBenefits = viewMode === 'history' ? historyBenefits : searchSortedBenefits;
+  const displayBenefits = searchSortedBenefits;
 
   // ============================================================
   // Total benefits across ALL cards (not just selected card)
@@ -2423,12 +2353,11 @@ export default function DashboardPage() {
                   )}
                 </div>
 
-                {/* Loading state for history */}
-                {viewMode === 'history' && isLoadingHistory && (
-                  <div className="flex justify-center py-12">
-                    <div
-                      className="h-8 w-8 animate-spin rounded-full border-4 border-t-transparent"
-                      style={{ borderColor: 'var(--color-border)', borderTopColor: 'transparent' }}
+                {/* Loading state for history — now handled by BenefitHistoryTimeline */}
+                {viewMode === 'history' && (
+                  <div className="animate-content-reveal">
+                    <BenefitHistoryTimeline
+                      cardId={selectedCardId || undefined}
                     />
                   </div>
                 )}
@@ -2493,26 +2422,15 @@ export default function DashboardPage() {
                   </div>
                 )}
 
-                {/* Empty State for History */}
-                {viewMode === 'history' && !isLoadingHistory && historyBenefits.length === 0 && (
-                  <div
-                    className="text-center py-12 rounded-lg bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)]"
-                  >
-                    <p className="text-sm">
-                      No previous period benefits found for this card.
-                    </p>
-                  </div>
-                )}
-
-                {/* Benefits Grid — uses displayBenefits (current or history) */}
-                {displayBenefits.length > 0 && !(viewMode === 'history' && isLoadingHistory) && (
+                {/* Benefits Grid — current view only (history uses BenefitHistoryTimeline) */}
+                {viewMode === 'current' && displayBenefits.length > 0 && (
                   <div key={selectedCardId} className="animate-content-reveal">
                   <BenefitsGrid
                     benefits={displayBenefits.map(transformBenefitForGrid)}
-                    onEdit={viewMode === 'current' ? handleEditBenefitClick : undefined}
-                    onMarkUsed={viewMode === 'current' ? handleMarkUsed : undefined}
-                    onAdjustUnlimitedUsage={viewMode === 'current' ? handleAdjustUnlimitedUsage : undefined}
-                    onOpenMultiplierEntry={viewMode === 'current' ? handleOpenMultiplierEntry : undefined}
+                    onEdit={handleEditBenefitClick}
+                    onMarkUsed={handleMarkUsed}
+                    onAdjustUnlimitedUsage={handleAdjustUnlimitedUsage}
+                    onOpenMultiplierEntry={handleOpenMultiplierEntry}
                     unlimitedUsageLoadingIds={new Set([...unlimitedLoadingIds, ...multiplierLoadingIds])}
                     gridColumns={3}
                     celebratingIds={celebratingIds}

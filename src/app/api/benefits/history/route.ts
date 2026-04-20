@@ -28,6 +28,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib';
 import { featureFlags } from '@/lib/feature-flags';
+import { logSafeError } from '@/lib/error-logging';
 
 // ============================================================
 // Type Definitions
@@ -42,6 +43,7 @@ interface HistoryBenefit {
   resetCadence: string;
   isUsed: boolean;
   timesUsed: number;
+  claimedAt: string | null;
   periodStart: string | null;
   periodEnd: string | null;
   periodStatus: string;
@@ -146,6 +148,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         resetCadence: true,
         isUsed: true,
         timesUsed: true,
+        claimedAt: true,
         periodStart: true,
         periodEnd: true,
         periodStatus: true,
@@ -182,6 +185,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       resetCadence: b.resetCadence,
       isUsed: b.isUsed,
       timesUsed: b.timesUsed,
+      claimedAt: b.claimedAt?.toISOString() ?? null,
       periodStart: b.periodStart?.toISOString() ?? null,
       periodEnd: b.periodEnd?.toISOString() ?? null,
       periodStatus: b.periodStatus,
@@ -206,7 +210,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       { status: 200 }
     );
   } catch (error) {
-    console.error('[GET /api/benefits/history Error]', error);
+    logSafeError('[GET /api/benefits/history Error]', error);
     return NextResponse.json(
       { success: false, error: 'Failed to retrieve benefit history' },
       { status: 500 }

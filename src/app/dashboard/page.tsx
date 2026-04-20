@@ -2180,14 +2180,18 @@ export default function DashboardPage() {
 
               {/* Mobile Summary Stats — same data as desktop (DASH-041) */}
               {/* DISC-010: Region landmark with aria-label for stats */}
-              <div className="md:hidden mt-4" role="region" aria-label="Summary statistics">
-                <MobileSummaryStats stats={summaryStats} />
-              </div>
+              {viewMode !== 'history' && (
+                <div className="md:hidden mt-4" role="region" aria-label="Summary statistics">
+                  <MobileSummaryStats stats={summaryStats} />
+                </div>
+              )}
 
               {/* Desktop Dashboard Summary — hidden on mobile */}
-              <div className="hidden md:block mt-4" role="region" aria-label="Summary statistics">
-                <DashboardSummary stats={summaryStats} />
-              </div>
+              {viewMode !== 'history' && (
+                <div className="hidden md:block mt-4" role="region" aria-label="Summary statistics">
+                  <DashboardSummary stats={summaryStats} />
+                </div>
+              )}
 
               {/* ROI Banner — per-card only */}
               {selectedCardId && roiSummary && (
@@ -2299,14 +2303,7 @@ export default function DashboardPage() {
                           ({deduplicatedBenefits.length} of {deduplicateBenefits(benefits, benefitEngineEnabled).length})
                         </span>
                       )}
-                      {viewMode === 'history' && (
-                        <span
-                          className="ml-2 text-sm font-normal font-mono tabular-nums"
-                          style={{ color: 'var(--color-text-secondary)' }}
-                        >
-                          ({displayBenefits.length})
-                        </span>
-                      )}
+                      {/* History count omitted — BenefitHistoryTimeline shows its own "Showing X of Y" footer */}
                     </h2>
                     {/* D-5: Annual Fee ROI Badge */}
                     {viewMode === 'current' && selectedCardRoi && (

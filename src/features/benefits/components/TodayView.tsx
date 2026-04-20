@@ -371,28 +371,31 @@ export function TodayView({ onMarkUsed, onNavigateToBenefit }: TodayViewProps) {
 
     if (totalItems === 0) {
       return (
-        <div
-          className="flex flex-col items-center justify-center py-16 px-4 rounded-xl mt-4"
-          style={{
-            backgroundColor: 'var(--color-bg-secondary)',
-            borderRadius: 'var(--radius-lg)',
-          }}
-        >
-          <span className="text-4xl mb-4" role="img" aria-label="celebration">
-            🎉
-          </span>
-          <p
-            className="text-lg font-semibold mb-2"
-            style={{ color: 'var(--color-text)' }}
+        <div className="space-y-4 mt-4">
+          <CalendarSection />
+          <div
+            className="flex flex-col items-center justify-center py-16 px-4 rounded-xl"
+            style={{
+              backgroundColor: 'var(--color-bg-secondary)',
+              borderRadius: 'var(--radius-lg)',
+            }}
           >
-            You&apos;re all caught up!
-          </p>
-          <p
-            className="text-sm text-center max-w-sm"
-            style={{ color: 'var(--color-text-secondary)' }}
-          >
-            No benefits need your attention right now. Check back later or switch to the My Cards tab to explore all your benefits.
-          </p>
+            <span className="text-4xl mb-4" role="img" aria-label="celebration">
+              🎉
+            </span>
+            <p
+              className="text-lg font-semibold mb-2"
+              style={{ color: 'var(--color-text)' }}
+            >
+              You&apos;re all caught up!
+            </p>
+            <p
+              className="text-sm text-center max-w-sm"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              No benefits need your attention right now. Check back later or switch to the My Cards tab to explore all your benefits.
+            </p>
+          </div>
         </div>
       );
     }

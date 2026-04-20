@@ -14,6 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib';
 import { featureFlags } from '@/lib/feature-flags';
+import { logSafeError } from '@/lib/error-logging';
 
 // ============================================================
 // Type Definitions
@@ -174,6 +175,12 @@ export async function GET(
 
     // Optional card filter
     if (cardId) {
+      if (!/^c[a-z0-9]{20,30}$/.test(cardId)) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid cardId format' } as ErrorResponse,
+          { status: 400 }
+        );
+      }
       whereClause.userCardId = cardId;
     }
 
@@ -244,7 +251,7 @@ export async function GET(
       { status: 200 }
     );
   } catch (error) {
-    console.error('[benefits/calendar] Error:', error);
+    logSafeError('[benefits/calendar] Error', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' } as ErrorResponse,
       { status: 500 }

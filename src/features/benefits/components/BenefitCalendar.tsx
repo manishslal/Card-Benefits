@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Calendar,
   Check,
+  AlertCircle,
   AlertTriangle,
   RefreshCw,
 } from 'lucide-react';
@@ -200,7 +201,7 @@ export function BenefitCalendar({ cardId, initialMonth }: BenefitCalendarProps) 
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [focusedDayIndex, setFocusedDayIndex] = useState<number | null>(null);
+  const [focusedDayIndex, setFocusedDayIndex] = useState<number>(0);
   const gridRef = useRef<HTMLDivElement>(null);
 
   const today = useMemo(() => new Date(), []);
@@ -269,6 +270,17 @@ export function BenefitCalendar({ cardId, initialMonth }: BenefitCalendarProps) 
     return eachDayOfInterval({ start: calStart, end: calEnd });
   }, [currentMonth]);
 
+  // ── Initialize focusedDayIndex to today or first of month ─────
+  useEffect(() => {
+    const todayIdx = calendarDays.findIndex((day) => isToday(day));
+    if (todayIdx !== -1) {
+      setFocusedDayIndex(todayIdx);
+    } else {
+      const firstOfMonth = calendarDays.findIndex((day) => isSameMonth(day, currentMonth));
+      setFocusedDayIndex(firstOfMonth !== -1 ? firstOfMonth : 0);
+    }
+  }, [calendarDays, currentMonth]);
+
   // ── Events lookup by date ──────────────────────────────────────
   const eventsByDate = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();
@@ -283,7 +295,6 @@ export function BenefitCalendar({ cardId, initialMonth }: BenefitCalendarProps) 
   // ── Keyboard Navigation ────────────────────────────────────────
   const handleGridKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (focusedDayIndex === null) return;
 
       let nextIndex = focusedDayIndex;
 
@@ -305,6 +316,21 @@ export function BenefitCalendar({ cardId, initialMonth }: BenefitCalendarProps) 
       }
 
       e.preventDefault();
+
+      // Skip out-of-month filler cells (they lack data-day-index and can't receive focus)
+      const direction =
+        e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1;
+      while (nextIndex >= 0 && nextIndex < calendarDays.length) {
+        if (isSameMonth(calendarDays[nextIndex], currentMonth)) {
+          break;
+        }
+        nextIndex += direction;
+      }
+
+      // Only update if we landed on a valid in-month index
+      if (nextIndex < 0 || nextIndex >= calendarDays.length) return;
+      if (!isSameMonth(calendarDays[nextIndex], currentMonth)) return;
+
       setFocusedDayIndex(nextIndex);
 
       // Focus the button in the target cell
@@ -317,7 +343,7 @@ export function BenefitCalendar({ cardId, initialMonth }: BenefitCalendarProps) 
         target?.focus();
       }
     },
-    [focusedDayIndex, calendarDays.length]
+    [focusedDayIndex, calendarDays, currentMonth]
   );
 
   // ── Loading State ──────────────────────────────────────────────
@@ -335,7 +361,7 @@ export function BenefitCalendar({ cardId, initialMonth }: BenefitCalendarProps) 
           backgroundColor: 'var(--color-bg)',
         }}
       >
-        <AlertTriangle size={24} style={{ color: 'var(--color-warning)' }} className="mb-2" />
+        <AlertCircle size={24} style={{ color: 'var(--color-warning)' }} className="mb-2" />
         <p className="text-sm mb-2" style={{ color: 'var(--color-text-secondary)' }}>
           {error}
         </p>
@@ -549,6 +575,7 @@ export function BenefitCalendar({ cardId, initialMonth }: BenefitCalendarProps) 
                       cursor: 'pointer',
                     }}
                     data-day-index={index}
+                    tabIndex={focusedDayIndex === index ? 0 : -1}
                     onFocus={() => setFocusedDayIndex(index)}
                     aria-label={`${format(day, 'MMMM d, yyyy')}: ${dayEvents.length} benefit event${dayEvents.length > 1 ? 's' : ''}`}
                     role="gridcell"
@@ -588,10 +615,10 @@ export function BenefitCalendar({ cardId, initialMonth }: BenefitCalendarProps) 
               className="flex items-center justify-center rounded-lg transition-colors focus:outline-none focus-visible:ring-2"
               style={{ cursor: 'default' }}
               data-day-index={index}
+              tabIndex={focusedDayIndex === index ? 0 : -1}
               onFocus={() => setFocusedDayIndex(index)}
               aria-label={format(day, 'MMMM d, yyyy')}
               role="gridcell"
-              tabIndex={-1}
             >
               {cellContent}
             </button>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Check, X, Clock, AlertCircle, RefreshCw, ChevronDown } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import Skeleton from '@/shared/components/ui/Skeleton';
@@ -68,7 +68,7 @@ function getCadenceLabel(cadence: string): string {
     case 'ONE_TIME':
       return 'One-time';
     default:
-      return cadence.charAt(0) + cadence.slice(1).toLowerCase();
+      return cadence ? cadence.charAt(0) + cadence.slice(1).toLowerCase() : 'Unknown';
   }
 }
 

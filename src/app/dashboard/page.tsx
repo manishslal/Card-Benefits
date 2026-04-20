@@ -12,6 +12,8 @@ import { AddCardModal } from '@/features/cards/components/modals/AddCardModal';
 import { CardEditModal } from '@/features/cards/components/MyCardsSection/CardEditModal';
 import type { Card as EditableCard } from '@/features/cards/components/MyCardsSection/types';
 import { deduplicateBenefits } from '@/lib/benefit-utils';
+import { calculateCardROI } from '@/lib/card-roi';
+import { CardROIBanner } from '@/features/cards/components/CardROIBanner';
 import {
   isMultiplierBenefit,
   formatSpendCents,
@@ -62,6 +64,7 @@ interface CardData {
   issuer: string;
   customName?: string | null;
   actualAnnualFee?: number | null;
+  defaultAnnualFee?: number | null;
   renewalDate?: string | null;
   createdAt?: string;
   benefits?: BenefitData[];
@@ -105,6 +108,7 @@ interface ApiCard {
   type?: string;
   lastFour?: string;
   actualAnnualFee?: number | null;
+  defaultAnnualFee?: number | null;
   renewalDate?: string;
   createdAt?: string;
   benefits?: ApiBenefit[];
@@ -586,6 +590,7 @@ export default function DashboardPage() {
       issuer: apiCard.issuer,
       customName: apiCard.customName,
       actualAnnualFee: apiCard.actualAnnualFee ?? null,
+      defaultAnnualFee: apiCard.defaultAnnualFee ?? null,
       renewalDate: apiCard.renewalDate ?? null,
       createdAt: apiCard.createdAt,
       benefits: (apiCard.benefits || []).map((b: ApiBenefit) => ({
@@ -1779,6 +1784,17 @@ export default function DashboardPage() {
     return { totalAnnualValue, totalUsedVal, capturePercent };
   }, [displayBenefits]);
 
+  // ROI summary for the selected card
+  const selectedCard = useMemo(
+    () => cards.find((c) => c.id === selectedCardId),
+    [cards, selectedCardId]
+  );
+  const roiSummary = useMemo(() => {
+    if (!selectedCard || !selectedCard.benefits?.length) return null;
+    const feeCents = selectedCard.actualAnnualFee ?? selectedCard.defaultAnnualFee ?? 0;
+    return calculateCardROI(selectedCard.benefits, feeCents);
+  }, [selectedCard]);
+
   // E-2: Animated summary stat values
   const animatedBenefitCount = useCountAnimation(displayBenefits.length);
   const animatedTotalValue = useCountAnimation(
@@ -2120,6 +2136,16 @@ export default function DashboardPage() {
               <div className="hidden md:block mt-4" role="region" aria-label="Summary statistics">
                 <DashboardSummary stats={summaryStats} />
               </div>
+
+              {/* ROI Banner — per-card only */}
+              {selectedCardId && roiSummary && (
+                <div className="mt-4">
+                  <CardROIBanner
+                    roi={roiSummary}
+                    cardName={selectedCard?.customName || selectedCard?.name || ''}
+                  />
+                </div>
+              )}
 
               {/* E-1: Annual Benefit Capture Progress Bar */}
               {displayBenefits.length > 0 && (

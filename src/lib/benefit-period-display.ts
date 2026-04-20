@@ -105,29 +105,38 @@ export function getPeriodDisplayInfo(benefit: {
     }
   }
 
+  // Used benefit
+  if (benefit.isUsed) {
+    const claimedDate = benefit.claimedAt ? new Date(benefit.claimedAt) : null;
+    const claimedStr = claimedDate ? formatShortDate(claimedDate) : '';
+    let label: string;
+    
+    if (remainingDays < 0) {
+      // Period already ended
+      label = claimedStr ? `Used ${claimedStr} · Period ended` : 'Used · Period ended';
+    } else {
+      // Period still active
+      const resetsStr = formatShortDate(periodEnd);
+      label = claimedStr
+        ? `Used ${claimedStr} · Resets ${resetsStr}`
+        : `Used · Resets ${resetsStr}`;
+    }
+    
+    return {
+      label,
+      urgency: 'done',
+      progressPercent,
+      remainingDays,
+      resetLabel,
+    };
+  }
+
   // Period ended (past periodEnd)
   if (remainingDays < 0) {
     return {
       label: 'Period ended',
       urgency: 'normal',
       progressPercent: 100,
-      remainingDays,
-      resetLabel,
-    };
-  }
-
-  // Used benefit
-  if (benefit.isUsed) {
-    const claimedDate = benefit.claimedAt ? new Date(benefit.claimedAt) : null;
-    const claimedStr = claimedDate ? formatShortDate(claimedDate) : '';
-    const resetsStr = formatShortDate(periodEnd);
-    const label = claimedStr
-      ? `Used ${claimedStr} · Resets ${resetsStr}`
-      : `Used · Resets ${resetsStr}`;
-    return {
-      label,
-      urgency: 'done',
-      progressPercent,
       remainingDays,
       resetLabel,
     };

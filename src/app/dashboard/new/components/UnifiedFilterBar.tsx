@@ -28,6 +28,8 @@ export interface UnifiedFilterBarProps {
   /** Counts for the "Showing X of Y" label */
   filteredCount: number;
   totalCount: number;
+  /** Hide the view mode toggle (when tabs handle view switching) */
+  hideViewModeToggle?: boolean;
 }
 
 // ============================================================
@@ -331,6 +333,7 @@ export function UnifiedFilterBar({
   benefitEngineEnabled,
   filteredCount,
   totalCount,
+  hideViewModeToggle,
 }: UnifiedFilterBarProps) {
   // ----------------------------------------------------------
   // Derive active filter chips
@@ -379,8 +382,8 @@ export function UnifiedFilterBar({
           periods={periods}
         />
 
-        {/* View mode toggle — only when benefit engine is on */}
-        {benefitEngineEnabled && (
+        {/* View mode toggle — only when benefit engine is on and not hidden by tabs */}
+        {benefitEngineEnabled && !hideViewModeToggle && (
           <div className="ml-auto">
             <ViewModeToggle
               viewMode={viewMode}

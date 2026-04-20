@@ -38,6 +38,8 @@ import {
   ExpiringBenefitsBanner,
   type ExpiringBenefitItem,
 } from '@/features/benefits/components/ExpiringBenefitsBanner';
+import { TodayView } from '@/features/benefits/components/TodayView';
+import { Tabs, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 
 /**
  * Dashboard Page - Redesigned
@@ -496,8 +498,30 @@ export default function DashboardPage() {
   const [apiTotalCards, setApiTotalCards] = useState<number | null>(null);
   const [apiTotalBenefits, setApiTotalBenefits] = useState<number | null>(null);
   const [apiTotalFees, setApiTotalFees] = useState<number>(0);
-  // "current" = ACTIVE period benefits, "history" = EXPIRED period benefits
-  const [viewMode, setViewMode] = useState<'current' | 'history'>('current');
+  // "today" = action-oriented view, "current" = ACTIVE period benefits, "history" = EXPIRED period benefits
+  const [viewMode, setViewModeState] = useState<'today' | 'current' | 'history'>(() => {
+    if (typeof window === 'undefined') return 'current';
+    const params = new URLSearchParams(window.location.search);
+    const urlView = params.get('view');
+    if (urlView === 'today' || urlView === 'current' || urlView === 'history') {
+      return urlView;
+    }
+    return 'current';
+  });
+
+  // URL persistence: update ?view= param on viewMode changes
+  const setViewMode = useCallback((mode: 'today' | 'current' | 'history') => {
+    setViewModeState(mode);
+    const params = new URLSearchParams(window.location.search);
+    if (mode === 'current') {
+      params.delete('view'); // 'current' is default, keep URL clean
+    } else {
+      params.set('view', mode);
+    }
+    const query = params.toString();
+    const newUrl = `${window.location.pathname}${query ? `?${query}` : ''}`;
+    window.history.replaceState(null, '', newUrl);
+  }, []);
   // History data loaded from /api/benefits/history
   const [historyBenefits, setHistoryBenefits] = useState<BenefitData[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -1188,6 +1212,16 @@ export default function DashboardPage() {
 
     loadHistory();
   }, [viewMode, benefitEngineEnabled, selectedCardId]);
+
+  // ============================================================
+  // Effect: Reset viewMode to 'current' if benefit engine is off
+  // ============================================================
+
+  useEffect(() => {
+    if (!benefitEngineEnabled && viewMode === 'today') {
+      setViewMode('current');
+    }
+  }, [benefitEngineEnabled, viewMode, setViewMode]);
 
   // ============================================================
   // Effect: Load expiring-this-month benefits on mount
@@ -2083,22 +2117,53 @@ export default function DashboardPage() {
               {/* Sentinel for collapse detection — 1px tall for reliable IntersectionObserver across browsers */}
               <div ref={carouselSentinelRef} aria-hidden="true" style={{ height: '1px', marginBottom: '-1px', overflow: 'hidden' }} />
 
+              {/* View Mode Tabs — Today | My Cards | History */}
+              {benefitEngineEnabled && (
+                <div className="mt-3 mb-2">
+                  <Tabs
+                    value={viewMode}
+                    onValueChange={(val) => setViewMode(val as 'today' | 'current' | 'history')}
+                  >
+                    <TabsList variant="line" className="w-full md:w-auto md:mx-auto">
+                      <TabsTrigger value="today">Today</TabsTrigger>
+                      <TabsTrigger value="current">My Cards</TabsTrigger>
+                      <TabsTrigger value="history">History</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
+              )}
+
+              {/* Today View — full replacement for card grid */}
+              {benefitEngineEnabled && viewMode === 'today' && (
+                <TodayView
+                  onMarkUsed={handleMarkUsed}
+                  onNavigateToBenefit={(_benefitId, cardId) => {
+                    setViewMode('current');
+                    setSelectedCardId(cardId);
+                    setSmartView('all');
+                  }}
+                />
+              )}
+
+              {/* Main content — hidden when Today tab is active */}
+              {viewMode !== 'today' && (
+              <>
               {/* Expiring This Month Banner — card-agnostic, above card selector */}
               {viewMode === 'current' && (
-                <div className="mt-2">
-                  <ExpiringBenefitsBanner
-                    benefits={expiringBannerBenefits}
-                    totalValue={expiringTotalValue}
-                    isLoading={isLoadingExpiring}
-                    onBenefitClick={(benefitId) => {
-                      const benefit = expiringBannerBenefits.find((b) => b.id === benefitId);
-                      if (benefit) {
-                        setSelectedCardId(benefit.userCardId);
-                        setSmartView('all');
-                      }
-                    }}
-                  />
-                </div>
+              <div className="mt-2">
+                <ExpiringBenefitsBanner
+                  benefits={expiringBannerBenefits}
+                  totalValue={expiringTotalValue}
+                  isLoading={isLoadingExpiring}
+                  onBenefitClick={(benefitId) => {
+                    const benefit = expiringBannerBenefits.find((b) => b.id === benefitId);
+                    if (benefit) {
+                      setSelectedCardId(benefit.userCardId);
+                      setSmartView('all');
+                    }
+                  }}
+                />
+              </div>
               )}
 
               {/* Sticky carousel container */}
@@ -2153,11 +2218,12 @@ export default function DashboardPage() {
                   selectedPeriodId={selectedPeriodId}
                   onPeriodChange={setSelectedPeriodId}
                   periods={periodOptions}
-                  viewMode={viewMode}
+                  viewMode={viewMode === 'history' ? 'history' : 'current'}
                   onViewModeChange={setViewMode}
                   benefitEngineEnabled={benefitEngineEnabled}
                   filteredCount={deduplicatedBenefits.length}
                   totalCount={deduplicateBenefits(benefits, benefitEngineEnabled).length}
+                  hideViewModeToggle
                 />
                 {/* D-1: Screen-reader announcement of filter result count */}
                 <div aria-live="polite" className="sr-only">
@@ -2454,6 +2520,8 @@ export default function DashboardPage() {
                   </div>
                 )}
               </section>
+              </>
+              )}
             </>
           )}
         </div>

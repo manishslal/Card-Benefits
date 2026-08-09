@@ -1,5 +1,10 @@
 # Copilot Instructions — Card Benefits
 
+> Profile-level agent/skill routing already applies (see `~/ai-dotfiles/docs/AGENT_ROUTING.md`,
+> the source of truth for agent/skill/hook definitions). This file covers only what's specific
+> to **this** project. A `dotfiles-sync-check` hook runs at session start and flags if this
+> project's local `.github/{agents,skills,hooks}` have drifted from canonical.
+
 Next.js (App Router) · TypeScript · Prisma · PostgreSQL · Vitest (unit) · Playwright (e2e) ·
 credit-card benefit tracker with an admin dashboard and a cron-driven benefit engine.
 

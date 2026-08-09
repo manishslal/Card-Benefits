@@ -1,289 +1,74 @@
-# Copilot Instructions: Workflow Routing System
+# Copilot Instructions — Card Benefits
 
-**Version**: 2.0 (Token-Optimized)  
-**Purpose**: Route work through specialized workflows  
-**Token Cost**: ~600 tokens/execution (main + workflow file) vs 2,200 for monolithic
+Next.js (App Router) · TypeScript · Prisma · PostgreSQL · Vitest (unit) · Playwright (e2e) ·
+credit-card benefit tracker with an admin dashboard and a cron-driven benefit engine.
 
----
+## Commands
 
-## 🎯 How This Works
-
-1. **Decide** — Use Quick Decision Tree (30 seconds)
-2. **Route** — Find your workflow type
-3. **Load** — Read specific workflow file (150-300 lines)
-4. **Execute** — Follow step-by-step guide
-5. **Deliver** — Check quality gates, merge to main
-
----
-
-## Quick Decision Tree
-
-```
-Is it a standard feature?
-├─ YES → Load: feature-standard-pipeline.md
-└─ NO ↓
-
-Is it UI/React focused?
-├─ YES → Load: feature-uiux-pipeline.md
-└─ NO ↓
-
-What's the primary domain?
-├─ Backend/TypeScript? → backend-feature-workflow.md
-├─ React/Next.js? → frontend-feature-workflow.md
-├─ Java/MCP? → java-mcp-workflow.md
-├─ Database/PostgreSQL? → database-workflow.md
-├─ Full-Stack? → fullstack-feature-workflow.md
-├─ Security? → security-audit-workflow.md
-├─ DevOps? → devops-infrastructure-workflow.md
-├─ Bug/Debug? → bug-fix-debug-workflow.md
-├─ Testing/QA? → testing-qa-workflow.md
-└─ Docs? → documentation-workflow.md
+```bash
+npm run dev              # next dev
+npm run build            # prisma generate && next build
+npm run lint              npm run type-check   # tsc --noEmit
+npm run test              npm run test:coverage
+npm run test:e2e          npm run test:all      # unit + e2e
+npm run prisma:migrate    npm run prisma:studio
+npm run db:push           npm run db:reset       # destructive — confirm before running
 ```
 
----
+## Agents, skills, hooks
 
-## Workflow Type Quick Reference
+`.github/agents/` (37 agents), `.github/skills/` (frontend-design, theme-factory,
+web-artifacts-builder, web-coder, web-design-reviewer, webapp-testing), `.github/hooks/`
+(governance-audit, secrets-scanner, session-auto-commit, session-logger, plus
+**`pre-commit-secrets`** — a project-specific addition beyond the standard profile hook set,
+do not remove it). Full agent/skill routing guidance and decision tree (shared across all
+projects): `~/.copilot/copilot-instructions.md`.
 
-| Workflow | Agent | Duration | Load File |
-|----------|-------|----------|-----------|
-| **Standard Feature** | Tech Lead | 60-180 min | feature-standard-pipeline.md |
-| **UI/UX Pipeline** | Frontend Specialist | 45-120 min | feature-uiux-pipeline.md |
-| **React/Next.js** | Frontend Specialist | 30-60 min | frontend-feature-workflow.md |
-| **TypeScript/Node.js** | Backend Specialist | 45-90 min | backend-feature-workflow.md |
-| **Java MCP** | Java Specialist | 60-120 min | java-mcp-workflow.md |
-| **PostgreSQL** | Database Architect | 30-45 min | database-workflow.md |
-| **Full-Stack** | Tech Lead | 120-180 min | fullstack-feature-workflow.md |
-| **Security Audit** | Security Auditor | 60-120 min | security-audit-workflow.md |
-| **DevOps** | DevOps Engineer | 45-90 min | devops-infrastructure-workflow.md |
-| **Bug Fix** | Debug Specialist | 20-60 min | bug-fix-debug-workflow.md |
-| **Testing** | QA Engineer | 60-120 min | testing-qa-workflow.md |
-| **Docs** | Technical Writer | 30-90 min | documentation-workflow.md |
+For Next.js/React/TypeScript work reach for `expert-react-frontend-engineer.md` or
+`next.js-expert.md`; for Prisma/PostgreSQL reach for `postgresql-dba`/`sql-optimization`
+(add via `~/ai-dotfiles/scripts/provision_project.py` if not already present locally);
+for accessibility, `accessibility.agent.md`; for e2e, `playwright-tester`.
 
----
+## 🚨 Verify code was actually written, not just specified
 
-## Agent Specialization Map
-
-Map each role to the right copilot agent:
-
-| Role | Copilot Agent | Domain |
-|------|---|---|
-| **Frontend Specialist** | Expert React Frontend Engineer | React, Next.js, TypeScript, CSS, Components |
-| **Backend Specialist** | SWE | Node.js, TypeScript, API, services |
-| **Database Architect** | PostgreSQL Database Administrator | PostgreSQL, migrations, optimization |
-| **UI/UX Designer** | SE: UX Designer | Design specs, user research, accessibility |
-| **Java Specialist** | Java MCP Expert | Java, Spring Boot, MCP servers |
-| **Security Auditor** | SE: Security | OWASP, compliance, vulnerabilities |
-| **DevOps Engineer** | devops-deployment-engineer | Docker, K8s, CI/CD, GitHub Actions |
-| **Debug Specialist** | Debug Mode Instructions | Debugging, error analysis |
-| **QA Automation Engineer** | qa-code-reviewer | Test automation, Playwright, Jest |
-| **Technical Writer** | SE: Tech Writer | Documentation, API docs, guides |
-
----
-
-## GitHub Integration Pattern (All Workflows)
-
-### Branch Naming
-```
-feature/[type]-[description]
-fix/[issue]-[description]
-docs/[description]
-ops/[description]
-test/[description]
-```
-
-### Commit Message Format
-```
-feat(frontend): Add dark mode toggle
-fix(api): Handle null user profile
-docs(setup): Update installation guide
-test(auth): Add JWT validation tests
-ops(ci): Configure GitHub Actions
-```
-
-### Standard PR Checklist
-- [ ] Code follows project style
-- [ ] Tests pass (80%+ coverage)
-- [ ] Quality gates checked
-- [ ] Documentation updated
-- [ ] No breaking changes
-
----
-
----
-
-## 🚨 CRITICAL: Post-Pipeline Implementation Verification
-
-**IMPORTANT LESSON FROM PHASE 6C**: Always verify actual CODE was generated, not just specifications.
-
-### What Went Wrong
-- Frontend agent generated 965-line technical SPECIFICATION
-- But NO actual React components (.tsx files) were created
-- Resulted in backend-only implementation, frontend not visible to users
-
-### How To Prevent
-After any multi-stage pipeline (Stages 3-4), verify:
+This codebase has a documented history (see `.github/specs/archive/`) of agents producing
+markdown specifications instead of working `.tsx`/`.ts` implementations, most notably during
+"Phase 6C" — a 965-line frontend spec was generated with **zero** corresponding React
+components. Before accepting any feature as done:
 
 ```
-❌ DO NOT ACCEPT:
-   - Markdown specs for code
-   - TypeScript interfaces without implementation
-   - Component "outlines" instead of working code
-   - Pseudo-code or examples
-
-✅ VERIFY CHECKLIST:
-   [ ] Actual .ts/.tsx/.js files exist (not .md)
-   [ ] npm run build → 0 errors
-   [ ] npm run test → all passing
-   [ ] npm run test:e2e → all passing
-   [ ] Files contain real implementations (not comments/stubs)
-   [ ] No TODO/FIXME in core logic
-   [ ] git diff shows actual code changes
+❌ DO NOT ACCEPT: a spec/plan file, TS interfaces with no implementation, "outline" components
+✅ VERIFY: the .tsx/.ts files exist and contain real logic · npm run build → 0 errors ·
+   npm run test && npm run test:e2e pass · git diff shows actual code, not just docs
 ```
 
-### If Implementation Missing
-```
-1. Identify layer: frontend | backend | database
-2. Launch SPECIFIC agent for that layer:
-   - Frontend: Expert React Frontend Engineer
-   - Backend: SWE or full-stack-coder
-   - Database: PostgreSQL Database Administrator
-3. Explicit instruction: "IMPLEMENT working code (not specs)"
-4. Verify: npm run build/test passes
-```
+## Quality gates
 
-### Example Recovery (Phase 6C)
-```
-PROBLEM: Frontend was only specification documents
-SOLUTION: Ran Expert React Frontend Engineer with implementation focus
-RESULT: 6 actual React components (.tsx) + tests now exist and work
-```
+- Lint/type-check clean (`npm run lint`, `npm run type-check`)
+- Tests pass (`npm run test:all`); no TODO/FIXME in core logic
+- Accessibility: WCAG 2.1 AA, keyboard nav, screen-reader compatible (frontend changes)
+- Security: no hardcoded secrets (enforced by `pre-commit-secrets` + `secrets-scanner` hooks),
+  no OWASP Top 10 issues, dependency audit clean
+- DB changes: run `scripts/validate-db-connection.js`-gated commands, never `db:reset`/`db:push
+  --force-reset` against anything but a scratch DB
 
----
-
-## Quality Gates (All Workflows)
-
-### Code Quality
-- ✅ Linting passes (0 errors)
-- ✅ TypeScript strict mode
-- ✅ Test coverage ≥80%
-- ✅ No TODO/FIXME in production
-
-### Accessibility (Frontend)
-- ✅ WCAG 2.1 AA compliant
-- ✅ Lighthouse >95
-- ✅ Keyboard navigation works
-- ✅ Screen reader compatible
-
-### Performance
-- ✅ Build size +<5%
-- ✅ Page load <3 seconds
-- ✅ Core Web Vitals Lighthouse >90
-- ✅ API response <500ms
-
-### Security
-- ✅ No OWASP Top 10 issues
-- ✅ No hardcoded secrets
-- ✅ Dependency audit clean
-- ✅ SQL injection protected
-
-### Deployment
-- ✅ All tests passing
-- ✅ Security scan clean
-- ✅ Staging verified
-- ✅ Monitoring configured
-
----
-
-## Where to Find Detailed Workflows
-
-All workflows in `.github/specs/workflows/`:
+## Branch / commit conventions
 
 ```
-.github/specs/workflows/
-├── feature-standard-pipeline.md
-├── feature-uiux-pipeline.md
-├── frontend-feature-workflow.md
-├── backend-feature-workflow.md
-├── java-mcp-workflow.md
-├── database-workflow.md
-├── fullstack-feature-workflow.md
-├── security-audit-workflow.md
-├── devops-infrastructure-workflow.md
-├── bug-fix-debug-workflow.md
-├── testing-qa-workflow.md
-└── documentation-workflow.md
+feature/[type]-[description]   fix/[issue]-[description]   docs/[description]
+feat(scope): ...   fix(scope): ...   docs(scope): ...   test(scope): ...   ops(scope): ...
 ```
 
-Each file includes:
-- Step-by-step execution
-- Copy-paste git commands
-- Quality gate checklist
-- Agent responsibilities
-- Execution time + parallelization
-- Fallback agent options
+## Docs
 
----
-
-## Quick Examples
-
-**React Component?**
-1. Decision Tree → UI/React? YES
-2. Load: feature-uiux-pipeline.md
-3. Follow with Frontend Specialist
-4. Check accessibility gate
-
-**Fix API Bug?**
-1. Decision Tree → Bug? YES
-2. Load: bug-fix-debug-workflow.md
-3. Follow with Debug Specialist
-4. Check code quality gate
-
-**Database Migration?**
-1. Decision Tree → Database? YES
-2. Load: database-workflow.md
-3. Follow with Database Architect
-4. Check performance gate
-
-**Deploy Infrastructure?**
-1. Decision Tree → DevOps? YES
-2. Load: devops-infrastructure-workflow.md
-3. Follow with DevOps Engineer
-4. Check deployment gate
-
----
-
-## Why Modular Architecture?
-
-✅ **Token Efficient**: Load only what you need (~600 vs 2,200)  
-✅ **Fast Decisions**: Decision tree = 30 seconds  
-✅ **Scalable**: Easy to add new workflow types  
-✅ **Maintainable**: Update workflows independently  
-✅ **Focused**: Each file contains one workflow type  
-
-**Execution Model:**
-1. Load main file (150 lines, ~200 tokens)
-2. Follow decision tree
-3. Load specific workflow (150-300 lines, ~400 tokens)
-4. Execute with full context
-
----
-
-## Troubleshooting
-
-**Q: Which workflow?**
-A: Follow Quick Decision Tree. Default = Standard Feature Pipeline.
-
-**Q: Agent unavailable?**
-A: Check specific workflow file for fallback options.
-
-**Q: Quality gate failed?**
-A: See specific workflow file for recovery steps.
-
-**Q: Add new workflow type?**
-A: Create file in `.github/specs/workflows/`, update reference table & decision tree.
-
----
-
-**Last Updated**: 2024-04-07  
-**Status**: Production Ready  
-**Version**: 2.0 (Token-Optimized Modular System)
+`README.md`, `DEPLOYMENT_GUIDE.md`, `RUNBOOK.md`, `OPERATIONS_GUIDE.md`,
+`ENVIRONMENT_CONFIGURATION.md`, `DATABASE_SAFETY.md`, `CRON_JOB_SETUP.md`,
+`MONITORING_SETUP.md`, `SECRETS.md`, `APP_DOCUMENTATION.md` at repo root — kept because they're
+current, user-facing, or deployment-relevant. Historical phase-by-phase implementation/QA/
+delivery docs (~640 files across the old repo root and `.github/specs/`) have been archived to
+`.github/specs/archive/{root-docs,legacy-specs,github-phase-docs,legacy-instructions}/` —
+preserved via `git mv` (full history intact), just moved out of the way so they don't clutter
+active development or get mistaken for current guidance. `.github/specs/workflows/` has one real
+workflow reference file (`feature-standard-pipeline.md`); the modular per-domain workflow files
+it used to reference (frontend/backend/database/security/etc.) never actually existed on disk —
+use the profile-level routing doc instead of recreating them.

@@ -1,43 +1,29 @@
 {
-  "$schema": "https://railway.app/schema.json",
+  "$schema": "https://railway.com/railway.schema.json",
   "build": {
-    "builder": "nixpacks",
+    "builder": "RAILPACK",
     "buildCommand": "npm run build",
-    "watchPatterns": ["src/**/*", "prisma/**/*", "public/**/*"]
+    "watchPatterns": [
+      "src/**/*",
+      "prisma/**/*",
+      "public/**/*",
+      "package.json",
+      "package-lock.json",
+      "railway.json",
+      "next.config.js",
+      "postcss.config.js",
+      "tailwind.config.*",
+      "tsconfig*.json",
+      "scripts/**/*",
+      "railpack.json"
+    ]
   },
   "deploy": {
     "startCommand": "npm start",
-    "releaseCommand": "npx prisma migrate deploy && npx prisma db push --skip-generate",
     "numReplicas": 2,
     "restartPolicyMaxRetries": 5,
-    "restartPolicyType": "always",
-    "restartPolicyDelay": 30,
-    "healthCheck": {
-      "enabled": true,
-      "endpoint": "/api/health",
-      "initialDelaySeconds": 15,
-      "periodSeconds": 30,
-      "timeoutSeconds": 10,
-      "failureThreshold": 5,
-      "successThreshold": 2
-    },
-    "ports": [3000],
-    "exposes": [
-      {
-        "path": "/",
-        "port": 3000
-      }
-    ]
-  },
-  "plugins": {
-    "postgres": {
-      "version": "15"
-    }
-  },
-  "variables": {
-    "NODE_ENV": "production",
-    "LOG_LEVEL": "warn",
-    "FEATURE_FLAGS_ENABLED": "phase2b,recommendations,mobile_offline,usage_ui,api_pagination",
-    "BENEFIT_ENGINE_ENABLED": "true"
+    "restartPolicyType": "ALWAYS",
+    "healthcheckPath": "/api/health",
+    "healthcheckTimeout": 300
   }
 }

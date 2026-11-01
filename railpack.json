@@ -3,6 +3,7 @@
   "steps": {
     "install": {
       "commands": [
+        "...",
         "npm ci --include=dev"
       ]
     }
